@@ -34,6 +34,11 @@ public:
 		return this->allCoefEstimates;
 	}
 
+	const double* getObjectiveFunctionScores() const
+	{
+		return this->coefObjFunScore;
+	}
+
 protected:
 	InitialEstimator(const Data& originalData, const Control& ctrl, PSC& psc,
                      const int coefMemIncrease = 0);
@@ -90,6 +95,7 @@ protected:
 	double MscaleOfResiduals() const;
 private:
 	double *RESTRICT allCoefEstimates;
+	double *RESTRICT coefObjFunScore;
 	RhoFunction rhoFun;
 };
 

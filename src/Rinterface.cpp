@@ -22,8 +22,9 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
     ENPY enpy(data, ctrl);
-    SEXP retZ;
+    SEXP coefs, objF;
     int niest;
+    SEXP result;
 
     BEGIN_RCPP
 
@@ -33,11 +34,18 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
         throw;
     }
 
-    retZ = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
-    memcpy(REAL(retZ), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
+    result = PROTECT(Rf_allocVector(VECSXP, 2));
+    coefs = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
+    objF = PROTECT(Rf_allocVector(REALSXP, niest));
 
-    UNPROTECT(1);
-    return retZ;
+    memcpy(REAL(coefs), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
+    memcpy(REAL(objF), enpy.getObjectiveFunctionScores(), niest * sizeof(double));
+
+    SET_VECTOR_ELT(result, 0, coefs);
+    SET_VECTOR_ELT(result, 1, objF);
+
+    UNPROTECT(3);
+    return result;
 
     END_RCPP
 }
@@ -48,22 +56,30 @@ RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
     ENPY enpy(data, ctrl);
-    SEXP retZ;
-    int nest = 0;
+    SEXP coefs, objF;
+    int niest;
+    SEXP result;
 
     BEGIN_RCPP
 
     try {
-        nest = enpy.compute();
+        niest = enpy.compute();
     } catch (std::exception &e) {
         throw;
     }
 
-    retZ = PROTECT(Rf_allocVector(REALSXP, nest * data.numVar()));
-    memcpy(REAL(retZ), enpy.getInitialEstimators(), data.numVar() * nest * sizeof(double));
+    result = PROTECT(Rf_allocVector(VECSXP, 2));
+    coefs = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
+    objF = PROTECT(Rf_allocVector(REALSXP, niest));
 
-    UNPROTECT(1);
-    return retZ;
+    memcpy(REAL(coefs), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
+    memcpy(REAL(objF), enpy.getObjectiveFunctionScores(), niest * sizeof(double));
+
+    SET_VECTOR_ELT(result, 0, coefs);
+    SET_VECTOR_ELT(result, 1, objF);
+
+    UNPROTECT(3);
+    return result;
 
     END_RCPP
 }
@@ -84,6 +100,7 @@ static inline Control parseControlList(SEXP Rcontrol)
 
         as<int>(control["enMaxIt"]),
         as<double>(control["enEPS"]),
+        as<int>(control["enCentering"]),
 
         as<double>(control["mscaleB"]),
         as<double>(control["mscaleCC"]),

@@ -17,6 +17,8 @@
 #'          will be removed.
 #' @param py.nit The maximum number of iterations to perform.
 #' @param en.tol The relative tolerance for convergence.
+#' @param en.centering Should rows with a leading 1 be centered in the elastic net algorithm.
+#'      Default's to \code{TRUE}.
 #'
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
@@ -25,7 +27,7 @@
 #' @importFrom Rcpp evalCpp
 enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                     prosac, clean.method = c("threshold", "proportion"),
-                    C.res, prop, py.nit, en.tol) {
+                    C.res, prop, py.nit, en.tol, en.centering = TRUE) {
 
     dX <- dim(X)
 
@@ -39,20 +41,22 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                             lambda2 = lambda2,
                             numIt = py.nit,
                             eps = en.tol,
+
                             residCleanMethod = clean.method,
                             residThreshold = C.res,
                             residProportion = prop,
                             pscProportion = prosac,
 
+                            en.centering = en.centering,
+
                             mscaleB = deltasc,
                             mscaleCC = 1)
 
     ies <- .Call("C_enpy_rr", t(X), y, dX[1L], dX[2L], ctrl, PACKAGE = "penseinit")
-    ies <- matrix(ies, nrow = dX[2L])
 
     return(list(
-        initCoef = ies,
-        objF = numeric(ncol(ies))
+        initCoef = matrix(ies[[1L]], nrow = dX[2L]),
+        objF = ies[[2L]]
     ))
 }
 

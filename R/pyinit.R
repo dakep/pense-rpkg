@@ -23,6 +23,8 @@
 pyinit <- function(X, y, deltasc, cc.scale, prosac,
                  clean.method = c("threshold", "proportion"), C.res, prop,
                  py.nit, en.tol) {
+    y <- drop(y)
+
     dX <- dim(X)
     dY <- dim(y)
     yl <- length(y)
@@ -38,9 +40,6 @@ pyinit <- function(X, y, deltasc, cc.scale, prosac,
     if (anyNA(X) || anyNA(y)) {
         stop("Missing values are not supported")
     }
-
-    psc.method <- match.arg(psc.method)
-
     ## Add leading column of 1's
     X <- cbind(1, X)
 
@@ -58,8 +57,6 @@ pyinit <- function(X, y, deltasc, cc.scale, prosac,
                             lambda1 = 0,
                             lambda2 = 0)
 
-    cnuminits <- 0L
-
     ies <- .Call("C_initpy", t(X), y, nrow(X), ncol(X),
                  ctrl$numIt,
                  ctrl$eps,
@@ -71,12 +68,12 @@ pyinit <- function(X, y, deltasc, cc.scale, prosac,
                  ctrl$mscaleMaxIt,
                  ctrl$mscaleEPS,
                  ctrl$mscaleRhoFun,
-                 cnuminits, PACKAGE = "penseinit")
+                 PACKAGE = "penseinit")
 
-    ies <- matrix(ies[cnuminits * (dX[2L] + 1L)], nrow = dX[2L] + 1L, ncol = cnuminits)
+    initCoefs <- matrix(ies[[2L]][seq_len(ies[[1L]] * (dX[2L] + 1L))], nrow = dX[2L] + 1L, ncol = ies[[1L]])
 
     return(list(
-        initCoef = ies,
-        objF = numeric(cnuminits)
+        initCoef = initCoefs,
+        objF = ies[[3L]][seq_len(ies[[1L]])]
     ))
 }

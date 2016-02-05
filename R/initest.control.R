@@ -15,6 +15,7 @@
 #' @param pscProportion numeric > 0
 #' @param enMaxIt integer > 0
 #' @param enEPS numeric > 0
+#' @param enCentering logical
 #' @param mscaleB numeric > 0
 #' @param mscaleCC numeric > 0
 #' @param mscaleMaxIt integer > 0
@@ -32,6 +33,7 @@ initest.control <- function(lambda1,
 
                             enMaxIt = 1000,
                             enEPS = 1e-6,
+                            enCentering = TRUE,
 
                             mscaleB = 0.5,
                             mscaleCC = 1.54764,
@@ -73,6 +75,9 @@ initest.control <- function(lambda1,
     simpleCheck(mscaleEPS)
     simpleCheck(ret$mscaleRhoFun, FALSE)
 
+    if (length(enCentering) != 1L || !is.logical(enCentering) || is.na(enCentering)) {
+        stop("`enCentering` must be single logical value")
+    }
 
     ret$numIt <- as.integer(ret$numIt)
     ret$enMaxIt <- as.integer(ret$enMaxIt)

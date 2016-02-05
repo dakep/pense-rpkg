@@ -34,6 +34,7 @@ typedef struct ControlTag {
 
     const int enMaxIt;
     const double enEPS;
+    const int enCentering;
 
     const double mscaleB;
     const double mscaleCC;

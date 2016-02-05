@@ -18,6 +18,9 @@
 #include "PartialSort.h"
 #include "mscale.h"
 
+
+#define MAX_NUM_PSCS(numVar) (3 * numVar + 2)
+
 static const int BLAS_1L = 1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
@@ -98,9 +101,11 @@ InitialEstimator::InitialEstimator(const Data& originalData, const Control& ctrl
          * for some additional storage space,
          * the memory is enlarged by `coefMemIncrease`
          */
-        this->allCoefEstimates = new double[(3 * this->originalData.numVar() + 2) *
+        this->allCoefEstimates = new double[MAX_NUM_PSCS(this->originalData.numVar()) *
                                             this->originalData.numVar()
                                             + coefMemIncrease];
+
+        this->coefObjFunScore = new double[MAX_NUM_PSCS(this->originalData.numVar())];
     }
 
     this->residuals = new double[this->originalData.numObs()];
@@ -117,6 +122,7 @@ InitialEstimator::~InitialEstimator()
 
     if (this->originalData.numVar() > 0) {
         delete[] this->allCoefEstimates;
+        delete[] this->coefObjFunScore;
     }
 }
 
@@ -128,7 +134,8 @@ int InitialEstimator::compute()
     int iter = 0;
     int j;
     int numPSCs = 0;
-    double minObjective, tmpObjective;
+    double *const minObjective = this->coefObjFunScore;
+    double * tmpObjective;
     double *RESTRICT bestCoefEst;
     double threshold;
     double diff, normPrevBest = 0, normBest = 0;
@@ -138,18 +145,22 @@ int InitialEstimator::compute()
 
     bestCoefEst = this->allCoefEstimates;
     this->coefEst = this->allCoefEstimates + origNvar;
-    minObjective = DBL_MAX;
+    *minObjective = DBL_MAX;
 
     while(1) {
+        tmpObjective = this->coefObjFunScore + 1;
+
+
         /* 1. Estimate coefficients for work data */
         this->estimateCoefficients();
 
         // Now evaluate this->coefEst on the
-        tmpObjective = this->evaluateEstimate();
-        if (tmpObjective < minObjective) {
-            minObjective = tmpObjective;
+        *tmpObjective = this->evaluateEstimate();
+        if (*tmpObjective < *minObjective) {
+            *minObjective = *tmpObjective;
             bestCoefEst = this->coefEst;
         }
+        ++tmpObjective;
 
         /* 2. Calculate PSC for current work data */
         this->psc.setData(this->residualFilteredData);
@@ -167,12 +178,13 @@ int InitialEstimator::compute()
             /* 4.2. Estimate coefficients */
             this->coefEst += origNvar;
             this->estimateCoefficients();
-            tmpObjective = this->evaluateEstimate();
+            *tmpObjective = this->evaluateEstimate();
             
-            if (tmpObjective < minObjective) {
-                minObjective = tmpObjective;
+            if (*tmpObjective < *minObjective) {
+                *minObjective = *tmpObjective;
                 bestCoefEst = this->coefEst;
             }
+            ++tmpObjective;
 
             /* 4.1. Thin out X and y based on large values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
@@ -183,12 +195,13 @@ int InitialEstimator::compute()
             /* 4.2. Estimate coefficients */
             this->coefEst += origNvar;
             this->estimateCoefficients();
-            tmpObjective = this->evaluateEstimate();
+            *tmpObjective = this->evaluateEstimate();
 
-            if (tmpObjective < minObjective) {
-                minObjective = tmpObjective;
+            if (*tmpObjective < *minObjective) {
+                *minObjective = *tmpObjective;
                 bestCoefEst = this->coefEst;
             }
+            ++tmpObjective;
 
             /* 4.1. Thin out X and y based on large values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
@@ -199,12 +212,13 @@ int InitialEstimator::compute()
             /* 4.2. Estimate coefficients */
             this->coefEst += origNvar;
             this->estimateCoefficients();
-            tmpObjective = this->evaluateEstimate();
+            *tmpObjective = this->evaluateEstimate();
 
-            if (tmpObjective < minObjective) {
-                minObjective = tmpObjective;
+            if (*tmpObjective < *minObjective) {
+                *minObjective = *tmpObjective;
                 bestCoefEst = this->coefEst;
             }
+            ++tmpObjective;
         }
 
         /*
@@ -246,7 +260,7 @@ int InitialEstimator::compute()
          * filtered data
          */
         computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
-        minObjective = this->evaluateEstimate();
+        *minObjective = this->evaluateEstimate();
 
         this->coefEst = this->allCoefEstimates + origNvar;
     }
@@ -430,7 +444,8 @@ void ENPY::estimateCoefficients()
         /* This already updates the residuals, but NOT for all observations */
         /* lambda1LS must not be adjusted for the number of observations! */
         this->en.setLambdas(this->lambda1LS, 0);
-        converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals, true);
+        converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals,
+                                          this->ctrl.enCentering);
 
         if (!converged) {
             throw std::runtime_error("LASSO did not converge. Either increase the number of "

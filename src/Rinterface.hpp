@@ -23,6 +23,7 @@
  *
  *	enMaxIt			integer
  *	enEPS			numeric
+ *  enCentering     integer (0/1)
  *
  *	mscaleB			numeric
  *	mscaleCC		numeric

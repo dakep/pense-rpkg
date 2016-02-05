@@ -6,7 +6,7 @@
 \usage{
 enpy(X, y, lambda1, lambda2, deltasc, cc.scale, psc.method = c("rr", "Qp",
   "Mn"), prosac, clean.method = c("threshold", "proportion"), C.res, prop,
-  py.nit, en.tol)
+  py.nit, en.tol, en.centering = TRUE)
 }
 \arguments{
 \item{X}{The data matrix X}
@@ -33,6 +33,9 @@ will be removed.}
 \item{py.nit}{The maximum number of iterations to perform.}
 
 \item{en.tol}{The relative tolerance for convergence.}
+
+\item{en.centering}{Should rows with a leading 1 be centered in the elastic net algorithm.
+     Default's to \code{TRUE}.}
 }
 \value{
 \item{initCoef}{A numeric matrix with one initial coefficient per column}

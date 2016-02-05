@@ -18,6 +18,8 @@
 #include "AuxMemory.h"
 #include "psc.h"
 
+#define MAX_NUM_PSCS(numVar) (3 * numVar + 2)
+
 #ifdef DEBUG
 static void print_matf(int dr, int dc, const double *A, const char *header) {
     int r, c, i = 0;
@@ -48,7 +50,7 @@ static const char * const BLAS_DIAG_NO = "N";
  */
 static int computeInitialEstimator(const double *restrict X, const double *restrict y,
                                    const int nobs, const int nvar, const Control* ctrl,
-                                   double *restrict estimates);
+                                   double *restrict estimates, double *restrict objFunScores);
 
 static int estimateCoef(double *restrict X, const double *restrict y, const int nobs,
                         const int nvar, double *restrict coefEst, AuxMemory* auxmem);
@@ -84,14 +86,15 @@ static double absoluteLessThan(const double a, const double b);
 
  * @param RnumInits integer OUTPUT the number of actual initial estimators
  *
- * @return Returns the (probably) too large (3 * nvar + 2 by nvar) numeric
- *         matrix of initial estimators
+ * @return Returns a list with three elements:
+ *          item 1: The number of initial estimators returned
+ *          item 2: The matrix of initial estimators
+ *          item 3: The value of the objective function for each estimator
  */
 SEXP C_initpy(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP RnumIt,
               SEXP Reps, SEXP RresidThreshold, SEXP RresidProportion,
               SEXP RpscProportion, SEXP RmscaleB, SEXP RmscaleCC,
-              SEXP RmscaleMaxIt, SEXP RmscaleEPS, SEXP RmscaleRhoFun,
-              SEXP RnumInits)
+              SEXP RmscaleMaxIt, SEXP RmscaleEPS, SEXP RmscaleRhoFun)
 {
     Control ctrl = {
         .numIt = *INTEGER(RnumIt),
@@ -109,23 +112,27 @@ SEXP C_initpy(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP RnumIt,
         .lambda1 = 0,
         .lambda2 = 0,
         .enMaxIt = 0,
-        .enEPS = 0
+        .enEPS = 0,
+        .enCentering = 0
     };
 
     const int nobs = *INTEGER(Rnobs);
     const int nvar = *INTEGER(Rnvar);
 
-    /*
-     * CAUTION: If the QR factorization is used to compute the estimates, we need extra
-     * storage space!
-     */
-    /* SEXP ret = PROTECT(Rf_allocVector(REALSXP, (3 * nvar + 2) * nvar + nobs)); */
-    SEXP ret = PROTECT(Rf_allocVector(REALSXP, (3 * nvar + 2) * nvar));
+    SEXP result = PROTECT(Rf_allocVector(VECSXP, 3));
+    SEXP numCoefs = PROTECT(Rf_allocVector(INTSXP, 1));
+    SEXP coefs = PROTECT(Rf_allocVector(REALSXP, MAX_NUM_PSCS(nvar) * nvar));
+    SEXP objF = PROTECT(Rf_allocVector(REALSXP, MAX_NUM_PSCS(nvar)));
 
-    *INTEGER(RnumInits) = computeInitialEstimator(REAL(RXtr), REAL(Ry), nobs, nvar, &ctrl, REAL(ret));
+    *INTEGER(numCoefs) = computeInitialEstimator(REAL(RXtr), REAL(Ry), nobs, nvar, &ctrl,
+                                                 REAL(coefs), REAL(objF));
 
-    UNPROTECT(1);
-    return ret;
+    SET_VECTOR_ELT(result, 0, numCoefs);
+    SET_VECTOR_ELT(result, 1, coefs);
+    SET_VECTOR_ELT(result, 2, objF);
+
+    UNPROTECT(4);
+    return result;
 }
 
 
@@ -136,7 +143,7 @@ SEXP C_initpy(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP RnumIt,
  **************************************************************************************************/
 static int computeInitialEstimator(const double *restrict Xtr, const double *restrict y,
                                    const int nobs, const int nvar, const Control* ctrl,
-                                   double *restrict estimates)
+                                   double *restrict estimates, double *restrict objFunScores)
 {
     AuxMemory auxmem;
     double *restrict bestCoefEst;
@@ -146,7 +153,8 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
     double *restrict filteredXtr = (double*) malloc(nobs * nvar * sizeof(double));
     double *restrict filteredY = (double*) malloc(nobs * sizeof(double));
     double *restrict pscs = (double*) malloc(nobs * nvar * sizeof(double));
-    double minObjective, tmpObjective;
+    double *const minObjective = objFunScores;
+    double * tmpObjective;
     double scaledThreshold = 0;
     int currentNobs = nobs;
     int iter = 0;
@@ -172,9 +180,11 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
      */
     bestCoefEst = estimates;
     currentEst = estimates + nvar;
-    minObjective = DBL_MAX;
+    *minObjective = DBL_MAX;
 
     while(1) {
+        tmpObjective = objFunScores + 1;
+
         /* 1. Calculate PSC for current work data */
         numPSCs = calculatePSCs(pscs, &auxmem, currentXtr, currentY, currentNobs, nvar);
 
@@ -195,13 +205,14 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
 
         // Now evaluate this->coefEst on the
         calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar, auxmem.residuals);
-        tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                              ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
+        *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+                               ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
-        if (tmpObjective < minObjective) {
+        if (*tmpObjective < *minObjective) {
             bestCoefEst = currentEst;
-            minObjective = tmpObjective;
+            *minObjective = *tmpObjective;
         }
+        ++tmpObjective;
 
         for(j = 0; j < numPSCs; ++j) {
             currentPSC = pscs + currentNobs * j;
@@ -225,13 +236,14 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
 
             calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar,
                                auxmem.residuals);
-            tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                                  ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
+            *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+                                   ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
-            if (tmpObjective < minObjective) {
-                minObjective = tmpObjective;
+            if (*tmpObjective < *minObjective) {
+                *minObjective = *tmpObjective;
                 bestCoefEst = currentEst;
             }
+            ++tmpObjective;
 
             /* 4.1. Thin out X and y based on large values of PSCs */
             scaledThreshold = getQuantile(currentPSC, currentNobs, ctrl->pscProportion,
@@ -253,13 +265,14 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
 
             calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar,
                                auxmem.residuals);
-            tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                                  ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
+            *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+                                   ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
-            if (tmpObjective < minObjective) {
-                minObjective = tmpObjective;
+            if (*tmpObjective < *minObjective) {
+                *minObjective = *tmpObjective;
                 bestCoefEst = currentEst;
             }
+            ++tmpObjective;
 
 
             /* 4.1. Thin out X and y based on large values of PSCs */
@@ -283,13 +296,14 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
 
             calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar,
                                auxmem.residuals);
-            tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                                  ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
+            *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+                                   ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
-            if (tmpObjective < minObjective) {
-                minObjective = tmpObjective;
+            if (*tmpObjective < *minObjective) {
+                *minObjective = *tmpObjective;
                 bestCoefEst = currentEst;
             }
+            ++tmpObjective;
         }
 
         if (linalgError != 0) {
@@ -327,15 +341,18 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
             scaledThreshold = getQuantile(auxmem.residuals, nobs, ctrl->residProportion,
                                           absoluteLessThan);
         } else {
-            scaledThreshold = ctrl->residThreshold * minObjective;
+            *minObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+                                   ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
+            scaledThreshold = ctrl->residThreshold * (*minObjective);
         }
 
         currentNobs = filterDataThreshold(Xtr, y, currentXtr, currentY, nobs, nvar, auxmem.residuals,
                                           scaledThreshold, absoluteLessThan);
-        /* Update minObjective! */
+
+        /* Update minObjective for currently residual-filtered data! */
         calculateResiduals(currentXtr, currentY, bestCoefEst, currentNobs, nvar, auxmem.residuals);
-        minObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                              ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
+        *minObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+                               ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
     }
 
 

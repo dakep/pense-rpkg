@@ -1,0 +1,7 @@
+PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS) @PTHREAD_LIBS@
+PKG_CPPFLAGS = @PTHREAD_CPPFLAGS@
+
+## Debug!
+PKG_OPTFLAGS = -O0 -g
+PKG_CFLAGS= -pipe -std=c99 -Wall -Wextra -pedantic -W -Wno-unused-parameter -DDEBUG -D__STDC_LIMIT_MACROS @RESTRICT_CFLAGS@
+PKG_CXXFLAGS= -pipe -Wall -Wextra -pedantic -Wno-unused-parameter -DDEBUG -D__STDC_LIMIT_MACROS @RESTRICT_CXXFLAGS@

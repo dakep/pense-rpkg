@@ -4,6 +4,13 @@
 #' the principal sensitivity components
 #'
 #' Three different methods to calculate the sensitivity components are implemented:
+#' \describe{
+#'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
+#'                         and the hat matrix from the ridge regression. This method only works
+#'                         if `lambda` > 0 or `p` < `n`.}
+#'      \item{\code{"Qp"}}{Not yet implemented}
+#'      \item{\code{"Mn"}}{Not yet implemented}
+#' }
 #'
 #' @param X The data matrix X
 #' @param y The response vector
@@ -49,6 +56,10 @@ enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
 
     if (anyNA(X) || anyNA(y)) {
         stop("Missing values are not supported")
+    }
+
+    if (length(cc.scale) != 1L || !is.numeric(cc.scale) || is.na(cc.scale) || cc.scale <= 0) {
+        stop("`cc.scale` must be single positive number")
     }
 
     psc.method <- match.arg(psc.method)

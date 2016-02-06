@@ -47,5 +47,12 @@ the principal sensitivity components
 }
 \details{
 Three different methods to calculate the sensitivity components are implemented:
+\describe{
+     \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
+                        and the hat matrix from the ridge regression. This method only works
+                        if `lambda` > 0 or `p` < `n`.}
+     \item{\code{"Qp"}}{Not yet implemented}
+     \item{\code{"Mn"}}{Not yet implemented}
+}
 }
 

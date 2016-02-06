@@ -35,8 +35,6 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
         stop("`X` must have a leading column of 1's")
     }
 
-    lambda1 <- lambda1 * cc.scale^2
-
     ctrl <- initest.control(lambda1 = lambda1,
                             lambda2 = lambda2,
                             numIt = py.nit,
@@ -51,6 +49,24 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
 
                             mscaleB = deltasc,
                             mscaleCC = 1)
+
+    ctrl$lambda1 <- ctrl$lambda1 * cc.scale^2
+
+    usableProp <- ctrl$pscProportion
+    if (ctrl$residCleanMethod == "proportion") {
+        usableProp <- ctrl$residProportion * ctrl$pscProportion
+    }
+
+    if (ctrl$lambda2 == 0) {
+        if (dX[2L] >= dX[1L]) {
+            stop("`enpy.rr` can not be used for data with more variables than observations if ",
+                 "`lambda2` is 0.")
+        } else if (dX[2L] >= as.integer(usableProp * dX[1L])) {
+            stop("With the specified proportion of observations to remove, the number of ",
+                 "observations will be smaller than the number of variables.\nIn this case ",
+                 "`enpy.rr` can not be used with `lambda2` = 0")
+        }
+    }
 
     ies <- .Call("C_enpy_rr", t(X), y, dX[1L], dX[2L], ctrl, PACKAGE = "penseinit")
 

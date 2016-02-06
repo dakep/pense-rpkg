@@ -45,7 +45,7 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                             residProportion = prop,
                             pscProportion = prosac,
 
-                            en.centering = en.centering,
+                            enCentering = en.centering,
 
                             mscaleB = deltasc,
                             mscaleCC = 1)

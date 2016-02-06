@@ -39,8 +39,6 @@ protected:
 		return this->evectors;
 	}
 
-	virtual void free();
-
 
 	Data data;
 private:
@@ -73,7 +71,6 @@ public:
 private:
 	bool gotResiduals;
     bool initialized;
-    void free();
 
     double *RESTRICT Z;
 
@@ -84,11 +81,29 @@ private:
     double *RESTRICT residuals;
 };
 
-//class PSC_Lasso : public PSC
-//{
-//public:
-//    void computePSC();
-//    const double *const getPSC();
-//};
+class PSC_EN : public PSC {
+public:
+    PSC_EN();
+    ~PSC_EN();
+
+    virtual void setData(const Data &data);
+
+    virtual void setResiduals(const double *RESTRICT residuals);
+
+    virtual int computePSC();
+
+	virtual const double* getPSC()
+    {
+		return this->Z;
+	}
+
+private:
+	bool gotResiduals;
+    bool initialized;
+
+    double *RESTRICT Z;
+    double *RESTRICT residMat;
+    double *RESTRICT residuals;
+};
 
 #endif /* PenaYohai_hpp */

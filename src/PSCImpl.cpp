@@ -67,17 +67,14 @@ PSC::~PSC()
     delete[] evectorsSupport;
 }
 
-void PSC::free()
-{
-    delete[] evalues;
-    delete[] evectors;
-    delete[] evectorsSupport;
-}
-
 void PSC::setData(const Data &data)
 {
     int nvar = data.numVar();
-    if (nvar > 0) {
+    if (nvar > this->data.numVar()) {
+        delete[] evalues;
+        delete[] evectors;
+        delete[] evectorsSupport;
+
         this->evalues = new double[nvar];
         this->evectors = new double[nvar * nvar];
         this->evectorsSupport = new int[2 * nvar];
@@ -137,41 +134,39 @@ PSC_OLS::PSC_OLS() : gotResiduals(FALSE), initialized(FALSE)
 PSC_OLS::~PSC_OLS()
 {
     if (this->initialized) {
-        delete[] Xsqrt;
-        delete[] Z;
-    }
-}
-
-void PSC_OLS::free()
-{
-    if (this->initialized) {
-        delete[] Xsqrt;
+        delete[] this->Xsqrt;
+        delete[] this->XsqrtInvX;
         delete[] this->Z;
         delete[] this->H;
         delete[] this->residuals;
     }
-    PSC::free();
 }
 
 
 void PSC_OLS::setData(const Data &data) {
-    int nvar = data.numVar();
-    if (nvar > this->data.numVar()) {
-        this->free();
-        this->Xsqrt = new double[nvar * nvar];
+    if (data.numVar() > this->data.numVar()) {
+        if (this->initialized) {
+            delete[] this->Xsqrt;
+        }
+        this->Xsqrt = new double[data.numVar() * data.numVar()];
     }
 
     if (data.numObs() > this->data.numObs()) {
         if (this->initialized) {
-            delete[] this->Z;
-            delete[] this->XsqrtInvX;
             delete[] this->H;
             delete[] this->residuals;
         }
-        this->Z = new double[data.numObs() * nvar];
-        this->XsqrtInvX = new double[data.numObs() * nvar];
         this->H = new double[data.numObs() * data.numObs()];
         this->residuals = new double[data.numObs()];
+    }
+
+    if (data.numObs() * data.numVar() > this->data.numObs() * this->data.numVar()) {
+        if (this->initialized) {
+            delete[] this->Z;
+            delete[] this->XsqrtInvX;
+        }
+        this->Z = new double[data.numObs() * data.numVar()];
+        this->XsqrtInvX = new double[data.numObs() * data.numVar()];
     }
 
     PSC::setData(data);
@@ -270,4 +265,73 @@ int PSC_OLS::computePSC() {
     return nevalues;
 }
 
+
+
+PSC_EN::PSC_EN() : gotResiduals(FALSE), initialized(FALSE)
+{}
+
+PSC_EN::~PSC_EN()
+{
+    if (this->initialized) {
+        delete[] this->Z;
+        delete[] this->residMat;
+    }
+}
+
+
+void PSC_EN::setData(const Data &data) {
+//    if (data.numVar() > this->data.numVar()) {
+//        if (this->initialized) {
+//        }
+//    }
+
+    if (data.numObs() > this->data.numObs()) {
+        if (this->initialized) {
+            delete[] this->residMat;
+        }
+        this->residMat = new double[data.numObs() * data.numObs()];
+    }
+
+    if (data.numObs() * data.numVar() > this->data.numObs() * this->data.numVar()) {
+        if (this->initialized) {
+            delete[] this->Z;
+        }
+        this->Z = new double[data.numObs() * data.numVar()];
+    }
+
+    /*
+     * We will let the last column of residMat be the one where the true residuals
+     * be stored
+     */
+    this->residuals = this->residMat + (this->data.numObs() * (this->data.numObs() - 1));
+
+    PSC::setData(data);
+    this->initialized = TRUE;
+}
+
+void PSC_EN::setResiduals(const double *RESTRICT residuals)
+{
+    memcpy(this->residuals, residuals, this->data.numObs() * sizeof(double));
+    this->gotResiduals = true;
+}
+
+int PSC_EN::computePSC() {
+    int i;
+    int nvar = this->data.numVar();
+    int nobs = this->data.numObs();
+    int nevalues = 0;
+
+//    nevalues = this->doEigenDecomposition(BLAS_UPLO_UPPER, Q, nvar);
+
+    if (nevalues > 0) {
+        BLAS_DGEMM(BLAS_TRANS_TRANS, BLAS_TRANS_NO, nobs, nevalues, nvar,
+                   BLAS_1F, this->residMat, nvar, this->getEigenvectors(), nvar,
+                   BLAS_0F, this->Z, nobs);
+    }
+
+    /* Invalidate the current residuals */
+    this->gotResiduals = false;
+
+    return nevalues;
+}
 

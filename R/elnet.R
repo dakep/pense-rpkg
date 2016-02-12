@@ -72,7 +72,7 @@ elnet <- function(X, y, alpha, lambda, maxit = 500, eps = 1e-6, centering = TRUE
     maxit <- as.integer(maxit)
     centering <- 1L - as.integer(identical(centering, FALSE))
 
-    elnetres <- .Call("C_elnet", t(X), y, nrow(X), ncol(X),
+    elnetres <- .Call("C_elnet", t(X), y, dX[1L], ncol(X),
                       alpha,
                       lambda,
                       maxit,

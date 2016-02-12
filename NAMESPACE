@@ -2,6 +2,7 @@
 
 export(elnet)
 export(enpy)
+export(prinsens)
 export(pyinit)
 importFrom(Rcpp,evalCpp)
 useDynLib(penseinit)

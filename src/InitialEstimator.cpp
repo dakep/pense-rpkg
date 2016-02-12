@@ -150,8 +150,7 @@ int InitialEstimator::compute()
     while(1) {
         tmpObjective = this->coefObjFunScore + 1;
 
-
-        /* 1. Estimate coefficients for work data */
+        /* 1. Estimate coefficients for residuals-filtered data */
         this->estimateCoefficients();
 
         // Now evaluate this->coefEst on the
@@ -302,6 +301,7 @@ OLS::OLS(const Data& originalData, const Control& ctrl) :
             dataToUse(pscFilteredData)
 {
     this->XtX = new double[originalData.numVar() * originalData.numVar()];
+    this->pscOls.setXsqrtMemory(this->XtX);
 }
 
 

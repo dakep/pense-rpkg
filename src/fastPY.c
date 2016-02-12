@@ -185,25 +185,17 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
     while(1) {
         tmpObjective = objFunScores + 1;
 
-        /* 1. Calculate PSC for current work data */
-        numPSCs = calculatePSCs(pscs, &auxmem, currentXtr, currentY, currentNobs, nvar);
-
-        if (numPSCs < 0) {
-            linalgError = -numPSCs;
-            break;
-        }
-
         memcpy(filteredXtr, currentXtr, currentNobs * nvar * sizeof(double));
         memcpy(filteredY, currentY, currentNobs * sizeof(double));
 
-        /* 2. Estimate coefficients for work data (this could alter workData!) */
+        /* 1. Estimate coefficients for the residuales filtered data (currentXtr) */
         linalgError = estimateCoef(filteredXtr, filteredY, currentNobs, nvar, currentEst, &auxmem);
 
         if (linalgError != 0) {
             break;
         }
 
-        // Now evaluate this->coefEst on the
+        // Now evaluate this new coefEst on the residuals filtered data
         calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar, auxmem.residuals);
         *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
                                ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
@@ -213,6 +205,14 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
             *minObjective = *tmpObjective;
         }
         ++tmpObjective;
+
+        /* 2. Calculate PSC for current work data */
+        numPSCs = calculatePSCs(pscs, &auxmem, currentXtr, currentY, currentNobs, nvar);
+
+        if (numPSCs < 0) {
+            linalgError = -numPSCs;
+            break;
+        }
 
         for(j = 0; j < numPSCs; ++j) {
             currentPSC = pscs + currentNobs * j;

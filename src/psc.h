@@ -14,7 +14,10 @@
 /**
  * Calculate the principal sensitivity components (PSCs)
  *
- * NOTE: The residuals in the auxilliary memory must be the updated residuals
+ * NOTE: The function assumes that Xsqrt slot in auxmem does already
+ *		 contain the Cholesky decomposition of (Xtr . t(Xtr)) in
+ *		 the upper triangle. Also, the residuals in the auxilliary
+ *		 memory must be the updated residuals
  *       as these will be used during the computations!
  *
  * @param pscs	 The (nobs by nvar) memory where the PSCs will be computed

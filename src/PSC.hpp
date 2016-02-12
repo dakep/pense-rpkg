@@ -73,6 +73,10 @@ public:
 
     virtual void setResiduals(const double *RESTRICT residuals);
 
+	/**
+	 * Make sure to set the residuals before calling
+	 * this method!
+	 */
     virtual int computePSC();
 
 	virtual const double* getPSC()
@@ -80,7 +84,14 @@ public:
 		return this->Z;
 	}
 
+	/**
+	 * Use an external memory for Xsqrt that will be
+	 * updated by the caller before calling computePSC
+	 */
+	void setXsqrtMemory(double *RESTRICT Xsqrt);
+
 private:
+	bool XsqrtProvided;
     bool initialized;
 
     double *RESTRICT Z;

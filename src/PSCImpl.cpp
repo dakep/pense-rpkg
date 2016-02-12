@@ -127,14 +127,15 @@ int PSC::doEigenDecomposition(const char* const uplo, double *RESTRICT matrix, c
 }
 
 
-
-PSC_OLS::PSC_OLS() : initialized(FALSE)
+PSC_OLS::PSC_OLS() : PSC(), XsqrtProvided(FALSE), initialized(FALSE)
 {}
 
 PSC_OLS::~PSC_OLS()
 {
     if (this->initialized) {
-        delete[] this->Xsqrt;
+        if (!this->XsqrtProvided) {
+            delete[] this->Xsqrt;
+        }
         delete[] this->XsqrtInvX;
         delete[] this->Z;
         delete[] this->Q;
@@ -142,9 +143,18 @@ PSC_OLS::~PSC_OLS()
     }
 }
 
+void PSC_OLS::setXsqrtMemory(double *RESTRICT Xsqrt)
+{
+    if (!this->XsqrtProvided && this->initialized) {
+        delete[] this->Xsqrt;
+    }
+    this->Xsqrt = Xsqrt;
+    this->XsqrtProvided = TRUE;
+}
+
 
 void PSC_OLS::setData(const Data &data) {
-    if (data.numVar() > this->data.numVar()) {
+    if (!this->XsqrtProvided && (data.numVar() > this->data.numVar())) {
         if (this->initialized) {
             delete[] this->Xsqrt;
         }
@@ -179,8 +189,7 @@ void PSC_OLS::setResiduals(const double *RESTRICT residuals)
 }
 
 int PSC_OLS::computePSC() {
-    int lapackInfo = 0;
-    int i, j;
+    int i, j, lapackInfo;
     int nvar = this->data.numVar();
     int nobs = this->data.numObs();
     int nevalues = 0;
@@ -199,17 +208,20 @@ int PSC_OLS::computePSC() {
 
     memcpy(XsqrtInvX, this->data.getXtr(), nobs * nvar * sizeof(double));
 
-    /* Xsqrt = X %*% t(X) */
-    BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
-        BLAS_1F, this->data.getXtrConst(), nvar, this->data.getXtr(), nvar,
-        BLAS_0F, this->Xsqrt, nvar);
+    /* Xsqrt = sqrt(Xtr . t(Xtr)) = sqrt(t(X) . X) */
+    if (!this->XsqrtProvided) {
+        BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
+                   BLAS_1F, this->data.getXtrConst(), nvar, this->data.getXtr(), nvar,
+                   BLAS_0F, this->Xsqrt, nvar);
 
-    /* Xsqrt = chol(Xsqrt) */
-    LAPACK_DPOTRF(BLAS_UPLO_UPPER, nvar, Xsqrt, nvar, lapackInfo);
+        /* Xsqrt = chol(Xsqrt) */
+        LAPACK_DPOTRF(BLAS_UPLO_UPPER, nvar, Xsqrt, nvar, lapackInfo);
 
-    if (lapackInfo != 0) {
-        throw LapackException("Could not compute Cholesky decomposition.", lapackInfo);
+        if (lapackInfo != 0) {
+            throw LapackException("Could not compute Cholesky decomposition.", lapackInfo);
+        }
     }
+    /* We already have this one! */
 
     /* t(XsqrtInvX) = t(inv(Xsqrt)) %*% t(X) */
     BLAS_DTRSM(BLAS_SIDE_LEFT, BLAS_UPLO_UPPER, BLAS_TRANS_TRANS, BLAS_DIAG_NO,

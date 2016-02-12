@@ -82,7 +82,6 @@ int calculatePSCs(double *restrict pscs, AuxMemory* auxmem,
                          const double *restrict Xtr, const double *restrict y,
                          const int nobs, const int nvar)
 {
-    int lapackInfo = 0;
     int i, j;
     int nevalues = 0;
     /*
@@ -104,18 +103,6 @@ int calculatePSCs(double *restrict pscs, AuxMemory* auxmem,
     resizeAuxMemory(auxmem, nvar, nobs);
 
     memcpy(auxmem->XsqrtInvX, Xtr, nobs * nvar * sizeof(double));
-
-    /* Xsqrt = X %*% t(X) */
-    BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
-        BLAS_1F, Xtr, nvar, Xtr, nvar,
-        BLAS_0F, auxmem->Xsqrt, nvar);
-
-    /* Xsqrt = chol(Xsqrt) */
-    LAPACK_DPOTRF(BLAS_UPLO_UPPER, nvar, auxmem->Xsqrt, nvar, lapackInfo);
-
-    if (lapackInfo != 0) {
-        return -abs(lapackInfo);
-    }
 
     /* t(XsqrtInvX) = t(inv(Xsqrt)) %*% t(X) */
     BLAS_DTRSM(BLAS_SIDE_LEFT, BLAS_UPLO_UPPER, BLAS_TRANS_TRANS, BLAS_DIAG_NO,

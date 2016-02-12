@@ -1,6 +1,6 @@
 #' PY (Peña-Yohai) initial estimates for S-estimates of regression
 #'
-#' Computes the PY initial estimates for S-estimates of regression
+#' Computes the PY initial estimates for S-estimates of regression.
 #'
 #' @param X The data matrix X
 #' @param y The response vector
@@ -17,6 +17,10 @@
 #'
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
+#'
+#' @references Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
+#' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
+#' 434–445. \url{http://doi.org/10.2307/2670164}
 #'
 #' @useDynLib penseinit
 #' @export

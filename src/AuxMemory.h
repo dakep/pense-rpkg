@@ -18,7 +18,7 @@ typedef struct _AuxMemoryTag {
     int *restrict intWorkMem;
 
     double *restrict XsqrtInvX;
-    double *restrict H;
+    double *restrict Q;
     double *restrict residuals;
 
     int dblWorkMemSize;

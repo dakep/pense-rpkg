@@ -10,9 +10,6 @@
 
 #include "AuxMemory.h"
 
-
-
-
 void initAuxMemory(AuxMemory* auxmem)
 {
     auxmem->dblWorkMemSize = 0;
@@ -31,7 +28,7 @@ void freeAuxMemory(AuxMemory* auxmem)
 
     if (auxmem->nobs > 0) {
         free(auxmem->XsqrtInvX);
-        free(auxmem->H);
+        free(auxmem->Q);
         free(auxmem->residuals);
     }
 
@@ -46,6 +43,16 @@ void freeAuxMemory(AuxMemory* auxmem)
 
 void resizeAuxMemory(AuxMemory* auxmem, const int nvar, const int nobs)
 {
+    if (nobs * nvar > auxmem->nobs * auxmem->nvar) {
+        if (auxmem->nobs > 0 && auxmem->nvar > 0) {
+            free(auxmem->XsqrtInvX);
+            free(auxmem->Q);
+        }
+
+        auxmem->XsqrtInvX = (double*) malloc(nobs * nvar * sizeof(double));
+        auxmem->Q = (double*) malloc(nobs * nvar * sizeof(double));
+    }
+
     if (nvar > auxmem->nvar) {
         if (auxmem->nvar > 0) {
             free(auxmem->Xsqrt);
@@ -64,15 +71,11 @@ void resizeAuxMemory(AuxMemory* auxmem, const int nvar, const int nobs)
 
     if (nobs > auxmem->nobs) {
         if (auxmem->nobs > 0) {
-            free(auxmem->XsqrtInvX);
-            free(auxmem->H);
             free(auxmem->residuals);
         }
 
         auxmem->nobs = nobs;
 
-        auxmem->XsqrtInvX = (double*) malloc(nobs * nvar * sizeof(double));
-        auxmem->H = (double*) malloc(nobs * nobs * sizeof(double));
         auxmem->residuals = (double*) malloc(nobs * sizeof(double));
     }
 

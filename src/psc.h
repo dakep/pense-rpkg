@@ -14,6 +14,9 @@
 /**
  * Calculate the principal sensitivity components (PSCs)
  *
+ * NOTE: The residuals in the auxilliary memory must be the updated residuals
+ *       as these will be used during the computations!
+ *
  * @param pscs	 The (nobs by nvar) memory where the PSCs will be computed
  * @param Xtr	 The (nvar by nobs) transposed X matrix
  * @param y		 The (nobs) y vector

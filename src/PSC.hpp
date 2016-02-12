@@ -19,8 +19,20 @@ public:
     virtual ~PSC();
 
 	virtual void setData(const Data &data);
+
+    /**
+     * Set the residuals for the next computation of the PSCs
+     */
     virtual void setResiduals(const double *RESTRICT residuals) = 0;
+
+    /**
+     * Compute the PSC given the previously set residuals
+     */
 	virtual int computePSC() = 0;
+
+    /**
+     * Get the most recently computed PSCs
+     */
 	virtual const double* getPSC() = 0;
 
 protected:
@@ -69,7 +81,6 @@ public:
 	}
 
 private:
-	bool gotResiduals;
     bool initialized;
 
     double *RESTRICT Z;
@@ -77,7 +88,7 @@ private:
     /* We can keep a few memory regions as their sizes will not change */
     double *RESTRICT Xsqrt;
     double *RESTRICT XsqrtInvX;
-    double *RESTRICT H;
+    double *RESTRICT Q;
     double *RESTRICT residuals;
 };
 
@@ -98,7 +109,6 @@ public:
 	}
 
 private:
-	bool gotResiduals;
     bool initialized;
 
     double *RESTRICT Z;

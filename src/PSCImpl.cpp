@@ -128,7 +128,7 @@ int PSC::doEigenDecomposition(const char* const uplo, double *RESTRICT matrix, c
 
 
 
-PSC_OLS::PSC_OLS() : gotResiduals(FALSE), initialized(FALSE)
+PSC_OLS::PSC_OLS() : initialized(FALSE)
 {}
 
 PSC_OLS::~PSC_OLS()
@@ -137,7 +137,7 @@ PSC_OLS::~PSC_OLS()
         delete[] this->Xsqrt;
         delete[] this->XsqrtInvX;
         delete[] this->Z;
-        delete[] this->H;
+        delete[] this->Q;
         delete[] this->residuals;
     }
 }
@@ -153,10 +153,10 @@ void PSC_OLS::setData(const Data &data) {
 
     if (data.numObs() > this->data.numObs()) {
         if (this->initialized) {
-            delete[] this->H;
+            delete[] this->Q;
             delete[] this->residuals;
         }
-        this->H = new double[data.numObs() * data.numObs()];
+        this->Q = new double[data.numVar() * data.numVar()];
         this->residuals = new double[data.numObs()];
     }
 
@@ -176,12 +176,11 @@ void PSC_OLS::setData(const Data &data) {
 void PSC_OLS::setResiduals(const double *RESTRICT residuals)
 {
     memcpy(this->residuals, residuals, this->data.numObs() * sizeof(double));
-    this->gotResiduals = true;
 }
 
 int PSC_OLS::computePSC() {
     int lapackInfo = 0;
-    int i;
+    int i, j;
     int nvar = this->data.numVar();
     int nobs = this->data.numObs();
     int nevalues = 0;
@@ -192,15 +191,17 @@ int PSC_OLS::computePSC() {
      */
     double *RESTRICT XtXinvX = this->Z;
     double *RESTRICT G = this->Z;
-    double *RESTRICT Q = this->H;
-    double *iterG, *iterH;
+    double *RESTRICT iterG;
+    const double *RESTRICT iterX;
+    const double *RESTRICT iterXtXinvX;
+    const double *RESTRICT iterXsqrtInvX;
     double Wii;
 
     memcpy(XsqrtInvX, this->data.getXtr(), nobs * nvar * sizeof(double));
 
     /* Xsqrt = X %*% t(X) */
     BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
-        BLAS_1F, this->data.getXtr(), nvar, this->data.getXtr(), nvar,
+        BLAS_1F, this->data.getXtrConst(), nvar, this->data.getXtr(), nvar,
         BLAS_0F, this->Xsqrt, nvar);
 
     /* Xsqrt = chol(Xsqrt) */
@@ -220,30 +221,31 @@ int PSC_OLS::computePSC() {
     BLAS_DTRSM(BLAS_SIDE_LEFT, BLAS_UPLO_UPPER, BLAS_TRANS_NO, BLAS_DIAG_NO,
                nvar, nobs, BLAS_1F, this->Xsqrt, nvar, XtXinvX, nvar);
 
-    /* H = t(X) %*% XtXinvX */
-    BLAS_DGEMM(BLAS_TRANS_TRANS, BLAS_TRANS_NO, nobs, nobs, nvar,
-               BLAS_1F, this->data.getXtr(), nvar, XtXinvX, nvar,
-               BLAS_0F, this->H, nobs);
-
-    /* Did we already get the residuals? */
-    if (!this->gotResiduals) {
-        memcpy(residuals, this->data.getY(), nobs * sizeof(double));
-        /* residuals = -H %*% y + y --> H is symmetric! */
-        BLAS_DSYMV(BLAS_UPLO_UPPER, nobs,
-                   BLAS_M1F, this->H, nobs, this->data.getY(), BLAS_1L,
-                   BLAS_1F, this->residuals, BLAS_1L);
-
-    }
-
-    memcpy(G, XsqrtInvX, nobs * nvar * sizeof(double));
 
     /* t(G) = t(XsqrtInvX) %*% diag(W[i, i]) */
-    for (i = 0, iterH = H, iterG = G; i < nobs; ++i, iterH += nobs + 1, iterG += nvar) {
+    /* NOTE: G and XtXinvX actually point to the same memory! */
+    iterG = G;
+    iterX = this->data.getXtrConst();
+    iterXtXinvX = XtXinvX;
+    iterXsqrtInvX = this->XsqrtInvX;
+
+    for (i = 0; i < nobs; ++i) {
+        /*
+         * Set Wii to i-th diagonal element of H,
+         * i.e., inner product of x_i and i-th column of XtXinvX
+         */
+        Wii = 0;
+        for (j = 0; j < nvar; ++j, ++iterX, ++iterXtXinvX) {
+            Wii += (*iterX) * (*iterXtXinvX);
+        }
+
         /* W[i, i] = */
-        Wii = residuals[i] / (1 - *iterH);
+        Wii = this->residuals[i] / (1 - Wii);
 
         /* G[ , i] = W[i, i] * XsqrtInvX[, i] */
-        BLAS_DSCAL(nvar, Wii, iterG, BLAS_1L); // Do loop by hand!
+        for (j = 0; j < nvar; ++j, ++iterG, ++iterXsqrtInvX) {
+            (*iterG) = Wii * (*iterXsqrtInvX);
+        }
     }
 
     /* Q = t(G) %*% G */
@@ -259,15 +261,12 @@ int PSC_OLS::computePSC() {
                    BLAS_0F, this->Z, nobs);
     }
 
-    /* Invalidate the current residuals */
-    this->gotResiduals = false;
-
     return nevalues;
 }
 
 
 
-PSC_EN::PSC_EN() : gotResiduals(FALSE), initialized(FALSE)
+PSC_EN::PSC_EN() : initialized(FALSE)
 {}
 
 PSC_EN::~PSC_EN()
@@ -312,7 +311,6 @@ void PSC_EN::setData(const Data &data) {
 void PSC_EN::setResiduals(const double *RESTRICT residuals)
 {
     memcpy(this->residuals, residuals, this->data.numObs() * sizeof(double));
-    this->gotResiduals = true;
 }
 
 int PSC_EN::computePSC() {
@@ -328,9 +326,6 @@ int PSC_EN::computePSC() {
                    BLAS_1F, this->residMat, nvar, this->getEigenvectors(), nvar,
                    BLAS_0F, this->Z, nobs);
     }
-
-    /* Invalidate the current residuals */
-    this->gotResiduals = false;
 
     return nevalues;
 }

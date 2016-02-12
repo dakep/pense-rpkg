@@ -15,6 +15,7 @@
 #'          \code{C.res} will be removed.
 #'          If \code{"proportion"}, observations with the largest \code{prop} residuals
 #'          will be removed.
+#' @param C.res,prop How many or which observations should be removed based on their residuals.
 #' @param py.nit The maximum number of iterations to perform.
 #' @param en.tol The relative tolerance for convergence.
 #' @param en.centering Should rows with a leading 1 be centered in the elastic net algorithm.
@@ -52,8 +53,19 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
 
     ctrl$lambda1 <- ctrl$lambda1 * cc.scale^2
 
+    ##
+    ## The C++ code needs to now how many observations to *keep*
+    ##
+    ctrl$pscProportion <- 1 - ctrl$pscProportion
+
     usableProp <- ctrl$pscProportion
     if (ctrl$residCleanMethod == "proportion") {
+        ##
+        ## The C++ code needs to now how many observations to *keep*
+        ##
+        ctrl$residProportion <- 1 - ctrl$residProportion
+
+
         usableProp <- ctrl$residProportion * ctrl$pscProportion
     }
 

@@ -27,6 +27,8 @@ If \code{"threshold"}, all observations with scaled residuals larger than
 If \code{"proportion"}, observations with the largest \code{prop} residuals
 will be removed.}
 
+\item{C.res,prop}{How many or which observations should be removed based on their residuals.}
+
 \item{py.nit}{The maximum number of iterations to perform.}
 
 \item{en.tol}{The relative tolerance for convergence.}

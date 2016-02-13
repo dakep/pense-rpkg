@@ -18,16 +18,6 @@ using namespace Rcpp;
 
 static inline Control parseControlList(SEXP control);
 
-/**
- * Calculate the residuals and store them in the auxilliary memory
- * This function is actually only needed when PSC is called directly from within R.
- *
- * @return A return value not equal 0 indicates an error.
- */
-static int calculateResiduals(const double *RESTRICT Xtr, const double *RESTRICT y,
-                               const int nobs, const int nvar,
-                               double *RESTRICT residuals, double *RESTRICT Xsqrt);
-
 
 RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {
@@ -44,12 +34,12 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
 
     niest = enpy.compute();
 
-    memcpy(REAL(coefs), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
-    memcpy(REAL(objF), enpy.getObjectiveFunctionScores(), niest * sizeof(double));
-
     result = PROTECT(Rf_allocVector(VECSXP, 2));
     coefs = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
     objF = PROTECT(Rf_allocVector(REALSXP, niest));
+
+    memcpy(REAL(coefs), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
+    memcpy(REAL(objF), enpy.getObjectiveFunctionScores(), niest * sizeof(double));
 
     SET_VECTOR_ELT(result, 0, coefs);
     SET_VECTOR_ELT(result, 1, objF);
@@ -134,16 +124,22 @@ RcppExport SEXP C_pscs2(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
 
     BEGIN_RCPP
 
-    computeOLSCoefs(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(), coefs, Xsqrt);
+    npscs = computeOLSCoefs(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
+                            coefs, Xsqrt);
 
-    psc.setData(data);
-    psc.setXsqrtMemory(Xsqrt);
-    psc.setResiduals(residuals);
-    npscs = psc.computePSC();
+    if (npscs == 0) {
+        computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(), coefs,
+                         residuals);
 
-    ret = PROTECT(Rf_allocVector(REALSXP, data.numObs() * npscs));
-    memcpy(REAL(ret), psc.getPSC(), data.numObs() * npscs * sizeof(double));
-    UNPROTECT(1);
+        psc.setData(data);
+        psc.setXsqrtMemory(Xsqrt);
+        psc.setResiduals(residuals);
+        npscs = psc.computePSC();
+
+        ret = PROTECT(Rf_allocVector(REALSXP, data.numObs() * npscs));
+        memcpy(REAL(ret), psc.getPSC(), data.numObs() * npscs * sizeof(double));
+        UNPROTECT(1);
+    }
 
     VOID_END_RCPP
 

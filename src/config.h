@@ -35,6 +35,7 @@
 #endif
 
 #ifndef __cplusplus
+#   undef RESTRICT
 #   define RESTRICT restrict
 #elif !defined(RESTRICT)
 #   define RESTRICT

@@ -40,17 +40,27 @@ prinsens <- function(X, y, intercept = TRUE) {
         X <- cbind(1, X)
     }
 
-    numPSCs <- 0L
-    pscres <- .Call("C_pscs", t(X), y, dX[1L], ncol(X), numPSCs,
-                    PACKAGE = "penseinit")
+#     numPSCs <- 0L
+#     pscres <- .Call("C_pscs", t(X), y, dX[1L], ncol(X), numPSCs,
+#                     PACKAGE = "penseinit")
+#
+#     if (is.null(pscres)) {
+#         stop("Could not compute principal sensitivity components. Matrix `x` is singular.")
+#     } else if (numPSCs == 0L) {
+#         stop("Could not compute principal sensitivity components. All eigenvalues are too small.")
+#     }
+#
+#     pscres <- matrix(pscres[seq_len(dX[1L] * numPSCs)], nrow = dX[1L])
+
+    pscres <- .Call("C_pscs2", t(X), y, dX[1L], ncol(X), PACKAGE = "penseinit")
 
     if (is.null(pscres)) {
         stop("Could not compute principal sensitivity components. Matrix `x` is singular.")
-    } else if (numPSCs == 0L) {
+    } else if (length(pscres) == 0L) {
         stop("Could not compute principal sensitivity components. All eigenvalues are too small.")
     }
 
-    pscres <- matrix(pscres[seq_len(dX[1L] * numPSCs)], nrow = dX[1L])
+    pscres <- matrix(pscres, nrow = dX[1L])
 
     return(pscres)
 }

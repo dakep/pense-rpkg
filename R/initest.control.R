@@ -56,7 +56,12 @@ initest.control <- function(lambda1,
 
     if (ret$residCleanMethod == "proportion") {
         simpleCheck(residProportion)
+
         ret$residThreshold <- -1
+
+        if (residProportion > 1) {
+            stop("`residProportion` must be less than 1")
+        }
     } else {
         simpleCheck(residThreshold)
         ret$residProportion <- -1
@@ -77,6 +82,10 @@ initest.control <- function(lambda1,
 
     if (length(enCentering) != 1L || !is.logical(enCentering) || is.na(enCentering)) {
         stop("`enCentering` must be single logical value")
+    }
+
+    if (ret$pscProportion > 1) {
+        stop("`pscProportion` must be less than 1")
     }
 
     ret$numIt <- as.integer(ret$numIt)

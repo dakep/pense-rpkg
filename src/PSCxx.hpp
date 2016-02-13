@@ -1,13 +1,13 @@
 //
-//  PSC.hpp
+//  PSCxx.hpp
 //  penseinit
 //
 //  Created by David Kepplinger on 2016-01-24.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
-#ifndef PenaYohai_hpp
-#define PenaYohai_hpp
+#ifndef PSCxx_hpp
+#define PSCxx_hpp
 
 #include "config.h"
 #include "Data.hpp"
@@ -127,4 +127,4 @@ private:
     double *RESTRICT residuals;
 };
 
-#endif /* PenaYohai_hpp */
+#endif /* PSCxx_hpp */

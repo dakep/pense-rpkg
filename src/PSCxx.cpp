@@ -12,7 +12,7 @@
 #include <Rcpp.h>
 
 #include "config.h"
-#include "PSC.hpp"
+#include "PSCxx.hpp"
 #include "BLAS.h"
 #include "LapackException.hpp"
 

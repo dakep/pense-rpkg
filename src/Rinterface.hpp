@@ -57,6 +57,16 @@
 RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP alpha, SEXP lambda,
                         SEXP maxIt, SEXP eps, SEXP centering);
 
+/**
+ * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y       numeric The numeric y vector (size `nobs`)
+ * @param nobs    integer The number of observations
+ * @param nvar    integer The number of variables (including the intercept)
+ *
+ * @return Returns a numeric matrix of size `nobs` x `npscs`, where `npscs` is at
+ *		   most `nvar`.
+ */
+RcppExport SEXP C_pscs2(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar);
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)

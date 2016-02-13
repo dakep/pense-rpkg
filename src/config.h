@@ -27,15 +27,17 @@
 #include "autoconfig.h"
 
 #ifdef HAVE_INTTYPES_H
-#include <inttypes.h>
+#   include <inttypes.h>
 #endif
 
 #ifdef HAVE_STDINT_H
-#include <stdint.h>
+#   include <stdint.h>
 #endif
 
-#ifndef RESTRICT
-#define RESTRICT
+#ifndef __cplusplus
+#   define RESTRICT restrict
+#elif !defined(RESTRICT)
+#   define RESTRICT
 #endif
 
 #endif

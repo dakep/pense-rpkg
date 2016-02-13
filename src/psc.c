@@ -10,6 +10,7 @@
 #include <float.h>
 #include <stdlib.h>
 #include "BLAS.h"
+#include "olsreg.h"
 
 #include "psc.h"
 
@@ -34,15 +35,6 @@ static int doEigenDecomposition(const char *const uplo, double *restrict matrix,
                                 AuxMemory *const auxmem);
 
 /**
- * Calculate the residuals and store them in the auxilliary memory
- * This function is actually only needed when PSC is called directly from within R.
- *
- * @return A return value not equal 0 indicates an error.
- */
-static int calculateResiduals(const double *restrict Xtr, const double *restrict y,
-                               const int nobs, const int nvar, AuxMemory* auxmem);
-
-/**
  * Calculate the principal sensitivity components (PSCs)
  *
  * @param RXtr     numeric The (nvar by nobs) transposed X matrix
@@ -55,19 +47,24 @@ static int calculateResiduals(const double *restrict Xtr, const double *restrict
  */
 SEXP C_pscs(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP RnumPSCs)
 {
+    SEXP ret;
     const int nobs = *INTEGER(Rnobs);
     const int nvar = *INTEGER(Rnvar);
     int * numPSCs = INTEGER(RnumPSCs);
     double *restrict Xtr = REAL(RXtr);
     double *restrict y = REAL(Ry);
+    double *restrict coefs = (double *) malloc(nvar * sizeof(double));
     AuxMemory auxmem;
+
     initAuxMemory(&auxmem);
     resizeAuxMemory(&auxmem, nvar, nobs);
 
-    *numPSCs = calculateResiduals(Xtr, y, nobs, nvar, &auxmem);
+    *numPSCs = computeOLSCoefs(Xtr, y, nobs, nvar, coefs, auxmem.Xsqrt);
 
     if (*numPSCs == 0) {
-        SEXP ret = PROTECT(Rf_allocVector(REALSXP, nobs * nvar));
+        computeResiduals(Xtr, y, nobs, nvar, coefs, auxmem.residuals);
+
+        ret = PROTECT(Rf_allocVector(REALSXP, nobs * nvar));
 
         *numPSCs = calculatePSCs(REAL(ret), &auxmem, Xtr, y, nobs, nvar);
 
@@ -192,54 +189,3 @@ static int doEigenDecomposition(const char *const uplo, double *restrict matrix,
 
     return nevalues;
 }
-
-
-
-
-static int calculateResiduals(const double *restrict Xtr, const double *restrict y,
-                               const int nobs, const int nvar, AuxMemory* auxmem)
-{
-    double *restrict coefEst;
-    int lapackInfo;
-    /* We won't handle rank-deficient cases here!! */
-
-    /* Xsqrt = t(X) %*% X */
-    BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
-        BLAS_1F, Xtr, nvar, Xtr, nvar,
-        BLAS_0F, auxmem->Xsqrt, nvar);
-
-    /* Xsqrt = chol(Xsqrt) */
-    LAPACK_DPOTRF(BLAS_UPLO_UPPER, nvar, auxmem->Xsqrt, nvar, lapackInfo);
-
-    if (lapackInfo != 0) {
-        return lapackInfo;
-    }
-
-    coefEst = (double*) malloc(nvar * sizeof(double));
-
-    /* coefEst = t(X) %*% y */
-    BLAS_DGEMV(BLAS_TRANS_NO, nvar, nobs, BLAS_1F, Xtr, nvar, y, BLAS_1L, BLAS_0F, coefEst,
-               BLAS_1L);
-
-    /* coefEst = inv(t(chol(Xsqrt))) %*% coefEst */
-    BLAS_DTRSV(BLAS_UPLO_UPPER, BLAS_TRANS_TRANS, BLAS_DIAG_NO, nvar, auxmem->Xsqrt, nvar, coefEst,
-               BLAS_1L);
-
-    /* coefEst = inv(chol(Xsqrt)) %*% coefEst */
-    BLAS_DTRSV(BLAS_UPLO_UPPER, BLAS_TRANS_NO, BLAS_DIAG_NO, nvar, auxmem->Xsqrt, nvar, coefEst,
-               BLAS_1L);
-
-    memcpy(auxmem->residuals, y, nobs * sizeof(double));
-
-    BLAS_DGEMV(BLAS_TRANS_TRANS, nvar, nobs,
-               BLAS_M1F, Xtr, nvar,
-               coefEst, BLAS_1L,
-               BLAS_1F, auxmem->residuals, BLAS_1L);
-
-    free(coefEst);
-
-    return 0;
-}
-
-
-

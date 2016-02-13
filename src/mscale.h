@@ -9,6 +9,7 @@
 #ifndef mscale_h
 #define mscale_h
 
+#include "config.h"
 #include "Control.h"
 
 #ifdef __cplusplus
@@ -25,8 +26,8 @@ RhoFunction getRhoFunctionByName(RhoFunctionName name);
 /**
  * Calculate the robust M-scale for the given values `x` of length `n`
  */
-double mscale(const double * x, const int n, const double b, const double eps, const int maxIt,
-			   RhoFunction rho, const double cc);
+double mscale(const double *RESTRICT x, const int n, const double b, const double eps,
+              const int maxIt, RhoFunction rho, const double cc);
 
 #ifdef __cplusplus
 }

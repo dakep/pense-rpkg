@@ -16,8 +16,7 @@
 
 #include "Control.h"
 #include "Data.hpp"
-#include "PSC.hpp"
-#include "IndexNumber.hpp"
+#include "PSCxx.hpp"
 #include "PartialSort.h"
 #include "mscale.h"
 #include "ElasticNet.hpp"
@@ -123,31 +122,6 @@ private:
 
     double *RESTRICT XtX;
 };
-
-
-
-//class RRPY : public InitialEstimator
-//{
-//public:
-//    RRPY(const Data& originalData, const Control& ctrl);
-//
-//    virtual ~RRPY();
-//
-//protected:
-//    virtual void setData(const Data &data);
-//    virtual void filterDataResiduals(double threshold);
-//    virtual void filterDataPSC(std::vector<IndexNumber> &ordering);
-//    virtual void estimateCoefficients();
-//	virtual double evaluateEstimate();
-//
-//private:
-//    void extendData(Data &dest, const Data &source);
-//
-//    PSC_OLS pscOls;
-//    Data unextendedDataBackup;
-//    Data unextendedData;
-//};
-
 
 class ENPY : public InitialEstimator
 {

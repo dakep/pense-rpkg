@@ -10,11 +10,24 @@
 
 #include "Control.h"
 #include "Data.hpp"
+#include "PSCxx.hpp"
 #include "InitialEstimator.hpp"
+#include "olsreg.h"
 
 using namespace Rcpp;
 
 static inline Control parseControlList(SEXP control);
+
+/**
+ * Calculate the residuals and store them in the auxilliary memory
+ * This function is actually only needed when PSC is called directly from within R.
+ *
+ * @return A return value not equal 0 indicates an error.
+ */
+static int calculateResiduals(const double *RESTRICT Xtr, const double *RESTRICT y,
+                               const int nobs, const int nvar,
+                               double *RESTRICT residuals, double *RESTRICT Xsqrt);
+
 
 RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {
@@ -22,32 +35,30 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
     ENPY enpy(data, ctrl);
-    SEXP coefs, objF;
+    SEXP coefs;
+    SEXP objF;
     int niest;
-    SEXP result;
+    SEXP result = R_NilValue;
 
     BEGIN_RCPP
 
-    try {
-        niest = enpy.compute();
-    } catch (std::exception &e) {
-        throw;
-    }
+    niest = enpy.compute();
+
+    memcpy(REAL(coefs), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
+    memcpy(REAL(objF), enpy.getObjectiveFunctionScores(), niest * sizeof(double));
 
     result = PROTECT(Rf_allocVector(VECSXP, 2));
     coefs = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
     objF = PROTECT(Rf_allocVector(REALSXP, niest));
 
-    memcpy(REAL(coefs), enpy.getInitialEstimators(), data.numVar() * niest * sizeof(double));
-    memcpy(REAL(objF), enpy.getObjectiveFunctionScores(), niest * sizeof(double));
-
     SET_VECTOR_ELT(result, 0, coefs);
     SET_VECTOR_ELT(result, 1, objF);
 
     UNPROTECT(3);
-    return result;
 
-    END_RCPP
+    VOID_END_RCPP
+
+    return result;
 }
 
 RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
@@ -55,30 +66,29 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha,
 {
     Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
     ElasticNet en(*INTEGER(RmaxIt), *REAL(Reps));
-    SEXP result;
-    SEXP retCoef, retResid;
-    SEXP converged;
+    SEXP result = R_NilValue;
+    SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
+    SEXP retResid = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    SEXP converged = PROTECT(Rf_allocVector(LGLSXP, 1));
 
     BEGIN_RCPP
-
-    result = PROTECT(Rf_allocVector(VECSXP, 3));
-
-    converged = PROTECT(Rf_allocVector(LGLSXP, 1));
-    retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    retResid = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
 
     en.setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
     *LOGICAL(converged) = en.computeCoefs(data, REAL(retCoef), REAL(retResid),
                                           (bool) *INTEGER(Rcentering));
 
+    result = PROTECT(Rf_allocVector(VECSXP, 3));
+
     SET_VECTOR_ELT(result, 0, converged);
     SET_VECTOR_ELT(result, 1, retCoef);
     SET_VECTOR_ELT(result, 2, retResid);
 
-    UNPROTECT(4);
-    return result;
+    UNPROTECT(1);
 
-    END_RCPP
+    VOID_END_RCPP
+
+    UNPROTECT(3);
+    return result;
 }
 
 RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
@@ -89,15 +99,11 @@ RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     ENPY enpy(data, ctrl);
     SEXP coefs, objF;
     int niest;
-    SEXP result;
+    SEXP result = R_NilValue;
 
     BEGIN_RCPP
 
-    try {
-        niest = enpy.compute();
-    } catch (std::exception &e) {
-        throw;
-    }
+    niest = enpy.compute();
 
     result = PROTECT(Rf_allocVector(VECSXP, 2));
     coefs = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
@@ -110,11 +116,42 @@ RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     SET_VECTOR_ELT(result, 1, objF);
 
     UNPROTECT(3);
-    return result;
 
-    END_RCPP
+    VOID_END_RCPP
+
+    return result;
 }
 
+RcppExport SEXP C_pscs2(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
+{
+    Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    SEXP ret = R_NilValue;
+    PSC_OLS psc;
+    double *RESTRICT coefs = new double[data.numVar()];
+    double *RESTRICT residuals = new double[data.numObs()];
+    double *RESTRICT Xsqrt = new double[data.numVar() * data.numVar()];
+    int npscs;
+
+    BEGIN_RCPP
+
+    computeOLSCoefs(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(), coefs, Xsqrt);
+
+    psc.setData(data);
+    psc.setXsqrtMemory(Xsqrt);
+    psc.setResiduals(residuals);
+    npscs = psc.computePSC();
+
+    ret = PROTECT(Rf_allocVector(REALSXP, data.numObs() * npscs));
+    memcpy(REAL(ret), psc.getPSC(), data.numObs() * npscs * sizeof(double));
+    UNPROTECT(1);
+
+    VOID_END_RCPP
+
+    delete[] coefs;
+    delete[] residuals;
+    delete[] Xsqrt;
+    return ret;
+}
 
 
 static inline Control parseControlList(SEXP Rcontrol)

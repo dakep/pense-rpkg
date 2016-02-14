@@ -1,6 +1,6 @@
 #' Robust M-estimate of Scale
 #'
-#' Compute the M-estimate of scale with the MAD as initial estimate.
+#' Compute the M-estimate of scale with MAD as initial estimate.
 #'
 #' This solves the M-estimation equation given by
 #' \deqn{\sum_{i=1}^n \rho( x_i / s_n; cc ) = n b}

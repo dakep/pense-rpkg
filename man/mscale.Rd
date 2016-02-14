@@ -24,7 +24,7 @@ mscale(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc = 1.54764,
 Numeric vector of length one
 }
 \description{
-Compute the M-estimate of scale with the MAD as initial estimate.
+Compute the M-estimate of scale with MAD as initial estimate.
 }
 \details{
 This solves the M-estimation equation given by

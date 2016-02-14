@@ -67,6 +67,7 @@ private:
 
 	double *RESTRICT Xtr;
 	double *RESTRICT Xmeans;
+	double *RESTRICT Xvars;
 	int XtrSize;
 	int XmeansSize;
 };

@@ -9,7 +9,6 @@
 #include <cfloat>
 #include <Rmath.h>
 
-#include "BLAS.h"
 #include "ElasticNet.hpp"
 
 static double softThreshold(const double z, const double gamma);
@@ -26,6 +25,7 @@ ElasticNet::~ElasticNet()
 
     if(this->XmeansSize > 0) {
         delete[] this->Xmeans;
+        delete[] this->Xvars;
     }
 }
 
@@ -51,7 +51,7 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
      * from lars
      */
     const double la = (this->lambda * this->alpha);
-    const double updateDenom = 1 / (1 - la + this->lambda);
+    const double updateDenom = this->lambda * (1 - this->alpha);
 
     double yMean;
     double tmp;
@@ -74,10 +74,10 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
     /*
      * First we calculate the mean of y and the X variables
      */
-    yMean = 0;
-    memset(this->Xmeans, 0, (data.numVar() - 1) * sizeof(double));
-
     if (center) {
+        yMean = 0;
+        memset(this->Xmeans, 0, (data.numVar() - 1) * sizeof(double));
+
         weight = data.getXtrConst();
         for (i = 0; i < data.numObs(); ++i, weight += data.numVar()) {
             if (*weight > 0) {
@@ -137,6 +137,23 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
         actualXtr = data.getXtrConst();
     }
 
+
+    /*
+     * Compute length of the vectors of variables (= N * Var(X_j))
+     */
+    memset(this->Xvars, 0, (data.numVar() - 1) * sizeof(double));
+    XtrConstIter = actualXtr;
+    for (i = 0; i < data.numObs(); ++i) {
+        ++XtrConstIter;
+        for (j = 0; j < data.numVar() - 1; ++j, ++XtrConstIter) {
+            this->Xvars[j] += (*XtrConstIter) * (*XtrConstIter);
+        }
+    }
+
+    for (j = 0; j < data.numVar() - 1; ++j, ++XtrConstIter) {
+        this->Xvars[j] /= data.numObs();
+    }
+
     iter = 0;
 
     while(1) {
@@ -155,7 +172,11 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
                 tmp += *XtrConstIter * residuals[i];
             }
 
-            tmp = softThreshold(tmp / data.numObs() + coefs[j], la) * updateDenom;
+
+            tmp = softThreshold(tmp / data.numObs() + coefs[j] * this->Xvars[j - 1], la) /
+                        (this->Xvars[j - 1] + updateDenom);
+
+
             coefChange = coefs[j] - tmp;
             coefs[j] = tmp;
 
@@ -175,7 +196,7 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
         /*
          * Check for max. iterations
          */
-        if ((++iter > this->maxIt) || (totalChange < this->eps * norm)) {
+        if ((++iter > this->maxIt) || (totalChange <= this->eps * norm)) {
             break;
         }
 
@@ -206,9 +227,11 @@ void ElasticNet::resizeBuffer(const Data& data, const bool center)
     if (data.numVar() > this->XmeansSize) {
         if(this->XmeansSize > 0) {
             delete[] this->Xmeans;
+            delete[] this->Xvars;
         }
         this->XmeansSize = data.numVar();
         this->Xmeans = new double[this->XmeansSize - 1];
+        this->Xvars = new double[this->XmeansSize - 1];
     }
 }
 

@@ -67,9 +67,18 @@ enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
     ## Add leading column of 1's
     X <- cbind(1, X)
 
-    switch(psc.method,
-           rr = enpy.rr(X, y, lambda1, lambda2, deltasc, cc.scale, prosac, clean.method, C.res,
-                        prop, py.nit, en.tol, en.centering),
-           Qp = stop("Method `Qp` is not yet implemented"),
-           Mn = stop("Method `Mn` is not yet implemented"))
+    result <- switch(psc.method,
+                     rr = enpy.rr(X, y, lambda1, lambda2, deltasc, cc.scale, prosac, clean.method,
+                                  C.res, prop, py.nit, en.tol, en.centering),
+                     Qp = stop("Method `Qp` is not yet implemented"),
+                     Mn = stop("Method `Mn` is not yet implemented"))
+
+    resorder <- sort.list(result$objF, na.last = NA, method = "quick")
+
+    dups <- which(diff(result$objF[resorder]) < en.tol)
+    if (length(dups) > 0) {
+        remove <- resorder[dups]
+        result$objF <- result$objF[-remove]
+        result$coeff <- result$coeff[ , -remove]
+    }
 }

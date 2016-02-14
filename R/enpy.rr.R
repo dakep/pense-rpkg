@@ -21,7 +21,7 @@
 #' @param en.centering Should rows with a leading 1 be centered in the elastic net algorithm.
 #'      Default's to \code{TRUE}.
 #'
-#' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
+#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
 #' @useDynLib penseinit
@@ -83,7 +83,7 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
     ies <- .Call("C_enpy_rr", t(X), y, dX[1L], dX[2L], ctrl, PACKAGE = "penseinit")
 
     return(list(
-        initCoef = matrix(ies[[1L]], nrow = dX[2L]),
+        coeff = matrix(ies[[1L]], nrow = dX[2L]),
         objF = ies[[2L]]
     ))
 }

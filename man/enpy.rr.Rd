@@ -37,7 +37,7 @@ will be removed.}
      Default's to \code{TRUE}.}
 }
 \value{
-\item{initCoef}{A numeric matrix with one initial coefficient per column}
+\item{coeff}{A numeric matrix with one initial coefficient per column}
         \item{objF}{A vector of values of the objective function for the respective coefficient}
 }
 \description{

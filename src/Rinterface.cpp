@@ -54,7 +54,7 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
 RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
                         SEXP RmaxIt, SEXP Reps, SEXP Rcentering)
 {
-    Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
     ElasticNet en(*INTEGER(RmaxIt), *REAL(Reps));
     SEXP result = R_NilValue;
     SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));

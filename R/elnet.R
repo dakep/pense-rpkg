@@ -21,7 +21,7 @@
 #'
 #' @useDynLib penseinit
 #' @export
-elnet <- function(X, y, alpha, lambda, maxit = 1000, eps = 1e-8, centering = TRUE,
+elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TRUE,
                   addLeading1s = TRUE) {
     y <- drop(y)
 

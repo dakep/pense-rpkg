@@ -1,3 +1,30 @@
+#' Control Parameters for ENPY
+#'
+#' Set control parameters for ENPY.
+#'
+#' @param enMaxIt Maximum number of iterations allowed for the elastic net algorithm.
+#' @param enEPS Convergence threshold for elastic net.
+#' @param enCentering Should the data be centered for the elastic net algorithm. Only those rows
+#'          with leading 1's will be considered for centering.
+#' @param mscaleMaxIt Maximum number of iterations allowed for the m-scale algorithm.
+#' @param mscaleEPS Convergence threshold for the m-scale
+#' @param mscaleRhoFun The rho function to use for the m-scale.
+#'
+#' @return A list with the given arguments.
+#'
+#' @export
+enpy.control <- function(enMaxIt = 50000,
+                         enEPS = 1e-8,
+                         enCentering = TRUE,
+                         mscaleMaxIt = 200,
+                         mscaleEPS = 1e-8,
+                         mscaleRhoFun = c("bisquare", "huber", "gauss")) {
+    ret <- as.list(environment())
+    ret$mscaleRhoFun <- match.arg(mscaleRhoFun)
+    return(ret)
+}
+
+
 #' Creates the internal control list for PY initial estimators
 #'
 #' Computes the PY initial estimates for EN with approximated principal sensitivity components
@@ -30,17 +57,13 @@ initest.control <- function(lambda1,
                             residThreshold,
                             residProportion,
                             pscProportion,
-
-                            enMaxIt = 1000,
-                            enEPS = 1e-6,
-                            enCentering = TRUE,
-
                             mscaleB = 0.5,
                             mscaleCC = 1.54764,
-                            mscaleMaxIt = 200,
-                            mscaleEPS = 1e-8,
-                            mscaleRhoFun = c("bisquare", "huber", "gauss")) {
+
+                            enpy.control) {
     ret <- as.list(environment())
+    ret$enpy.control <- NULL
+    ret <- c(ret, enpy.control)
 
 
     simpleCheck <- function(x, checkLTE = TRUE) {
@@ -50,7 +73,7 @@ initest.control <- function(lambda1,
     }
 
     ret$residCleanMethod <- match.arg(residCleanMethod)
-    ret$mscaleRhoFun <- as.integer(pmatch(mscaleRhoFun, c("bisquare", "huber", "gauss"))) - 1L
+    ret$mscaleRhoFun <- as.integer(pmatch(ret$mscaleRhoFun, c("bisquare", "huber", "gauss"))) - 1L
 
     ret$mscaleRhoFun <- ret$mscaleRhoFun[which(!is.na(ret$mscaleRhoFun))[1L]]
 
@@ -72,15 +95,15 @@ initest.control <- function(lambda1,
     simpleCheck(numIt)
     simpleCheck(eps)
     simpleCheck(pscProportion)
-    simpleCheck(enMaxIt)
-    simpleCheck(enEPS)
+    simpleCheck(ret$enMaxIt)
+    simpleCheck(ret$enEPS)
     simpleCheck(mscaleB)
     simpleCheck(mscaleCC)
-    simpleCheck(mscaleMaxIt)
-    simpleCheck(mscaleEPS)
+    simpleCheck(ret$mscaleMaxIt)
+    simpleCheck(ret$mscaleEPS)
     simpleCheck(ret$mscaleRhoFun, FALSE)
 
-    if (length(enCentering) != 1L || !is.logical(enCentering) || is.na(enCentering)) {
+    if (length(ret$enCentering) != 1L || !is.logical(ret$enCentering) || is.na(ret$enCentering)) {
         stop("`enCentering` must be single logical value")
     }
 

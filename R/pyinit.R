@@ -59,7 +59,8 @@ pyinit <- function(X, y, deltasc, cc.scale, prosac,
 
                             ## We don't need those parameters
                             lambda1 = 0,
-                            lambda2 = 0)
+                            lambda2 = 0,
+                            enpy.control = enpy.control())
 
     ies <- .Call("C_initpy", t(X), y, nrow(X), ncol(X),
                  ctrl$numIt,

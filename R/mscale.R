@@ -30,9 +30,9 @@ mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc = 1.547
 
     ctrl <- initest.control(mscaleB = b,
                             mscaleCC = cc,
-                            mscaleMaxIt = max.it,
-                            mscaleEPS = eps,
-                            mscaleRhoFun = rho,
+                            enpy.control = enpy.control(mscaleMaxIt = max.it,
+                                                        mscaleEPS = eps,
+                                                        mscaleRhoFun = rho),
                             ## Not needed arguments below
                             lambda1 = 0,
                             lambda2 = 0,

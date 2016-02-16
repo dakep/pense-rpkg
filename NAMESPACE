@@ -2,6 +2,7 @@
 
 export(elnet)
 export(enpy)
+export(enpy.control)
 export(mscale)
 export(prinsens)
 export(pyinit)

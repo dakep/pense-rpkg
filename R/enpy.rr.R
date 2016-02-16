@@ -18,8 +18,7 @@
 #' @param C.res,prop How many or which observations should be removed based on their residuals.
 #' @param py.nit The maximum number of iterations to perform.
 #' @param en.tol The relative tolerance for convergence.
-#' @param en.centering Should rows with a leading 1 be centered in the elastic net algorithm.
-#'      Default's to \code{TRUE}.
+#' @param control Further control parameters (see \code{\link{enpy.control}})
 #'
 #' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
@@ -28,7 +27,7 @@
 #' @importFrom Rcpp evalCpp
 enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                     prosac, clean.method = c("threshold", "proportion"),
-                    C.res, prop, py.nit, en.tol, en.centering = TRUE) {
+                    C.res, prop, py.nit, en.tol, control) {
 
     dX <- dim(X)
 
@@ -45,35 +44,33 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                             residThreshold = C.res,
                             residProportion = prop,
                             pscProportion = prosac,
-
-                            enCentering = en.centering,
-
                             mscaleB = deltasc,
-                            mscaleCC = 1)
+                            mscaleCC = 1,
+                            enpy.control = control)
 
     ctrl$lambda1 <- ctrl$lambda1 * cc.scale^2
+    ctrl$lambda2 <- ctrl$lambda2 * cc.scale^2
 
     ##
     ## The C++ code needs to now how many observations to *keep*
     ##
     ctrl$pscProportion <- 1 - ctrl$pscProportion
 
-    usableProp <- ctrl$pscProportion
+    usableProp <- 1
     if (ctrl$residCleanMethod == "proportion") {
         ##
         ## The C++ code needs to now how many observations to *keep*
         ##
         ctrl$residProportion <- 1 - ctrl$residProportion
 
-
-        usableProp <- ctrl$residProportion * ctrl$pscProportion
+        usableProp <- ctrl$residProportion
     }
 
     if (ctrl$lambda2 == 0) {
         if (dX[2L] >= dX[1L]) {
             stop("`enpy.rr` can not be used for data with more variables than observations if ",
                  "`lambda2` is 0.")
-        } else if (dX[2L] >= as.integer(usableProp * dX[1L])) {
+        } else if (dX[2L] >= ceiling(ctrl$pscProportion * ceiling(usableProp * dX[1L]))) {
             stop("With the specified proportion of observations to remove, the number of ",
                  "observations will be smaller than the number of variables.\nIn this case ",
                  "`enpy.rr` can not be used with `lambda2` = 0")

@@ -28,8 +28,7 @@
 #'          will be removed.
 #' @param py.nit The maximum number of iterations to perform.
 #' @param en.tol The relative tolerance for convergence.
-#' @param en.centering Should rows with a leading 1 be centered in the elastic net algorithm.
-#'      Default's to \code{TRUE}.
+#' @param control Optional further control parameters from \code{\link{enpy.control}}.
 #'
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
@@ -37,9 +36,8 @@
 #' @export
 enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                  psc.method=c("rr","Qp","Mn"), prosac,
-                 clean.method = c("threshold", "proportion"), C.res, prop,
-                 py.nit, en.tol,
-                 en.centering = TRUE) {
+                 clean.method = c("threshold", "proportion"), C.res = NULL, prop = NULL,
+                 py.nit, en.tol, control = enpy.control()) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -69,7 +67,7 @@ enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
 
     result <- switch(psc.method,
                      rr = enpy.rr(X, y, lambda1, lambda2, deltasc, cc.scale, prosac, clean.method,
-                                  C.res, prop, py.nit, en.tol, en.centering),
+                                  C.res, prop, py.nit, en.tol, control),
                      Qp = stop("Method `Qp` is not yet implemented"),
                      Mn = stop("Method `Mn` is not yet implemented"))
 
@@ -81,4 +79,6 @@ enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
         result$objF <- result$objF[-remove]
         result$coeff <- result$coeff[ , -remove]
     }
+
+    return(result)
 }

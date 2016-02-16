@@ -4,7 +4,7 @@
 \alias{elnet}
 \title{Elastic Net Regression}
 \usage{
-elnet(X, y, alpha, lambda, maxit = 1000, eps = 1e-06, centering = TRUE,
+elnet(X, y, alpha, lambda, maxit = 10000, eps = 1e-08, centering = TRUE,
   addLeading1s = TRUE)
 }
 \arguments{

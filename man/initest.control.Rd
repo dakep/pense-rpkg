@@ -6,10 +6,8 @@
 \usage{
 initest.control(lambda1, lambda2, numIt, eps = 1e-06,
   residCleanMethod = c("proportion", "threshold"), residThreshold,
-  residProportion, pscProportion, enMaxIt = 1000, enEPS = 1e-06,
-  enCentering = TRUE, mscaleB = 0.5, mscaleCC = 1.54764,
-  mscaleMaxIt = 200, mscaleEPS = 1e-08, mscaleRhoFun = c("bisquare",
-  "huber", "gauss"))
+  residProportion, pscProportion, mscaleB = 0.5, mscaleCC = 1.54764,
+  enpy.control)
 }
 \arguments{
 \item{lambda1}{numeric >= 0}
@@ -30,15 +28,15 @@ referenced}
 
 \item{pscProportion}{numeric > 0}
 
+\item{mscaleB}{numeric > 0}
+
+\item{mscaleCC}{numeric > 0}
+
 \item{enMaxIt}{integer > 0}
 
 \item{enEPS}{numeric > 0}
 
 \item{enCentering}{logical}
-
-\item{mscaleB}{numeric > 0}
-
-\item{mscaleCC}{numeric > 0}
 
 \item{mscaleMaxIt}{integer > 0}
 

@@ -5,8 +5,8 @@
 \title{PY (Peña-Yohai) initial estimates for EN}
 \usage{
 enpy(X, y, lambda1, lambda2, deltasc, cc.scale, psc.method = c("rr", "Qp",
-  "Mn"), prosac, clean.method = c("threshold", "proportion"), C.res, prop,
-  py.nit, en.tol, en.centering = TRUE)
+  "Mn"), prosac, clean.method = c("threshold", "proportion"), C.res = NULL,
+  prop = NULL, py.nit, en.tol, control = enpy.control())
 }
 \arguments{
 \item{X}{The data matrix X}
@@ -34,8 +34,7 @@ will be removed.}
 
 \item{en.tol}{The relative tolerance for convergence.}
 
-\item{en.centering}{Should rows with a leading 1 be centered in the elastic net algorithm.
-     Default's to \code{TRUE}.}
+\item{control}{Optional further control parameters from \code{\link{enpy.control}}.}
 }
 \value{
 \item{initCoef}{A numeric matrix with one initial coefficient per column}

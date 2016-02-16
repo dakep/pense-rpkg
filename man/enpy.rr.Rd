@@ -6,7 +6,7 @@
 \usage{
 enpy.rr(X, y, lambda1, lambda2, deltasc, cc.scale, prosac,
   clean.method = c("threshold", "proportion"), C.res, prop, py.nit, en.tol,
-  en.centering = TRUE)
+  control)
 }
 \arguments{
 \item{X}{The data matrix X, with leading column of 1's}
@@ -33,8 +33,7 @@ will be removed.}
 
 \item{en.tol}{The relative tolerance for convergence.}
 
-\item{en.centering}{Should rows with a leading 1 be centered in the elastic net algorithm.
-     Default's to \code{TRUE}.}
+\item{control}{Further control parameters (see \code{\link{enpy.control}})}
 }
 \value{
 \item{coeff}{A numeric matrix with one initial coefficient per column}

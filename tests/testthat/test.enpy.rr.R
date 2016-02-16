@@ -1,5 +1,5 @@
 test_that("enpy.rr", {
-    source("PENSE/penseinit/tests/testthat/auxFunct_PENSE.R", local = TRUE)
+    source("auxFunct_PENSE.R", local = TRUE)
 
     n <- 500L
     p <- 50L

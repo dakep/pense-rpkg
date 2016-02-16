@@ -17,7 +17,7 @@ double getQuantile(const double *values, const int length, const double quantile
                           CompareFunction compare)
 {
     double retVal;
-    int quantIndex = (int) (length * quantile);
+    int quantIndex = (int) ceil(length * quantile);
     double *restrict valuescpy = (double*) malloc((length + 1) * sizeof(double));
 
     memcpy(valuescpy, values, length * sizeof(double));

@@ -16,7 +16,7 @@
 #' @param y The response vector
 #' @param lambda1,lambda2 The EN penalty parameters (adjusted for the number of observations
 #'          in \code{X})
-#' @param deltasc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
+#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
 #'      is used internally.
 #' @param psc.method The method to use for computing the principal sensitivity components.
 #'      See details.
@@ -34,7 +34,7 @@
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
 #' @export
-enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
+enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                  psc.method=c("rr","Qp","Mn"), prosac,
                  clean.method = c("threshold", "proportion"), C.res = NULL, prop = NULL,
                  py.nit, en.tol, control = enpy.control()) {
@@ -66,7 +66,7 @@ enpy <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
     X <- cbind(1, X)
 
     result <- switch(psc.method,
-                     rr = enpy.rr(X, y, lambda1, lambda2, deltasc, cc.scale, prosac, clean.method,
+                     rr = enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac, clean.method,
                                   C.res, prop, py.nit, en.tol, control),
                      Qp = stop("Method `Qp` is not yet implemented"),
                      Mn = stop("Method `Mn` is not yet implemented"))

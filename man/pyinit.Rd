@@ -4,7 +4,7 @@
 \alias{pyinit}
 \title{PY (Peña-Yohai) initial estimates for S-estimates of regression}
 \usage{
-pyinit(X, y, deltasc, cc.scale, prosac, clean.method = c("threshold",
+pyinit(X, y, deltaesc, cc.scale, prosac, clean.method = c("threshold",
   "proportion"), C.res, prop, py.nit, en.tol)
 }
 \arguments{
@@ -12,7 +12,7 @@ pyinit(X, y, deltasc, cc.scale, prosac, clean.method = c("threshold",
 
 \item{y}{The response vector}
 
-\item{deltasc,cc.scale}{Parameters for the M-equation of the scale. Tukey's bisquare rho function
+\item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. Tukey's bisquare rho function
 is used internally.}
 
 \item{prosac}{The proportion of observations to remove based on PSCs}

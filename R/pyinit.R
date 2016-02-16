@@ -4,7 +4,7 @@
 #'
 #' @param X The data matrix X
 #' @param y The response vector
-#' @param deltasc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
+#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
 #'      is used internally.
 #' @param prosac The proportion of observations to remove based on PSCs
 #' @param clean.method How to clean the data based on large residuals.
@@ -24,7 +24,7 @@
 #'
 #' @useDynLib penseinit
 #' @export
-pyinit <- function(X, y, deltasc, cc.scale, prosac,
+pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                  clean.method = c("threshold", "proportion"), C.res, prop,
                  py.nit, en.tol) {
     y <- drop(y)
@@ -54,7 +54,7 @@ pyinit <- function(X, y, deltasc, cc.scale, prosac,
                             residProportion = prop,
                             pscProportion = prosac,
 
-                            mscaleB = deltasc,
+                            mscaleB = deltaesc,
                             mscaleCC = 1,
 
                             ## We don't need those parameters

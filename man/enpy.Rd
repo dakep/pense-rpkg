@@ -4,7 +4,7 @@
 \alias{enpy}
 \title{PY (Peña-Yohai) initial estimates for EN}
 \usage{
-enpy(X, y, lambda1, lambda2, deltasc, cc.scale, psc.method = c("rr", "Qp",
+enpy(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("rr", "Qp",
   "Mn"), prosac, clean.method = c("threshold", "proportion"), C.res = NULL,
   prop = NULL, py.nit, en.tol, control = enpy.control())
 }
@@ -16,7 +16,7 @@ enpy(X, y, lambda1, lambda2, deltasc, cc.scale, psc.method = c("rr", "Qp",
 \item{lambda1,lambda2}{The EN penalty parameters (adjusted for the number of observations
 in \code{X})}
 
-\item{deltasc,cc.scale}{Parameters for the M-equation of the scale. Tukey's bisquare rho function
+\item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. Tukey's bisquare rho function
 is used internally.}
 
 \item{psc.method}{The method to use for computing the principal sensitivity components.

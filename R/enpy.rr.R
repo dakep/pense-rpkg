@@ -7,7 +7,7 @@
 #' @param y The response vector
 #' @param lambda1,lambda2 The EN penalty parameters (adjusted for the number of observations
 #'          in \code{X})
-#' @param deltasc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
+#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
 #'      is used internally.
 #' @param prosac The proportion of observations to remove based on PSCs
 #' @param clean.method How to clean the data based on large residuals.
@@ -25,7 +25,7 @@
 #'
 #' @useDynLib penseinit
 #' @importFrom Rcpp evalCpp
-enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
+enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                     prosac, clean.method = c("threshold", "proportion"),
                     C.res, prop, py.nit, en.tol, control) {
 
@@ -44,7 +44,7 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltasc, cc.scale,
                             residThreshold = C.res,
                             residProportion = prop,
                             pscProportion = prosac,
-                            mscaleB = deltasc,
+                            mscaleB = deltaesc,
                             mscaleCC = 1,
                             enpy.control = control)
 

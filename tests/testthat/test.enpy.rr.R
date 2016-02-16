@@ -14,7 +14,7 @@ test_that("enpy.rr", {
     lambda2 <- 0
 
     new <- penseinit::enpy(X, y, lambda1 = lambda1, lambda2 = lambda2,
-                           deltasc = 0.5, cc.scale = 1.54764, psc.method = "rr",
+                           deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
                            prosac = 0.8, clean.method = "proportion", prop = 0.4, C.res = NULL,
                            py.nit = 5, en.tol = 1e-8)
 
@@ -37,7 +37,7 @@ test_that("enpy.rr", {
     lambda2 <- 1.5
 
     new <- penseinit::enpy(X, y, lambda1 = lambda1, lambda2 = lambda2,
-                           deltasc = 0.5, cc.scale = 1.54764, psc.method = "rr",
+                           deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
                            prosac = 0.8, clean.method = "proportion", prop = 0.4, C.res = NULL,
                            py.nit = 5, en.tol = 1e-8)
 

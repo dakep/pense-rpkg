@@ -21,8 +21,8 @@ static inline Control parseControlList(SEXP control);
 
 RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {
-    Control ctrl = parseControlList(Rcontrol);
-    Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    const Control ctrl = parseControlList(Rcontrol);
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
     ENPY enpy(data, ctrl);
     SEXP coefs;
@@ -83,8 +83,8 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha,
 
 RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {
-    Control ctrl = parseControlList(Rcontrol);
-    Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    const Control ctrl = parseControlList(Rcontrol);
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
     ENPY enpy(data, ctrl);
     SEXP coefs, objF;
@@ -114,7 +114,7 @@ RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
 
 RcppExport SEXP C_pscs2(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
 {
-    Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
     SEXP ret = R_NilValue;
     PSC_OLS psc;
     double *RESTRICT coefs = new double[data.numVar()];

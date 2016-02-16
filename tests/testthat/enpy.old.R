@@ -1,11 +1,8 @@
 #Auxiliary functions and libraries
 #Udated June 2015
 
-library(robustHD)
 library(lars)
-library(glmnet)
 library(robustbase)
-library(rrcov)
 
 #Factor that corrects lambda to match RR-LS with -SE
 #It is estimated numerically based on (known?) ratios of scale^2/E(r^2) for r~N(mu,sig^2) and different values of mu, sig, and b
@@ -13,24 +10,6 @@ library(rrcov)
 
 facon<-function(delta){
   23.9716-73.4391*delta+64.9480*delta^2
-}
-
-#Function to extend X and y and obtain the RR-LS estimate for a fixed lambda (it won't give a path)
-
-#Note: do we want to have an option for intercept=T?
-
-regrid<-function(X,y,lambda){
-  n<-dim(X)[1]
-  p<-dim(X)[2]
-  X1<-cbind(rep(1,n),X)
-  #colnames(X1)[1]<-"Intercept"
-  Xext<-cbind(rep(0,p),sqrt(lambda)*diag(p))
-  Xau<-rbind(X1,Xext)
-  yau<-c(y,rep(0,p))
-
-  beta<-lm(yau~Xau-1)$coef   #change names??
-  res<-list(beta=beta,Xau=Xau,yau=yau)
-  res
 }
 
 #Function to augment X and Y and obtain EN-LS using LARS-LASSO
@@ -114,19 +93,8 @@ scale1 <- function(u, b=0.5, cc=1.54764, initial.sc=median(abs(u))/.6745,
 #Tukey's Rho function
 Rho <- function(r, tuning.rho=1.54764) Mchi(x=r, cc=tuning.rho, deriv=0, psi='bisquare')
 
-#Tukey's Rho' function
-Rhop <- function(r, tuning.rho=1.54764) Mchi(x=r, cc=tuning.rho, deriv=1, psi='bisquare')
-
 #Computes the norm2 of a vector
 mynorm <- function(x) sqrt(sum(x^2))
-
-#To compute the prediction error from a matrix of coefficients
-pe.fn<-function(coef,X,y){
-  if(length(coef)>ncol(X)){
-    yhat<-coef[1]+X%*%coef[2:length(coef)]
-  }else{yhat<-X%*%coef}
-  pe<-sqrt(mean((y-yhat)^2))
-  return(pe)}
 
 #----------------------------------------------------
 #Principal Sensitivity Components

@@ -11,6 +11,7 @@
 
 #include "config.h"
 #include "Data.hpp"
+#include "ElasticNet.hpp"
 
 
 class PSC
@@ -36,7 +37,7 @@ public:
 	virtual const double* getPSC() = 0;
 
 protected:
-	PSC();
+	PSC(bool nobsEigenvalues);
 
 	int doEigenDecomposition(const char* const uplo, double *RESTRICT matrix,
 							 const int n);
@@ -54,6 +55,8 @@ protected:
 
 	Data data;
 private:
+	const bool nobsEigenvalues;
+
     double *RESTRICT EVDworkMem;
     int *RESTRICT EVIworkMem;
     int EVDworkMemSize;
@@ -105,7 +108,7 @@ private:
 
 class PSC_EN : public PSC {
 public:
-    PSC_EN();
+    PSC_EN(ElasticNet &en);
     ~PSC_EN();
 
     virtual void setData(const Data &data);
@@ -122,8 +125,12 @@ public:
 private:
     bool initialized;
 
+	ElasticNet &en;
+
     double *RESTRICT Z;
+//	double *RESTRICT M;
     double *RESTRICT residMat;
+	double *RESTRICT buffer;
     double *RESTRICT residuals;
 };
 

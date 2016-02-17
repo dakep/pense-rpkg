@@ -45,6 +45,9 @@
 #define BLAS_DSCAL(n, alpha, x, incx)															\
 	F77_NAME(dscal)(&n, &alpha, x, &incx)
 
+#define BLAS_DSYR(uplo, n, alpha, x, incx, a, lda)												\
+	F77_NAME(dsyr)(uplo, &n, &alpha, x, &incx, a, &lda)
+
 #define BLAS_DTRSM(side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)                       \
     F77_NAME(dtrsm)(side, uplo, transa, diag, &m, &n, &alpha, a, &lda, b, &ldb)
 

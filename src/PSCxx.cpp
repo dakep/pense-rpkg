@@ -20,7 +20,6 @@ static const int BLAS_M1L = -1;
 static const int BLAS_1L = 1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
-static const double BLAS_M1F = -1.0;
 
 static const double LAPACK_EV_ABSTOL = 1e-18;
 static const double LAPACK_EV_RANGE_LOWER = 1e-12;
@@ -46,7 +45,7 @@ static void print_matf(int dr, int dc, const double *A, const char *header) {
 }
 #endif
 
-PSC::PSC()
+PSC::PSC(bool nobsEigenvalues) : nobsEigenvalues(nobsEigenvalues)
 {
     this->EVDworkMemSize = 1;
     this->EVIworkMemSize = 1;
@@ -69,15 +68,17 @@ PSC::~PSC()
 
 void PSC::setData(const Data &data)
 {
-    int nvar = data.numVar();
-    if (nvar > this->data.numVar()) {
+    const int maxEVs = (this->nobsEigenvalues ? data.numObs() : data.numVar());
+    const int compVal = (this->nobsEigenvalues ? this->data.numObs() : this->data.numVar());
+
+    if (maxEVs > compVal) {
         delete[] evalues;
         delete[] evectors;
         delete[] evectorsSupport;
 
-        this->evalues = new double[nvar];
-        this->evectors = new double[nvar * nvar];
-        this->evectorsSupport = new int[2 * nvar];
+        this->evalues = new double[maxEVs];
+        this->evectors = new double[maxEVs * maxEVs];
+        this->evectorsSupport = new int[2 * maxEVs];
     }
 
     this->data = data;
@@ -126,8 +127,14 @@ int PSC::doEigenDecomposition(const char* const uplo, double *RESTRICT matrix, c
     return nevalues;
 }
 
+/***************************************************************************************************
+ *
+ * PSCs for OLS using identities from the paper
+ *
+ **************************************************************************************************/
 
-PSC_OLS::PSC_OLS() : PSC(), XsqrtProvided(FALSE), initialized(FALSE)
+
+PSC_OLS::PSC_OLS() : PSC(FALSE), XsqrtProvided(FALSE), initialized(FALSE)
 {}
 
 PSC_OLS::~PSC_OLS()
@@ -189,9 +196,9 @@ void PSC_OLS::setResiduals(const double *RESTRICT residuals)
 }
 
 int PSC_OLS::computePSC() {
+    const int nvar = this->data.numVar();
+    const int nobs = this->data.numObs();
     int i, j, lapackInfo;
-    int nvar = this->data.numVar();
-    int nobs = this->data.numObs();
     int nevalues = 0;
     /*
      * G can point to the same address as XtXinvX, because we don't need
@@ -278,43 +285,48 @@ int PSC_OLS::computePSC() {
 
 
 
-PSC_EN::PSC_EN() : initialized(FALSE)
+/***************************************************************************************************
+ *
+ * Manually compute PSCs for elastic net
+ *
+ **************************************************************************************************/
+
+PSC_EN::PSC_EN(ElasticNet &en) : PSC(TRUE), initialized(FALSE), en(en)
 {}
 
 PSC_EN::~PSC_EN()
 {
     if (this->initialized) {
+        delete[] this->buffer;
         delete[] this->Z;
+//        delete[] this->M;
         delete[] this->residMat;
+        delete[] this->residuals;
     }
 }
 
 
 void PSC_EN::setData(const Data &data) {
-//    if (data.numVar() > this->data.numVar()) {
-//        if (this->initialized) {
-//        }
-//    }
+    if (data.numVar() > this->data.numVar()) {
+        if (this->initialized) {
+            delete[] this->buffer;
+        }
+
+        this->buffer = new double[2 * data.numVar()];
+    }
 
     if (data.numObs() > this->data.numObs()) {
         if (this->initialized) {
             delete[] this->residMat;
+//            delete[] this->M;
+            delete[] this->Z;
+            delete[] this->residuals;
         }
         this->residMat = new double[data.numObs() * data.numObs()];
+//        this->M = new double[data.numObs() * data.numObs()];
+        this->Z = new double[data.numObs() * data.numObs()];
+        this->residuals = new double [data.numObs()];
     }
-
-    if (data.numObs() * data.numVar() > this->data.numObs() * this->data.numVar()) {
-        if (this->initialized) {
-            delete[] this->Z;
-        }
-        this->Z = new double[data.numObs() * data.numVar()];
-    }
-
-    /*
-     * We will let the last column of residMat be the one where the true residuals
-     * be stored
-     */
-    this->residuals = this->residMat + (this->data.numObs() * (this->data.numObs() - 1));
 
     PSC::setData(data);
     this->initialized = TRUE;
@@ -325,17 +337,115 @@ void PSC_EN::setResiduals(const double *RESTRICT residuals)
     memcpy(this->residuals, residuals, this->data.numObs() * sizeof(double));
 }
 
+
 int PSC_EN::computePSC() {
-    int i;
-    int nvar = this->data.numVar();
-    int nobs = this->data.numObs();
+    const int nvar = this->data.numVar();
+    const int nobs = this->data.numObs();
+    int i, j;
+    double *RESTRICT residualsOmitted;
+    double *RESTRICT coefs = this->buffer;
+    double *RESTRICT swapbuffer = this->buffer + nvar;
+    double *RESTRICT iterX;
+    double *RESTRICT iterY;
+    double *RESTRICT lastCol = this->data.getXtr() + nvar * (nobs - 1);
+    double *RESTRICT lastResponse = this->data.getY() + (nobs - 1);
+    double *RESTRICT M = this->Z;
     int nevalues = 0;
 
-//    nevalues = this->doEigenDecomposition(BLAS_UPLO_UPPER, Q, nvar);
+    memset(M, 0, nobs * nobs * sizeof(double));
+
+    this->data.setNumObs(nobs - 1);
+
+    residualsOmitted = this->residMat;
+    iterX = this->data.getXtr();
+    iterY = this->data.getY();
+    for (i = 0; i < nobs - 1; ++i, residualsOmitted += nobs, ++iterY) {
+        /* Swap i-th column with last column */
+        memcpy(swapbuffer, iterX, nvar * sizeof(double));
+        memcpy(iterX, lastCol, nvar * sizeof(double));
+        memcpy(lastCol, swapbuffer, nvar * sizeof(double));
+
+        /* Swap last response back with i-th response */
+        *swapbuffer = (*iterY);
+        *iterY = (*lastResponse);
+        *lastResponse = *swapbuffer;
+
+
+        /* Do we need to adjust lambda here?? */
+        this->en.computeCoefs(this->data, coefs, residualsOmitted);
+
+        for (j = 0; j < i; ++j) {
+            /* this actually calculates -r_i, but that's okay */
+            residualsOmitted[j] -= this->residuals[j];
+        }
+        for (j = i + 1; j < nobs - 1; ++j) {
+            /* this actually calculates -r_i, but that's okay */
+            residualsOmitted[j] -= this->residuals[j];
+        }
+
+        /*
+         * For the i'th value, we have to take the residual from the last observation!
+         * This saves the need to swap the residuals as well.
+         */
+        residualsOmitted[i] -= this->residuals[nobs - 1];
+
+        /* The last residual has to be computed by hand */
+        residualsOmitted[nobs - 1] = (*lastResponse) - this->residuals[i];
+        for (j = 0; j < nvar; ++j) {
+            residualsOmitted[nobs - 1] -= coefs[j] * lastCol[j];
+        }
+
+        /* Swap last column back with i-th column */
+        memcpy(swapbuffer, iterX, nvar * sizeof(double));
+        memcpy(iterX, lastCol, nvar * sizeof(double));
+        memcpy(lastCol, swapbuffer, nvar * sizeof(double));
+
+        /* Swap last response back with i-th response */
+        *swapbuffer = (*iterY);
+        *iterY = (*lastResponse);
+        *lastResponse = *swapbuffer;
+
+        /* Also swap the two residuals back! */
+        *swapbuffer = residualsOmitted[nobs - 1];
+        residualsOmitted[nobs - 1] = residualsOmitted[i];
+        residualsOmitted[i] = *swapbuffer;
+
+        iterX += nvar;
+
+        /* Calculate outer product and add to M */
+        BLAS_DSYR(BLAS_UPLO_UPPER, nobs, BLAS_1F, residualsOmitted, BLAS_1L, M, nobs);
+    }
+
+    /*
+     * For the last observation, we don't need to swap anything
+     */
+
+    /* Do we need to adjust lambda here?? */
+    this->en.computeCoefs(this->data, coefs, residualsOmitted);
+
+    for (j = 0; j < nobs - 1; ++j) {
+        /* this actually calculates -r_i, but that's okay */
+        residualsOmitted[j] -= this->residuals[j];
+    }
+
+    /* The last residual has to be computed by hand */
+    residualsOmitted[nobs - 1] = (*lastResponse) - this->residuals[j];
+    for (j = 0; j < nvar; ++j) {
+        residualsOmitted[nobs - 1] -= coefs[j] * lastCol[j];
+    }
+
+    /* Calculate outer product and add to M */
+    BLAS_DSYR(BLAS_UPLO_UPPER, nobs, BLAS_1F, residualsOmitted, BLAS_1L, M, nobs);
+
+    /* Reset the number of observations for data */
+    this->data.setNumObs(nobs);
+
+
+    nevalues = this->doEigenDecomposition(BLAS_UPLO_UPPER, M, nobs);
 
     if (nevalues > 0) {
-        BLAS_DGEMM(BLAS_TRANS_TRANS, BLAS_TRANS_NO, nobs, nevalues, nvar,
-                   BLAS_1F, this->residMat, nvar, this->getEigenvectors(), nvar,
+        BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_NO, nobs, nevalues, nobs,
+                   BLAS_1F, this->residMat, nobs, this->getEigenvectors(), nobs,
                    BLAS_0F, this->Z, nobs);
     }
 

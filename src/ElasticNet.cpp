@@ -13,8 +13,8 @@
 
 static double softThreshold(const double z, const double gamma);
 
-ElasticNet::ElasticNet(const int maxIt, const double eps) : maxIt(maxIt), eps(eps),
-            XtrSize(0), XmeansSize(0)
+ElasticNet::ElasticNet(const int maxIt, const double eps, const bool center) :
+			maxIt(maxIt), eps(eps), center(center), XtrSize(0), XmeansSize(0)
 {}
 
 ElasticNet::~ElasticNet()
@@ -42,8 +42,7 @@ void ElasticNet::setAlphaLambda(const double alpha, const double lambda)
 }
 
 
-bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
-                             const bool center)
+bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals)
 {
     /*
      * NOTE:
@@ -67,14 +66,14 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
     double norm = 0;
     double newNorm;
 
-    this->resizeBuffer(data, center);
+    this->resizeBuffer(data);
 
     memset(coefs, 0, data.numVar() * sizeof(double));
 
     /*
      * First we calculate the mean of y and the X variables
      */
-    if (center) {
+    if (this->center) {
         yMean = 0;
         memset(this->Xmeans, 0, (data.numVar() - 1) * sizeof(double));
 
@@ -214,9 +213,9 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
 }
 
 
-void ElasticNet::resizeBuffer(const Data& data, const bool center)
+void ElasticNet::resizeBuffer(const Data& data)
 {
-    if (center && ((data.numObs() * data.numVar()) > (this->XtrSize))) {
+    if (this->center && ((data.numObs() * data.numVar()) > (this->XtrSize))) {
         if(this->XtrSize > 0) {
             delete[] this->Xtr;
         }

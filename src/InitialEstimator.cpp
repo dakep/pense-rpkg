@@ -65,14 +65,14 @@ static double absoluteLessThan(const double a, const double b);
  * CAUTION:
  * The memory of data `to` must be able to at least store everything from `from`!
  */
-static void doFiltering(const Data& from, Data& to, const double *const values,
-                        const double threshold, CompareFunction compare,
-                        int nobs = 0);
+static inline void doFiltering(const Data& from, Data& to, const double *const values,
+                               const double threshold, CompareFunction compare,
+                               int nobs = 0);
 
 /**
  * source.numObs() must give the actual number of observations, not the number of rows!!
  */
-static void extendData(Data &dest, const Data& source, const double lambda, bool copy);
+static inline void extendData(Data &dest, const Data& source, const double lambda, bool copy);
 
 /**
  * Compute the residuals for the given data and coefficient estimate
@@ -386,7 +386,7 @@ ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            /* lambda1 for EN should not depend on N, but the given one does, so divide! */
            lambda1LS(ctrl.lambda1 / (facon(ctrl.mscaleB) * originalData.numObs())),
            lambda2LS(ctrl.lambda2 / facon(ctrl.mscaleB)),
-           en(ctrl.enMaxIt, ctrl.enEPS),
+           en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
            dataToUse(residualFilteredData)
 {
     delete[] this->residuals;
@@ -444,8 +444,7 @@ void ENPY::estimateCoefficients()
         /* This already updates the residuals, but NOT for all observations */
         /* lambda1LS must not be adjusted for the number of observations! */
         this->en.setLambdas(this->lambda1LS, 0);
-        converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals,
-                                          this->ctrl.enCentering);
+        converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 
         if (!converged) {
             throw std::runtime_error("LASSO did not converge. Either increase the number of "
@@ -520,40 +519,6 @@ void ENPY::filterDataPSC(const double *RESTRICT values, const double threshold,
     }
 
     dataToUse = this->pscFilteredData;
-
-    /*
-     * Below code may be faster if we filter less observations than we have
-     * variables.
-     */
-//    int i;
-//    int lambdaPos = this->residualFilteredData.numVar();
-//    int nvar = this->residualFilteredData.numVar();
-//    double *RESTRICT yptr;
-//    double *RESTRICT XtrPtr;
-//    double sqrtLambda = sqrt(this->lambda2LS);
-//
-//    /*
-//     * We know that residualFilteredData is already extended.
-//     * So we can override workData with residualFilteredData and then
-//     * override the filtered rows (columns in Xtr) with 0's and one sqrt(lambda)
-//     */
-//    this->workData.overrideMemory(this->residualFilteredData);
-//
-//    XtrPtr = this->workData.getXtr();
-//    yptr = this->workData.getXtr();
-//
-//    for (i = 0; i < this->currentUsefulNobs; ++i, ++yptr, XtrPtr += nvar) {
-//        if (!(compare(values[i], threshold) < 0)) {
-//            /* This row (column in Xtr) needs to be filtered! */
-//            --lambdaPos;
-//
-//            *yptr = 0;
-//            memset(XtrPtr, 0, nvar * sizeof(double));
-//            *(XtrPtr + lambdaPos) = sqrtLambda;
-//        }
-//    }
-//
-//    this->workData.setNumObs(this->residualFilteredData.numObs() + lambdaPos);
 }
 
 double ENPY::evaluateEstimate() const
@@ -760,8 +725,8 @@ static inline void computeResiduals(const Data& data, const double *RESTRICT coe
  * Helper function to filter a data set
  *
  **************************************************************************************************/
-static void doFiltering(const Data& from, Data& to, const double *const values,
-                        const double threshold, CompareFunction compare, int nobs)
+static inline void doFiltering(const Data& from, Data& to, const double *const values,
+                               const double threshold, CompareFunction compare, int nobs)
 {
     int i, toCount = 0;
     double *RESTRICT toYIt = to.getY();
@@ -818,7 +783,7 @@ static void doFiltering(const Data& from, Data& to, const double *const values,
 /**
  * source.numObs() should give the actual number of observations, not the number of rows!!
  */
-static void extendData(Data &dest, const Data& source, const double lambda, bool copy)
+static inline void extendData(Data &dest, const Data& source, const double lambda, bool copy)
 {
     int j;
     double sqrtLambda = sqrt(lambda);

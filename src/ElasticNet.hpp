@@ -16,7 +16,7 @@
 class ElasticNet
 {
 public:
-	ElasticNet(const int maxIt, const double eps);
+	ElasticNet(const int maxIt, const double eps, const bool center);
 	~ElasticNet();
 
 	/*
@@ -53,17 +53,17 @@ public:
 	 *
 	 * @returns TRUE if the algorithm converged, FALSE otherwise
 	 */
-	bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
-					 const bool center);
+	bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals);
 
 private:
 	const int maxIt;
 	const double eps;
+    const bool center;
 
 	double alpha;
 	double lambda;
 
-	void resizeBuffer(const Data& data, const bool center);
+	void resizeBuffer(const Data& data);
 
 	double *RESTRICT Xtr;
 	double *RESTRICT Xmeans;

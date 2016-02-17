@@ -9,7 +9,6 @@
 #include "olsreg.h"
 #include "BLAS.h"
 
-static const int BLAS_M1L = -1;
 static const int BLAS_1L = 1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;

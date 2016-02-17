@@ -16,10 +16,8 @@
 
 
 static const int BLAS_M1L = -1;
-static const int BLAS_1L = 1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
-static const double BLAS_M1F = -1.0;
 
 static const double LAPACK_EV_ABSTOL = 1e-18;
 static const double LAPACK_EV_RANGE_LOWER = 1e-12;

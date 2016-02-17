@@ -33,6 +33,9 @@ void ElasticNet::setLambdas(const double lambda1, const double lambda2)
 {
     this->lambda = lambda2 + lambda1 / 2;
     this->alpha = lambda1 / (2 * lambda2 + lambda1);
+    if (lambda2 == 0 && lambda1 == 0) {
+        this->alpha = 0;
+    }
 }
 
 void ElasticNet::setAlphaLambda(const double alpha, const double lambda)

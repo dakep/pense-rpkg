@@ -128,7 +128,6 @@ private:
 	ElasticNet &en;
 
     double *RESTRICT Z;
-//	double *RESTRICT M;
     double *RESTRICT residMat;
 	double *RESTRICT buffer;
     double *RESTRICT residuals;

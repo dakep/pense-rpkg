@@ -40,15 +40,15 @@ public:
 
 protected:
 	InitialEstimator(const Data& originalData, const Control& ctrl, PSC& psc,
-                     const int coefMemIncrease = 0);
+					 const int maxEstimators, const int coefMemIncrease = 0);
 
 	const Data& originalData;
 	const Control& ctrl;
 
     /**
-     * Set the `complete` data
+     * Reset to the original data
      */
-    virtual void setData(const Data &data);
+    virtual void resetData();
 
 
 	/**
@@ -103,12 +103,11 @@ class OLS : public InitialEstimator
 {
 public:
     OLS(const Data& originalData, const Control& ctrl);
-
     virtual ~OLS();
 
 protected:
 
-    virtual void setData(const Data &data);
+    virtual void resetData();
     virtual void filterDataResiduals(double threshold);
     virtual void filterDataPSC(const double *RESTRICT values, const double threshold,
 							   CompareFunction compare);
@@ -127,11 +126,10 @@ class ENPY : public InitialEstimator
 {
 public:
     ENPY(const Data& originalData, const Control& ctrl);
-
     virtual ~ENPY();
 
 protected:
-    virtual void setData(const Data &data);
+    virtual void resetData();
     virtual void filterDataResiduals(double threshold);
     virtual void filterDataPSC(const double *RESTRICT values, const double threshold,
 							   CompareFunction compare);
@@ -149,6 +147,32 @@ private:
 	Data dataToUse;
 
 	double *RESTRICT XtX;
+};
+
+
+class ENPY_Exact : public InitialEstimator
+{
+public:
+    ENPY_Exact(const Data& originalData, const Control& ctrl);
+    virtual ~ENPY_Exact();
+
+protected:
+    virtual void resetData();
+    virtual void filterDataResiduals(double threshold);
+    virtual void filterDataPSC(const double *RESTRICT values, const double threshold,
+							   CompareFunction compare);
+    virtual void estimateCoefficients();
+	virtual double evaluateEstimate() const;
+
+private:
+    const double lambda1LS;
+    const double lambda2LS;
+
+	ElasticNet en;
+
+    PSC_EN pscEn;
+    Data pscFilteredData;
+	Data dataToUse;
 };
 
 

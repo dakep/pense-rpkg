@@ -287,7 +287,7 @@ int PSC_OLS::computePSC() {
 
 /***************************************************************************************************
  *
- * Manually compute PSCs for elastic net
+ * Manually compute PSCs for elastic net using the residuals and LOO-residuals
  *
  **************************************************************************************************/
 
@@ -299,7 +299,6 @@ PSC_EN::~PSC_EN()
     if (this->initialized) {
         delete[] this->buffer;
         delete[] this->Z;
-//        delete[] this->M;
         delete[] this->residMat;
         delete[] this->residuals;
     }
@@ -318,12 +317,10 @@ void PSC_EN::setData(const Data &data) {
     if (data.numObs() > this->data.numObs()) {
         if (this->initialized) {
             delete[] this->residMat;
-//            delete[] this->M;
             delete[] this->Z;
             delete[] this->residuals;
         }
         this->residMat = new double[data.numObs() * data.numObs()];
-//        this->M = new double[data.numObs() * data.numObs()];
         this->Z = new double[data.numObs() * data.numObs()];
         this->residuals = new double [data.numObs()];
     }
@@ -351,6 +348,7 @@ int PSC_EN::computePSC() {
     double *RESTRICT lastResponse = this->data.getY() + (nobs - 1);
     double *RESTRICT M = this->Z;
     int nevalues = 0;
+    bool converged = true;
 
     memset(M, 0, nobs * nobs * sizeof(double));
 
@@ -372,7 +370,7 @@ int PSC_EN::computePSC() {
 
 
         /* Do we need to adjust lambda here?? */
-        this->en.computeCoefs(this->data, coefs, residualsOmitted);
+        converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted);
 
         for (j = 0; j < i; ++j) {
             /* this actually calculates -r_i, but that's okay */
@@ -419,9 +417,8 @@ int PSC_EN::computePSC() {
     /*
      * For the last observation, we don't need to swap anything
      */
-
     /* Do we need to adjust lambda here?? */
-    this->en.computeCoefs(this->data, coefs, residualsOmitted);
+    converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted);
 
     for (j = 0; j < nobs - 1; ++j) {
         /* this actually calculates -r_i, but that's okay */
@@ -449,6 +446,9 @@ int PSC_EN::computePSC() {
                    BLAS_0F, this->Z, nobs);
     }
 
+    if (!converged) {
+        REprintf("Elastic net did not converge. Results may not be reliable!\n");
+    }
+
     return nevalues;
 }
-

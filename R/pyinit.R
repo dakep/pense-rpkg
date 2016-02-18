@@ -22,7 +22,7 @@
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
 #' 434–445. \url{http://doi.org/10.2307/2670164}
 #'
-#' @useDynLib penseinit
+#' @useDynLib penseinit C_initpy
 #' @export
 pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                  clean.method = c("threshold", "proportion"), C.res, prop,
@@ -62,7 +62,28 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                             lambda2 = 0,
                             enpy.control = enpy.control())
 
-    ies <- .Call("C_initpy", t(X), y, nrow(X), ncol(X),
+    ##
+    ## The C code needs to now how many observations to *keep*
+    ##
+    ctrl$pscProportion <- 1 - ctrl$pscProportion
+
+    usableProp <- 1
+    if (ctrl$residCleanMethod == "proportion") {
+        ## The C code needs to now how many observations to *keep*
+        ctrl$residProportion <- 1 - ctrl$residProportion
+
+        usableProp <- ctrl$residProportion
+    }
+
+    if (dX[2L] >= dX[1L]) {
+        stop("`pyinit` can not be used for data with more variables than observations")
+    } else if (dX[2L] >= ceiling(ctrl$pscProportion * ceiling(usableProp * dX[1L]))) {
+        stop("With the specified proportion of observations to remove, the number of ",
+             "observations will be smaller than the number of variables.\nIn this case ",
+             "`pyinit` can not be used.")
+    }
+
+    ies <- .Call(C_initpy, t(X), y, nrow(X), ncol(X),
                  ctrl$numIt,
                  ctrl$eps,
                  ctrl$residThreshold,
@@ -72,8 +93,7 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                  ctrl$mscaleCC,
                  ctrl$mscaleMaxIt,
                  ctrl$mscaleEPS,
-                 ctrl$mscaleRhoFun,
-                 PACKAGE = "penseinit")
+                 ctrl$mscaleRhoFun)
 
     initCoefs <- matrix(ies[[2L]][seq_len(ies[[1L]] * (dX[2L] + 1L))], nrow = dX[2L] + 1L, ncol = ies[[1L]])
 

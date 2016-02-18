@@ -19,7 +19,7 @@
 #'         \item{residuals}{The residuals}
 #'         \item{converged}{Did the algorithm converge?}
 #'
-#' @useDynLib penseinit
+#' @useDynLib penseinit C_elnet
 #' @export
 elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TRUE,
                   addLeading1s = TRUE) {
@@ -72,13 +72,12 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
     maxit <- as.integer(maxit)
     centering <- 1L - as.integer(identical(centering, FALSE))
 
-    elnetres <- .Call("C_elnet", t(X), y, dX[1L], ncol(X),
+    elnetres <- .Call(C_elnet, t(X), y, dX[1L], ncol(X),
                       alpha,
                       lambda,
                       maxit,
                       eps,
-                      centering,
-                      PACKAGE = "penseinit")
+                      centering)
 
     if (!identical(elnetres[[1L]], TRUE)) {
         warning("Elastic Net algorithm did not converge.")

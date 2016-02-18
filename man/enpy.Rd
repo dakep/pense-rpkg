@@ -4,25 +4,25 @@
 \alias{enpy}
 \title{PY (Peña-Yohai) initial estimates for EN}
 \usage{
-enpy(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("rr", "Qp",
-  "Mn"), prosac, clean.method = c("threshold", "proportion"), C.res = NULL,
+enpy(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("rr", "Mn",
+  "Qp"), prosac, clean.method = c("threshold", "proportion"), C.res = NULL,
   prop = NULL, py.nit, en.tol, control = enpy.control())
 }
 \arguments{
-\item{X}{The data matrix X}
+\item{X}{The data matrix X.}
 
-\item{y}{The response vector}
+\item{y}{The response vector.}
 
 \item{lambda1,lambda2}{The EN penalty parameters (adjusted for the number of observations
-in \code{X})}
+in \code{X}).}
 
-\item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. Tukey's bisquare rho function
-is used internally.}
+\item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. The default
+rho function is Tukey's bisquare. This can be changed by the parameter \code{control}.}
 
 \item{psc.method}{The method to use for computing the principal sensitivity components.
 See details.}
 
-\item{prosac}{The proportion of observations to remove based on PSCs}
+\item{prosac}{The proportion of observations to remove based on PSCs.}
 
 \item{clean.method}{How to clean the data based on large residuals.
 If \code{"threshold"}, all observations with scaled residuals larger than
@@ -49,9 +49,9 @@ Three different methods to calculate the sensitivity components are implemented:
 \describe{
      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
                         and the hat matrix from the ridge regression. This method only works
-                        if `lambda` > 0 or `p` < `n`.}
-     \item{\code{"Qp"}}{Not yet implemented}
-     \item{\code{"Mn"}}{Not yet implemented}
+                        if \code{lambda2} > 0 or \code{ncol(X)} < \code{nrow(X)}.}
+     \item{\code{"Mn"}}{Calculate the PSCs from the difference between the
+                        residuals and leave-one-out residuals from elastic net.}
 }
 }
 

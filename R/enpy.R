@@ -7,20 +7,20 @@
 #' \describe{
 #'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
 #'                         and the hat matrix from the ridge regression. This method only works
-#'                         if `lambda` > 0 or `p` < `n`.}
-#'      \item{\code{"Qp"}}{Not yet implemented}
-#'      \item{\code{"Mn"}}{Not yet implemented}
+#'                         if \code{lambda2} > 0 or \code{ncol(X)} < \code{nrow(X)}.}
+#'      \item{\code{"Mn"}}{Calculate the PSCs from the difference between the
+#'                         residuals and leave-one-out residuals from elastic net.}
 #' }
 #'
-#' @param X The data matrix X
-#' @param y The response vector
+#' @param X The data matrix X.
+#' @param y The response vector.
 #' @param lambda1,lambda2 The EN penalty parameters (adjusted for the number of observations
-#'          in \code{X})
-#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
-#'      is used internally.
+#'          in \code{X}).
+#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. The default
+#'          rho function is Tukey's bisquare. This can be changed by the parameter \code{control}.
 #' @param psc.method The method to use for computing the principal sensitivity components.
 #'      See details.
-#' @param prosac The proportion of observations to remove based on PSCs
+#' @param prosac The proportion of observations to remove based on PSCs.
 #' @param clean.method How to clean the data based on large residuals.
 #'          If \code{"threshold"}, all observations with scaled residuals larger than
 #'          \code{C.res} will be removed.
@@ -35,7 +35,7 @@
 #'
 #' @export
 enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
-                 psc.method=c("rr","Qp","Mn"), prosac,
+                 psc.method=c("rr", "Mn", "Qp"), prosac,
                  clean.method = c("threshold", "proportion"), C.res = NULL, prop = NULL,
                  py.nit, en.tol, control = enpy.control()) {
     y <- drop(y)
@@ -68,8 +68,10 @@ enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     result <- switch(psc.method,
                      rr = enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac, clean.method,
                                   C.res, prop, py.nit, en.tol, control),
-                     Qp = stop("Method `Qp` is not yet implemented"),
-                     Mn = stop("Method `Mn` is not yet implemented"))
+                     Mn = enpy.exact(X, y, lambda1, lambda2, deltaesc, cc.scale,
+                                     psc.method, prosac, clean.method, C.res, prop, py.nit,
+                                     en.tol, control),
+                     stop(sprintf("`psc.method` '%s' not supported", psc.method)))
 
     resorder <- sort.list(result$objF, na.last = NA, method = "quick")
 

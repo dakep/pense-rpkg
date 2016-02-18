@@ -16,7 +16,7 @@
 #'
 #' @return Numeric vector of length one
 #'
-#' @useDynLib penseinit
+#' @useDynLib penseinit C_mscale
 #' @export
 mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc = 1.54764,
                    eps = 1e-8, max.it = 200) {
@@ -43,8 +43,8 @@ mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc = 1.547
 
     x <- as.numeric(x)
 
-    scale <- .Call("C_mscale", x, length(x), ctrl$mscaleB, ctrl$mscaleCC, ctrl$mscaleMaxIt,
-                   ctrl$mscaleEPS, ctrl$mscaleRhoFun, PACKAGE = "penseinit")
+    scale <- .Call(C_mscale, x, length(x), ctrl$mscaleB, ctrl$mscaleCC, ctrl$mscaleMaxIt,
+                   ctrl$mscaleEPS, ctrl$mscaleRhoFun)
 
     if (!is.finite(scale)) {
         scale <- NA_real_

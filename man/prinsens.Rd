@@ -4,14 +4,26 @@
 \alias{prinsens}
 \title{Principal Sensitivity Components}
 \usage{
-prinsens(X, y, intercept = TRUE)
+prinsens(X, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
+  maxit = 50000, eps = 1e-08, centering = TRUE)
 }
 \arguments{
 \item{X}{The data matrix X}
 
 \item{y}{The response vector}
 
+\item{method}{Use ordinary least squares (\code{"ols"}) or elastic net (\code{"en"}) to compute
+the PSCs.}
+
 \item{intercept}{Should an intercept be added or not.}
+
+\item{alpha,lambda}{The values for the parameters controlling the penalization for elastic net.}
+
+\item{maxit}{The maximum number of iterations for elastic net.}
+
+\item{eps}{The relative tolerance for convergence for elastic net.}
+
+\item{centering}{Should the rows be centered first for elastic net.}
 }
 \value{
 A numeric matrix with as many rows as \code{X} and as many columns as

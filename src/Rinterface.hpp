@@ -47,7 +47,7 @@
  * @param maxIt     integer The maximum number of iterations allowed
  * @param eps       numeric The relative tolerance for convergence
  * @param centering integer Should centering be done (1=yes, 0=no) for rows with a leading
-                            1.
+ *                          1.
  *
  * @return List Returns a list with two elements:
  *		item 1: Logical telling if the algorithm converged
@@ -66,7 +66,25 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP alpha, SEXP
  * @return Returns a numeric matrix of size `nobs` x `npscs`, where `npscs` is at
  *		   most `nvar`.
  */
-RcppExport SEXP C_pscs2(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar);
+RcppExport SEXP C_pscs_ols(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar);
+
+/**
+ * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y       numeric The numeric y vector (size `nobs`)
+ * @param nobs    integer The number of observations
+ * @param nvar    integer The number of variables (including the intercept)
+ * @param alpha     numeric The alpha parameter for the penalization
+ * @param lambda    numeric The lambda parameter for the penalization
+ * @param maxIt     integer The maximum number of iterations allowed
+ * @param eps       numeric The relative tolerance for convergence
+ * @param centering integer Should centering be done (1=yes, 0=no) for rows with a leading
+ *                          1.
+ *
+ * @return Returns a numeric matrix of size `nobs` x `npscs`, where `npscs` is at
+ *		   most `nobs`.
+ */
+RcppExport SEXP C_pscs_en(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP alpha, SEXP lambda,
+                          SEXP maxIt, SEXP eps, SEXP centering);
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
@@ -92,6 +110,6 @@ RcppExport SEXP C_enpy_rr(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP control);
  *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
  *      item 2: The value of the objective function for each initial estimate
  */
-RcppExport SEXP C_enpy_Mn(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP control);
+RcppExport SEXP C_enpy_exact(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP control);
 
 #endif /* Rinterface_hpp */

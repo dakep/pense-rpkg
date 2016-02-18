@@ -6,6 +6,8 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
+#include <stdexcept>
+
 #include "Rinterface.hpp"
 
 #include "Control.h"
@@ -80,12 +82,11 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha,
     return result;
 }
 
-RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
+RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {
     const Control ctrl = parseControlList(Rcontrol);
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
-
-    ENPY enpy(data, ctrl);
+    ENPY_Exact enpy(data, ctrl);
     SEXP coefs, objF;
     int niest;
     SEXP result = R_NilValue;
@@ -111,7 +112,7 @@ RcppExport SEXP C_enpy_Mn(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     return result;
 }
 
-RcppExport SEXP C_pscs2(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
+RcppExport SEXP C_pscs_ols(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
     SEXP ret = R_NilValue;
@@ -145,6 +146,44 @@ RcppExport SEXP C_pscs2(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
     delete[] coefs;
     delete[] residuals;
     delete[] Xsqrt;
+    return ret;
+}
+
+RcppExport SEXP C_pscs_en(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
+                          SEXP RmaxIt, SEXP Reps, SEXP Rcentering)
+{
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    ElasticNet en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
+    PSC_EN psc(en);
+
+    SEXP ret = R_NilValue;
+
+    double *RESTRICT coefs = new double[data.numVar()];
+    double *RESTRICT residuals = new double[data.numObs()];
+    int npscs;
+    bool converged;
+
+    BEGIN_RCPP
+
+    en.setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
+    converged = en.computeCoefs(data, coefs, residuals);
+
+    if (!converged) {
+        throw std::runtime_error("Elastic Net did not converge");
+    }
+
+    psc.setData(data);
+    psc.setResiduals(residuals);
+    npscs = psc.computePSC();
+
+    ret = PROTECT(Rf_allocVector(REALSXP, data.numObs() * npscs));
+    memcpy(REAL(ret), psc.getPSC(), data.numObs() * npscs * sizeof(double));
+    UNPROTECT(1);
+
+    VOID_END_RCPP
+
+    delete[] coefs;
+    delete[] residuals;
     return ret;
 }
 

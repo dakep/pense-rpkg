@@ -235,13 +235,14 @@ test_that("EN", {
 
     au <- augment(X, y, 2 * lambda2, leading1s = FALSE)
 
-    larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
-    larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
-
     elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), eps = 1e-10, centering = FALSE)
-
-    expect_equal(enres$coefficients[-1L], larsres)
     expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
+
+    if (requireNamespace("lars", quietly = TRUE)) {
+        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
+        expect_equal(enres$coefficients[-1L], larsres)
+    }
 
     remove(list = setdiff(ls(), "augment"))
 
@@ -265,14 +266,14 @@ test_that("EN", {
 
     au <- augment(X, y, 2 * lambda2, leading1s = FALSE)
 
-    larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
-    larsres <- lars::coef.lars(larsobj, s = lambda1, mode = "lambda")
-
     elau <- elnet(au$X, au$y, alpha = 1, lambda1 / (n + p), eps = 1e-10, centering = FALSE)
-
-    expect_equal(enres$coefficients[-1L], larsres)
-    expect_equal(larsres, elau$coefficients[-1L])
     expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
+
+    if (requireNamespace("lars", quietly = TRUE)) {
+        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsres <- lars::coef.lars(larsobj, s = lambda1, mode = "lambda")
+        expect_equal(enres$coefficients[-1L], larsres)
+    }
 
     remove(list = setdiff(ls(), "augment"))
 
@@ -296,11 +297,12 @@ test_that("EN", {
 
     au <- augment(X, y, 2 * lambda2, leading1s = FALSE)
 
-    larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
-    larsres <- lars::coef.lars(larsobj, s = lambda1, mode = "lambda")
-
     elau <- elnet(au$X, au$y, alpha = 1, lambda / (2 * (n + p)), eps = 1e-10, centering = FALSE)
-
-    expect_equal(enres$coefficients[-1L], larsres)
     expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
+
+    if (requireNamespace("lars", quietly = TRUE)) {
+        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsres <- lars::coef.lars(larsobj, s = lambda1, mode = "lambda")
+        expect_equal(enres$coefficients[-1L], larsres)
+    }
 })

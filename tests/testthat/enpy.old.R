@@ -44,8 +44,8 @@ regrid.en<-function(X,y,lambda1,lambda2){
 
   #Solve a LASSO for the augmented variables to obtain an EN-beta using LARS algorithm
   #The normalization will be performed before using this function, thus turned off here
-  obj.beta <- lars(x=Xau, y=yau, type = "lasso", normalize=FALSE, intercept=FALSE)
-  beta <- coef(obj.beta,s=lambda1/2,mode="lambda")
+  obj.beta <- lars::lars(x=Xau, y=yau, type = "lasso", normalize=FALSE, intercept=FALSE)
+  beta <- lars::coef.lars(obj.beta,s=lambda1/2,mode="lambda")
   alpha<-mean(y)-beta%*%apply(X,2,mean)  #Note: no penalization for the intercept
 
   #Get fitted values
@@ -91,7 +91,8 @@ scale1 <- function(u, b=0.5, cc=1.54764, initial.sc=median(abs(u))/.6745,
 }
 
 #Tukey's Rho function
-Rho <- function(r, tuning.rho=1.54764) Mchi(x=r, cc=tuning.rho, deriv=0, psi='bisquare')
+Rho <- function(r, tuning.rho=1.54764) robustbase::Mchi(x=r, cc=tuning.rho, deriv=0, psi='bisquare')
+Rhop <- function(r, tuning.rho=1.54764) robustbase::Mchi(x=r, cc=tuning.rho, deriv=1, psi='bisquare')
 
 #Computes the norm2 of a vector
 mynorm <- function(x) sqrt(sum(x^2))
@@ -694,8 +695,8 @@ pen.s.reg <- function(y, X, nit, lambda1, lambda2, alpha1, beta1,
     #print(paste('LARS: ', lasso.obj, sep=''))
 
     #Solve a LASSO for the weighted-extended variables to obtain an updated beta using LARS algorithm
-    obj.beta <- lars(x=X.star, y=y.star, type = "lasso", normalize=FALSE, intercept=FALSE)
-    beta <- coef(obj.beta,s=lambda1,mode="lambda")
+    obj.beta <- lars::lars(x=X.star, y=y.star, type = "lasso", normalize=FALSE, intercept=FALSE)
+    beta <- lars::coef.lars(obj.beta,s=lambda1,mode="lambda")
     #lar.obj is 1/2*sum((y.star-X.star%*%beta)^2)+lam1*sum(abs(beta))
     #we need to solve: sum((y.star-X.star%*%beta)^2)+2*lambda1*sum(abs(beta)) --> s=lambda1 in coef() call
 

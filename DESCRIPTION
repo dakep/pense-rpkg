@@ -8,5 +8,6 @@ Maintainer: David Kepplinger <david.kepplinger@gmail.com>
 Description: Initial estimators for the penalized elastic net S-estimator of regression
 Imports: Rcpp
 LinkingTo: Rcpp
+Suggests: testthat, lars, robustbase
 License: GPL >= 2
 NeedsCompilation: yes

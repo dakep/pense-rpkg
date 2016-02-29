@@ -70,7 +70,7 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
         if (dX[2L] >= dX[1L]) {
             stop("`enpy.rr` can not be used for data with more variables than observations if ",
                  "`lambda2` is 0.")
-        } else if (dX[2L] >= ceiling(ctrl$pscProportion * ceiling(usableProp * dX[1L]))) {
+        } else if (dX[2L] >= ceiling(usableProp * dX[1L])) {
             stop("With the specified proportion of observations to remove, the number of ",
                  "observations will be smaller than the number of variables.\nIn this case ",
                  "`enpy.rr` can not be used with `lambda2` = 0")

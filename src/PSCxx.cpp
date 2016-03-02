@@ -447,7 +447,7 @@ int PSC_EN::computePSC() {
     }
 
     if (!converged) {
-        REprintf("Elastic net did not converge. Results may not be reliable!\n");
+        Rcpp::warning("Elastic net did not converge. PSCs may not be reliable!");
     }
 
     return nevalues;

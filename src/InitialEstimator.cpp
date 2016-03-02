@@ -450,8 +450,8 @@ void ENPY::estimateCoefficients()
         converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 
         if (!converged) {
-            throw std::runtime_error("LASSO did not converge. Either increase the number of "
-                                     "iterations or lambda1.");
+            Rcpp::warning("LASSO did not converge. Either increase the number of "
+                          "iterations or lambda1.");
         }
     }
 
@@ -574,8 +574,8 @@ void ENPY_Exact::estimateCoefficients()
     converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 
     if (!converged) {
-        throw std::runtime_error("LASSO did not converge. Either increase the number of "
-                                 "iterations or the penalty parameters.");
+        Rcpp::warning("LASSO did not converge. Either increase the number of "
+                      "iterations or the penalty parameters.");
     }
 
     /* Now update the residuals */

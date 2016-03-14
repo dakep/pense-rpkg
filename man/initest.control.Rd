@@ -31,21 +31,8 @@ referenced}
 \item{mscaleB}{numeric > 0}
 
 \item{mscaleCC}{numeric > 0}
-
-\item{enMaxIt}{integer > 0}
-
-\item{enEPS}{numeric > 0}
-
-\item{enCentering}{logical}
-
-\item{mscaleMaxIt}{integer > 0}
-
-\item{mscaleEPS}{numeric > 0}
-
-\item{mscaleRhoFun}{character}
 }
 \description{
-Computes the PY initial estimates for EN with approximated principal sensitivity components
-by the ridge regression solution.
+Takes care of the correct storage mode for the arguments passed to the C/C++ code
 }
 

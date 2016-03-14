@@ -1,3 +1,43 @@
+#' Control Parameters for PENSE
+#'
+#' Set control parameters for PENSE.
+#'
+#' @return A list with the given arguments.
+#'
+#' @export
+pense.control <- function(
+    pense.maxit = 500,
+    pense.tol = 1e-6,
+    pense.en.tol = 1e-8,
+    pense.en.maxit = 5e5,
+
+    init.tol = 1e-6,
+    init.maxit = 10,
+    init.resid.clean.method = c("proportion", "threshold"),
+    init.resid.proportion = 0.4,
+    init.resid.threshold = 2,
+    init.psc.method = c("rr", "Mn"),
+    init.psc.proportion = 0.8,
+    init.csteps = 10,
+    init.nkeep = 5,
+    init.en.tol = pense.en.tol,
+    init.en.maxit = pense.en.maxit,
+
+    mscale.cc = 1.54764,
+    mscale.delta = 0.5,
+    mscale.maxit = 200,
+    mscale.tol = 1e-8,
+    mscale.rho.fun = c("bisquare", "huber", "gauss")
+) {
+    ret <- as.list(environment())
+
+    ret$init.psc.method <- match.arg(init.psc.method)
+    ret$init.resid.clean.method <- match.arg(init.resid.clean.method)
+    ret$mscale.rho.fun <- match.arg(mscale.rho.fun)
+
+    return(ret)
+}
+
 #' Control Parameters for ENPY
 #'
 #' Set control parameters for ENPY.
@@ -25,10 +65,67 @@ enpy.control <- function(enMaxIt = 50000,
 }
 
 
+
+#' Internal function to check PENSE control parameters
+.check.pense.control <- function(ctrl) {
+    simpleCheck <- function(x) {
+        if (length(x) != 1L || !is.numeric(x) || anyNA(x) || x <= 0) {
+            stop(sprintf("`%s` must be single positive number", deparse(substitute(x))))
+        }
+    }
+
+    ##
+    ## Check string arguments first
+    ##
+    ctrl$init.resid.clean.method <- match.arg(ctrl$init.resid.clean.method,
+                                              c("proportion", "threshold"))
+    ctrl$init.psc.method <- match.arg(ctrl$init.psc.method, c("rr", "Mn"))
+    ctrl$mscale.rho.fun <- match.arg(ctrl$mscale.rho.fun, c("bisquare", "huber", "gauss"))
+
+    with(ctrl, {
+        simpleCheck(pense.maxit)
+        simpleCheck(pense.tol)
+        simpleCheck(pense.en.tol)
+        simpleCheck(pense.en.maxit)
+
+        simpleCheck(init.tol)
+        simpleCheck(init.maxit)
+        simpleCheck(init.psc.proportion)
+        simpleCheck(init.csteps)
+        simpleCheck(init.nkeep)
+        simpleCheck(init.en.tol)
+        simpleCheck(init.en.maxit)
+
+        simpleCheck(mscale.cc)
+        simpleCheck(mscale.delta)
+        simpleCheck(mscale.maxit)
+        simpleCheck(mscale.tol)
+
+        if (init.psc.proportion > 1) {
+            stop("`init.psc.proportion` must be less than 1")
+        }
+    })
+
+    if (ctrl$init.resid.clean.method == "proportion") {
+        with(ctrl, simpleCheck(init.resid.proportion))
+
+        ctrl$init.resid.threshold <- -1
+
+        if (ctrl$init.resid.proportion > 1) {
+            stop("`init.resid.proportion` must be less than 1")
+        }
+    } else {
+        with(ctrl, simpleCheck(init.resid.threshold))
+        ctrl$init.resid.proportion <- -1
+    }
+
+    return(ctrl)
+}
+
+
 #' Creates the internal control list for PY initial estimators
 #'
-#' Computes the PY initial estimates for EN with approximated principal sensitivity components
-#' by the ridge regression solution.
+#' Takes care of the correct storage mode for the arguments passed to the C/C++ code
 #'
 #' @param lambda1 numeric >= 0
 #' @param lambda2 numeric >= 0
@@ -40,27 +137,22 @@ enpy.control <- function(enMaxIt = 50000,
 #' @param residProportion If \code{residCleanMethod = "proportion"} numeric > 0, otherwise not
 #'          referenced
 #' @param pscProportion numeric > 0
-#' @param enMaxIt integer > 0
-#' @param enEPS numeric > 0
-#' @param enCentering logical
 #' @param mscaleB numeric > 0
 #' @param mscaleCC numeric > 0
-#' @param mscaleMaxIt integer > 0
-#' @param mscaleEPS numeric > 0
-#' @param mscaleRhoFun character
 #'
-initest.control <- function(lambda1,
-                            lambda2,
-                            numIt,
-                            eps = 1e-6,
-                            residCleanMethod = c("proportion", "threshold"),
-                            residThreshold,
-                            residProportion,
-                            pscProportion,
-                            mscaleB = 0.5,
-                            mscaleCC = 1.54764,
-
-                            enpy.control) {
+initest.control <- function(
+    lambda1,
+    lambda2,
+    numIt,
+    eps = 1e-6,
+    residCleanMethod = c("proportion", "threshold"),
+    residThreshold,
+    residProportion,
+    pscProportion,
+    mscaleB = 0.5,
+    mscaleCC = 1.54764,
+    enpy.control
+) {
     ret <- as.list(environment())
     ret$enpy.control <- NULL
     ret <- c(ret, enpy.control)

@@ -5,7 +5,7 @@
 \title{PY (Peña-Yohai) initial estimates for S-estimates of regression}
 \usage{
 pyinit(X, y, deltaesc, cc.scale, prosac, clean.method = c("threshold",
-  "proportion"), C.res, prop, py.nit, en.tol)
+  "proportion"), C.res, prop, py.nit, en.tol, control = enpy.control())
 }
 \arguments{
 \item{X}{The data matrix X}
@@ -26,6 +26,8 @@ will be removed.}
 \item{py.nit}{The maximum number of iterations to perform.}
 
 \item{en.tol}{The relative tolerance for convergence.}
+
+\item{control}{Optional further control parameters from \code{\link{enpy.control}}.}
 }
 \value{
 \item{initCoef}{A numeric matrix with one initial coefficient per column}

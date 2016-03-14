@@ -196,8 +196,8 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
         }
 
         // Now evaluate this new coefEst on the residuals filtered data
-        calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar, auxmem.residuals);
-        *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+        calculateResiduals(Xtr, y, currentEst, nobs, nvar, auxmem.residuals);
+        *tmpObjective = mscale(auxmem.residuals, nobs, ctrl->mscaleB, ctrl->mscaleEPS,
                                ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
         if (*tmpObjective < *minObjective) {
@@ -234,9 +234,8 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
                 break;
             }
 
-            calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar,
-                               auxmem.residuals);
-            *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+            calculateResiduals(Xtr, y, currentEst, nobs, nvar, auxmem.residuals);
+            *tmpObjective = mscale(auxmem.residuals, nobs, ctrl->mscaleB, ctrl->mscaleEPS,
                                    ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
             if (*tmpObjective < *minObjective) {
@@ -263,9 +262,8 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
                 break;
             }
 
-            calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar,
-                               auxmem.residuals);
-            *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+            calculateResiduals(Xtr, y, currentEst, nobs, nvar, auxmem.residuals);
+            *tmpObjective = mscale(auxmem.residuals, nobs, ctrl->mscaleB, ctrl->mscaleEPS,
                                    ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
             if (*tmpObjective < *minObjective) {
@@ -294,9 +292,8 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
                 break;
             }
 
-            calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar,
-                               auxmem.residuals);
-            *tmpObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
+            calculateResiduals(Xtr, y, currentEst, nobs, nvar, auxmem.residuals);
+            *tmpObjective = mscale(auxmem.residuals, nobs, ctrl->mscaleB, ctrl->mscaleEPS,
                                    ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
 
             if (*tmpObjective < *minObjective) {
@@ -334,27 +331,19 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
 
         normPrevBest = normBest;
 
-        /* 6. Calculate residuals with best coefficient estimate for all observatins */
+        /* 6. Calculate residuals with best coefficient estimate again */
         calculateResiduals(Xtr, y, bestCoefEst, nobs, nvar, auxmem.residuals);
 
         if (ctrl->residThreshold < 0) {
             scaledThreshold = getQuantile(auxmem.residuals, nobs, ctrl->residProportion,
                                           absoluteLessThan);
         } else {
-            *minObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                                   ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
             scaledThreshold = ctrl->residThreshold * (*minObjective);
         }
 
         currentNobs = filterDataThreshold(Xtr, y, currentXtr, currentY, nobs, nvar, auxmem.residuals,
                                           scaledThreshold, absoluteLessThan);
-
-        /* Update minObjective for currently residual-filtered data! */
-        calculateResiduals(currentXtr, currentY, bestCoefEst, currentNobs, nvar, auxmem.residuals);
-        *minObjective = mscale(auxmem.residuals, currentNobs, ctrl->mscaleB, ctrl->mscaleEPS,
-                               ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
     }
-
 
     freeAuxMemory(&auxmem);
 

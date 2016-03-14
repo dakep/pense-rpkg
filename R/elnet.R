@@ -42,7 +42,7 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
     }
 
     if (length(alpha) != 1L || !is.numeric(alpha) || is.na(alpha) || alpha < 0 || alpha > 1) {
-        stop("`alpha` must be single number between in the range [0, 1]")
+        stop("`alpha` must be single number in the range [0, 1]")
     }
 
     if (length(lambda) != 1L || !is.numeric(lambda) || is.na(lambda) || lambda < 0) {
@@ -61,6 +61,16 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
         warning("`centering` must be single logical value. Using TRUE as default.")
     }
 
+    elnetres <- .elnet.fit(X, y, alpha, lambda, maxit, eps, centering, addLeading1s)
+
+    return(elnetres)
+}
+
+#' Internal function to fit an EN linear regression WITHOUT parameter checks!
+.elnet.fit <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TRUE,
+                   addLeading1s = TRUE) {
+    y <- drop(y)
+    dX <- dim(X)
 
     ## Add leading column of 1's
     if (!identical(addLeading1s, FALSE)) {

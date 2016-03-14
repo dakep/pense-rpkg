@@ -14,6 +14,7 @@
 #'          will be removed.
 #' @param py.nit The maximum number of iterations to perform.
 #' @param en.tol The relative tolerance for convergence.
+#' @param control Optional further control parameters from \code{\link{enpy.control}}.
 #'
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
@@ -26,7 +27,7 @@
 #' @export
 pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                  clean.method = c("threshold", "proportion"), C.res, prop,
-                 py.nit, en.tol) {
+                 py.nit, en.tol, control = enpy.control()) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -55,12 +56,12 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                             pscProportion = prosac,
 
                             mscaleB = deltaesc,
-                            mscaleCC = 1,
+                            mscaleCC = cc.scale,
+                            enpy.control = control,
 
                             ## We don't need those parameters
                             lambda1 = 0,
-                            lambda2 = 0,
-                            enpy.control = enpy.control())
+                            lambda2 = 0)
 
     ##
     ## The C code needs to now how many observations to *keep*
@@ -77,7 +78,7 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
 
     if (dX[2L] >= dX[1L]) {
         stop("`pyinit` can not be used for data with more variables than observations")
-    } else if (dX[2L] >= ceiling(ctrl$pscProportion * ceiling(usableProp * dX[1L]))) {
+    } else if (dX[2L] >= ceiling(usableProp * dX[1L])) {
         stop("With the specified proportion of observations to remove, the number of ",
              "observations will be smaller than the number of variables.\nIn this case ",
              "`pyinit` can not be used.")

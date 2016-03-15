@@ -195,7 +195,6 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
             break;
         }
 
-        // Now evaluate this new coefEst on the residuals filtered data
         calculateResiduals(Xtr, y, currentEst, nobs, nvar, auxmem.residuals);
         *tmpObjective = mscale(auxmem.residuals, nobs, ctrl->mscaleB, ctrl->mscaleEPS,
                                ctrl->mscaleMaxIt, rhoFun, ctrl->mscaleCC);
@@ -207,6 +206,7 @@ static int computeInitialEstimator(const double *restrict Xtr, const double *res
         ++tmpObjective;
 
         /* 2. Calculate PSC for current work data */
+        calculateResiduals(currentXtr, currentY, currentEst, currentNobs, nvar, auxmem.residuals);
         numPSCs = calculatePSCs(pscs, &auxmem, currentXtr, currentY, currentNobs, nvar);
 
         if (numPSCs < 0) {

@@ -2,19 +2,22 @@
 #'
 #' Computes the PY initial estimates for S-estimates of regression.
 #'
-#' @param X The data matrix X
-#' @param y The response vector
-#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. Tukey's bisquare rho function
+#' @param X the data matrix X.
+#' @param y the response vector.
+#' @param intercept should an intercept be included in the models. Defaults to \code{TRUE}.
+#' @param deltaesc,cc.scale parameters for the M-equation of the scale. Tukey's bisquare rho function
 #'      is used internally.
-#' @param prosac The proportion of observations to remove based on PSCs
-#' @param clean.method How to clean the data based on large residuals.
+#' @param prosac the proportion of observations to remove based on PSCs.
+#' @param clean.method how to clean the data based on large residuals.
 #'          If \code{"threshold"}, all observations with scaled residuals larger than
-#'          \code{C.res} will be removed.
+#'          \code{C.res} will be removed (\code{C.res} corresponds to the constant
+#'          \eqn{C_1} from equation (21) in Pena & Yohai (1999).
 #'          If \code{"proportion"}, observations with the largest \code{prop} residuals
 #'          will be removed.
-#' @param py.nit The maximum number of iterations to perform.
-#' @param en.tol The relative tolerance for convergence.
-#' @param control Optional further control parameters from \code{\link{enpy.control}}.
+#' @param py.nit the maximum number of iterations to perform.
+#' @param en.tol the relative tolerance for convergence.
+#' @param control optional further control parameters from \code{\link{enpy.control}}.
+#' @param C.res,prop see parameter \code{clean.method} for details.
 #'
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
@@ -25,9 +28,9 @@
 #'
 #' @useDynLib penseinit C_initpy
 #' @export
-pyinit <- function(X, y, deltaesc, cc.scale, prosac,
-                 clean.method = c("threshold", "proportion"), C.res, prop,
-                 py.nit, en.tol, control = enpy.control()) {
+pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
+                   clean.method = c("threshold", "proportion"), C.res, prop,
+                   py.nit, en.tol, control = enpy.control()) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -45,8 +48,11 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
     if (anyNA(X) || anyNA(y)) {
         stop("Missing values are not supported")
     }
-    ## Add leading column of 1's
-    X <- cbind(1, X)
+
+    if (!identical(intercept, FALSE)) {
+        ## Add leading column of 1's
+        X <- cbind(1, X)
+    }
 
     ctrl <- initest.control(numIt = py.nit,
                             eps = en.tol,
@@ -84,7 +90,9 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
              "`pyinit` can not be used.")
     }
 
-    ies <- .Call(C_initpy, t(X), y, nrow(X), ncol(X),
+    dX <- dim(X)
+
+    ies <- .Call(C_initpy, t(X), y, dX[1L], dX[2L],
                  ctrl$numIt,
                  ctrl$eps,
                  ctrl$residThreshold,
@@ -96,7 +104,7 @@ pyinit <- function(X, y, deltaesc, cc.scale, prosac,
                  ctrl$mscaleEPS,
                  ctrl$mscaleRhoFun)
 
-    initCoefs <- matrix(ies[[2L]][seq_len(ies[[1L]] * (dX[2L] + 1L))], nrow = dX[2L] + 1L, ncol = ies[[1L]])
+    initCoefs <- matrix(ies[[2L]][seq_len(ies[[1L]] * dX[2L])], nrow = dX[2L], ncol = ies[[1L]])
 
     return(list(
         initCoef = initCoefs,

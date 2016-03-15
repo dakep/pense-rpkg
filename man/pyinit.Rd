@@ -4,30 +4,36 @@
 \alias{pyinit}
 \title{PY (Peña-Yohai) initial estimates for S-estimates of regression}
 \usage{
-pyinit(X, y, deltaesc, cc.scale, prosac, clean.method = c("threshold",
-  "proportion"), C.res, prop, py.nit, en.tol, control = enpy.control())
+pyinit(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
+  clean.method = c("threshold", "proportion"), C.res, prop, py.nit, en.tol,
+  control = enpy.control())
 }
 \arguments{
-\item{X}{The data matrix X}
+\item{X}{the data matrix X.}
 
-\item{y}{The response vector}
+\item{y}{the response vector.}
 
-\item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. Tukey's bisquare rho function
+\item{intercept}{should an intercept be included in the models. Defaults to \code{TRUE}.}
+
+\item{deltaesc,cc.scale}{parameters for the M-equation of the scale. Tukey's bisquare rho function
 is used internally.}
 
-\item{prosac}{The proportion of observations to remove based on PSCs}
+\item{prosac}{the proportion of observations to remove based on PSCs.}
 
-\item{clean.method}{How to clean the data based on large residuals.
+\item{clean.method}{how to clean the data based on large residuals.
 If \code{"threshold"}, all observations with scaled residuals larger than
-\code{C.res} will be removed.
+\code{C.res} will be removed (\code{C.res} corresponds to the constant
+\eqn{C_1} from equation (21) in Pena & Yohai (1999).
 If \code{"proportion"}, observations with the largest \code{prop} residuals
 will be removed.}
 
-\item{py.nit}{The maximum number of iterations to perform.}
+\item{C.res,prop}{see parameter \code{clean.method} for details.}
 
-\item{en.tol}{The relative tolerance for convergence.}
+\item{py.nit}{the maximum number of iterations to perform.}
 
-\item{control}{Optional further control parameters from \code{\link{enpy.control}}.}
+\item{en.tol}{the relative tolerance for convergence.}
+
+\item{control}{optional further control parameters from \code{\link{enpy.control}}.}
 }
 \value{
 \item{initCoef}{A numeric matrix with one initial coefficient per column}

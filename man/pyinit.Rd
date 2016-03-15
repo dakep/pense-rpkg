@@ -15,8 +15,8 @@ pyinit(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
 
 \item{intercept}{should an intercept be included in the models. Defaults to \code{TRUE}.}
 
-\item{deltaesc,cc.scale}{parameters for the M-equation of the scale. Tukey's bisquare rho function
-is used internally.}
+\item{deltaesc,cc.scale}{parameters for the M-equation of the scale. To specify the
+rho function, see parameter \code{control}.}
 
 \item{prosac}{the proportion of observations to remove based on PSCs.}
 

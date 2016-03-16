@@ -13,23 +13,23 @@
 
 /**
  * The control list must have following entries:
- *	lambda1			numeric
- *	lambda2			numeric
- *	numIt			integer
- *	eps				numeric
- *	residThreshold  numeric
- *	residProportion numeric
- *	pscProportion	numeric
+ *	lambda1			 numeric
+ *	lambda2			 numeric
+ *	numIt			 integer
+ *	eps				 numeric
+ *	resid.threshold  numeric
+ *	resid.proportion numeric
+ *	psc.proportion	 numeric
  *
- *	enMaxIt			integer
- *	enEPS			numeric
- *  enCentering     integer (0/1)
+ *	en.maxit		 integer
+ *	en.tol			 numeric
+ *  en.centering     integer (0/1)
  *
- *	mscaleB			numeric
- *	mscaleCC		numeric
- *	mscaleMaxIt		integer
- *	mscaleEPS		numeric
- *	mscaleRhoFun	integer
+ *	mscale.delta	 numeric
+ *	mscale.cc		 numeric
+ *	mscale.maxit	 integer
+ *	mscale.tol		 numeric
+ *	mscale.rho.fun	 integer
  */
 
 

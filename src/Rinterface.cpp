@@ -196,19 +196,19 @@ static inline Control parseControlList(SEXP Rcontrol)
         as<double>(control["lambda2"]),
         as<int>(control["numIt"]),
         as<double>(control["eps"]),
-        as<double>(control["residThreshold"]),
-        as<double>(control["residProportion"]),
-        as<double>(control["pscProportion"]),
+        as<double>(control["resid.threshold"]),
+        as<double>(control["resid.proportion"]),
+        as<double>(control["psc.proportion"]),
 
-        as<int>(control["enMaxIt"]),
-        as<double>(control["enEPS"]),
-        as<int>(control["enCentering"]),
+        as<int>(control["en.maxit"]),
+        as<double>(control["en.tol"]),
+        as<int>(control["en.centering"]),
 
-        as<double>(control["mscaleB"]),
-        as<double>(control["mscaleCC"]),
-        as<int>(control["mscaleMaxIt"]),
-        as<double>(control["mscaleEPS"]),
-        (RhoFunctionName) as<int>(control["mscaleRhoFun"])
+        as<double>(control["mscale.delta"]),
+        as<double>(control["mscale.cc"]),
+        as<int>(control["mscale.maxit"]),
+        as<double>(control["mscale.tol"]),
+        (RhoFunctionName) as<int>(control["mscale.rho.fun"])
     };
 
     return tmp;

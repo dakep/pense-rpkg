@@ -40,12 +40,12 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                             numIt = py.nit,
                             eps = en.tol,
 
-                            residCleanMethod = clean.method,
-                            residThreshold = C.res,
-                            residProportion = prop,
-                            pscProportion = prosac,
-                            mscaleB = deltaesc,
-                            mscaleCC = 1,
+                            resid.clean.method = clean.method,
+                            resid.threshold = C.res,
+                            resid.proportion = prop,
+                            psc.proportion = prosac,
+                            mscale.delta = deltaesc,
+                            mscale.cc = 1,
                             enpy.control = control)
 
     ctrl$lambda1 <- ctrl$lambda1 * cc.scale^2
@@ -54,16 +54,16 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     ##
     ## The C++ code needs to now how many observations to *keep*
     ##
-    ctrl$pscProportion <- 1 - ctrl$pscProportion
+    ctrl$psc.proportion <- 1 - ctrl$psc.proportion
 
     usableProp <- 1
-    if (ctrl$residCleanMethod == "proportion") {
+    if (ctrl$resid.clean.method == "proportion") {
         ##
         ## The C++ code needs to now how many observations to *keep*
         ##
-        ctrl$residProportion <- 1 - ctrl$residProportion
+        ctrl$resid.proportion <- 1 - ctrl$resid.proportion
 
-        usableProp <- ctrl$residProportion
+        usableProp <- ctrl$resid.proportion
     }
 
     if (ctrl$lambda2 == 0) {

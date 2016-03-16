@@ -45,8 +45,8 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                             residThreshold = C.res,
                             residProportion = prop,
                             pscProportion = prosac,
-                            mscaleB = deltaesc,
-                            mscaleCC = 1,
+                            mscale.delta = deltaesc,
+                            mscale.cc = 1,
                             enpy.control = control)
 
     ctrl$lambda1 <- ctrl$lambda1 * cc.scale^2
@@ -55,13 +55,13 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     ##
     ## The C++ code needs to now how many observations to *keep*
     ##
-    ctrl$pscProportion <- 1 - ctrl$pscProportion
+    ctrl$psc.proportion <- 1 - ctrl$psc.proportion
 
-    if (ctrl$residCleanMethod == "proportion") {
+    if (ctrl$resid.clean.method == "proportion") {
         ##
         ## The C++ code needs to now how many observations to *keep*
         ##
-        ctrl$residProportion <- 1 - ctrl$residProportion
+        ctrl$resid.proportion <- 1 - ctrl$resid.proportion
     }
 
     ies <- .Call(C_enpy_exact, t(X), y, dX[1L], dX[2L], ctrl)

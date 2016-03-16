@@ -28,23 +28,23 @@ mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc = 1.547
         x <- x[!is.na(x)]
     }
 
-    ctrl <- initest.control(mscaleB = b,
-                            mscaleCC = cc,
-                            enpy.control = enpy.control(mscaleMaxIt = max.it,
-                                                        mscaleEPS = eps,
-                                                        mscaleRhoFun = rho),
+    ctrl <- initest.control(mscale.delta = b,
+                            mscale.cc = cc,
+                            enpy.control = enpy.control(mscale.maxit = max.it,
+                                                        mscale.tol = eps,
+                                                        mscale.rho.fun = rho),
                             ## Not needed arguments below
                             lambda1 = 0,
                             lambda2 = 0,
                             numIt = 1,
-                            residThreshold = 1,
-                            residProportion = 0.5,
-                            pscProportion = 0.5)
+                            resid.threshold = 1,
+                            resid.proportion = 0.5,
+                            psc.proportion = 0.5)
 
     x <- as.numeric(x)
 
-    scale <- .Call(C_mscale, x, length(x), ctrl$mscaleB, ctrl$mscaleCC, ctrl$mscaleMaxIt,
-                   ctrl$mscaleEPS, ctrl$mscaleRhoFun)
+    scale <- .Call(C_mscale, x, length(x), ctrl$mscale.delta, ctrl$mscale.cc, ctrl$mscale.maxit,
+                   ctrl$mscale.tol, ctrl$mscale.rho.fun)
 
     if (!is.finite(scale)) {
         scale <- NA_real_

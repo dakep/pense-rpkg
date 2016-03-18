@@ -161,6 +161,7 @@ int InitialEstimator::compute()
         ++tmpObjective;
 
         /* 2. Calculate PSC for current work data */
+        computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
         this->psc.setData(this->residualFilteredData);
         this->psc.setResiduals(this->residuals);
         numPSCs = this->psc.computePSC();
@@ -253,13 +254,6 @@ int InitialEstimator::compute()
 
         this->filterDataResiduals(threshold);
 
-        /*
-         * Now calculate the new minimum objective for the best estimate on the
-         * filtered data
-         */
-        computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
-        *minObjective = this->evaluateEstimate();
-
         this->coefEst = this->allCoefEstimates + origNvar;
     }
 
@@ -282,7 +276,7 @@ void InitialEstimator::filterDataResiduals(double threshold)
 
 double InitialEstimator::MscaleOfResiduals() const
 {
-    return mscale(this->residuals, this->residualFilteredNobs, this->ctrl.mscaleB,
+    return mscale(this->residuals, this->originalData.numObs(), this->ctrl.mscaleB,
                   this->ctrl.mscaleEPS, this->ctrl.mscaleMaxIt, this->rhoFun,
                   this->ctrl.mscaleCC);
 }
@@ -367,7 +361,7 @@ void OLS::estimateCoefficients()
                this->coefEst, BLAS_1L);
 
     /* Now update the residuals */
-    computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
+    computeResiduals(this->originalData, this->coefEst, this->residuals);
 }
 
 double OLS::evaluateEstimate() const
@@ -456,7 +450,7 @@ void ENPY::estimateCoefficients()
     }
 
     /* Now update the residuals */
-    computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
+    computeResiduals(this->originalData, this->coefEst, this->residuals);
 
     if (this->lambda2LS > 0) {
         /* The last elements of the residuals are just - sqrt(lambda2) * beta[j] */
@@ -536,9 +530,9 @@ double ENPY::evaluateEstimate() const
                    this->ctrl.lambda1 * fabs(this->coefEst[j]);
     }
 
-    penalty *= ((double) this->residualFilteredNobs / (double) this->originalData.numObs());
+//    penalty *= ((double) this->residualFilteredNobs / (double) this->originalData.numObs());
 
-    return this->residualFilteredNobs * scale * scale + penalty;
+    return this->originalData.numObs() * scale * scale + penalty;
 }
 
 
@@ -579,7 +573,7 @@ void ENPY_Exact::estimateCoefficients()
     }
 
     /* Now update the residuals */
-    computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
+    computeResiduals(this->originalData, this->coefEst, this->residuals);
 }
 
 void ENPY_Exact::resetData()
@@ -625,9 +619,9 @@ double ENPY_Exact::evaluateEstimate() const
                    this->ctrl.lambda1 * fabs(this->coefEst[j]);
     }
 
-    penalty *= ((double) this->residualFilteredNobs / (double) this->originalData.numObs());
+//    penalty *= ((double) this->residualFilteredNobs / (double) this->originalData.numObs());
 
-    return this->residualFilteredNobs * scale * scale + penalty;
+    return this->originalData.numObs() * scale * scale + penalty;
 }
 
 /***************************************************************************************************

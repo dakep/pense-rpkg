@@ -5,19 +5,23 @@
 \alias{pense.default}
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
-pense(x, ...)
+pense(X, ...)
 
-\method{pense}{default}(x, y, alpha = 0.5, lambda = NULL, nlambda = 100,
-  standardize = TRUE, cv.k = 5, ncores = getOption("mc.cores", 2L),
+\method{pense}{default}(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
+  standardize = TRUE, cv.k = 5, warm.reset = 10,
+  ncores = getOption("mc.cores", 2L), cl = NULL,
   control = pense.control())
 }
 \arguments{
-\item{x}{the design matrix}
+\item{X}{the design matrix}
 
 \item{y}{the response vector.}
 
-\item{alpha}{the elastic net mixing parameter with \eqn{0 \leq \alpha \leq 1}.
+\item{alpha}{the elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
 \code{alpha = 1} is the lasso penatly, and \code{alpha = 0} the ridge penalty.}
+
+\item{nlambda}{if \code{lambda} is not given or \code{NULL} (default),
+a grid of \code{nlambda} lambda values is generated based on the data.}
 
 \item{lambda}{a single value or a grid of values for the regularization parameter lambda.
 Assumed to be on the same scale as the data and adjusted for S-estimation.
@@ -26,18 +30,18 @@ generated (see parameter \code{nlambda}).
 If given and \code{standardize = TRUE}, the lambda values will be adjusted
 accordingly.}
 
-\item{nlambda}{if \code{lambda} is not given or \code{NULL}, a grid of \code{nlambda} lambda
-values is generated based on the data.}
-
 \item{standardize}{should the data be standardized robustly? Estimates
 are returned on the original scale. Defaults to \code{TRUE}.}
 
-\item{cv.k}{the number of cross-validation segements to use to choose the optimal
-lambda from the grid. If only a single value of lambda is given, this argument
-is ignored.}
+\item{cv.k}{number of cross-validation segements to use to choose the optimal
+lambda from the grid. If only a single value of lambda is given, cross-validation
+can still done to estimate the prediction performance at this particular lambda.}
 
-\item{ncores}{the number of processor cores to use to estimate the optimal value of lambda.
-See details for more information.}
+\item{warm.reset}{how often should the warm-start be reset to a cold initial estimate?
+If \code{NULL}, no warm starts will be used.}
+
+\item{ncores,cl}{the number of processor cores or an actual parallel cluster to use to
+estimate the optimal value of lambda. See details for more information.}
 
 \item{control}{a list of control parameters as returned by \code{\link{pense.control}}.}
 }

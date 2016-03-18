@@ -5,10 +5,11 @@
 \title{Control Parameters for PENSE}
 \usage{
 \method{pense}{control}(pense.maxit = 500, pense.tol = 1e-06,
-  pense.en.tol = 1e-08, pense.en.maxit = 5e+05, init.tol = 1e-06,
-  init.maxit = 10, init.resid.clean.method = c("proportion", "threshold"),
+  pense.en.tol = 1e-08, pense.en.maxit = 5e+05, cv.objective = scaleTau2,
+  init.tol = 1e-06, init.maxit = 10,
+  init.resid.clean.method = c("proportion", "threshold"),
   init.resid.proportion = 0.4, init.resid.threshold = 2,
-  init.psc.method = c("rr", "Mn"), init.psc.proportion = 0.8,
+  init.psc.method = c("auto", "rr", "Mn"), init.psc.proportion = 0.8,
   init.csteps = 10, init.nkeep = 5, init.en.tol = pense.en.tol,
   init.en.maxit = pense.en.maxit, mscale.cc = 1.54764, mscale.delta = 0.5,
   mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
@@ -22,6 +23,10 @@
 \item{pense.en.tol}{convergence tolerance for the elastic net in PENSE}
 
 \item{pense.en.maxit}{maximum number of iterations for each elastic net fit in PENSE}
+
+\item{cv.objective}{a user-supplied function taking the cross-validated residuals
+         to choose lambda. Default is to choose the lambda the minimizes the
+         \link[robustbase:scaleTau2]{tau-scale}.}
 
 \item{init.tol}{convergence tolerance for initial estimates.}
 
@@ -37,8 +42,9 @@ If \code{"proportion"}, observations with the largest
 \item{init.resid.proportion,init.resid.threshold}{see details of argument
 \code{init.resid.clean.method}}
 
-\item{init.psc.method}{how to calculate the principal sensitivity components. See
-\code{\link{enpy}} for details.}
+\item{init.psc.method}{how to calculate the principal sensitivity components. If \code{"auto"},
+\code{rr} is used when there are enough observations, otherwise \code{Mn} is
+selected. See \code{\link{enpy}} for details.}
 
 \item{init.psc.proportion}{the proportion of observations to remove based on the score on
 the principal sensitivity components.}

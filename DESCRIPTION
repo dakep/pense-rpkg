@@ -1,9 +1,12 @@
 Package: penseinit
 Type: Package
-Title: Initial Estimators for the Penalized Elastic Net S-Estimator of Regression
-Version: 0.2.5
-Date: 2016-03-15
-Author: David Kepplinger
+Title: Penalized Elastic Net S-Estimator of Regression
+Version: 0.3.0
+Date: 2016-03-18
+Author: Derek Cho [aut],
+        Gabriela Cohen Freue [aut],
+        David Kepplinger [aut],
+        Matias Salibian-Barrera [aut]
 Maintainer: David Kepplinger <david.kepplinger@gmail.com>
 Description: Initial estimators for the penalized elastic net S-estimator of regression
 Imports: Rcpp, robustbase, parallel, methods

@@ -54,7 +54,8 @@ An object of class \code{"pense"} with elements
 \item{scale}{the estimated scale for \code{lambda.opt}.}
 \item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
                    tau-scale estimated via CV in the second column.}
-\item{alpha}{the value of \code{alpha} the estimatr was run with.}
+\item{alpha,standardize,control}{the given arguments.}
+\item{standardize}{}
 }
 \description{
 Penalized Elasitc Net S-estimators for Regression

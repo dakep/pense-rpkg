@@ -29,7 +29,7 @@ test_that("enpy.rr", {
             min(colSums(abs(target$coeff - x)))
         })
 
-        expect_lt(sum(abs(diffs)), 1e-9)
+        expect_lt(sum(abs(diffs)), 1e-8)
 
 
         ##
@@ -52,6 +52,6 @@ test_that("enpy.rr", {
             min(colSums(abs(target$coeff - x)))
         })
 
-        expect_lt(sum(abs(diffs)), 1e-9)
+        expect_lt(sum(abs(diffs)), 1e-8)
     }
 })

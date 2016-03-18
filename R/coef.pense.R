@@ -7,7 +7,7 @@
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export
 coef.pense <- function(object, lambda, ...) {
-    if (missing(lambda)) {
+    if (missing(lambda) || is.null(lambda)) {
         return(object$coefficients)
     }
 
@@ -15,12 +15,13 @@ coef.pense <- function(object, lambda, ...) {
         stop("`lambda` must be single non-negative number")
     }
 
-    x <- data.matrix(eval(object$call$x));
-    y <- drop(eval(object$call$y));
+    X <- data.matrix(eval(object$call$X))
+    y <- drop(eval(object$call$y))
 
-    ##
-    ## Get an initial estimate at the supplied lambda
-    ##
+    estimate <- pense.coldwarm(X, y, lambda = lambda,
+                               alpha = object$alpha,
+                               standardize = object$standardize,
+                               control = object$control)
 
-    return(NA_real_)
+    return(nameCoefVec(c(estimate[[1L]]$intercept, estimate[[1L]]$beta), X))
 }

@@ -2,7 +2,7 @@
 ## @param mscale.cc is used instead of control$mscale.cc
 ##
 #' @importFrom robustbase Mchi
-pen.s.reg <- function(X, y, maxit, lambda1, lambda2, init.coef, mscale.cc, control) {
+pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, mscale.cc, control, warn = TRUE) {
     dX <- dim(X)
     p <- dX[2L]
     n <- dX[1L]
@@ -18,11 +18,8 @@ pen.s.reg <- function(X, y, maxit, lambda1, lambda2, init.coef, mscale.cc, contr
                     b = control$mscale.delta, rho = control$mscale.rho.fun,
                     eps = control$mscale.tol, max.it = control$mscale.maxit)
 
-    enlambda <- (2 * lambda2 + lambda1) / n
-    enalpha <- lambda1 / (2 * lambda2 + lambda1)
-    if (!is.finite(enalpha)) {
-        enalpha <- 0
-    }
+    lambda1 <- alpha * lambda * n
+    lambda2 <- lambda * (1 - alpha) * n / 2
 
     tol <- control$pense.tol^2
     it <- 0L
@@ -40,11 +37,11 @@ pen.s.reg <- function(X, y, maxit, lambda1, lambda2, init.coef, mscale.cc, contr
         Xweight <- X * Wbeta.tilde
         yweight <- (y - intercept) * Wbeta.tilde
 
-        beta.obj <- .elnet.fit(Xweight, yweight, alpha = enalpha, lambda = enlambda,
+        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
                                centering = FALSE, maxit = control$pense.en.maxit,
                                eps = control$pense.en.tol)
 
-        prev.beta <- beta
+        prev.coefs <- c(intercept, beta)
         beta <- beta.obj$coefficients[-1L]
 
         resid <- as.vector(y - X %*% beta)
@@ -58,16 +55,20 @@ pen.s.reg <- function(X, y, maxit, lambda1, lambda2, init.coef, mscale.cc, contr
                         b = control$mscale.delta, rho = control$mscale.rho.fun,
                         eps = control$mscale.tol, max.it = control$mscale.maxit)
 
-        rel.change <- sum((prev.beta - beta)^2) / sum(prev.beta^2)
+        rel.change <- sum((prev.coefs - c(intercept, beta))^2) / sum(prev.coefs^2)
+
+        if (is.nan(rel.change)) { # if 0/0
+            rel.change <- 0
+        }
 
         ## Check convergence
-        if (it >= maxit || rel.change < tol) {
+        if (it >= maxit || all(rel.change < tol)) {
             break
         }
     }
 
-    if (rel.change > tol) {
-        warning("PENSE did not converge")
+    if (rel.change > tol && identical(warn, TRUE)) {
+        warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
     }
 
     objf <- n * scale^2 + lambda2 * sum(beta^2) + lambda1 * sum(abs(beta))
@@ -78,7 +79,7 @@ pen.s.reg <- function(X, y, maxit, lambda1, lambda2, init.coef, mscale.cc, contr
         resid = resid,
         scale = scale,
         iterations = it,
-        rel.change = rel.change,
+        rel.change = sqrt(rel.change),
         objF = objf
     ))
 }

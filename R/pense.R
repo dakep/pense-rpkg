@@ -192,9 +192,11 @@ pense.default <- function(X, y, alpha = 0.5,
     }
 
     ## Create CV segments
-    cv.segments <- ifelse(cv.k > 1,
-                          split(seq_len(dX[1L]), sample(rep_len(seq_len(cv.k), dX[1L]))),
-                          list(integer(0)))
+    cv.segments <- if(cv.k > 1L) {
+        split(seq_len(dX[1L]), sample(rep_len(seq_len(cv.k), dX[1L])))
+    } else {
+        list(integer(0))
+    }
 
     subgrid.lengths <- nlambda %/% warm.reset
     overlength <- nlambda %% warm.reset

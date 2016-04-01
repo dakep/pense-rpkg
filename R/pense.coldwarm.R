@@ -29,7 +29,6 @@ pense.coldwarm <- function(X, y, alpha, lambda.grid, standardize, control) {
             pen.s.reg(X, y, alpha, lambda,
                       maxit = control$pense.maxit,
                       init.coef = coef,
-                      mscale.cc = control$mscale.cc,
                       control)
         }, lambda = lambda.grid[i])
 
@@ -76,15 +75,11 @@ initest.cold <- function(X, y, alpha, lambda, control) {
                         mscale.rho.fun = control$mscale.rho.fun
                     ))
 
-    ## Corrected lambda values
-    lambda.corrected <- lambda * control$mscale.cc^2
-
     ## Compute a "short" PENSE for each candidate solution
     initconc <- apply(initraw$coeff, 2, function(coef) {
-        conc <- pen.s.reg(X, y, alpha, lambda.corrected,
+        conc <- pen.s.reg(X, y, alpha, lambda,
                           maxit = control$init.csteps,
                           init.coef = coef,
-                          mscale.cc = 1,
                           control,
                           warn = FALSE)
 

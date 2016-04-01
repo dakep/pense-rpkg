@@ -1,8 +1,7 @@
 ## Internal function to calculate PENSE for a given initial estimate (init.coef)
-## @param mscale.cc is used instead of control$mscale.cc
 ##
 #' @importFrom robustbase Mchi
-pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, mscale.cc, control, warn = TRUE) {
+pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
     dX <- dim(X)
     p <- dX[2L]
     n <- dX[1L]
@@ -14,7 +13,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, mscale.cc, control,
     prev.beta <- NULL
 
     resid <- as.vector(y - intercept - X %*% beta)
-    scale <- mscale(resid, cc = mscale.cc,
+    scale <- mscale(resid, cc = control$mscale.cc,
                     b = control$mscale.delta, rho = control$mscale.rho.fun,
                     eps = control$mscale.tol, max.it = control$mscale.maxit)
 
@@ -29,7 +28,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, mscale.cc, control,
         it <- it + 1L
 
         resid.scaled <- resid / scale
-        wbeta <- Mchi(resid.scaled, cc = mscale.cc, deriv = 1,
+        wbeta <- Mchi(resid.scaled, cc = control$mscale.cc, deriv = 1,
                       psi = control$mscale.rho.fun) / resid.scaled
         tau.beta <- n * 2 * scale^2 / sum(resid^2 * wbeta)
         Wbeta.tilde <- sqrt(tau.beta * wbeta)
@@ -51,7 +50,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, mscale.cc, control,
 
         # Update residuals and scale
         resid <- resid - intercept
-        scale <- mscale(resid, cc = mscale.cc,
+        scale <- mscale(resid, cc = control$mscale.cc,
                         b = control$mscale.delta, rho = control$mscale.rho.fun,
                         eps = control$mscale.tol, max.it = control$mscale.maxit)
 

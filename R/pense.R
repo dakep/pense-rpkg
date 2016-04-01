@@ -51,8 +51,6 @@ pense <- function(X, ...) {
 #' @param control a list of control parameters as returned by \code{\link{pense.control}}.
 #'
 #' @rdname pense
-#' @importFrom robustbase covMcd
-#' @importFrom robustbase covGK scaleTau2
 #' @importFrom stats mad median
 #' @export
 pense.default <- function(X, y, alpha = 0.5,
@@ -175,20 +173,7 @@ pense.default <- function(X, y, alpha = 0.5,
 
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
-        # Compute a grid of lambdas for the EN estimator
-        ycs <- yc / mad(y)
-
-        ## Pairwise robust covariances
-        covxy <- apply(Xs, 2, covGK, ycs, sigmamu = scaleTau2)
-
-        lmax <- max(abs(covxy))
-        lmin <- 0.0001 * lmax #default lambda.min.ratio=0.0001
-
-        ## the lambda grid is not yet adjusted for the sample size! This will be done separately
-        ## during estimation!
-        lambda <- exp(seq(log(lmin), log(lmax), length.out = nlambda)) * 2 * mad(y) / alpha
-        #adjustment for an S-est (may not be enough)
-        lambda <- lambda * 1.1 * facon(control$mscale.delta) / control$mscale.cc^2
+        lambda <- lambda.grid(Xs, yc, nlambda, control, standardize = FALSE)
     }
 
     ## Create CV segments

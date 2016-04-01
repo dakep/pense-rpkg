@@ -1,0 +1,4 @@
+2016-03-31: Version 0.3.1
+    Non-visible changes:
+    *) Remove legacy code to adjust lambda and solve the mscale with cc=1
+    *) Factor generating the lambda grid out to a private function

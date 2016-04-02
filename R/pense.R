@@ -96,6 +96,10 @@ pense.default <- function(X, y, alpha = 0.5,
         stop("`alpha` must be single number in the range [0, 1]")
     }
 
+    if (alpha == 0) {
+        alpha <- 1e-3
+    }
+
     if (!is.null(lambda)) {
         if (!is.numeric(lambda) || !is.null(dim(lambda)) || anyNA(lambda) || any(lambda < 0)) {
             stop("Supplied `lambda` must be a numeric vector of non-negative values ",

@@ -50,7 +50,7 @@
 pense.control <- function(
     pense.maxit = 500,
     pense.tol = 1e-6,
-    pense.en.tol = 1e-8,
+    pense.en.tol = 1e-9,
     pense.en.maxit = 5e5,
 
     cv.objective = scaleTau2,
@@ -64,7 +64,7 @@ pense.control <- function(
     init.psc.proportion = 0.8,
     init.csteps = 10,
     init.nkeep = 5,
-    init.en.tol = pense.en.tol,
+    init.en.tol = 1e-8,
     init.en.maxit = pense.en.maxit,
 
     mscale.cc = 1.54764,

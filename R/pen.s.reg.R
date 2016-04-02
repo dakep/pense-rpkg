@@ -6,13 +6,10 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
     p <- dX[2L]
     n <- dX[1L]
 
-    #Intercept, slopes, and scale
-    beta <- init.coef[-1L]
-    intercept <- init.coef[1L]
+    current.coefs <- init.coef
+    prev.coefs <- NULL
 
-    prev.beta <- NULL
-
-    resid <- as.vector(y - intercept - X %*% beta)
+    resid <- as.vector(y - current.coefs[1L] - X %*% current.coefs[-1L])
     scale <- mscale(resid, cc = control$mscale.cc,
                     b = control$mscale.delta, rho = control$mscale.rho.fun,
                     eps = control$mscale.tol, max.it = control$mscale.maxit)
@@ -34,19 +31,19 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         Wbeta.tilde <- sqrt(tau.beta * wbeta)
 
         Xweight <- X * Wbeta.tilde
-        yweight <- (y - intercept) * Wbeta.tilde
+        yweight <- (y - current.coefs[1L]) * Wbeta.tilde
 
         ## Adjust convergence threshold for elastic net
         en.eps <- control$pense.en.tol * dX[1L] * mscale(yweight)^2
 
         beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
                                centering = FALSE, maxit = control$pense.en.maxit,
-                               eps = control$pense.en.tol)
+                               eps = en.eps, warmCoef = current.coefs)
 
-        prev.coefs <- c(intercept, beta)
-        beta <- beta.obj$coefficients[-1L]
+        prev.coefs <- current.coefs
+        current.coefs <- beta.obj$coefficients
 
-        resid <- as.vector(y - X %*% beta)
+        resid <- as.vector(y - X %*% current.coefs[-1L])
         # New intercept
         wintercept <- wbeta / sum(wbeta)
         intercept <- sum(wintercept * resid)
@@ -57,7 +54,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
                         b = control$mscale.delta, rho = control$mscale.rho.fun,
                         eps = control$mscale.tol, max.it = control$mscale.maxit)
 
-        rel.change <- sum((prev.coefs - c(intercept, beta))^2) / sum(prev.coefs^2)
+        rel.change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
 
         if (is.nan(rel.change)) { # if 0/0
             rel.change <- 0
@@ -73,10 +70,11 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
     }
 
+    beta <- current.coefs[-1L]
     objf <- n * scale^2 + lambda2 * sum(beta^2) + lambda1 * sum(abs(beta))
 
     return(list(
-        intercept = intercept,
+        intercept = current.coefs[1L],
         beta = beta,
         resid = resid,
         scale = scale,

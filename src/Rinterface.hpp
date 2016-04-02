@@ -40,22 +40,24 @@
  *
  * @param Xtr       numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
  * @param y         numeric The numeric y vector (size `nobs`)
+ * @param coefs		numeric The inital coefficients, will be copied if `warm` is 1, otherwise
+ *							not referenced.
  * @param nobs      integer The number of observations
  * @param nvar      integer The number of variables (including the intercept)
  * @param alpha     numeric The alpha parameter for the penalization
  * @param lambda    numeric The lambda parameter for the penalization
  * @param maxIt     integer The maximum number of iterations allowed
  * @param eps       numeric The relative tolerance for convergence
- * @param centering integer Should centering be done (1=yes, 0=no) for rows with a leading
- *                          1.
+ * @param centering integer Should centering be done (1=yes, 0=no) for rows with a leading 1.
+ * @param warm		integer Should warm coefficients be used (1=yes, 0=no).
  *
  * @return List Returns a list with two elements:
  *		item 1: Logical telling if the algorithm converged
  *      item 1: Numeric vector with the cofficient estimates
  *      item 2: Numeric vector with the residuals
  */
-RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP alpha, SEXP lambda,
-                        SEXP maxIt, SEXP eps, SEXP centering);
+RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP alpha,
+						SEXP lambda, SEXP maxIt, SEXP eps, SEXP centering, SEXP warm);
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)

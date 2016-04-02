@@ -53,20 +53,26 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     return result;
 }
 
-RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
-                        SEXP RmaxIt, SEXP Reps, SEXP Rcentering)
+RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
+                        SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
     ElasticNet en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
+    bool warm = (*INTEGER(Rwarm) == 1);
     SEXP result = R_NilValue;
     SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
     SEXP retResid = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
     SEXP converged = PROTECT(Rf_allocVector(LGLSXP, 1));
+    double *retCoefPtr = REAL(retCoef);
 
     BEGIN_RCPP
 
+    if (warm) {
+        memcpy(retCoefPtr, REAL(Rcoefs), data.numVar() * sizeof(double));
+    }
+
     en.setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
-    *LOGICAL(converged) = en.computeCoefs(data, REAL(retCoef), REAL(retResid));
+    *LOGICAL(converged) = en.computeCoefs(data, retCoefPtr, REAL(retResid), warm);
 
     result = PROTECT(Rf_allocVector(VECSXP, 3));
 

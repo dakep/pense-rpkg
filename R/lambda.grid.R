@@ -3,7 +3,7 @@
 ##
 #' @importFrom stats mad median
 #' @importFrom robustbase scaleTau2 covGK
-lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, minMult = 0.0001,
+lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, lambda.min.ratio = NULL,
                         scaleFun = mad, meanFun = median) {
     dX <- dim(X)
 
@@ -24,8 +24,12 @@ lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, minMu
     ## Pairwise robust covariances
     covxy <- apply(Xs, 2, covGK, ycs, sigmamu = scaleTau2)
 
+    if (is.null(lambda.min.ratio)) {
+        lambda.min.ratio <- 10^-3 * 10^floor(log10(dX[2L] / dX[1L]))
+    }
+
     lmax <- max(abs(covxy))
-    lmin <- minMult * lmax #default lambda.min.ratio=0.0001
+    lmin <- lambda.min.ratio * lmax
 
     ## the lambda grid is not yet adjusted for the sample size! This will be done separately
     ## during estimation!

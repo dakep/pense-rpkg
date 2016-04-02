@@ -48,15 +48,18 @@ public:
 	 * (1 / N) * RSS + lambda2 * L2(beta) + lambda1 * L1(beta))
 	 *
 	 * @param data Is assumed to have the leading column of 1's for the intercept
-	 * @param coefs Is assumed to be at least data.numVar() long!
-	 * @param threshAdj Adjustment to the convergence threshold
+	 * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
+     *          the starting point for the coordinate-descend algorithm. (see argument warm)
+     * @param residuals A vector of residuals with as many observations as in data. The
+     *          residuals will be recalculated for the given (warm) coefficients
 	 *
 	 * NOTE: The leading column of X is used as weight for the row in
 	 *		 in centering the data.
 	 *
 	 * @returns TRUE if the algorithm converged, FALSE otherwise
 	 */
-	bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals);
+	bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
+                      const bool warm = FALSE);
 
 private:
 	const int maxIt;

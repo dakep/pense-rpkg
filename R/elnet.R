@@ -67,7 +67,8 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
 }
 
 #' Internal function to fit an EN linear regression WITHOUT parameter checks!
-.elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE) {
+.elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
+                       warmCoef = NULL) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -76,17 +77,26 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
         X <- cbind(1, X)
     }
 
+    warm <- 0L
+
+    if (!is.null(warmCoef)) {
+        warm <- 1L
+    }
+
     alpha <- as.numeric(alpha)
     lambda <- as.numeric(lambda)
     maxit <- as.integer(maxit)
     centering <- 1L - as.integer(identical(centering, FALSE))
 
-    elnetres <- .Call(C_elnet, t(X), y, dX[1L], ncol(X),
+    elnetres <- .Call(C_elnet, t(X), y,
+                      warmCoef,
+                      dX[1L], ncol(X),
                       alpha,
                       lambda,
                       maxit,
                       eps,
-                      centering)
+                      centering,
+                      warm)
 
     if (!identical(elnetres[[1L]], TRUE)) {
         warning("Elastic Net algorithm did not converge.")

@@ -50,7 +50,8 @@ void ElasticNet::setThreshold(const double eps)
 }
 
 
-bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals)
+bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
+                              const bool warm)
 {
     /*
      * NOTE:
@@ -76,7 +77,12 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
 
     this->resizeBuffer(data);
 
-    memset(coefs, 0, data.numVar() * sizeof(double));
+    /**
+     * We can take the given coefficients as warm start.
+     */
+    if (!warm) {
+        memset(coefs, 0, data.numVar() * sizeof(double));
+    }
 
     /*
      * First we calculate the mean of y and the X variables
@@ -144,6 +150,26 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
         actualXtr = data.getXtrConst();
     }
 
+    /*
+     * Residuals are now either y or y - mean(y).
+     * If we use a warm start, we have to update the residuals
+     * and calculate the norm of the coefficient vector
+     */
+    if (warm) {
+        XtrConstIter = actualXtr;
+        for (i = 0; i < data.numObs(); ++i) {
+            /* Skip the first row (intercept!) */
+            ++XtrConstIter;
+            for (j = 1; j < data.numVar(); ++j, ++XtrConstIter) {
+                residuals[i] -= (*XtrConstIter) * coefs[j];
+            }
+        }
+
+        /* Compute norm */
+        for (j = 1; j < data.numVar(); ++j) {
+            norm += fabs(coefs[j]);
+        }
+    }
 
     /*
      * Compute length of the vectors of variables (= N * Var(X_j))

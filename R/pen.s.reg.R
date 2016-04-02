@@ -36,6 +36,9 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         Xweight <- X * Wbeta.tilde
         yweight <- (y - intercept) * Wbeta.tilde
 
+        ## Adjust convergence threshold for elastic net
+        en.eps <- control$pense.en.tol * dX[1L] * mscale(yweight)^2
+
         beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
                                centering = FALSE, maxit = control$pense.en.maxit,
                                eps = control$pense.en.tol)

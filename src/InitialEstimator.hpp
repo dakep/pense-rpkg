@@ -92,10 +92,11 @@ protected:
 	double *RESTRICT residuals;
 
 	double MscaleOfResiduals() const;
+	RhoFunction rhoFun;
+
 private:
 	double *RESTRICT allCoefEstimates;
 	double *RESTRICT coefObjFunScore;
-	RhoFunction rhoFun;
 };
 
 
@@ -146,6 +147,8 @@ private:
     Data pscFilteredData;
 	Data dataToUse;
 
+	double currentNullDeviance;
+
 	double *RESTRICT XtX;
 };
 
@@ -173,6 +176,8 @@ private:
     PSC_EN pscEn;
     Data pscFilteredData;
 	Data dataToUse;
+
+	double currentNullDeviance;
 };
 
 

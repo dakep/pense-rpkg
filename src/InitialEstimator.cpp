@@ -382,7 +382,8 @@ ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            lambda1LS(ctrl.lambda1 / (facon(ctrl.mscaleB) * originalData.numObs())),
            lambda2LS(ctrl.lambda2 / (facon(ctrl.mscaleB) * originalData.numObs())),
            en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
-           dataToUse(residualFilteredData)
+           dataToUse(residualFilteredData),
+           currentNullDeviance(1)
 {
     /* Resize the residuals memory allocated from by base class */
     delete[] this->residuals;
@@ -441,6 +442,7 @@ void ENPY::estimateCoefficients()
                    this->coefEst, BLAS_1L);
     } else {
         /* This already updates the residuals, but NOT for all observations */
+        this->en.setThreshold(this->ctrl.enEPS * this->currentNullDeviance);
         converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 
         if (!converged) {
@@ -455,7 +457,8 @@ void ENPY::estimateCoefficients()
     if (this->lambda2LS > 0) {
         /* The last elements of the residuals are just - sqrt(lambda2) * beta[j] */
         for (j = 1; j < this->originalData.numVar(); ++j) {
-            this->residuals[this->originalData.numObs() + j - 1] = minusSqrtLambda2LS * this->coefEst[j];
+            this->residuals[this->originalData.numObs() + j - 1] = minusSqrtLambda2LS *
+                                                                   this->coefEst[j];
         }
     }
 }
@@ -482,6 +485,14 @@ void ENPY::resetData()
     this->pscFilteredData.setNumVar(this->residualFilteredData.numVar());
     this->pscFilteredData.resize();
     this->dataToUse = this->residualFilteredData;
+
+    this->currentNullDeviance = mscale(this->residualFilteredData.getYConst(),
+                                       this->residualFilteredNobs, this->ctrl.mscaleB,
+                                       this->ctrl.mscaleEPS, this->ctrl.mscaleMaxIt,
+                                       this->rhoFun, this->ctrl.mscaleCC);
+
+    this->currentNullDeviance = this->residualFilteredNobs * this->currentNullDeviance *
+                                this->currentNullDeviance;
 }
 
 
@@ -498,7 +509,15 @@ void ENPY::filterDataResiduals(double threshold)
                                              this->residualFilteredData.numVar() - 1);
     }
 
-    dataToUse = this->residualFilteredData;
+    this->dataToUse = this->residualFilteredData;
+
+    this->currentNullDeviance = mscale(this->residualFilteredData.getYConst(),
+                                       this->residualFilteredNobs, this->ctrl.mscaleB,
+                                       this->ctrl.mscaleEPS, this->ctrl.mscaleMaxIt,
+                                       this->rhoFun, this->ctrl.mscaleCC);
+
+    this->currentNullDeviance = this->residualFilteredNobs * this->currentNullDeviance *
+                                this->currentNullDeviance;
 }
 
 void ENPY::filterDataPSC(const double *RESTRICT values, const double threshold,
@@ -516,7 +535,7 @@ void ENPY::filterDataPSC(const double *RESTRICT values, const double threshold,
                                         this->originalData.numVar() - 1);
     }
 
-    dataToUse = this->pscFilteredData;
+    this->dataToUse = this->pscFilteredData;
 }
 
 double ENPY::evaluateEstimate() const
@@ -565,6 +584,7 @@ void ENPY_Exact::estimateCoefficients()
     bool converged;
 
     /* This already updates the residuals, but NOT for all observations */
+    this->en.setThreshold(this->ctrl.enEPS * this->currentNullDeviance);
     converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 
     if (!converged) {
@@ -592,20 +612,36 @@ void ENPY_Exact::resetData()
     this->pscFilteredData.setNumVar(this->residualFilteredData.numVar());
     this->pscFilteredData.resize();
     this->dataToUse = this->residualFilteredData;
+
+    this->currentNullDeviance = mscale(this->residualFilteredData.getYConst(),
+                                       this->residualFilteredNobs, this->ctrl.mscaleB,
+                                       this->ctrl.mscaleEPS, this->ctrl.mscaleMaxIt,
+                                       this->rhoFun, this->ctrl.mscaleCC);
+
+    this->currentNullDeviance = this->residualFilteredNobs * this->currentNullDeviance *
+                                this->currentNullDeviance;
 }
 
 
 void ENPY_Exact::filterDataResiduals(double threshold)
 {
     InitialEstimator::filterDataResiduals(threshold);
-    dataToUse = this->residualFilteredData;
+    this->dataToUse = this->residualFilteredData;
+
+    this->currentNullDeviance = mscale(this->residualFilteredData.getYConst(),
+                                       this->residualFilteredNobs, this->ctrl.mscaleB,
+                                       this->ctrl.mscaleEPS, this->ctrl.mscaleMaxIt,
+                                       this->rhoFun, this->ctrl.mscaleCC);
+
+    this->currentNullDeviance = this->residualFilteredNobs * this->currentNullDeviance *
+                                this->currentNullDeviance;
 }
 
 void ENPY_Exact::filterDataPSC(const double *RESTRICT values, const double threshold,
                          CompareFunction compare)
 {
     doFiltering(this->residualFilteredData, this->pscFilteredData, values, threshold, compare);
-    dataToUse = this->pscFilteredData;
+    this->dataToUse = this->pscFilteredData;
 }
 
 double ENPY_Exact::evaluateEstimate() const

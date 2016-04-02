@@ -3,7 +3,8 @@
 ##
 #' @importFrom stats mad median
 #' @importFrom robustbase scaleTau2 covGK
-lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, scaleFun = mad, meanFun = median) {
+lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, minMult = 0.0001,
+                        scaleFun = mad, meanFun = median) {
     dX <- dim(X)
 
     if (identical(standardize, TRUE)) {
@@ -24,7 +25,7 @@ lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, scale
     covxy <- apply(Xs, 2, covGK, ycs, sigmamu = scaleTau2)
 
     lmax <- max(abs(covxy))
-    lmin <- 0.0001 * lmax #default lambda.min.ratio=0.0001
+    lmin <- minMult * lmax #default lambda.min.ratio=0.0001
 
     ## the lambda grid is not yet adjusted for the sample size! This will be done separately
     ## during estimation!

@@ -14,7 +14,7 @@
 static double softThreshold(const double z, const double gamma);
 
 ElasticNet::ElasticNet(const int maxIt, const double eps, const bool center) :
-			maxIt(maxIt), eps(eps), center(center), XtrSize(0), XmeansSize(0)
+			maxIt(maxIt), center(center), eps(eps), XtrSize(0), XmeansSize(0)
 {}
 
 ElasticNet::~ElasticNet()
@@ -42,6 +42,11 @@ void ElasticNet::setAlphaLambda(const double alpha, const double lambda)
 {
     this->alpha = alpha;
     this->lambda = lambda;
+}
+
+void ElasticNet::setThreshold(const double eps)
+{
+    this->eps = eps;
 }
 
 

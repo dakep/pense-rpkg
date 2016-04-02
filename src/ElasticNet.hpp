@@ -36,6 +36,8 @@ public:
 
 	void setAlphaLambda(const double alpha, const double lambda);
 
+	void setThreshold(const double eps);
+
 	/*
 	 * Solve the EN problem
 	 *
@@ -47,6 +49,7 @@ public:
 	 *
 	 * @param data Is assumed to have the leading column of 1's for the intercept
 	 * @param coefs Is assumed to be at least data.numVar() long!
+	 * @param threshAdj Adjustment to the convergence threshold
 	 *
 	 * NOTE: The leading column of X is used as weight for the row in
 	 *		 in centering the data.
@@ -57,11 +60,11 @@ public:
 
 private:
 	const int maxIt;
-	const double eps;
     const bool center;
 
 	double alpha;
 	double lambda;
+	double eps;
 
 	void resizeBuffer(const Data& data);
 

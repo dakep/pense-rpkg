@@ -1,6 +1,7 @@
-#' PENSE
-#'
-#' @param lambda.grid A grid of lambda values NOT ADJUSTED for sample size!
+## PENSE with a cold start at the beginning and subsequently uses the previous
+## parameter estimate as warm-start
+##
+## @param lambda.grid A grid of lambda values NOT ADJUSTED for sample size!
 #' @importFrom stats mad median
 pense.coldwarm <- function(X, y, alpha, lambda.grid, standardize, control) {
     dX <- dim(X)

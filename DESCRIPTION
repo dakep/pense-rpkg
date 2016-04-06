@@ -1,8 +1,8 @@
 Package: penseinit
 Type: Package
 Title: Penalized Elastic Net S-Estimator of Regression
-Version: 0.3.1
-Date: 2016-03-31
+Version: 0.3.2
+Date: 2016-04-06
 Author: Derek Cho [aut],
         Gabriela Cohen Freue [aut],
         David Kepplinger [aut],

@@ -177,7 +177,7 @@ pense.default <- function(X, y, alpha = 0.5,
 
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
-        lambda <- lambda.grid(Xs, yc, nlambda, control, standardize = FALSE)
+        lambda <- lambda.grid(Xs, yc, alpha, nlambda, control, standardize = FALSE)
     }
 
     ## Create CV segments

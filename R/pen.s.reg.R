@@ -46,10 +46,10 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         resid <- as.vector(y - X %*% current.coefs[-1L])
         # New intercept
         wintercept <- wbeta / sum(wbeta)
-        intercept <- sum(wintercept * resid)
+        current.coefs[1L] <- sum(wintercept * resid)
 
         # Update residuals and scale
-        resid <- resid - intercept
+        resid <- resid - current.coefs[1L]
         scale <- mscale(resid, cc = control$mscale.cc,
                         b = control$mscale.delta, rho = control$mscale.rho.fun,
                         eps = control$mscale.tol, max.it = control$mscale.maxit)

@@ -54,7 +54,7 @@ pense <- function(X, ...) {
 #' @importFrom stats mad median
 #' @export
 pense.default <- function(X, y, alpha = 0.5,
-                          nlambda = 100, lambda = NULL,
+                          nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
                           standardize = TRUE,
                           cv.k = 5, warm.reset = 10,
                           ncores = getOption("mc.cores", 2L), cl = NULL,
@@ -111,7 +111,14 @@ pense.default <- function(X, y, alpha = 0.5,
                any(nlambda < 1)) {
         stop("`nlambda` must be a single positive numeric value.")
     }
+
     nlambda <- as.integer(nlambda)
+
+    if (is.null(lambda) && !is.null(lambda.min.ratio) &&
+        (length(lambda.min.ratio) != 1L || !is.numeric(lambda.min.ratio) ||
+         anyNA(lambda.min.ratio) || any(lambda.min.ratio <= 0))) {
+        stop("`lambda.min.ratio` must be a single positive numeric value.")
+    }
 
     if (length(standardize) != 1L || !is.logical(standardize) || anyNA(standardize)) {
         warning("`standardize` must be a single logical value. Using default (TRUE).")
@@ -177,7 +184,8 @@ pense.default <- function(X, y, alpha = 0.5,
 
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
-        lambda <- lambda.grid(Xs, yc, alpha, nlambda, control, standardize = FALSE)
+        lambda <- lambda.grid(Xs, yc, alpha, nlambda, control, standardize = FALSE,
+                              lambda.min.ratio = lambda.min.ratio)
     }
 
     ## Create CV segments

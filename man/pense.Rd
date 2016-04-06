@@ -8,8 +8,8 @@
 pense(X, ...)
 
 \method{pense}{default}(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
-  standardize = TRUE, cv.k = 5, warm.reset = 10,
-  ncores = getOption("mc.cores", 2L), cl = NULL,
+  lambda.min.ratio = NULL, standardize = TRUE, cv.k = 5,
+  warm.reset = 10, ncores = getOption("mc.cores", 2L), cl = NULL,
   control = pense.control())
 }
 \arguments{

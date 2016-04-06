@@ -1,3 +1,10 @@
+2016-XX-XX: Version 0.X.X
+    *) lambda.min.ratio for automatically computed grid of lambda values is now
+       chosen based on the ratio of the number of variables to observations by the formula
+       1e-3 * 10^floor(log10(p / n))
+    Non-visible changes:
+    *) Use warm-starts for elastic net during PENSE iterations
+
 2016-03-31: Version 0.3.1
     Non-visible changes:
     *) Remove legacy code to adjust lambda and solve the mscale with cc=1

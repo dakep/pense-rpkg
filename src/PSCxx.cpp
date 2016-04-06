@@ -354,9 +354,6 @@ int PSC_EN::computePSC() {
 
     this->data.setNumObs(nobs - 1);
 
-    /* Reset coefficients to zero for first iteration */
-    memset(coefs, 0, data.numVar() * sizeof(double));
-
     residualsOmitted = this->residMat;
     iterX = this->data.getXtr();
     iterY = this->data.getY();
@@ -374,7 +371,7 @@ int PSC_EN::computePSC() {
 
 
         /* Do we need to adjust lambda here?? */
-        converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted, TRUE);
+        converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted);
 
         for (j = 0; j < i; ++j) {
             /* this actually calculates -r_i, but that's okay */
@@ -422,7 +419,7 @@ int PSC_EN::computePSC() {
      * For the last observation, we don't need to swap anything
      */
     /* Do we need to adjust lambda here?? */
-    converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted, TRUE);
+    converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted);
 
     for (j = 0; j < nobs - 1; ++j) {
         /* this actually calculates -r_i, but that's okay */

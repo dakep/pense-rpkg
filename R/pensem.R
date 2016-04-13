@@ -1,22 +1,5 @@
-#' Penalized Elasitc Net S-estimators for Regression
+#' Penalized Elasitc Net MM-estimators for Regression
 #'
-#' @param X the design matrix
-#'
-#' @return An object of class \code{"pense"} with elements
-#' \item{call}{the call that produced this object.}
-#' \item{lambda.opt}{the optimal value of the regularization parameter according to CV.}
-#' \item{coefficients}{the vector of coefficients for the optimal lambda \code{lambda.opt}.}
-#' \item{residuals}{the residuals, that is response minus fitted values for \code{lambda.opt}.}
-#' \item{scale}{the estimated scale for \code{lambda.opt}.}
-#' \item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
-#'                    tau-scale estimated via CV in the second column.}
-#' \item{alpha,standardize,control}{the given arguments.}
-#' \item{standardize}{}
-#' @export
-pense <- function(X, ...) {
-    UseMethod("pense")
-}
-
 #' @section Parallelization:
 #' With the parameter \code{ncores}, the number of available processor cores can be set.
 #' The grid of lambda values is split into \code{ncores} (almost) equally sized chunks.
@@ -28,9 +11,10 @@ pense <- function(X, ...) {
 #' cold initial estimate is computed for every lambda on the grid and no warm-starts
 #' are necessary.
 #'
+#' @param X the design matrix
 #' @param y the response vector.
-#' @param alpha the elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
-#'      \code{alpha = 1} is the lasso penatly, and \code{alpha = 0} the ridge penalty.
+## @param alpha the elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
+##      \code{alpha = 1} is the lasso penatly, and \code{alpha = 0} the ridge penalty.
 #' @param nlambda if \code{lambda} is not given or \code{NULL} (default),
 #'      a grid of \code{nlambda} lambda values is generated based on the data.
 #' @param lambda a single value or a grid of values for the regularization parameter lambda.
@@ -50,15 +34,25 @@ pense <- function(X, ...) {
 #'      estimate the optimal value of lambda. See details for more information.
 #' @param control a list of control parameters as returned by \code{\link{pense.control}}.
 #'
-#' @rdname pense
+#' @return An object of class \code{"pense"} with elements
+#' \item{call}{the call that produced this object.}
+#' \item{lambda.opt}{the optimal value of the regularization parameter according to CV.}
+#' \item{coefficients}{the vector of coefficients for the optimal lambda \code{lambda.opt}.}
+#' \item{residuals}{the residuals, that is response minus fitted values for \code{lambda.opt}.}
+#' \item{scale}{the estimated scale for \code{lambda.opt}.}
+#' \item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
+#'                    tau-scale estimated via CV in the second column.}
+#' \item{alpha,standardize,control}{the given arguments.}
+#'
+#' @rdname pensem
 #' @importFrom stats mad median
+#' @importFrom robustbase Mchi
 #' @export
-pense.default <- function(X, y, alpha = 0.5,
-                          nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
-                          standardize = TRUE,
-                          cv.k = 5, warm.reset = 10,
-                          ncores = getOption("mc.cores", 2L), cl = NULL,
-                          control = pense.control()) {
+pensem <- function(X, y, nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
+                   standardize = TRUE,
+                   cv.k = 5, warm.reset = 10,
+                   ncores = getOption("mc.cores", 2L), cl = NULL,
+                   control = pense.control()) {
     ##
     ## First all arguments are being sanity-checked
     ##
@@ -92,13 +86,7 @@ pense.default <- function(X, y, alpha = 0.5,
         stop("`y` must not contain infinite, NA or NaN values")
     }
 
-    if (length(alpha) != 1L || !is.numeric(alpha) || is.na(alpha) || alpha < 0 || alpha > 1) {
-        stop("`alpha` must be single number in the range [0, 1]")
-    }
-
-    if (alpha == 0) {
-        alpha <- 1e-3
-    }
+    alpha <- 1
 
     if (!is.null(lambda)) {
         if (!is.numeric(lambda) || !is.null(dim(lambda)) || anyNA(lambda) || any(lambda < 0)) {
@@ -266,30 +254,130 @@ pense.default <- function(X, y, alpha = 0.5,
                                         apply(preds, 2, control$cv.objective)
                                     }), use.names = FALSE)
 
-    lambda.grid <- cbind(lambda * max(scale.x), cv.performance)
+    lambda.grid <- cbind(lambda, cv.performance)
     lambda.opt <- lambda[which.min(cv.performance)]
 
     ## Fit PENSE with optimal lambda using a cold start
     opt.est <- pense.coldwarm(Xs, yc, alpha, lambda.opt, standardize = FALSE, control)[[1L]]
 
+    ##
+    ## Perform M step with optimal lambda
+    ##
+    lambda.adj <- n * opt.est$scale^2 / sum(Mchi(opt.est$resid / opt.est$scale,
+                                                 cc = control$mstep.cc,
+                                                 psi = control$mstep.rho.fun))
+
+    mcoef <- pensemstep(Xs, yc, opt.est$scale, c(opt.est$intercept, opt.est$beta),
+                        lambda = lambda.adj * lambda.opt, control)
 
     ## Un-standardize the coefficients
     if (standardize == TRUE) {
         opt.est$beta <- opt.est$beta / scale.x
         opt.est$intercept <- opt.est$intercept + muy - drop(opt.est$beta %*% mux)
+
+        mcoef[-1L] <- mcoef[-1L] / scale.x
+        mcoef[1L] <- mcoef[1L] + muy - drop(mcoef[-1L] %*% mux)
+
+        lambda.opt <- lambda.opt * max(scale.x)
+        lambda.grid[, 1L] <- lambda.grid[ , 1L] * max(scale.x)
     }
 
     return(structure(list(
         residuals = opt.est$resid,
-        coefficients = nameCoefVec(c(opt.est$intercept, opt.est$beta), X),
+        coefficients = nameCoefVec(mcoef, X),
+        sest.coefficients = nameCoefVec(c(opt.est$intercept, opt.est$beta), X),
         objective = opt.est$objF,
-        lambda.opt = lambda.opt * max(scale.x),
+        lambda.opt = lambda.opt,
         lambda.grid = lambda.grid,
         scale = opt.est$scale,
         alpha = alpha,
         standardize = standardize,
         control = control,
         call = cl
-    ), class = "pense"))
+    ), class = c("pensem", "pense")))
 }
 
+
+
+
+################################################################################
+##
+## All of the following code is taken from R package mmlasso-1.3.4
+## Copyright Ezequiel Smucler <ezequiels.90@gmail.com>
+##
+##################################################################################
+
+
+# @-import robustHD
+#' @importFrom mmlasso mmlasso
+pensemstep <- function(Xs, y, init.scale, init.coef, lambda, control) {
+    #Performs iteratively re-weighted Lasso
+    #INPUT
+    #Xs,y: data
+    #init.scale, init.coef: initial estimate of regression and scale
+    #lambda: penalization parameter
+    #c1: tuning constant for the rho function
+    #niter.mm: maximum number of iterations
+    #OUTPUT:
+    #coef: final estimate
+
+    MMcpp_ini <- MMLassoCpp_ini(Xs, y, init.coef)
+    x <- MMcpp_ini$x
+    resid.n <- MMcpp_ini$resid.n
+    tol <- 1
+    m <- 0L
+    beta.n <- init.coef
+    p <- length(init.coef)
+    u.Gram <- !(p >= 500)
+
+    while (tol >= control$pense.tol){
+        beta.o <- beta.n
+        if(all(beta.o == 0)){
+            return(beta.o)
+        }
+        MMcpp1 <- MMLassoCpp1(x, y, beta.o, init.scale, control$mstep.cc)
+        xort <- MMcpp1$xort
+        xjota <- MMcpp1$xjota
+        yast <- MMcpp1$yast
+        alpha <- MMcpp1$alpha
+        if(all(xjota == 0)){
+            return(beta.o)
+        }
+
+        res.elnet <- .elnet.fit(xort, yast, alpha = 1, lambda = lambda,
+                                maxit = control$pense.en.maxit, eps = control$pense.en.tol,
+                                centering = FALSE, warmCoef = beta.o)
+        beta.Lasso <- res.elnet$coefficients[-1L]
+
+        # try(res.Lasso <- robustHD:::fastLasso(xort, yast, 2 * lambda, intercept=FALSE,
+        #                                       normalize=FALSE, use.Gram = u.Gram), silent = TRUE)
+        # if (class(res.Lasso)=="try-error"){
+        #     warning("fastLasso failed")
+        #     return(beta.o)
+        # }
+        # beta.Lasso <- res.Lasso$coefficients
+
+
+        MMcpp2 <- MMLassoCpp2(xjota, yast, beta.Lasso, beta.o, alpha)
+        beta.n <- MMcpp2$beta.n
+        tol <- MMcpp2$tol
+        m <- m + 1L
+        if (m >= control$pense.maxit) {
+            break
+        }
+    }
+    return(beta.n)
+}
+
+
+MMLassoCpp_ini <- function(xx, y, beta_ini) {
+    .Call('mmlasso_MMLassoCpp_ini', PACKAGE = 'mmlasso', xx, y, beta_ini)
+}
+
+MMLassoCpp1 <- function(x, y, beta_ini, scale_ini, c1) {
+    .Call('mmlasso_MMLassoCpp1', PACKAGE = 'mmlasso', x, y, beta_ini, scale_ini, c1)
+}
+
+MMLassoCpp2 <- function(xjota, yast, beta_lars, beta_o, alpha) {
+    .Call('mmlasso_MMLassoCpp2', PACKAGE = 'mmlasso', xjota, yast, beta_lars, beta_o, alpha)
+}

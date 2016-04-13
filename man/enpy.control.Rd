@@ -6,7 +6,7 @@
 \usage{
 enpy.control(en.maxit = 50000, en.tol = 1e-08, en.centering = TRUE,
   mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
-  "huber", "gauss"))
+  "huber", "ggw"))
 }
 \arguments{
 \item{en.maxit}{Maximum number of iterations allowed for the elastic net algorithm.}

@@ -20,6 +20,38 @@ using namespace Rcpp;
 
 static inline Control parseControlList(SEXP control);
 
+RcppExport SEXP C_py_ols(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
+{
+    const Control ctrl = parseControlList(Rcontrol);
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+
+    OLS ols(data, ctrl);
+    SEXP coefs;
+    SEXP objF;
+    int niest;
+    SEXP result = R_NilValue;
+
+    BEGIN_RCPP
+
+    niest = ols.compute();
+
+    result = PROTECT(Rf_allocVector(VECSXP, 2));
+    coefs = PROTECT(Rf_allocVector(REALSXP, niest * data.numVar()));
+    objF = PROTECT(Rf_allocVector(REALSXP, niest));
+
+    memcpy(REAL(coefs), ols.getInitialEstimators(), data.numVar() * niest * sizeof(double));
+    memcpy(REAL(objF), ols.getObjectiveFunctionScores(), niest * sizeof(double));
+
+    SET_VECTOR_ELT(result, 0, coefs);
+    SET_VECTOR_ELT(result, 1, objF);
+
+    UNPROTECT(3);
+
+    VOID_END_RCPP
+
+    return result;
+}
+
 
 RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {

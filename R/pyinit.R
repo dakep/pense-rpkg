@@ -56,13 +56,13 @@ pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
 
     ctrl <- initest.control(numIt = py.nit,
                             eps = en.tol,
-                            residCleanMethod = clean.method,
-                            residThreshold = C.res,
-                            residProportion = prop,
-                            pscProportion = prosac,
+                            resid.clean.method = clean.method,
+                            resid.threshold = C.res,
+                            resid.proportion = prop,
+                            psc.proportion = prosac,
 
-                            mscaleB = deltaesc,
-                            mscaleCC = cc.scale,
+                            mscale.delta = deltaesc,
+                            mscale.cc = cc.scale,
                             enpy.control = control,
 
                             ## We don't need those parameters
@@ -72,14 +72,14 @@ pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
     ##
     ## The C code needs to now how many observations to *keep*
     ##
-    ctrl$pscProportion <- 1 - ctrl$pscProportion
+    ctrl$psc.proportion <- 1 - ctrl$psc.proportion
 
     usableProp <- 1
-    if (ctrl$residCleanMethod == "proportion") {
+    if (ctrl$resid.clean.method == "proportion") {
         ## The C code needs to now how many observations to *keep*
-        ctrl$residProportion <- 1 - ctrl$residProportion
+        ctrl$resid.proportion <- 1 - ctrl$resid.proportion
 
-        usableProp <- ctrl$residProportion
+        usableProp <- ctrl$resid.proportion
     }
 
     if (dX[2L] >= dX[1L]) {
@@ -95,14 +95,14 @@ pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
     ies <- .Call(C_initpy, t(X), y, dX[1L], dX[2L],
                  ctrl$numIt,
                  ctrl$eps,
-                 ctrl$residThreshold,
-                 ctrl$residProportion,
-                 ctrl$pscProportion,
-                 ctrl$mscaleB,
-                 ctrl$mscaleCC,
-                 ctrl$mscaleMaxIt,
-                 ctrl$mscaleEPS,
-                 ctrl$mscaleRhoFun)
+                 ctrl$resid.threshold,
+                 ctrl$resid.proportion,
+                 ctrl$psc.proportion,
+                 ctrl$mscale.delta,
+                 ctrl$mscale.cc,
+                 ctrl$mscale.maxit,
+                 ctrl$mscale.tol,
+                 ctrl$mscale.rho.fun)
 
     initCoefs <- matrix(ies[[2L]][seq_len(ies[[1L]] * dX[2L])], nrow = dX[2L], ncol = ies[[1L]])
 

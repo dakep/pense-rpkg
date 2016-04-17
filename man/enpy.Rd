@@ -13,7 +13,7 @@ enpy(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("rr", "Mn",
 
 \item{y}{The response vector.}
 
-\item{lambda1,lambda2}{The EN penalty parameters (adjusted for the number of observations
+\item{lambda1,lambda2}{The EN penalty parameters (NOT adjusted for the number of observations
 in \code{X}).}
 
 \item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. The default

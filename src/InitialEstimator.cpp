@@ -379,8 +379,8 @@ double OLS::evaluateEstimate() const
 ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscOls, MAX_NUM_PSCS(originalData.numVar())),
            /* lambda1 for EN should not depend on N, but the given one does, so divide! */
-           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
-           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
+           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
+           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
            en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
            dataToUse(residualFilteredData),
            currentNullDeviance(1)
@@ -549,9 +549,7 @@ double ENPY::evaluateEstimate() const
                    this->ctrl.lambda1 * fabs(this->coefEst[j]);
     }
 
-//    penalty *= ((double) this->residualFilteredNobs / (double) this->originalData.numObs());
-
-    return this->originalData.numObs() * scale * scale + penalty;
+    return scale * scale + penalty; // We don't need *n
 }
 
 
@@ -563,9 +561,8 @@ double ENPY::evaluateEstimate() const
  **************************************************************************************************/
 ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscEn, MAX_NUM_PSCS(originalData.numObs())),
-           /* lambda1,2 for EN should not depend on N, but the given values do, so divide! */
-           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
-           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
+           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
+           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
            en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
            pscEn(en),
            dataToUse(residualFilteredData)
@@ -588,7 +585,7 @@ void ENPY_Exact::estimateCoefficients()
     converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 
     if (!converged) {
-        Rcpp::warning("LASSO did not converge. Either increase the number of "
+        Rcpp::warning("EN did not converge. Either increase the number of "
                       "iterations or the penalty parameters.");
     }
 
@@ -655,9 +652,7 @@ double ENPY_Exact::evaluateEstimate() const
                    this->ctrl.lambda1 * fabs(this->coefEst[j]);
     }
 
-//    penalty *= ((double) this->residualFilteredNobs / (double) this->originalData.numObs());
-
-    return this->originalData.numObs() * scale * scale + penalty;
+    return scale * scale + penalty; // Don't need * n
 }
 
 /***************************************************************************************************

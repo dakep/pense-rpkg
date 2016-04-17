@@ -5,7 +5,7 @@
 #'
 #' @param X The data matrix X, with leading column of 1's.
 #' @param y The response vector.
-#' @param lambda1,lambda2 The EN penalty parameters (adjusted for the number of observations
+#' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
 #' @param deltaesc,cc.scale Parameters for the M-equation of the scale. The default
 #'          rho function is Tukey's bisquare. This can be changed by the parameter \code{control}.

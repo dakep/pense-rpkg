@@ -46,11 +46,11 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                             resid.proportion = prop,
                             psc.proportion = prosac,
                             mscale.delta = deltaesc,
-                            mscale.cc = 1,
+                            mscale.cc = cc.scale,
                             enpy.control = control)
 
-    ctrl$lambda1 <- ctrl$lambda1 * cc.scale^2
-    ctrl$lambda2 <- ctrl$lambda2 * cc.scale^2
+    ctrl$lambda1 <- ctrl$lambda1
+    ctrl$lambda2 <- ctrl$lambda2
 
     ##
     ## The C++ code needs to now how many observations to *keep*

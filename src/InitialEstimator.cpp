@@ -379,8 +379,8 @@ double OLS::evaluateEstimate() const
 ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscOls, MAX_NUM_PSCS(originalData.numVar())),
            /* lambda1 for EN should not depend on N, but the given one does, so divide! */
-           lambda1LS(ctrl.lambda1 / (facon(ctrl.mscaleB) * originalData.numObs())),
-           lambda2LS(ctrl.lambda2 / (facon(ctrl.mscaleB) * originalData.numObs())),
+           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
+           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
            en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
            dataToUse(residualFilteredData),
            currentNullDeviance(1)
@@ -564,8 +564,8 @@ double ENPY::evaluateEstimate() const
 ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscEn, MAX_NUM_PSCS(originalData.numObs())),
            /* lambda1,2 for EN should not depend on N, but the given values do, so divide! */
-           lambda1LS(ctrl.lambda1 / (facon(ctrl.mscaleB) * originalData.numObs())),
-           lambda2LS(ctrl.lambda2 / (facon(ctrl.mscaleB) * originalData.numObs())),
+           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
+           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / (facon(ctrl.mscaleB) * originalData.numObs())),
            en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
            pscEn(en),
            dataToUse(residualFilteredData)

@@ -40,9 +40,6 @@
 #' @param mscale.tol convergence tolerance for calculating the M-estimate of scale.
 #' @param mscale.rho.fun string specifying the rho function of the S-estimator.
 #'
-#' @param mstep.cc tuning parameter for the rho function in the M step.
-#' @param mstep.rho.fun string specifying the rho function for the M-step.
-#'
 #' @return A list with the given arguments, checked for errors.
 #'
 #' @references Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
@@ -75,10 +72,7 @@ pense.control <- function(
     mscale.delta = 0.5,
     mscale.maxit = 200,
     mscale.tol = 1e-8,
-    mscale.rho.fun = c("bisquare", "huber", "ggw"),
-
-    mstep.cc = 3.89,
-    mstep.rho.fun = c("bisquare")
+    mscale.rho.fun = c("bisquare", "huber")
 ) {
     ret <- as.list(environment())
 
@@ -112,7 +106,7 @@ enpy.control <- function(en.maxit = 50000,
                          en.centering = TRUE,
                          mscale.maxit = 200,
                          mscale.tol = 1e-8,
-                         mscale.rho.fun = c("bisquare", "huber", "ggw")) {
+                         mscale.rho.fun = c("bisquare", "huber")) {
     ret <- as.list(environment())
     ret$mscale.rho.fun <- match.arg(mscale.rho.fun)
     return(ret)
@@ -133,7 +127,7 @@ enpy.control <- function(en.maxit = 50000,
     ctrl$init.resid.clean.method <- match.arg(ctrl$init.resid.clean.method,
                                               c("proportion", "threshold"))
     ctrl$init.psc.method <- match.arg(ctrl$init.psc.method, c("auto", "rr", "Mn"))
-    ctrl$mscale.rho.fun <- match.arg(ctrl$mscale.rho.fun, c("bisquare", "huber", "ggw"))
+    ctrl$mscale.rho.fun <- match.arg(ctrl$mscale.rho.fun, c("bisquare", "huber"))
     ctrl$mstep.rho.fun <- match.arg(ctrl$mstep.rho.fun, c("bisquare"))
 
     with(ctrl, {
@@ -231,7 +225,7 @@ initest.control <- function(
     }
 
     ret$resid.clean.method <- match.arg(resid.clean.method)
-    ret$mscale.rho.fun <- as.integer(pmatch(ret$mscale.rho.fun, c("bisquare", "huber", "ggw"))) - 1L
+    ret$mscale.rho.fun <- as.integer(pmatch(ret$mscale.rho.fun, c("bisquare", "huber"))) - 1L
 
     ret$mscale.rho.fun <- ret$mscale.rho.fun[which(!is.na(ret$mscale.rho.fun))[1L]]
 

@@ -13,7 +13,7 @@
   init.csteps = 10, init.nkeep = 5, init.en.tol = 1e-08,
   init.en.maxit = pense.en.maxit, mscale.cc = 1.54764, mscale.delta = 0.5,
   mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
-  "huber", "ggw"), mstep.cc = 3.89, mstep.rho.fun = c("bisquare"))
+  "huber"))
 }
 \arguments{
 \item{pense.maxit}{maximum number of iterations for PENSE.}
@@ -68,10 +68,6 @@ constant equal to \code{mscale.cc}.}
 \item{mscale.tol}{convergence tolerance for calculating the M-estimate of scale.}
 
 \item{mscale.rho.fun}{string specifying the rho function of the S-estimator.}
-
-\item{mstep.cc}{tuning parameter for the rho function in the M step.}
-
-\item{mstep.rho.fun}{string specifying the rho function for the M-step.}
 }
 \value{
 A list with the given arguments, checked for errors.

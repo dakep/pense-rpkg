@@ -4,7 +4,7 @@
 \alias{mscale}
 \title{Robust M-estimate of Scale}
 \usage{
-mscale(x, b = 0.5, rho = c("bisquare", "huber", "ggw"), cc = 1.54764,
+mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc = 1.54764,
   eps = 1e-08, max.it = 200)
 }
 \arguments{

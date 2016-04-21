@@ -18,7 +18,7 @@
 #'
 #' @useDynLib penseinit C_mscale
 #' @export
-mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "ggw"), cc = 1.54764,
+mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc = 1.54764,
                    eps = 1e-8, max.it = 200) {
 
     if (!is.numeric(x) || !is.null(dim(x)) || length(x) == 0) {

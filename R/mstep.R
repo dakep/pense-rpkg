@@ -31,7 +31,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     muy <- 0
 
     pense.coef <- penseobj$coefficients
-    pense.lambda.opt <- pensobj$lambda.opt
+    pense.lambda.opt <- penseobj$lambda.opt
 
     ## Standardize data and coefficients
     if (penseobj$standardize == TRUE) {
@@ -89,7 +89,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ## Adjust lambda for the M step
     ##
     lambda.opt.ls <- pense.lambda.opt * control$mscale.cc^2 / facon(control$mscale.delta)
-    lambda.opt.mm <- lambda.opt.ls * 3 / c0^2 * scale.init.corr
+    lambda.opt.mm <- lambda.opt.ls * 3 / (c0 * scale.init.corr)^2
 
     lambda.opt.mm.cv <- lambda.opt.mm
     lambda.grid.m <- matrix(c(lambda.opt.mm, NA_real_), ncol = 2L)

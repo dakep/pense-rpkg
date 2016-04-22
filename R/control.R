@@ -81,8 +81,6 @@ pense.control <- function(
     ret$init.resid.clean.method <- match.arg(init.resid.clean.method)
     ret$mscale.rho.fun <- match.arg(mscale.rho.fun)
 
-    ret$mstep.rho.fun <- match.arg(mstep.rho.fun)
-
     return(.check.pense.control(ret))
 }
 
@@ -128,7 +126,6 @@ enpy.control <- function(en.maxit = 50000,
                                               c("proportion", "threshold"))
     ctrl$init.psc.method <- match.arg(ctrl$init.psc.method, c("auto", "rr", "Mn"))
     ctrl$mscale.rho.fun <- match.arg(ctrl$mscale.rho.fun, c("bisquare", "huber"))
-    ctrl$mstep.rho.fun <- match.arg(ctrl$mstep.rho.fun, c("bisquare"))
 
     with(ctrl, {
         simpleCheck(pense.maxit)
@@ -148,8 +145,6 @@ enpy.control <- function(en.maxit = 50000,
         simpleCheck(mscale.delta)
         simpleCheck(mscale.maxit)
         simpleCheck(mscale.tol)
-
-        simpleCheck(mstep.cc)
 
         if (init.psc.proportion > 1) {
             stop("`init.psc.proportion` must be less than 1")

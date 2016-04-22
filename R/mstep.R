@@ -30,6 +30,9 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     mux <- 0
     muy <- 0
 
+    pense.coef <- penseobj$coefficients
+    pense.lambda.opt <- pensobj$lambda.opt
+
     ## Standardize data and coefficients
     if (penseobj$standardize == TRUE) {
         scale.x <- apply(X, 2, mad)
@@ -39,13 +42,13 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
         Xs <- scale(X, center = mux, scale = scale.x)
         yc <- y - muy
 
-        pense.coef <- penseobj$coefficients
         pense.coef[1L] <- pense.coef[1L] - muy + drop(pense.coef[-1L] %*% mux)
         pense.coef[-1L] <- pense.coef[-1L] * max(scale.x)
+
+        pense.lambda.opt <- pense.lambda.opt / max(scale.x)
     } else {
         Xs <- X
         yc <- y
-        pense.coef <- penseobj$coefficients
     }
 
     ##
@@ -85,7 +88,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ##
     ## Adjust lambda for the M step
     ##
-    lambda.opt.ls <- penseobj$lambda.opt * control$mscale.cc^2 / facon(control$mscale.delta)
+    lambda.opt.ls <- pense.lambda.opt * control$mscale.cc^2 / facon(control$mscale.delta)
     lambda.opt.mm <- lambda.opt.ls * 3 / c0^2 * scale.init.corr
 
     lambda.opt.mm.cv <- lambda.opt.mm

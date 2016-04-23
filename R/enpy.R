@@ -62,9 +62,6 @@ enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
 
     psc.method <- match.arg(psc.method)
 
-    ## Add leading column of 1's
-    X <- cbind(1, X)
-
     result <- switch(psc.method,
                      rr = enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac, clean.method,
                                   C.res, prop, py.nit, en.tol, control),

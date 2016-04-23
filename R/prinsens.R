@@ -20,7 +20,7 @@
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
 #' 434–445. \url{http://doi.org/10.2307/2670164}
 #'
-#' @useDynLib penseinit C_pscs_ols C_pscs_en
+#' @useDynLib penseinit C_pscs_ols C_pscs_en C_augtrans
 #' @export
 prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
                      alpha, lambda, maxit = 50000, eps = 1e-8, centering = TRUE) {
@@ -44,7 +44,10 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
 
     ## Add leading column of 1's
     if (identical(intercept, TRUE)) {
-        X <- cbind(1, X)
+        Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+        dX[2L] <- dX[2L] + 1L
+    } else {
+        Xtr <- t(X)
     }
 
     method <- match.arg(method)
@@ -75,7 +78,7 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
         maxit <- as.integer(maxit)
         centering <- 1L - as.integer(identical(centering, FALSE))
 
-        pscres <- .Call(C_pscs_en, t(X), y, dX[1L], ncol(X),
+        pscres <- .Call(C_pscs_en, Xtr, y, dX[1L], dX[2L],
                         alpha, lambda, maxit, eps, centering)
 
         if (is.null(pscres)) {
@@ -94,7 +97,7 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
 #
 #         pscres <- matrix(pscres[seq_len(dX[1L] * numPSCs)], nrow = dX[1L])
 
-        pscres <- .Call(C_pscs_ols, t(X), y, dX[1L], ncol(X))
+        pscres <- .Call(C_pscs_ols, Xtr, y, dX[1L], dX[2L])
 
         if (is.null(pscres)) {
             stop("Could not compute principal sensitivity components. Matrix `x` is singular.")

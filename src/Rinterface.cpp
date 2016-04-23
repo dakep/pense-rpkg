@@ -14,11 +14,81 @@
 #include "Data.hpp"
 #include "PSCxx.hpp"
 #include "InitialEstimator.hpp"
+#include "PENSEreg.hpp"
 #include "olsreg.h"
 
 using namespace Rcpp;
 
 static inline Control parseControlList(SEXP control);
+
+RcppExport SEXP C_augtrans(SEXP RX, SEXP Rnrow, SEXP Rncol)
+{
+    int nrow = *INTEGER(Rnrow);
+    int ncol = *INTEGER(Rncol);
+    SEXP RXaug = PROTECT(Rf_allocMatrix(REALSXP, ncol + 1, nrow));
+    const double *RESTRICT X = REAL(RX);
+    const double *RESTRICT Xiter;
+    double *RESTRICT Xaug = REAL(RXaug);
+    int i, j;
+
+
+    /* Augment X and transpose */
+    for (i = 0; i < nrow; ++i) {
+        (*Xaug) = 1;
+        ++Xaug;
+
+        Xiter = X + i;
+
+        for (j = 0; j < ncol; ++j, ++Xaug, Xiter += nrow) {
+            (*Xaug) = (*Xiter);
+        }
+    }
+
+    UNPROTECT(1);
+
+    return RXaug;
+}
+
+RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coefs,
+                            SEXP Ralpha, SEXP Rlambda, SEXP Rcontrol)
+{
+    const Control ctrl = parseControlList(Rcontrol);
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+
+    PENSEReg pr(data, *REAL(Ralpha), *REAL(Rlambda), ctrl);
+    SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
+    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    SEXP relChange;
+    SEXP scale;
+    SEXP iterations;
+    SEXP result = R_NilValue;
+    double *RESTRICT newCoefsPtr = REAL(newCoefs);
+
+    BEGIN_RCPP
+
+    memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
+    pr.compute(newCoefsPtr, REAL(residuals));
+
+    result = PROTECT(Rf_allocVector(VECSXP, 5));
+    scale = PROTECT(Rf_ScalarReal(pr.getScale()));
+    relChange = PROTECT(Rf_ScalarReal(pr.getRelChange()));
+    iterations = PROTECT(Rf_ScalarInteger(pr.getIterations()));
+
+    SET_VECTOR_ELT(result, 0, newCoefs);
+    SET_VECTOR_ELT(result, 1, residuals);
+    SET_VECTOR_ELT(result, 2, scale);
+    SET_VECTOR_ELT(result, 3, relChange);
+    SET_VECTOR_ELT(result, 4, iterations);
+
+    UNPROTECT(4);
+
+    VOID_END_RCPP
+
+    UNPROTECT(2);
+
+    return result;
+}
+
 
 RcppExport SEXP C_py_ols(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {

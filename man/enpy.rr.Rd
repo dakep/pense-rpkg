@@ -9,7 +9,7 @@ enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac,
   control)
 }
 \arguments{
-\item{X}{The data matrix X, with leading column of 1's.}
+\item{X}{The data matrix X -- a leading column of 1's will be added!}
 
 \item{y}{The response vector.}
 

@@ -3,7 +3,7 @@
 #' Computes the PY initial estimates for EN with approximated principal sensitivity components
 #' by the ridge regression solution.
 #'
-#' @param X The data matrix X, with leading column of 1's.
+#' @param X The data matrix X -- a leading column of 1's will be added!
 #' @param y The response vector.
 #' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
@@ -31,9 +31,8 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
 
     dX <- dim(X)
 
-    if (sum(abs(X[, 1L] - 1)) > .Machine$double.eps^0.75) {
-        stop("`X` must have a leading column of 1's")
-    }
+    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    dX[2L] <- dX[2L] + 1L
 
     ctrl <- initest.control(lambda1 = lambda1,
                             lambda2 = lambda2,
@@ -74,7 +73,7 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
         }
     }
 
-    ies <- .Call(C_enpy_rr, t(X), y, dX[1L], dX[2L], ctrl)
+    ies <- .Call(C_enpy_rr, Xtr, y, dX[1L], dX[2L], ctrl)
 
     return(list(
         coeff = matrix(ies[[1L]], nrow = dX[2L]),

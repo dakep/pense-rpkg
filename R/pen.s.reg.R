@@ -1,7 +1,66 @@
 ## Internal function to calculate PENSE for a given initial estimate (init.coef)
+## in C++
+##
+#' @useDynLib penseinit C_augtrans C_pen_s_reg
+pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
+    dX <- dim(X)
+
+    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    dX[2L] <- dX[2L] + 1L
+
+    lambda1 <- alpha * lambda * dX[1L]
+    lambda2 <- lambda * (1 - alpha) * dX[1L] / 2
+
+    cctrl <- penseinit:::initest.control(
+        numIt = maxit,
+        eps = control$pense.tol^2,
+        mscale.delta = control$mscale.delta,
+        mscale.cc = control$mscale.cc,
+        enpy.control = enpy.control(
+            en.maxit = control$pense.en.maxit,
+            en.tol = control$pense.en.tol,
+            en.centering = FALSE,
+            mscale.maxit = control$mscale.maxit,
+            mscale.tol = control$mscale.tol,
+            mscale.rho.fun = "bisquare"
+        ),
+
+        # Not needed, set for completeness
+        lambda1 = 0,
+        lambda2 = 0,
+        resid.clean.method = "proportion",
+        resid.threshold = 0.5,
+        resid.proportion = 0.5,
+        psc.proportion = 0.5
+    )
+
+    res <- .Call(C_pen_s_reg, Xtr, y, dX[1L], dX[2L], init.coef, alpha, lambda, cctrl)
+
+    ret <- list(
+        intercept = res[[1L]][1L],
+        beta = res[[1L]][-1L],
+        resid = res[[2L]],
+        scale = res[[3L]],
+        rel.change = sqrt(res[[4L]]),
+        iterations = res[[5L]],
+        objF = NA_real_
+    )
+
+    ret$objF <- dX[1L] * ret$scale^2 + lambda1 * sum(abs(ret$beta)) + lambda2 * sum(ret$beta^2)
+
+    if (ret$rel.change > control$pense.tol && identical(warn, TRUE)) {
+        warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
+    }
+
+    return(ret)
+}
+
+
+
+## Internal function to calculate PENSE for a given initial estimate (init.coef) in R
 ##
 #' @importFrom robustbase Mchi
-pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
+pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
     dX <- dim(X)
     p <- dX[2L]
     n <- dX[1L]

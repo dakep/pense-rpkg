@@ -66,7 +66,8 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
     return(elnetres)
 }
 
-#' Internal function to fit an EN linear regression WITHOUT parameter checks!
+## Internal function to fit an EN linear regression WITHOUT parameter checks!
+#' @useDynLib penseinit C_augtrans
 .elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
                        warmCoef = NULL) {
     y <- drop(y)
@@ -74,7 +75,9 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
 
     ## Add leading column of 1's
     if (!identical(addLeading1s, FALSE)) {
-        X <- cbind(1, X)
+        Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    } else {
+        Xtr <- t(X)
     }
 
     warm <- 0L
@@ -88,9 +91,9 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
     maxit <- as.integer(maxit)
     centering <- 1L - as.integer(identical(centering, FALSE))
 
-    elnetres <- .Call(C_elnet, t(X), y,
+    elnetres <- .Call(C_elnet, Xtr, y,
                       warmCoef,
-                      dX[1L], ncol(X),
+                      dX[1L], nrow(Xtr),
                       alpha,
                       lambda,
                       maxit,

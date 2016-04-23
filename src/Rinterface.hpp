@@ -32,6 +32,20 @@
  *	mscale.rho.fun	 integer
  */
 
+/**
+ * Add a column of 1's to the matrix X and transpose the augmented
+ * matrix
+ *
+ *
+ * @param X    numeric The numeric matrix
+ * @param nrow integer The number of rows in X
+ * @param ncol integer The number of columns in X
+ *
+ * @return numeric matrix The matrix X with a column of 1's prepended and transposed.
+						  The matrix is of size (ncol + 1) x nrow.
+ */
+RcppExport SEXP C_augtrans(SEXP X, SEXP nrow, SEXP ncol);
+
 
 /**
  * Solve following minimzation problem:
@@ -71,10 +85,10 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP
 RcppExport SEXP C_pscs_ols(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar);
 
 /**
- * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
- * @param y       numeric The numeric y vector (size `nobs`)
- * @param nobs    integer The number of observations
- * @param nvar    integer The number of variables (including the intercept)
+ * @param Xtr       numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y         numeric The numeric y vector (size `nobs`)
+ * @param nobs      integer The number of observations
+ * @param nvar      integer The number of variables (including the intercept)
  * @param alpha     numeric The alpha parameter for the penalization
  * @param lambda    numeric The lambda parameter for the penalization
  * @param maxIt     integer The maximum number of iterations allowed
@@ -87,6 +101,19 @@ RcppExport SEXP C_pscs_ols(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar);
  */
 RcppExport SEXP C_pscs_en(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP alpha, SEXP lambda,
                           SEXP maxIt, SEXP eps, SEXP centering);
+
+/**
+ * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y       numeric The numeric y vector (size `nobs`)
+ * @param nobs    integer The number of observations
+ * @param nvar    integer The number of variables (including the intercept)
+ * @param control List    The control list as described above
+ *
+ * @return List Returns a list with two elements:
+ *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
+ *      item 2: The value of the objective function for each initial estimate
+ */
+RcppExport SEXP C_py_ols(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP control);
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
@@ -113,5 +140,23 @@ RcppExport SEXP C_enpy_rr(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP control);
  *      item 2: The value of the objective function for each initial estimate
  */
 RcppExport SEXP C_enpy_exact(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP control);
+
+
+/**
+ * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y       numeric The numeric y vector (size `nobs`)
+ * @param nobs    integer The number of observations
+ * @param nvar    integer The number of variables (including the intercept)
+ * @param coefs   numeric The vector of inital coeffiecients (including the intercept)
+ * @param alpha	  numeric The alpha parameter for penalization
+ * @param lambda  numeric The lambda parameter for penalization
+ * @param control List    The control list as described above
+ *
+ * @return List Returns a list with two elements:
+ *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
+ *      item 2: The value of the objective function for each initial estimate
+ */
+RcppExport SEXP C_pen_s_reg(SEXP Xtr, SEXP y, SEXP nobs, SEXP nvar, SEXP coefs,
+							SEXP alpha, SEXP lambda, SEXP control);
 
 #endif /* Rinterface_hpp */

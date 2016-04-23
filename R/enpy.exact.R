@@ -2,7 +2,7 @@
 #'
 #' Computes the PY initial estimates for EN with exact principal sensitivity components
 #'
-#' @param X The data matrix X, with leading column of 1's.
+#' @param X The data matrix X -- a leading column of 1's will be added!
 #' @param y The response vector.
 #' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
@@ -24,7 +24,7 @@
 #' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
-#' @useDynLib penseinit C_enpy_exact
+#' @useDynLib penseinit C_enpy_exact C_augtrans
 #' @importFrom Rcpp evalCpp
 enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                        psc.method = c("Mn", "Qp"), prosac,
@@ -32,9 +32,8 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                        C.res, prop, py.nit, en.tol, control) {
     dX <- dim(X)
 
-    if (sum(abs(X[, 1L] - 1)) > .Machine$double.eps^0.75) {
-        stop("`X` must have a leading column of 1's")
-    }
+    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    dX[2L] <- dX[2L] + 1L
 
     ctrl <- initest.control(lambda1 = lambda1,
                             lambda2 = lambda2,
@@ -64,7 +63,7 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
         ctrl$resid.proportion <- 1 - ctrl$resid.proportion
     }
 
-    ies <- .Call(C_enpy_exact, t(X), y, dX[1L], dX[2L], ctrl)
+    ies <- .Call(C_enpy_exact, Xtr, y, dX[1L], dX[2L], ctrl)
 
     return(list(
         coeff = matrix(ies[[1L]], nrow = dX[2L]),

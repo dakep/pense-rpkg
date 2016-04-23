@@ -1,5 +1,6 @@
-2016-04-13: Version 0.3.3.1
-    *) New funciton "pensem": add M-step for L1 penalty to PENSE
+2016-04-23: Version 0.3.3-X
+    *) New funciton "mstep": add M-step for L1 penalty to PENSE
+    *) Port pen.s.reg to C++
 
 2016-04-06: Version 0.3.2
     *) lambda.min.ratio can be set in the call to pense

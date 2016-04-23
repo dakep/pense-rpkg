@@ -266,7 +266,7 @@ pense.default <- function(X, y, alpha = 0.5,
                                         apply(preds, 2, control$cv.objective)
                                     }), use.names = FALSE)
 
-    lambda.grid <- cbind(lambda * max(scale.x), cv.performance)
+    lambda.grid <- cbind(lambda = lambda * max(scale.x), cv.performance = cv.performance)
     lambda.opt <- lambda[which.min(cv.performance)]
 
     ## Fit PENSE with optimal lambda using a cold start

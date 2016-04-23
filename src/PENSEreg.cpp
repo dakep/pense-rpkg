@@ -56,7 +56,9 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
     this->iteration = 0;
 
     en.setAlphaLambda(this->alpha, this->lambda);
-    wgtData.copy(data);
+    wgtData.setNumObs(data.numObs());
+    wgtData.setNumVar(data.numVar());
+    wgtData.resize();
 
     computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
                      currentCoef, residuals);
@@ -165,6 +167,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     } while((this->iteration < this->ctrl.numIt) && (this->relChange > this->ctrl.eps));
 
+    wgtData.free();
     delete[] oldCoef;
     delete[] weightBeta;
 }

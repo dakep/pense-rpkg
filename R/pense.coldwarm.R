@@ -95,7 +95,7 @@ initest.cold <- function(X, y, alpha, lambda, control) {
     indkeep <- objFRanking$index[seq_len(nkeep)]
 
     return(list(
-        initCoef = initconc[-1L, indkeep],
+        initCoef = initconc[-1L, indkeep, drop = FALSE],
         objF = initconc[1L, indkeep]
     ))
 }

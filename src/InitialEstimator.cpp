@@ -6,7 +6,7 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
 #include <cstring>
 #include <algorithm>
 #include <stdexcept>
@@ -21,14 +21,16 @@
 
 #define MAX_NUM_PSCS(numVar) (3 * numVar + 2)
 
-static const int BLAS_1L = 1;
+static BLAS_INT BLAS_1L = 1;
+
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
 static const double BLAS_M1F = -1.0;
-static const char * const BLAS_DIAG_NO = "N";
-static const char * const BLAS_TRANS_NO = "N";
-static const char * const BLAS_TRANS_TRANS = "T";
-static const char * const BLAS_UPLO_UPPER = "U";
+
+static BLAS_CHAR BLAS_DIAG_NO = "N";
+static BLAS_CHAR BLAS_TRANS_NO = "N";
+static BLAS_CHAR BLAS_TRANS_TRANS = "T";
+static BLAS_CHAR BLAS_UPLO_UPPER = "U";
 
 #ifdef DEBUG
 void print_matf(int dr, int dc, const double *A, const char *header) {
@@ -332,8 +334,8 @@ void OLS::filterDataPSC(const double *RESTRICT values, const double threshold,
 
 void OLS::estimateCoefficients()
 {
-    const int nobs = this->dataToUse.numObs();
-    const int nvar = this->dataToUse.numVar();
+    BLAS_INT nobs = this->dataToUse.numObs();
+    BLAS_INT nvar = this->dataToUse.numVar();
     int lapackInfo;
 
     /* XtX = t(X) %*% X */
@@ -407,8 +409,8 @@ ENPY::~ENPY()
 
 void ENPY::estimateCoefficients()
 {
-    const int nobs = this->dataToUse.numObs();
-    const int nvar = this->dataToUse.numVar();
+    BLAS_INT nobs = this->dataToUse.numObs();
+    BLAS_INT nvar = this->dataToUse.numVar();
     bool converged;
     int lapackInfo;
     int j;

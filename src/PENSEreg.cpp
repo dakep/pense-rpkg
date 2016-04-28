@@ -7,7 +7,7 @@
 //
 #include "PENSEreg.hpp"
 
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
 #include <Rmath.h>
 
 

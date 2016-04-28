@@ -24,54 +24,151 @@
 #ifndef penseinit_BLAS_h
 #define penseinit_BLAS_h
 
-#include <R_ext/BLAS.h>
-#include <R_ext/Lapack.h>
+#define BLAS_CHAR const char * const
+#define BLAS_INT const int
+
+#include <R_ext/RS.h>
+
+#ifdef __cplusplus
+#   include <RcppArmadillo.h>
+#   define F77_R_NAME(x) F77_CALL(x)
+#else
+#   include <R_ext/BLAS.h>
+#   include <R_ext/Lapack.h>
+
+#   define F77_R_NAME(x) F77_NAME(x)
+#endif
+
+
+#ifndef BLAS_extern
+#define BLAS_extern extern
+#endif
+
+#ifndef La_extern
+#define La_extern extern
+#endif
+
+#define BLAS_R_NAME(x) F77_NAME(x)
+#define LAPACK_R_NAME(x) F77_NAME(x)
+
+#define ARMA_TOKENPASTE(x) arma::x
+#define ARMA_TOKENPASTE2(x) ARMA_TOKENPASTE(x)
+
+#ifdef ARMA_USE_BLAS
+#   define BLAS_ARMA_NAME(x) ARMA_TOKENPASTE2(F77_NAME(x))
+
+    extern "C" {
+
+    /* DGEMM - perform one of the matrix-matrix operations    */
+    /* C := alpha*op( A )*op( B ) + beta*C */
+    BLAS_extern void
+    F77_NAME(dgemm)(const char *transa, const char *transb, const int *m,
+            const int *n, const int *k, const double *alpha,
+            const double *a, const int *lda,
+            const double *b, const int *ldb,
+            const double *beta, double *c, const int *ldc);
+
+
+    /* DSYR - perform the symmetric rank 1 operation A := alpha*x*x' + A */
+    BLAS_extern void
+    F77_NAME(dsyr)(const char *uplo, const int *n, const double *alpha,
+               const double *x, const int *incx,
+               double *a, const int *lda);
+
+    BLAS_extern void
+    F77_NAME(dtrsv)(const char *uplo, const char *trans,
+            const char *diag, const int *n,
+            const double *a, const int *lda,
+            double *x, const int *incx);
+
+    BLAS_extern void
+    F77_NAME(dtrsm)(const char *side, const char *uplo,
+            const char *transa, const char *diag,
+            const int *m, const int *n, const double *alpha,
+            const double *a, const int *lda,
+            double *b, const int *ldb);
+    }
+
+#else
+#   define BLAS_ARMA_NAME(x) F77_NAME(x)
+#endif
+
+
+
+#ifdef ARMA_USE_LAPACK
+#   define LAPACK_ARMA_NAME(x) ARMA_TOKENPASTE2(F77_NAME(x))
+#   define LAPACK_ARMA_WRAP_CHAR(x) (char *) x
+#   define LAPACK_ARMA_WRAP_INT_PTR(x) (int *) &x
+
+    extern "C" {
+
+    /* DSYEVR - compute all eigenvalues and, optionally, eigenvectors   */
+    /* of a real symmetric matrix A					   */
+    La_extern void
+    F77_NAME(dsyevr)(const char *jobz, const char *range, const char *uplo,
+             const int *n, double *a, const int *lda,
+             const double *vl, const double *vu,
+             const int *il, const int *iu,
+             const double *abstol, int *m, double *w,
+             double *z, const int *ldz, int *isuppz,
+             double *work, const int *lwork,
+             int *iwork, const int *liwork,
+             int *info);
+    }
+#else
+#   define LAPACK_ARMA_NAME(x) F77_NAME(x)
+#   define LAPACK_ARMA_WRAP_CHAR(x) x
+#   define LAPACK_ARMA_WRAP_INT_PTR(x) &x
+#endif
+
+
 
 #define BLAS_DGEMV(trans, m, n, alpha, a, lda, x, incx, beta, y, incy)							\
-	F77_NAME(dgemv)(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
+	BLAS_ARMA_NAME(dgemv)(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
 
 #define BLAS_DSYMV(uplo, n, alpha, a, lda, x, incx, beta, y, incy)								\
-	F77_NAME(dsymv)(uplo, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
+	BLAS_ARMA_NAME(dsymv)(uplo, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
 
 #define BLAS_DTRSV(uplo, trans, diag, n, a, lda, x, incx)                                       \
-    F77_NAME(dtrsv)(uplo, trans, diag, &n, a, &lda, x, &incx)
+    BLAS_R_NAME(dtrsv)(uplo, trans, diag, &n, a, &lda, x, &incx)
 
 #define BLAS_DGEMM(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)				\
-	F77_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, c, &ldc)
+	BLAS_R_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, c, &ldc)
 
 #define BLAS_DDOT(n, x, incx, y, incy)															\
-	F77_NAME(ddot)(&n, x, &incx, y, &incy)
+	BLAS_ARMA_NAME(ddot)(&n, x, &incx, y, &incy)
 
 #define BLAS_DSCAL(n, alpha, x, incx)															\
-	F77_NAME(dscal)(&n, &alpha, x, &incx)
+	BLAS_ARMA_NAME(dscal)(&n, &alpha, x, &incx)
 
 #define BLAS_DSYR(uplo, n, alpha, x, incx, a, lda)												\
-	F77_NAME(dsyr)(uplo, &n, &alpha, x, &incx, a, &lda)
+	BLAS_R_NAME(dsyr)(uplo, &n, &alpha, x, &incx, a, &lda)
 
 #define BLAS_DTRSM(side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)                       \
-    F77_NAME(dtrsm)(side, uplo, transa, diag, &m, &n, &alpha, a, &lda, b, &ldb)
+    BLAS_R_NAME(dtrsm)(side, uplo, transa, diag, &m, &n, &alpha, a, &lda, b, &ldb)
 
 
 #define LAPACK_DPOTRF(uplo, n, a, lda, info)                                                    \
-    F77_NAME(dpotrf)(uplo, &n, a, &lda, &info)
+    LAPACK_ARMA_NAME(dpotrf)(LAPACK_ARMA_WRAP_CHAR(uplo), LAPACK_ARMA_WRAP_INT_PTR(n),          \
+                             a, LAPACK_ARMA_WRAP_INT_PTR(lda), &info)
 
 #define LAPACK_DSYEVR_ALL_VECTORS(uplo, n, a, lda, abstol, nevalues, evalues, evectors,         \
                                   ldevectors, isuppevectors, work, lwork, iwork, liwork, info)  \
-    F77_NAME(dsyevr)("V", "A", uplo, &n, a, &lda, NULL, NULL, NULL, NULL, &abstol,              \
+    LAPACK_R_NAME(dsyevr)("V", "A", uplo, &n, a, &lda, NULL, NULL, NULL, NULL, &abstol,         \
                      &nevalues, evalues, evectors, &ldevectors, isuppevectors, work, &lwork,    \
                      iwork, &liwork, &info)
 
 
 #define LAPACK_DSYEVR_RANGE(uplo, n, a, lda, rangeLower, rangeUpper, abstol, nevalues,          \
                             evalues, evectors, ldevectors, isuppevectors, work, lwork, iwork,   \
-                            liwork, info)  \
-    F77_NAME(dsyevr)("V", "V", uplo, &n, a, &lda, &rangeLower, &rangeUpper, NULL, NULL,         \
+                            liwork, info)                                                       \
+    LAPACK_R_NAME(dsyevr)("V", "V", uplo, &n, a, &lda, &rangeLower, &rangeUpper, NULL, NULL,    \
                      &abstol, &nevalues, evalues, evectors, &ldevectors, isuppevectors, work,   \
                      &lwork, iwork, &liwork, &info)
 
 
 #define LAPACK_DGELS(trans, m, n, nrhs, a, lda, b, ldb, work, lwork, info)                      \
-    F77_NAME(dgels)(trans, &m, &n, &nrhs, a, &lda, b, &ldb, work, &lwork, &info)
+    LAPACK_R_NAME(dgels)(trans, &m, &n, &nrhs, a, &lda, b, &ldb, work, &lwork, &info)
 
 
 #endif

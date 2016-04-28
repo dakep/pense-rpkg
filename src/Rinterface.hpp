@@ -9,7 +9,7 @@
 #ifndef Rinterface_hpp
 #define Rinterface_hpp
 
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
 
 /**
  * The control list must have following entries:

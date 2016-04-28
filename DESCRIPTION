@@ -9,8 +9,8 @@ Author: Derek Cho [aut],
         Matias Salibian-Barrera [aut]
 Maintainer: David Kepplinger <david.kepplinger@gmail.com>
 Description: Initial estimators for the penalized elastic net S-estimator of regression
-Imports: Rcpp, robustbase, parallel, methods, mmlasso
-LinkingTo: Rcpp
+Imports: Rcpp, RcppArmadillo, robustbase, parallel, methods, mmlasso
+LinkingTo: Rcpp, RcppArmadillo
 Suggests: testthat, lars
 License: GPL >= 2
 NeedsCompilation: yes

@@ -10,6 +10,9 @@
 #define ElasticNet_hpp
 
 #include "config.h"
+
+#include <RcppArmadillo.h>
+
 #include "Data.hpp"
 
 
@@ -32,9 +35,9 @@ public:
 	 *		 lambda1 = lambda_lars / numObs
 	 *
 	 */
-	void setLambdas(const double lambda1, const double lambda2);
+	virtual void setLambdas(const double lambda1, const double lambda2);
 
-	void setAlphaLambda(const double alpha, const double lambda);
+	virtual void setAlphaLambda(const double alpha, const double lambda);
 
 	void setThreshold(const double eps);
 
@@ -58,16 +61,18 @@ public:
 	 *
 	 * @returns TRUE if the algorithm converged, FALSE otherwise
 	 */
-	bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
-                      const bool warm = FALSE);
+    virtual bool computeCoefs(const Data& data, double *RESTRICT coefs,
+							  double *RESTRICT residuals, const bool warm = FALSE);
 
-private:
+protected:
 	const int maxIt;
     const bool center;
 
+	double eps;
+
+private:
 	double alpha;
 	double lambda;
-	double eps;
 
 	void resizeBuffer(const Data& data);
 
@@ -76,6 +81,35 @@ private:
 	double *RESTRICT Xvars;
 	int XtrSize;
 	int XmeansSize;
+};
+
+class ElasticNetLARS : public ElasticNet {
+public:
+    ElasticNetLARS(const double eps, const bool center);
+    ~ElasticNetLARS();
+
+	void setLambdas(const double lambda1, const double lambda2);
+
+	void setAlphaLambda(const double alpha, const double lambda);
+
+    bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
+                      const bool warm = FALSE);
+
+
+private:
+	double lambda1;
+	double sqrtLambda2;
+
+	arma::mat XtrAug;
+	arma::vec yAug;
+//	double *RESTRICT XtrAug;
+//	double *RESTRICT yAug;
+	arma::uword augNobs;
+//	arma::uword augNvar;
+//	arma::uword augFullNobs;
+
+	void augmentData(const Data& data);
+
 };
 
 #endif /* ElasticNet_hpp */

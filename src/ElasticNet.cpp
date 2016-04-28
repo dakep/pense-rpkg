@@ -9,9 +9,23 @@
 #include <cfloat>
 #include <Rmath.h>
 
+#include <RcppArmadillo.h>
+
 #include "ElasticNet.hpp"
 
+using namespace arma;
+
 static double softThreshold(const double z, const double gamma);
+static uword findMaxActive(const uword n, const uword p, const bool useIntercept);
+static sword sign(const double x);
+static double findStep(const double corActiveY, const vec& corInactiveY,
+                       const double corActiveU, const vec& corInactiveU,
+                       const double eps);
+static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
+                      const double eps, double step);
+
+
+
 
 ElasticNet::ElasticNet(const int maxIt, const double eps, const bool center) :
 			maxIt(maxIt), center(center), eps(eps), XtrSize(0), XmeansSize(0)
@@ -278,3 +292,637 @@ static inline double softThreshold(const double z, const double gamma)
     }
     return z - gamma;
 }
+
+
+
+/****************************************************************************
+ *
+ * Elastic Net using the Least Angular Regression method
+ * 
+ * This augments the data matrix with a diagonal matrix and then computes
+ * the LASSO solution.
+ *
+ ***************************************************************************/
+ElasticNetLARS::ElasticNetLARS(const double eps, const bool center) :
+        ElasticNet(0, eps, center),
+        lambda1(0), sqrtLambda2(0), augNobs(0)
+{
+}
+
+
+ElasticNetLARS::~ElasticNetLARS()
+{
+}
+
+void ElasticNetLARS::setLambdas(const double lambda1, const double lambda2)
+{
+    this->lambda1 = lambda1;
+    this->sqrtLambda2 = sqrt(2 * lambda2);
+}
+
+void ElasticNetLARS::setAlphaLambda(const double alpha, const double lambda)
+{
+    this->setLambdas(lambda * alpha, 0.5 * lambda * (1 - alpha));
+}
+
+
+bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
+								  double *RESTRICT resids, const bool warm)
+{
+    /*
+     * First augment data
+     */
+    this->augmentData(data);
+
+    /*
+     * START of fastLasso algorithm from Andreas Alfons from
+     * R package robustHD
+     */
+    const double rescaledLambda = this->augNobs * this->lambda1;
+
+    vec beta(coefs, data.numVar(), false, true);
+    vec residuals(resids, data.numObs(), false, true);
+
+    bool useGram = true;
+
+
+    uword i, j;
+	mat xs;
+	vec ys;
+	xs = this->XtrAug.t();
+	ys = this->yAug;
+
+	rowvec meanX;
+	double meanY;
+
+    uword s = 0;
+	uvec inactive(this->XtrAug.n_rows - 1),
+         ignores(s);
+
+    mat Gram;
+    rowvec corY;	// current correlations
+    uword nrInactive = this->XtrAug.n_rows;
+
+
+    /*
+     * Center data if requested
+     */
+	if(this->center) {
+		meanX = mean(xs.rows(0, data.numObs() - 1), 0);		  // columnwise means of predictors
+		for(j = 1; j < this->XtrAug.n_rows; j++) {
+			xs.col(j).rows(0, data.numObs() - 1) -= meanX(j);	// sweep out columnwise means
+		}
+		meanY = mean(ys.rows(0, data.numObs() - 1));	// mean of response
+		ys.rows(0, data.numObs() - 1) -= meanY;        // sweep out mean
+	} else {
+		meanY = 0;		  // just to avoid warning, this is never used
+//		intercept = 0;	  // zero intercept
+	}
+
+    /*
+     * Initialize inactive set. At the beginng, all predictors are inactive,
+     * but column 0 (intercept) is always active!
+     */
+    for (j = 1; j < this->XtrAug.n_rows; ++j) {
+        inactive[j - 1] = j; //
+    }
+
+	if(useGram) {
+		Gram = xs.t() * xs;
+	}
+
+    /*
+     * Compute current correlations
+     */
+    corY = conv_to<rowvec>::from(ys) * xs;
+
+
+    if(this->XtrAug.n_rows == 2) {
+        // special case of only one variable (with sufficiently large norm)
+        j = inactive(s);
+        // set maximum step size in the direction of that variable
+        double maxStep = corY(j);
+        if(maxStep < 0) {
+            maxStep = -maxStep; // absolute value
+        }
+        // compute coefficients for least squares solution
+        vec betaLS = solve(xs.unsafe_col(j), ys);
+        // compute lasso coefficients
+        beta.zeros();
+        if(rescaledLambda < maxStep) {
+            // interpolate towards least squares solution
+            beta(j) = (maxStep - rescaledLambda) * betaLS[0] / maxStep;
+        }
+    } else if (this->XtrAug.n_rows > 2) {
+        // further initializations for iterative steps
+
+        uvec active;        // active predictors
+        uword nrActive = 0;	// number of active predictors
+
+        // previous and current regression coefficients
+        vec previousBeta = zeros(this->XtrAug.n_rows),
+            currentBeta = zeros(this->XtrAug.n_rows);
+
+        // previous and current penalty parameter
+        double previousLambda = R_PosInf,
+               currentLambda = R_PosInf;
+
+        // indicates variables to be dropped
+        uvec drops;
+
+        // keep track of sign of correlations for the active variables 
+        // (double precision is necessary for solve())
+        vec signs;
+
+        mat L;          // Cholesky L of Gram matrix of active variables
+        uword rank = 0;		// rank of Cholesky L
+
+        // maximum number of variables to be sequenced
+        uword maxActive = findMaxActive(this->XtrAug.n_cols, this->XtrAug.n_rows, this->center) - 1;
+        uword usableVariables = this->XtrAug.n_rows;
+        uword newPred;
+        vec xNewPred;
+
+
+        double maxCor, tmp;
+        vec corInactiveY,
+            absCorInactiveY;
+
+        // modified LARS algorithm for lasso solution
+        while(nrActive < maxActive) {
+            /*
+             * Find maximum absolute correlation with Y for the inactive
+             */
+            maxCor = 0;
+            for (i = 0; i < inactive.n_elem; ++i) {
+                tmp = fabs(corY[inactive[i]]);
+                if (maxCor < tmp) {
+                    maxCor = tmp;
+                }
+            }
+
+
+//            // extract current correlations of inactive variables
+//            corInactiveY = corY.elem(inactive);
+//            // compute absolute values of correlations and find maximum
+//            absCorInactiveY = abs(corInactiveY);
+//            double maxCor = absCorInactiveY.max();
+//            // update current lambda
+
+
+            if(nrActive == 0) {	// no active variables
+                previousLambda = maxCor;
+            } else {
+                previousLambda = currentLambda;
+            }
+            currentLambda = maxCor;
+
+            /*
+             * Check if we are already at the requested lambda
+             */
+            if(currentLambda <= rescaledLambda) {
+                break;
+            }
+
+            if(drops.n_elem == 0) {
+                for(j = 0; j < inactive.n_elem; ++j) {
+                    newPred = inactive[j];
+                    if (maxCor - eps > fabs(corY[newPred])) {
+                        /*
+                         * This one won't be activated -- skip
+                         */
+                        continue;
+                    }
+
+                    // update Cholesky L of Gram matrix of active variables
+                    // this cannot be put into its own void function since
+                    // insert_rows() doesn't work with referenced matrices
+
+                    double newX;
+                    if(useGram) {
+                        xNewPred = Gram.unsafe_col(newPred);	// reuses memory
+                        newX = xNewPred[newPred];
+                    } else {
+                        xNewPred = xs.unsafe_col(newPred);	  // reuses memory
+                        newX = dot(xNewPred, xNewPred);
+                    }
+
+                    double normNewX = sqrt(newX);
+
+                    if(nrActive == 0) {	// no active variables, L is empty
+                        L.set_size(1, 1);
+                        L[0] = normNewX;
+                        rank = 1;
+                    } else {
+                        vec oldX;
+                        if(useGram) {
+                            oldX = xNewPred.elem(active);
+                        } else {
+                            oldX.set_size(nrActive);
+                            for(i = 0; i < nrActive; i++) {
+                                oldX[i] = dot(xNewPred, xs.unsafe_col(active[i]));
+                            }
+                        }
+                        vec l = solve(trimatl(L), oldX);
+                        double lkk = newX - dot(l, l);
+                        // check if L is machine singular
+                        if(lkk > eps) {
+                            // no singularity: update Cholesky L
+                            lkk = sqrt(lkk);
+                            rank++;
+
+                            // add new row and column to Cholesky L
+                            // this is a little trick: sometimes we need
+                            // lower triangular matrix, sometimes upper
+                            // hence we define quadratic matrix and use
+                            // triangularView() to interpret matrix the
+                            // correct way
+                            // insert row and column without initializing memory
+                            // (set_size() and reshape() have strange behavior)
+                            L.insert_rows(nrActive, 1, false);
+                            L.insert_cols(nrActive, 1, false);
+                            // fill new parts of the matrix
+                            for(i = 0; i < nrActive; i++) {
+                                L.at(nrActive, j) = l[i];
+                                L.at(j, nrActive) = l[i];
+                            }
+                            L.at(nrActive, nrActive) = lkk;
+                        }
+                    }
+
+                    // add new variable to active set or drop it for good
+                    // in case of singularity
+                    if(rank == nrActive) {
+                        // singularity: drop variable for good
+                        ignores.insert_rows(s, 1, false);	// do not initialize new memory
+                        ignores[s] = newPred;
+                        s++;	// increase number of ignored variables
+                        usableVariables--;	// decrease number of variables
+                        if(usableVariables < maxActive) {
+                            // adjust maximum number of active variables
+                            maxActive = usableVariables;
+                        }
+                    } else {
+                        // no singularity: add variable to active set
+                        active.insert_rows(nrActive, 1, false);	// do not initialize new memory
+                        active(nrActive) = newPred;
+                        // keep track of sign of correlation for new active variable
+                        signs.insert_rows(nrActive, 1, false);		// do not initialize new memory
+                        signs(nrActive) = sign(corY(newPred));
+                        nrActive++;	// increase number of active variables
+                    }
+                }
+
+                for(j = 0; j < inactive.n_elem; ++j) {
+                    i = inactive[j];
+                    if (maxCor - eps > fabs(corY[i])) {
+                        /*
+                         * This one won't be activated -- skip
+                         */
+                        continue;
+                    }
+
+                    inactive.shed_row(i);
+                    corInactiveY.shed_row(i);
+
+//                // remove new active or ignored variables from inactive variables
+//                // and corresponding vector of current correlations
+//                for(sword j = newActive.n_elem - 1; j >= 0; j--) {	// reverse order
+//                    i = newActive(j);
+//                    inactive.shed_row(i);
+//                    corInactiveY.shed_row(i);
+                }
+                nrInactive = inactive.n_elem;	// update number of inactive variables
+            }
+
+
+
+
+
+
+            // prepare for computation of step size
+            // here double precision of signs is necessary
+            vec b = solve(trimatl(L), signs);
+            vec G = solve(trimatu(L), b);
+            // correlations of active variables with equiangular vector
+            double corActiveU = 1 / sqrt(dot(G, signs));
+            // coefficients of active variables in linear combination forming the
+            // equiangular vector
+            vec w = G * corActiveU;	// note that this has the right signs
+            // equiangular vector
+            vec u;
+            if(!useGram) {
+                // we only need equiangular vector if we don't use the precomputed
+                // Gram matrix, otherwise we can compute the correlations directly
+                // from the Gram matrix
+                u = zeros<vec>(this->XtrAug.n_cols);
+                for(i = 0; i < this->XtrAug.n_cols; i++) {
+                    for(j = 0; j < nrActive; j++) {
+                        u(i) += xs(i, active(j)) * w(j);
+                    }
+                }
+            }
+
+            // compute step size in equiangular direction
+            double step;
+            if(nrActive < maxActive) {
+                // correlations of inactive variables with equiangular vector
+                vec corInactiveU(nrInactive);
+                if(useGram) {
+                    for(j = 0; j < nrInactive; j++) {
+                        vec gram = Gram.unsafe_col(inactive(j));
+                        corInactiveU(j) = dot(w, gram.elem(active));
+                    }
+                } else {
+                    for(j = 0; j < nrInactive; j++) {
+                        corInactiveU(j) = dot(u, xs.unsafe_col(inactive(j)));
+                    }
+                }
+                // compute step size in the direction of the equiangular vector
+                step = findStep(maxCor, corInactiveY, corActiveU, corInactiveU, eps);
+            } else {
+                // last step: take maximum possible step
+                step = maxCor/corActiveU;
+            }
+
+            // adjust step size if any sign changes and drop corresponding variables
+            drops = findDrops(currentBeta, active, w, eps, step);
+            // update current regression coefficients
+            previousBeta = currentBeta;
+            currentBeta.elem(active) += step * w;
+            // update current correlations
+            if(useGram) {
+                // we also need to do this for active variables, since they may be
+                // dropped at a later stage
+                for(j = 0; j < Gram.n_cols; j++) {
+                    vec gram = Gram.unsafe_col(j);
+                    corY(j) -= step * dot(w, gram.elem(active));
+                }
+            } else {
+                ys -= step * u;	// take step in equiangular direction
+                corY = conv_to<rowvec>::from(ys) * xs;	// might be faster than trans()
+            }
+
+            // drop variables if necessary
+            if(drops.n_elem > 0) {
+                // downdate Cholesky L
+                // this cannot be put into its own void function since
+                // shed_col() and shed_row() don't work with referenced matrices
+                for(sword j = drops.n_elem-1; j >= 0; j--) {	// reverse order
+                    // variables need to be dropped in descending order
+                    uword drop = drops(j);	// index with respect to active set
+                    // modify upper triangular part as in R package 'lars'
+                    // simply deleting columns is not enough, other computations
+                    // necessary but complicated due to Fortran code
+                    L.shed_col(drop);
+                    vec z = ones<vec>(nrActive);
+                    nrActive--;	// decrease number of active variables
+                    for(i = drop; i < nrActive; i++) {
+                        double a = L(i,i), b = L(i+1,i);
+                        if(b != 0.0) {
+                            // compute the rotation
+                            double tau, s, c;
+                            if(std::abs(b) > std::abs(a)) {
+                                tau = -a/b;
+                                s = 1.0/sqrt(1.0+tau*tau);
+                                c = s * tau;
+                            } else {
+                                tau = -b/a;
+                                c = 1.0/sqrt(1.0+tau*tau);
+                                s = c * tau;
+                            }
+                            // update 'L' and 'z';
+                            L(i,i) = c*a - s*b;
+                            for(uword j = i+1; j < nrActive; j++) {
+                                a = L(i,j);
+                                b = L(i+1,j);
+                                L(i,j) = c*a - s*b;
+                                L(i+1,j) = s*a + c*b;
+                            }
+
+                            a = z(i);
+                            b = z(i+1);
+                            z(i) = c*a - s*b;
+                            z(i+1) = s*a + c*b;
+                        }
+                    }
+
+                    L.shed_row(nrActive);
+                    rank--;
+                }
+                // mirror lower triangular part
+                L = symmatu(L);
+                // add dropped variables to inactive set and make sure
+                // coefficients are 0
+                inactive.insert_rows(nrInactive, drops.n_elem, false);
+
+                for(j = 0; j < drops.n_elem; j++) {
+                    uword newInactive = active(drops(j));
+                    inactive(nrInactive + j) = newInactive;
+                    currentBeta(newInactive) = 0;	// make sure coefficient is 0
+                }
+                nrInactive = inactive.n_elem;	// update number of inactive variables
+                // drop variables from active set and sign vector
+                // number of active variables is already updated above
+                for(sword j = drops.n_elem-1; j >= 0; j--) {	// reverse order
+                    // variables need to be dropped in descending order
+                    uword drop = drops(j);	// index with respect to active set
+                    // drop variables from active set and sign vector
+                    // number of active variables is already updated above
+                    active.shed_row(drop);
+                    signs.shed_row(drop);
+                }
+            }
+        }
+
+        /*
+         * Interpolate coefficients for given lambda
+         */
+        if(nrActive == 0) {
+            // lambda larger than largest lambda from steps of LARS algorithm
+            beta.zeros();
+        } else {
+            // penalty parameter within two steps
+            if(nrActive == maxActive) {
+                // current coefficients are the least squares solution (in the
+                // high-dimensional case, as far along the solution path as possible)
+                // current and previous values of the penalty parameter need to be
+                // reset for interpolation
+                previousLambda = currentLambda;
+                currentLambda = 0;
+            }
+            // interpolate coefficients
+            beta = ((rescaledLambda - currentLambda) * previousBeta +
+                    (previousLambda - rescaledLambda) * currentBeta) /
+                        (previousLambda - currentLambda);
+        }
+    }
+
+    /*
+     * Compute residuals and intercept
+     */
+    residuals = this->yAug.rows(0, data.numObs() - 1) -
+                    this->XtrAug.cols(0, data.numObs() - 1).t() * beta;
+
+    if(this->center) {
+        beta[0] = meanY - dot(beta, meanX);
+        residuals -= beta[0];
+    }
+
+	return true;
+}
+
+
+void ElasticNetLARS::augmentData(const Data& data)
+{
+    int i;
+    bool resize = false;
+    uword newNobs = this->XtrAug.n_cols,
+          newNvar = this->XtrAug.n_rows;
+    double *RESTRICT XtrAugIter;
+    double tmp;
+
+    if ((data.numVar() != this->XtrAug.n_rows) || (data.numObs() != this->XtrAug.n_cols)) {
+        newNobs = data.numObs();
+        newNvar = data.numVar();
+        this->augNobs = newNobs;
+        resize = true;
+    }
+
+    if ((this->augNobs == this->XtrAug.n_cols) && (this->sqrtLambda2 > 0)) {
+        /* Resize matrix to make room for augmented data */
+        newNobs = newNobs + newNvar - 1;
+        resize = true;
+    } else if (this->sqrtLambda2 == 0) {
+        /* No need to resize allocated memory */
+        newNobs = this->augNobs;
+        resize = true;
+    }
+
+
+    if (resize) {
+        this->XtrAug.set_size(newNvar, newNobs);
+        this->yAug.set_size(newNobs);
+
+        if (newNobs > this->augNobs) {
+            memset(this->yAug.memptr() + this->augNobs, 0,
+                   (this->XtrAug.n_rows - 1) * sizeof(double));
+
+            memset(this->XtrAug.memptr() + this->augNobs * this->XtrAug.n_rows, 0,
+                   (this->XtrAug.n_rows - 1) * this->XtrAug.n_rows * sizeof(double));
+       }
+    }
+
+    memcpy(this->yAug.memptr(), data.getYConst(), this->augNobs * sizeof(double));
+    memcpy(this->XtrAug.memptr(), data.getXtrConst(),
+           this->augNobs * this->XtrAug.n_rows * sizeof(double));
+
+    if (this->sqrtLambda2 > 0) {
+        tmp = sqrt(this->augNobs) * this->sqrtLambda2;
+
+        XtrAugIter = this->XtrAug.memptr() + this->augNobs * this->XtrAug.n_rows + 1;
+        for (i = 1; i < this->XtrAug.n_rows; ++i) {
+            (*XtrAugIter) = tmp;
+            XtrAugIter += this->XtrAug.n_rows + 1;
+        }
+    }
+}
+
+
+static uword findMaxActive(const uword n, const uword p, const bool useIntercept) {
+	uword maxActive = n - useIntercept;
+	if(p < maxActive) {
+		maxActive = p;
+	}
+	return maxActive;
+}
+
+static sword sign(const double x) {
+	return (x > 0) - (x < 0);
+}
+
+// compute step size in the direction of the equiangular vector
+// corActiveY.. ... correlations of active variables with current response
+// corInactiveY ... correlations of inactive variables with current response
+// corActiveU ..... correlations of active variables with equiangular vector
+// corInactiveU ... correlations of inactive variables with equiangular vector
+// eps ............ small numerical value (effective zero)
+static double findStep(const double corActiveY, const vec& corInactiveY,
+                       const double corActiveU, const vec& corInactiveU,
+                       const double eps) {
+    double step = corActiveY/corActiveU;      // maximum possible step;
+    double smallestPositive;
+
+	// construct vector of all values to consider
+	vec steps = join_cols((corActiveY - corInactiveY)/(corActiveU - corInactiveU),
+			(corActiveY + corInactiveY)/(corActiveU + corInactiveU));
+	steps = steps.elem(find(steps > eps));
+
+	// find and return step size
+	if(steps.n_elem > 0) {
+		smallestPositive = steps.min();  // smallest positive value
+		if(smallestPositive < step) {
+			step = smallestPositive;
+		}
+	}
+	return step;
+}
+
+
+
+// adjust step size if any sign changes before the designated step size,
+// and return the corresponding variables to be dropped
+// beta   ... current regression coefficients
+// active ... indices of inactive variables
+// w ........ coefficients of active variables in linear combination forming
+//            the equiangular vector
+// eps ...... small numerical value (effective zero)
+// step ..... step size in direction of equiangular vector
+static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
+                      const double eps, double step) {
+	// for each variable, compute step size where sign change would take place,
+	// and keep track of indices of variables that are potentially dropped
+	vec steps = -beta.elem(active) / w;
+	uvec drops = find(steps > eps);
+	if(drops.n_elem > 0) {
+		// check if sign change occurs before the designated step size
+		// if so, adjust step size and find variables to be dropped
+		steps = steps.elem(drops);
+		double smallestPositive = steps.min();
+		if(smallestPositive < step) {
+			step = smallestPositive;
+			drops = drops.elem(find(steps == smallestPositive));
+		} else drops.reset();
+	}
+	// if there are no sign changes or sign change would occur after the
+	// designated step size, an empty vector is returned
+	return drops;
+}
+
+
+static double findNewActive(const uvec& inactive, const vec& corY, const double eps,
+                            uvec& newActive)
+{
+    double maxAbsCor = 0;
+    double tmp;
+    uword i;
+
+    newActive.reset();
+
+    for(i = 0; i < inactive.n_elem; ++i) {
+        tmp = fabs(corY[inactive[i]]);
+        if (maxAbsCor < tmp) {
+            maxAbsCor = tmp;
+        }
+    }
+
+    for(i = 0; i < inactive.n_elem; ++i) {
+        tmp = fabs(corY[inactive[i]]);
+        if (tmp >= maxAbsCor - eps) {
+            newActive.insert_rows(newActive.n_elem, inactive[i]);
+        }
+    }
+
+    return maxAbsCor;
+}
+

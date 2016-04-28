@@ -9,15 +9,15 @@
 #include "olsreg.h"
 #include "BLAS.h"
 
-static const int BLAS_1L = 1;
+static BLAS_INT BLAS_1L = 1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
 static const double BLAS_M1F = -1.0;
 
-static const char * const BLAS_UPLO_UPPER = "U";
-static const char * const BLAS_TRANS_NO = "N";
-static const char * const BLAS_TRANS_TRANS = "T";
-static const char * const BLAS_DIAG_NO = "N";
+static BLAS_CHAR BLAS_UPLO_UPPER = "U";
+static BLAS_CHAR BLAS_TRANS_NO = "N";
+static BLAS_CHAR BLAS_TRANS_TRANS = "T";
+static BLAS_CHAR BLAS_DIAG_NO = "N";
 
 int computeOLSCoefs(const double *restrict Xtr, const double *restrict y,
                     const int nobs, const int nvar,

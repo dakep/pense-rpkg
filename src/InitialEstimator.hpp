@@ -9,7 +9,7 @@
 #ifndef InitialEstimator_h
 #define InitialEstimator_h
 
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
 #include <vector>
 #include <algorithm>
 

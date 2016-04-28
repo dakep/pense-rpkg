@@ -9,15 +9,15 @@
 #include <cstring>
 #include <cfloat>
 
-#include <Rcpp.h>
+#include "BLAS.h"
+#include <RcppArmadillo.h>
 
 #include "config.h"
 #include "PSCxx.hpp"
-#include "BLAS.h"
 #include "LapackException.hpp"
 
-static const int BLAS_M1L = -1;
-static const int BLAS_1L = 1;
+static BLAS_INT BLAS_M1L = -1;
+static BLAS_INT BLAS_1L = 1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
 
@@ -25,11 +25,11 @@ static const double LAPACK_EV_ABSTOL = 1e-18;
 static const double LAPACK_EV_RANGE_LOWER = 1e-12;
 static const double LAPACK_EV_RANGE_UPPER = DBL_MAX;
 
-static const char * const BLAS_SIDE_LEFT = "L";
-static const char * const BLAS_UPLO_UPPER = "U";
-static const char * const BLAS_TRANS_NO = "N";
-static const char * const BLAS_TRANS_TRANS = "T";
-static const char * const BLAS_DIAG_NO = "N";
+static BLAS_CHAR BLAS_SIDE_LEFT = "L";
+static BLAS_CHAR BLAS_UPLO_UPPER = "U";
+static BLAS_CHAR BLAS_TRANS_NO = "N";
+static BLAS_CHAR BLAS_TRANS_TRANS = "T";
+static BLAS_CHAR BLAS_DIAG_NO = "N";
 
 
 #ifdef DEBUG
@@ -196,8 +196,8 @@ void PSC_OLS::setResiduals(const double *RESTRICT residuals)
 }
 
 int PSC_OLS::computePSC() {
-    const int nvar = this->data.numVar();
-    const int nobs = this->data.numObs();
+    BLAS_INT nvar = this->data.numVar();
+    BLAS_INT nobs = this->data.numObs();
     int i, j, lapackInfo;
     int nevalues = 0;
     /*

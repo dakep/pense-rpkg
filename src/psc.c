@@ -15,7 +15,7 @@
 #include "psc.h"
 
 
-static const int BLAS_M1L = -1;
+static BLAS_INT BLAS_M1L = -1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
 
@@ -23,11 +23,11 @@ static const double LAPACK_EV_ABSTOL = 1e-18;
 static const double LAPACK_EV_RANGE_LOWER = 1e-12;
 static const double LAPACK_EV_RANGE_UPPER = DBL_MAX;
 
-static const char * const BLAS_SIDE_LEFT = "L";
-static const char * const BLAS_UPLO_UPPER = "U";
-static const char * const BLAS_TRANS_NO = "N";
-static const char * const BLAS_TRANS_TRANS = "T";
-static const char * const BLAS_DIAG_NO = "N";
+static BLAS_CHAR BLAS_SIDE_LEFT = "L";
+static BLAS_CHAR BLAS_UPLO_UPPER = "U";
+static BLAS_CHAR BLAS_TRANS_NO = "N";
+static BLAS_CHAR BLAS_TRANS_TRANS = "T";
+static BLAS_CHAR BLAS_DIAG_NO = "N";
 
 static int doEigenDecomposition(const char *const uplo, double *restrict matrix, const int n,
                                 AuxMemory *const auxmem);

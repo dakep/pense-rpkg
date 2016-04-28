@@ -347,6 +347,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
 
     uword i, j;
+    sword sc;
 	mat xs;
 	vec ys;
 	xs = this->XtrAug.t();
@@ -494,9 +495,11 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                         continue;
                     }
 
-                    // update Cholesky L of Gram matrix of active variables
-                    // this cannot be put into its own void function since
-                    // insert_rows() doesn't work with referenced matrices
+                    /*
+                     * update Cholesky L of Gram matrix of active variables
+                     * this cannot be put into its own void function since
+                     * insert_rows() doesn't work with referenced matrices
+                     */
 
                     double newX;
                     if(useGram) {
@@ -543,15 +546,17 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                             L.insert_cols(nrActive, 1, false);
                             // fill new parts of the matrix
                             for(i = 0; i < nrActive; i++) {
-                                L.at(nrActive, j) = l[i];
-                                L.at(j, nrActive) = l[i];
+                                L.at(nrActive, i) = l[i];
+                                L.at(i, nrActive) = l[i];
                             }
                             L.at(nrActive, nrActive) = lkk;
                         }
                     }
 
-                    // add new variable to active set or drop it for good
-                    // in case of singularity
+                    /*
+                     * add new variable to active set or drop it for good
+                     * in case of singularity
+                     */
                     if(rank == nrActive) {
                         // singularity: drop variable for good
                         ignores.insert_rows(s, 1, false);	// do not initialize new memory
@@ -573,25 +578,18 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     }
                 }
 
-                for(j = 0; j < inactive.n_elem; ++j) {
-                    i = inactive[j];
-                    if (maxCor - eps > fabs(corY[i])) {
+                for(sc = inactive.n_elem - 1; sc >= 0; --sc) {
+                    i = inactive[sc];
+                    if (maxCor - eps <= fabs(corY[i])) {
                         /*
-                         * This one won't be activated -- skip
+                         * This one was activated -- remove from inactivated list
                          */
-                        continue;
+                        inactive.shed_row(sc);
+//                        corInactiveY.shed_row(i);
                     }
-
-                    inactive.shed_row(i);
-                    corInactiveY.shed_row(i);
-
-//                // remove new active or ignored variables from inactive variables
-//                // and corresponding vector of current correlations
-//                for(sword j = newActive.n_elem - 1; j >= 0; j--) {	// reverse order
-//                    i = newActive(j);
-//                    inactive.shed_row(i);
-//                    corInactiveY.shed_row(i);
                 }
+
+                corInactiveY = corY.elem(inactive);
                 nrInactive = inactive.n_elem;	// update number of inactive variables
             }
 
@@ -789,7 +787,7 @@ void ElasticNetLARS::augmentData(const Data& data)
         resize = true;
     }
 
-    if ((this->augNobs == this->XtrAug.n_cols) && (this->sqrtLambda2 > 0)) {
+    if ((this->augNobs == newNobs) && (this->sqrtLambda2 > 0)) {
         /* Resize matrix to make room for augmented data */
         newNobs = newNobs + newNvar - 1;
         resize = true;

@@ -580,47 +580,44 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                          * This one was activated -- remove from inactivated list
                          */
                         inactive.shed_row(ri);
-//                        corInactiveY.shed_row(i);
                     }
                 }
 
                 nrInactive = inactive.n_elem;	// update number of inactive variables
             }
-//                corInactiveY = corY.elem(inactive);
 
 
-
-            // prepare for computation of step size
-            // here double precision of signs is necessary
-            vec b = solve(trimatl(L), signs);
-            vec G = solve(trimatu(L), b);
+            /*
+             * Prepare for computation of step size
+             */
+            vec b = solve(trimatl(L), signs); // (here double prec. of signs is required)
+            vec w = solve(trimatu(L), b);
+            vec equiangularVec;
             // correlations of active variables with equiangular vector
-            double corActiveU = 1 / sqrt(dot(G, signs));
+            double corActiveU = 1 / sqrt(dot(w, signs));
+
             // coefficients of active variables in linear combination forming the
             // equiangular vector
-            vec w = G * corActiveU;	// note that this has the right signs
+            w *= corActiveU;	// note that this has the right signs
             // equiangular vector
-            vec u;
             if(!useGram) {
-                // we only need equiangular vector if we don't use the precomputed
-                // Gram matrix, otherwise we can compute the correlations directly
-                // from the Gram matrix
-
-                u = xs.rows(active).t() * w;
+                /*
+                 * we only need equiangular vector if we don't use the precomputed
+                 * Gram matrix, otherwise we can compute the correlations directly
+                 * from the Gram matrix
+                 */
+                equiangularVec = xs.rows(active).t() * w;
             }
 
             // compute step size in equiangular direction
             double step;
-            // correlations of inactive variables with equiangular vector
-            vec corInactiveU(nrInactive);
             if(nrActive < maxActive) {
+                // correlations of inactive variables with equiangular vector
+                vec corInactiveU;
                 if(useGram) {
-                    for(j = 0; j < nrInactive; j++) {
-                        vec gram = Gram.unsafe_col(inactive(j));
-                        corInactiveU(j) = dot(w, gram.elem(active));
-                    }
+                    corInactiveU = Gram.submat(inactive, active) * w;
                 } else {
-                    corInactiveU = xs.rows(inactive) * u;
+                    corInactiveU = xs.rows(inactive) * equiangularVec;
                 }
                 // compute step size in the direction of the equiangular vector
                 step = findStep(maxCor, corY, inactive, corActiveU, corInactiveU, this->eps);
@@ -630,7 +627,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             }
 
             // adjust step size if any sign changes and drop corresponding variables
-            drops = findDrops(currentBeta, active, w, eps, step);
+            drops = findDrops(currentBeta, active, w, this->eps, step);
 
             // update current regression coefficients
             previousBeta = currentBeta;
@@ -646,7 +643,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     corY(j) -= step * dot(w, gram.elem(active));
                 }
             } else {
-                ys -= step * u;	// take step in equiangular direction
+                ys -= step * equiangularVec;	// take step in equiangular direction
                 corY = xs * ys;
             }
 
@@ -830,33 +827,15 @@ static sword sign(const double x) {
 	return (x > 0) - (x < 0);
 }
 
-// compute step size in the direction of the equiangular vector
-// corActiveY.. ... correlations of active variables with current response
-// corInactiveY ... correlations of inactive variables with current response
-// corActiveU ..... correlations of active variables with equiangular vector
-// corInactiveU ... correlations of inactive variables with equiangular vector
-// eps ............ small numerical value (effective zero)
-static double findStepOld(const double corActiveY, const vec& corInactiveY,
-                       const double corActiveU, const vec& corInactiveU,
-                       const double eps) {
-    double step = corActiveY/corActiveU;      // maximum possible step;
-    double smallestPositive;
-
-	// construct vector of all values to consider
-	vec steps = join_cols((corActiveY - corInactiveY)/(corActiveU - corInactiveU),
-			(corActiveY + corInactiveY)/(corActiveU + corInactiveU));
-	steps = steps.elem(find(steps > eps));
-
-	// find and return step size
-	if(steps.n_elem > 0) {
-		smallestPositive = steps.min();  // smallest positive value
-		if(smallestPositive < step) {
-			step = smallestPositive;
-		}
-	}
-	return step;
-}
-
+/**
+ * compute step size in the direction of the equiangular vector
+ *
+ * corActiveY.. ... correlations of active variables with current response
+ * corInactiveY ... correlations of inactive variables with current response
+ * corActiveU ..... correlations of active variables with equiangular vector
+ * corInactiveU ... correlations of inactive variables with equiangular vector
+ * eps ............ small numerical value (effective zero)
+ */
 static double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
                        const double corActiveU, const vec& corInactiveU,
                        const double eps) {
@@ -881,35 +860,26 @@ static double findStep(const double corActiveY, const vec& corY, const uvec& ina
         }
     }
 
-//	// construct vector of all values to consider
-//	vec steps = join_cols((corActiveY - corInactiveY)/(corActiveU - corInactiveU),
-//			(corActiveY + corInactiveY)/(corActiveU + corInactiveU));
-//	steps = steps.elem(find(steps > eps));
-//
-//	// find and return step size
-//	if(steps.n_elem > 0) {
-//		smallestPositive = steps.min();  // smallest positive value
-//		if(smallestPositive < step) {
-//			step = smallestPositive;
-//		}
-//	}
 	return step;
 }
 
-
-
-// adjust step size if any sign changes before the designated step size,
-// and return the corresponding variables to be dropped
-// beta   ... current regression coefficients
-// active ... indices of inactive variables
-// w ........ coefficients of active variables in linear combination forming
-//            the equiangular vector
-// eps ...... small numerical value (effective zero)
-// step ..... step size in direction of equiangular vector
+/**
+ * adjust step size if any sign changes before the designated step size,
+ * and return the corresponding variables to be dropped
+ *
+ * beta   ... current regression coefficients
+ * active ... indices of inactive variables
+ * w ........ coefficients of active variables in linear combination forming
+ *            the equiangular vector
+ * eps ...... small numerical value (effective zero)
+ * step ..... step size in direction of equiangular vector
+ */
 static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
                       const double eps, double& step) {
-	// for each variable, compute step size where sign change would take place,
-	// and keep track of indices of variables that are potentially dropped
+	/*
+     * for each variable, compute step size where sign change would take place,
+	 * and keep track of indices of variables that are potentially dropped
+     */
 	vec steps = -beta.elem(active) / w;
 	uvec drops = find(steps > eps);
 	if(drops.n_elem > 0) {
@@ -922,9 +892,10 @@ static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
 			drops = drops.elem(find(steps == smallestPositive));
 		} else drops.reset();
 	}
-	// if there are no sign changes or sign change would occur after the
-	// designated step size, an empty vector is returned
+
+	/*
+     * if there are no sign changes or sign change would occur after the
+	 * designated step size, an empty vector is returned
+     */
 	return drops;
 }
-
-

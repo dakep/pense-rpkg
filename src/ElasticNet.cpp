@@ -345,7 +345,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     vec beta(coefs, data.numVar(), false, true);
     vec residuals(resids, data.numObs(), false, true);
 
-    bool useGram = false;
+    bool useGram = true;
 
 
     uword i, j;
@@ -444,8 +444,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
 
         double maxCor, tmp;
-//        vec corInactiveY,
-//            absCorInactiveY;
 
         // modified LARS algorithm for lasso solution
         while(nrActive < maxActive) {
@@ -459,15 +457,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     maxCor = tmp;
                 }
             }
-
-
-//            // extract current correlations of inactive variables
-//            corInactiveY = corY.elem(inactive);
-//            // compute absolute values of correlations and find maximum
-//            absCorInactiveY = abs(corInactiveY);
-//            double maxCor = absCorInactiveY.max();
-//            // update current lambda
-
 
             if(nrActive == 0) {	// no active variables
                 previousLambda = maxCor;
@@ -593,6 +582,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             vec b = solve(trimatl(L), signs); // (here double prec. of signs is required)
             vec w = solve(trimatu(L), b);
             vec equiangularVec;
+            vec corEquiV;
             // correlations of active variables with equiangular vector
             double corActiveU = 1 / sqrt(dot(w, signs));
 
@@ -600,7 +590,14 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             // equiangular vector
             w *= corActiveU;	// note that this has the right signs
             // equiangular vector
-            if(!useGram) {
+
+            if(useGram) {
+                /*
+                 * If we use the Gram matrix, we need the correlations between the
+                 * equiangular vector and ALL variables
+                 */
+                corEquiV = Gram.cols(active) * w;
+            } else {
                 /*
                  * we only need equiangular vector if we don't use the precomputed
                  * Gram matrix, otherwise we can compute the correlations directly
@@ -612,42 +609,53 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             // compute step size in equiangular direction
             double step;
             if(nrActive < maxActive) {
-                // correlations of inactive variables with equiangular vector
-                vec corInactiveU;
                 if(useGram) {
-                    corInactiveU = Gram.submat(inactive, active) * w;
+                    /*
+                     * compute step size in the direction of the equiangular vector
+                     * Here we only need the correlations for the INACTIVE variables
+                     */
+                    step = findStep(maxCor, corY, inactive, corActiveU, corEquiV.elem(inactive),
+                                    this->eps);
                 } else {
-                    corInactiveU = xs.rows(inactive) * equiangularVec;
+                    corEquiV = xs.rows(inactive) * equiangularVec;
+
+                    // compute step size in the direction of the equiangular vector
+                    step = findStep(maxCor, corY, inactive, corActiveU, corEquiV, this->eps);
                 }
-                // compute step size in the direction of the equiangular vector
-                step = findStep(maxCor, corY, inactive, corActiveU, corInactiveU, this->eps);
             } else {
                 // last step: take maximum possible step
                 step = maxCor / corActiveU;
             }
 
-            // adjust step size if any sign changes and drop corresponding variables
+            /*
+             * Adjust step size if any sign changes and drop corresponding variables
+             */
             drops = findDrops(currentBeta, active, w, this->eps, step);
 
-            // update current regression coefficients
+            /*
+             * Update regression coefficients
+             */
             previousBeta = currentBeta;
             currentBeta.elem(active) += step * w;
 
 
-            // update current correlations
+            /*
+             * Update correlations
+             */
             if(useGram) {
-                // we also need to do this for active variables, since they may be
-                // dropped at a later stage
-                for(j = 1; j < Gram.n_cols; j++) {
-                    vec gram = Gram.unsafe_col(j);
-                    corY(j) -= step * dot(w, gram.elem(active));
-                }
+                /*
+                 * Here we also need the correlation for active variables, since they may be
+                 * dropped at a later stage
+                 */
+                corY -= step * corEquiV;
             } else {
                 ys -= step * equiangularVec;	// take step in equiangular direction
                 corY = xs * ys;
             }
 
-            // drop variables if necessary
+            /*
+             * Drop variables if necessary
+             */
             if(drops.n_elem > 0) {
                 // downdate Cholesky L
                 // this cannot be put into its own void function since

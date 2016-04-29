@@ -589,10 +589,9 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     }
                 }
 
-                corInactiveY = corY.elem(inactive);
                 nrInactive = inactive.n_elem;	// update number of inactive variables
             }
-
+            corInactiveY = corY.elem(inactive);
 
 
 

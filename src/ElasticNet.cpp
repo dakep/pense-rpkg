@@ -5,6 +5,8 @@
 //  Created by David Kepplinger on 2016-01-31.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
+#include "config.h"
+
 
 #include <cfloat>
 #include <Rmath.h>
@@ -18,11 +20,11 @@ using namespace arma;
 static double softThreshold(const double z, const double gamma);
 static uword findMaxActive(const uword n, const uword p, const bool useIntercept);
 static sword sign(const double x);
-static double findStep(const double corActiveY, const vec& corInactiveY,
+static double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
                        const double corActiveU, const vec& corInactiveU,
                        const double eps);
 static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
-                      const double eps, double step);
+                      const double eps, double& step);
 
 
 
@@ -343,17 +345,15 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     vec beta(coefs, data.numVar(), false, true);
     vec residuals(resids, data.numObs(), false, true);
 
-    bool useGram = true;
+    bool useGram = false;
 
 
     uword i, j;
-    sword sc;
-	mat xs;
-	vec ys;
-	xs = this->XtrAug.t();
-	ys = this->yAug;
+    sword ri;
+	mat xs = this->XtrAug;
+	vec ys = this->yAug;
 
-	rowvec meanX;
+	vec meanX;
 	double meanY;
 
     uword s = 0;
@@ -361,7 +361,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
          ignores(s);
 
     mat Gram;
-    rowvec corY;	// current correlations
+    vec corY;	// current correlations
     uword nrInactive = this->XtrAug.n_rows;
 
 
@@ -369,10 +369,9 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
      * Center data if requested
      */
 	if(this->center) {
-		meanX = mean(xs.rows(0, data.numObs() - 1), 0);		  // columnwise means of predictors
-		for(j = 1; j < this->XtrAug.n_rows; j++) {
-			xs.col(j).rows(0, data.numObs() - 1) -= meanX(j);	// sweep out columnwise means
-		}
+		meanX = mean(xs.cols(0, data.numObs() - 1), 1);		  // columnwise means of predictors
+        meanX[0] = 0;           // Don't change the intercept-column
+        xs.cols(0, data.numObs() - 1).each_col() -= meanX; // sweep out columnwise means
 		meanY = mean(ys.rows(0, data.numObs() - 1));	// mean of response
 		ys.rows(0, data.numObs() - 1) -= meanY;        // sweep out mean
 	} else {
@@ -389,13 +388,13 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     }
 
 	if(useGram) {
-		Gram = xs.t() * xs;
+		Gram = xs * xs.t();
 	}
 
     /*
      * Compute current correlations
      */
-    corY = conv_to<rowvec>::from(ys) * xs;
+    corY = xs * ys;
 
 
     if(this->XtrAug.n_rows == 2) {
@@ -416,10 +415,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         }
     } else if (this->XtrAug.n_rows > 2) {
         // further initializations for iterative steps
-
-        uvec active;        // active predictors
-        uword nrActive = 0;	// number of active predictors
-
         // previous and current regression coefficients
         vec previousBeta = zeros(this->XtrAug.n_rows),
             currentBeta = zeros(this->XtrAug.n_rows);
@@ -431,10 +426,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         // indicates variables to be dropped
         uvec drops;
 
-        // keep track of sign of correlations for the active variables 
-        // (double precision is necessary for solve())
-        vec signs;
-
         mat L;          // Cholesky L of Gram matrix of active variables
         uword rank = 0;		// rank of Cholesky L
 
@@ -444,10 +435,17 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         uword newPred;
         vec xNewPred;
 
+        uvec active;        // active predictors
+        uword nrActive = 0;	// number of active predictors
+
+        // keep track of sign of correlations for the active variables 
+        // (double precision is necessary for solve())
+        vec signs;
+
 
         double maxCor, tmp;
-        vec corInactiveY,
-            absCorInactiveY;
+//        vec corInactiveY,
+//            absCorInactiveY;
 
         // modified LARS algorithm for lasso solution
         while(nrActive < maxActive) {
@@ -501,16 +499,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                      * insert_rows() doesn't work with referenced matrices
                      */
 
-                    double newX;
+                    double newX, normNewX;
                     if(useGram) {
                         xNewPred = Gram.unsafe_col(newPred);	// reuses memory
                         newX = xNewPred[newPred];
                     } else {
-                        xNewPred = xs.unsafe_col(newPred);	  // reuses memory
+                        xNewPred = conv_to<colvec>::from(xs.row(newPred));
                         newX = dot(xNewPred, xNewPred);
                     }
 
-                    double normNewX = sqrt(newX);
+                    normNewX = sqrt(newX);
 
                     if(nrActive == 0) {	// no active variables, L is empty
                         L.set_size(1, 1);
@@ -521,10 +519,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                         if(useGram) {
                             oldX = xNewPred.elem(active);
                         } else {
-                            oldX.set_size(nrActive);
-                            for(i = 0; i < nrActive; i++) {
-                                oldX[i] = dot(xNewPred, xs.unsafe_col(active[i]));
-                            }
+                            oldX = xs.rows(active) * xNewPred;
                         }
                         vec l = solve(trimatl(L), oldX);
                         double lkk = newX - dot(l, l);
@@ -546,10 +541,10 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                             L.insert_cols(nrActive, 1, false);
                             // fill new parts of the matrix
                             for(i = 0; i < nrActive; i++) {
-                                L.at(nrActive, i) = l[i];
-                                L.at(i, nrActive) = l[i];
+                                L(nrActive, i) = l(i);
+                                L(i, nrActive) = l(i);
                             }
-                            L.at(nrActive, nrActive) = lkk;
+                            L(nrActive, nrActive) = lkk;
                         }
                     }
 
@@ -560,7 +555,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     if(rank == nrActive) {
                         // singularity: drop variable for good
                         ignores.insert_rows(s, 1, false);	// do not initialize new memory
-                        ignores[s] = newPred;
+                        ignores(s) = newPred;
                         s++;	// increase number of ignored variables
                         usableVariables--;	// decrease number of variables
                         if(usableVariables < maxActive) {
@@ -578,22 +573,20 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     }
                 }
 
-                for(sc = inactive.n_elem - 1; sc >= 0; --sc) {
-                    i = inactive[sc];
-                    if (maxCor - eps <= fabs(corY[i])) {
+                for(ri = inactive.n_elem - 1; ri >= 0; --ri) {
+                    i = inactive(ri);
+                    if (maxCor - eps <= fabs(corY(i))) {
                         /*
                          * This one was activated -- remove from inactivated list
                          */
-                        inactive.shed_row(sc);
+                        inactive.shed_row(ri);
 //                        corInactiveY.shed_row(i);
                     }
                 }
 
                 nrInactive = inactive.n_elem;	// update number of inactive variables
             }
-            corInactiveY = corY.elem(inactive);
-
-
+//                corInactiveY = corY.elem(inactive);
 
 
 
@@ -612,52 +605,49 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                 // we only need equiangular vector if we don't use the precomputed
                 // Gram matrix, otherwise we can compute the correlations directly
                 // from the Gram matrix
-                u = zeros<vec>(this->XtrAug.n_cols);
-                for(i = 0; i < this->XtrAug.n_cols; i++) {
-                    for(j = 0; j < nrActive; j++) {
-                        u(i) += xs(i, active(j)) * w(j);
-                    }
-                }
+
+                u = xs.rows(active).t() * w;
             }
 
             // compute step size in equiangular direction
             double step;
+            // correlations of inactive variables with equiangular vector
+            vec corInactiveU(nrInactive);
             if(nrActive < maxActive) {
-                // correlations of inactive variables with equiangular vector
-                vec corInactiveU(nrInactive);
                 if(useGram) {
                     for(j = 0; j < nrInactive; j++) {
                         vec gram = Gram.unsafe_col(inactive(j));
                         corInactiveU(j) = dot(w, gram.elem(active));
                     }
                 } else {
-                    for(j = 0; j < nrInactive; j++) {
-                        corInactiveU(j) = dot(u, xs.unsafe_col(inactive(j)));
-                    }
+                    corInactiveU = xs.rows(inactive) * u;
                 }
                 // compute step size in the direction of the equiangular vector
-                step = findStep(maxCor, corInactiveY, corActiveU, corInactiveU, eps);
+                step = findStep(maxCor, corY, inactive, corActiveU, corInactiveU, this->eps);
             } else {
                 // last step: take maximum possible step
-                step = maxCor/corActiveU;
+                step = maxCor / corActiveU;
             }
 
             // adjust step size if any sign changes and drop corresponding variables
             drops = findDrops(currentBeta, active, w, eps, step);
+
             // update current regression coefficients
             previousBeta = currentBeta;
             currentBeta.elem(active) += step * w;
+
+
             // update current correlations
             if(useGram) {
                 // we also need to do this for active variables, since they may be
                 // dropped at a later stage
-                for(j = 0; j < Gram.n_cols; j++) {
+                for(j = 1; j < Gram.n_cols; j++) {
                     vec gram = Gram.unsafe_col(j);
                     corY(j) -= step * dot(w, gram.elem(active));
                 }
             } else {
                 ys -= step * u;	// take step in equiangular direction
-                corY = conv_to<rowvec>::from(ys) * xs;	// might be faster than trans()
+                corY = xs * ys;
             }
 
             // drop variables if necessary
@@ -665,9 +655,9 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                 // downdate Cholesky L
                 // this cannot be put into its own void function since
                 // shed_col() and shed_row() don't work with referenced matrices
-                for(sword j = drops.n_elem-1; j >= 0; j--) {	// reverse order
+                for(ri = drops.n_elem - 1; ri >= 0; --ri) {	// reverse order
                     // variables need to be dropped in descending order
-                    uword drop = drops(j);	// index with respect to active set
+                    uword drop = drops(ri);	// index with respect to active set
                     // modify upper triangular part as in R package 'lars'
                     // simply deleting columns is not enough, other computations
                     // necessary but complicated due to Fortran code
@@ -675,7 +665,9 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     vec z = ones<vec>(nrActive);
                     nrActive--;	// decrease number of active variables
                     for(i = drop; i < nrActive; i++) {
-                        double a = L(i,i), b = L(i+1,i);
+                        double a = L(i, i),
+                               b = L(i + 1, i);
+
                         if(b != 0.0) {
                             // compute the rotation
                             double tau, s, c;
@@ -690,7 +682,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                             }
                             // update 'L' and 'z';
                             L(i,i) = c*a - s*b;
-                            for(uword j = i+1; j < nrActive; j++) {
+                            for(j = i + 1; j < nrActive; ++j) {
                                 a = L(i,j);
                                 b = L(i+1,j);
                                 L(i,j) = c*a - s*b;
@@ -721,9 +713,9 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                 nrInactive = inactive.n_elem;	// update number of inactive variables
                 // drop variables from active set and sign vector
                 // number of active variables is already updated above
-                for(sword j = drops.n_elem-1; j >= 0; j--) {	// reverse order
+                for(ri = drops.n_elem - 1; ri >= 0; --ri) {	// reverse order
                     // variables need to be dropped in descending order
-                    uword drop = drops(j);	// index with respect to active set
+                    uword drop = drops(ri);	// index with respect to active set
                     // drop variables from active set and sign vector
                     // number of active variables is already updated above
                     active.shed_row(drop);
@@ -762,8 +754,8 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     this->XtrAug.cols(0, data.numObs() - 1).t() * beta;
 
     if(this->center) {
-        beta[0] = meanY - dot(beta, meanX);
-        residuals -= beta[0];
+        beta(0) = meanY - dot(beta, meanX);
+        residuals -= beta(0);
     }
 
 	return true;
@@ -844,7 +836,7 @@ static sword sign(const double x) {
 // corActiveU ..... correlations of active variables with equiangular vector
 // corInactiveU ... correlations of inactive variables with equiangular vector
 // eps ............ small numerical value (effective zero)
-static double findStep(const double corActiveY, const vec& corInactiveY,
+static double findStepOld(const double corActiveY, const vec& corInactiveY,
                        const double corActiveU, const vec& corInactiveU,
                        const double eps) {
     double step = corActiveY/corActiveU;      // maximum possible step;
@@ -865,6 +857,45 @@ static double findStep(const double corActiveY, const vec& corInactiveY,
 	return step;
 }
 
+static double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
+                       const double corActiveU, const vec& corInactiveU,
+                       const double eps) {
+    double step = corActiveY / corActiveU;      // maximum possible step;
+    uword i;
+    double cor;
+    double tmp;
+
+    for (i = 0; i < inactive.n_elem; ++i) {
+        cor = corY(inactive(i));
+        tmp = (corActiveY - cor) / (corActiveU - corInactiveU(i));
+
+        if ((tmp > eps) && (tmp < step)) {
+            step = tmp;
+        }
+
+
+        tmp = (corActiveY + cor) / (corActiveU + corInactiveU(i));
+
+        if ((tmp > eps) && (tmp < step)) {
+            step = tmp;
+        }
+    }
+
+//	// construct vector of all values to consider
+//	vec steps = join_cols((corActiveY - corInactiveY)/(corActiveU - corInactiveU),
+//			(corActiveY + corInactiveY)/(corActiveU + corInactiveU));
+//	steps = steps.elem(find(steps > eps));
+//
+//	// find and return step size
+//	if(steps.n_elem > 0) {
+//		smallestPositive = steps.min();  // smallest positive value
+//		if(smallestPositive < step) {
+//			step = smallestPositive;
+//		}
+//	}
+	return step;
+}
+
 
 
 // adjust step size if any sign changes before the designated step size,
@@ -876,7 +907,7 @@ static double findStep(const double corActiveY, const vec& corInactiveY,
 // eps ...... small numerical value (effective zero)
 // step ..... step size in direction of equiangular vector
 static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
-                      const double eps, double step) {
+                      const double eps, double& step) {
 	// for each variable, compute step size where sign change would take place,
 	// and keep track of indices of variables that are potentially dropped
 	vec steps = -beta.elem(active) / w;
@@ -896,30 +927,4 @@ static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
 	return drops;
 }
 
-
-static double findNewActive(const uvec& inactive, const vec& corY, const double eps,
-                            uvec& newActive)
-{
-    double maxAbsCor = 0;
-    double tmp;
-    uword i;
-
-    newActive.reset();
-
-    for(i = 0; i < inactive.n_elem; ++i) {
-        tmp = fabs(corY[inactive[i]]);
-        if (maxAbsCor < tmp) {
-            maxAbsCor = tmp;
-        }
-    }
-
-    for(i = 0; i < inactive.n_elem; ++i) {
-        tmp = fabs(corY[inactive[i]]);
-        if (tmp >= maxAbsCor - eps) {
-            newActive.insert_rows(newActive.n_elem, inactive[i]);
-        }
-    }
-
-    return maxAbsCor;
-}
 

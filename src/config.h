@@ -41,4 +41,13 @@
 #   define RESTRICT
 #endif
 
+
+#ifndef DEBUG
+#   define ARMA_NO_DEBUG
 #endif
+
+
+
+#endif
+
+

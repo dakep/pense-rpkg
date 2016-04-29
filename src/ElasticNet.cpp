@@ -28,6 +28,9 @@ static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
 
 
 
+static void downdateCholesky(const uvec& drops, mat *const L, uword& nrActive, uword& rank);
+
+
 
 ElasticNet::ElasticNet(const int maxIt, const double eps, const bool center) :
 			maxIt(maxIt), center(center), eps(eps), XtrSize(0), XmeansSize(0)
@@ -345,7 +348,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     vec beta(coefs, data.numVar(), false, true);
     vec residuals(resids, data.numObs(), false, true);
 
-    bool useGram = true;
+    bool useGram = false;
 
 
     uword i, j;
@@ -356,9 +359,8 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 	vec meanX;
 	double meanY;
 
-    uword s = 0;
 	uvec inactive(this->XtrAug.n_rows - 1),
-         ignores(s);
+         ignores;
 
     mat Gram;
     vec corY;	// current correlations
@@ -369,11 +371,11 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
      * Center data if requested
      */
 	if(this->center) {
-		meanX = mean(xs.cols(0, data.numObs() - 1), 1);		  // columnwise means of predictors
-        meanX[0] = 0;           // Don't change the intercept-column
-        xs.cols(0, data.numObs() - 1).each_col() -= meanX; // sweep out columnwise means
-		meanY = mean(ys.rows(0, data.numObs() - 1));	// mean of response
-		ys.rows(0, data.numObs() - 1) -= meanY;        // sweep out mean
+		meanX = mean(xs.cols(0, data.numObs() - 1), 1);
+        meanX[0] = 0; // Don't change the intercept-column
+        xs.cols(0, data.numObs() - 1).each_col() -= meanX;
+		meanY = mean(ys.rows(0, data.numObs() - 1));
+		ys.rows(0, data.numObs() - 1) -= meanY;
 	} else {
 		meanY = 0;		  // just to avoid warning, this is never used
 //		intercept = 0;	  // zero intercept
@@ -384,7 +386,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
      * but column 0 (intercept) is always active!
      */
     for (j = 1; j < this->XtrAug.n_rows; ++j) {
-        inactive[j - 1] = j; //
+        inactive[j - 1] = j;
     }
 
 	if(useGram) {
@@ -399,7 +401,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
     if(this->XtrAug.n_rows == 2) {
         // special case of only one variable (with sufficiently large norm)
-        j = inactive(s);
+        j = inactive(0);
         // set maximum step size in the direction of that variable
         double maxStep = corY(j);
         if(maxStep < 0) {
@@ -414,8 +416,13 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             beta(j) = (maxStep - rescaledLambda) * betaLS[0] / maxStep;
         }
     } else if (this->XtrAug.n_rows > 2) {
-        // further initializations for iterative steps
-        // previous and current regression coefficients
+        /*
+         * further initializations for iterative steps
+         */
+
+        /*
+         * previous and current regression coefficients
+         */
         vec previousBeta = zeros(this->XtrAug.n_rows),
             currentBeta = zeros(this->XtrAug.n_rows);
 
@@ -426,11 +433,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         // indicates variables to be dropped
         uvec drops;
 
-        mat L;          // Cholesky L of Gram matrix of active variables
-        uword rank = 0;		// rank of Cholesky L
+        /*
+         * Cholesky L of Gram matrix of active variables
+         * and rank of L
+         */
+        mat L;
+        uword rank = 0;
 
         // maximum number of variables to be sequenced
-        uword maxActive = findMaxActive(this->XtrAug.n_cols, this->XtrAug.n_rows, this->center) - 1;
+        uword maxActive = std::min(this->XtrAug.n_cols - this->center, this->XtrAug.n_rows - 1);
+
         uword usableVariables = this->XtrAug.n_rows;
         uword newPred;
         vec xNewPred;
@@ -438,10 +450,11 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         uvec active;        // active predictors
         uword nrActive = 0;	// number of active predictors
 
-        // keep track of sign of correlations for the active variables 
-        // (double precision is necessary for solve())
+        /*
+         * keep track of sign of correlations for the active variables
+         * (double precision is necessary for solve())
+         */
         vec signs;
-
 
         double maxCor, tmp;
 
@@ -511,29 +524,36 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                             oldX = xs.rows(active) * xNewPred;
                         }
                         vec l = solve(trimatl(L), oldX);
-                        double lkk = newX - dot(l, l);
-                        // check if L is machine singular
-                        if(lkk > eps) {
-                            // no singularity: update Cholesky L
-                            lkk = sqrt(lkk);
-                            rank++;
+                        tmp = newX - dot(l, l);
 
-                            // add new row and column to Cholesky L
-                            // this is a little trick: sometimes we need
-                            // lower triangular matrix, sometimes upper
-                            // hence we define quadratic matrix and use
-                            // triangularView() to interpret matrix the
-                            // correct way
-                            // insert row and column without initializing memory
-                            // (set_size() and reshape() have strange behavior)
+                        /*
+                         * check if L is machine singular
+                         */
+                        if(tmp > eps) {
+                            /*
+                             * no singularity: update Cholesky L
+                             */
+                            tmp = sqrt(tmp);
+                            ++rank;
+
+                            /*
+                             * add new row and column to Cholesky L
+                             * this is a little trick: sometimes we need
+                             * lower triangular matrix, sometimes upper
+                             * hence we define a quadratic matrix and use
+                             * triangularView() to interpret the matrix in
+                             * correct way
+                             * insert row and column without initializing memory
+                             * (set_size() and reshape() have strange behavior)
+                             */
                             L.insert_rows(nrActive, 1, false);
                             L.insert_cols(nrActive, 1, false);
                             // fill new parts of the matrix
-                            for(i = 0; i < nrActive; i++) {
+                            for(i = 0; i < nrActive; ++i) {
                                 L(nrActive, i) = l(i);
                                 L(i, nrActive) = l(i);
                             }
-                            L(nrActive, nrActive) = lkk;
+                            L(nrActive, nrActive) = tmp;
                         }
                     }
 
@@ -542,13 +562,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                      * in case of singularity
                      */
                     if(rank == nrActive) {
-                        // singularity: drop variable for good
-                        ignores.insert_rows(s, 1, false);	// do not initialize new memory
-                        ignores(s) = newPred;
-                        s++;	// increase number of ignored variables
-                        usableVariables--;	// decrease number of variables
+                        /*
+                         * singularity: drop variable for good
+                         * --> - increase number of ignored variables
+                         *     - decrease number of usable variables
+                         *     - adjust maximum number of active variables
+                         */
+                        ignores.insert_rows(ignores.n_elem, 1, false);
+                        ignores(ignores.n_elem - 1) = newPred;
+                        --usableVariables;
                         if(usableVariables < maxActive) {
-                            // adjust maximum number of active variables
                             maxActive = usableVariables;
                         }
                     } else {
@@ -558,7 +581,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                         // keep track of sign of correlation for new active variable
                         signs.insert_rows(nrActive, 1, false);		// do not initialize new memory
                         signs(nrActive) = sign(corY(newPred));
-                        nrActive++;	// increase number of active variables
+                        ++nrActive;	// increase number of active variables
                     }
                 }
 
@@ -657,72 +680,40 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
              * Drop variables if necessary
              */
             if(drops.n_elem > 0) {
-                // downdate Cholesky L
-                // this cannot be put into its own void function since
-                // shed_col() and shed_row() don't work with referenced matrices
-                for(ri = drops.n_elem - 1; ri >= 0; --ri) {	// reverse order
-                    // variables need to be dropped in descending order
-                    uword drop = drops(ri);	// index with respect to active set
-                    // modify upper triangular part as in R package 'lars'
-                    // simply deleting columns is not enough, other computations
-                    // necessary but complicated due to Fortran code
-                    L.shed_col(drop);
-                    vec z = ones<vec>(nrActive);
-                    nrActive--;	// decrease number of active variables
-                    for(i = drop; i < nrActive; i++) {
-                        double a = L(i, i),
-                               b = L(i + 1, i);
+                uword newInactive, drop;
 
-                        if(b != 0.0) {
-                            // compute the rotation
-                            double tau, s, c;
-                            if(std::abs(b) > std::abs(a)) {
-                                tau = -a/b;
-                                s = 1.0/sqrt(1.0+tau*tau);
-                                c = s * tau;
-                            } else {
-                                tau = -b/a;
-                                c = 1.0/sqrt(1.0+tau*tau);
-                                s = c * tau;
-                            }
-                            // update 'L' and 'z';
-                            L(i,i) = c*a - s*b;
-                            for(j = i + 1; j < nrActive; ++j) {
-                                a = L(i,j);
-                                b = L(i+1,j);
-                                L(i,j) = c*a - s*b;
-                                L(i+1,j) = s*a + c*b;
-                            }
+                /*
+                 * Downdate Cholesky decomposition `L`
+                 */
+                downdateCholesky(drops, &L, nrActive, rank);
 
-                            a = z(i);
-                            b = z(i+1);
-                            z(i) = c*a - s*b;
-                            z(i+1) = s*a + c*b;
-                        }
-                    }
-
-                    L.shed_row(nrActive);
-                    rank--;
-                }
                 // mirror lower triangular part
                 L = symmatu(L);
-                // add dropped variables to inactive set and make sure
-                // coefficients are 0
+
+                /*
+                 * add dropped variables to inactive set and make sure
+                 * coefficients are 0
+                 */
                 inactive.insert_rows(nrInactive, drops.n_elem, false);
 
-                for(j = 0; j < drops.n_elem; j++) {
-                    uword newInactive = active(drops(j));
+                for(j = 0; j < drops.n_elem; ++j) {
+                    newInactive = active(drops(j));
                     inactive(nrInactive + j) = newInactive;
                     currentBeta(newInactive) = 0;	// make sure coefficient is 0
                 }
+
                 nrInactive = inactive.n_elem;	// update number of inactive variables
-                // drop variables from active set and sign vector
-                // number of active variables is already updated above
-                for(ri = drops.n_elem - 1; ri >= 0; --ri) {	// reverse order
-                    // variables need to be dropped in descending order
-                    uword drop = drops(ri);	// index with respect to active set
-                    // drop variables from active set and sign vector
-                    // number of active variables is already updated above
+
+                /*
+                 * drop variables from active set and sign vector
+                 * number of active variables is already updated above
+                 */
+                for(ri = drops.n_elem - 1; ri >= 0; --ri) {
+                    drop = drops(ri);	// index with respect to active set
+                    /*
+                     * drop variables from active set and sign vector
+                     * number of active variables is already updated above
+                     */
                     active.shed_row(drop);
                     signs.shed_row(drop);
                 }
@@ -823,7 +814,7 @@ void ElasticNetLARS::augmentData(const Data& data)
 }
 
 
-static uword findMaxActive(const uword n, const uword p, const bool useIntercept) {
+static inline uword findMaxActive(const uword n, const uword p, const bool useIntercept) {
 	uword maxActive = n - useIntercept;
 	if(p < maxActive) {
 		maxActive = p;
@@ -831,7 +822,7 @@ static uword findMaxActive(const uword n, const uword p, const bool useIntercept
 	return maxActive;
 }
 
-static sword sign(const double x) {
+static inline sword sign(const double x) {
 	return (x > 0) - (x < 0);
 }
 
@@ -844,7 +835,7 @@ static sword sign(const double x) {
  * corInactiveU ... correlations of inactive variables with equiangular vector
  * eps ............ small numerical value (effective zero)
  */
-static double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
+static inline double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
                        const double corActiveU, const vec& corInactiveU,
                        const double eps) {
     double step = corActiveY / corActiveU;      // maximum possible step;
@@ -882,7 +873,7 @@ static double findStep(const double corActiveY, const vec& corY, const uvec& ina
  * eps ...... small numerical value (effective zero)
  * step ..... step size in direction of equiangular vector
  */
-static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
+static inline uvec findDrops(const vec& beta, const uvec& active, const vec& w,
                       const double eps, double& step) {
 	/*
      * for each variable, compute step size where sign change would take place,
@@ -907,3 +898,60 @@ static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
      */
 	return drops;
 }
+
+/*
+ * downdate Cholesky L
+ * this cannot be put into its own void function since
+ * shed_col() and shed_row() don't work with referenced matrices
+ */
+static inline void downdateCholesky(const uvec& drops, mat *const L, uword& nrActive, uword& rank)
+{
+    double a, b, tau, s, c;
+    sword ri;
+    uword i, j, drop;
+
+    for(ri = drops.n_elem - 1; ri >= 0; --ri) {	// reverse order
+        // variables need to be dropped in descending order
+        drop = drops(ri);	// index with respect to active set
+
+        /*
+         * modify upper triangular part as in R package 'lars'
+         * simply deleting columns is not enough, other computations
+         * necessary but complicated due to Fortran code
+         */
+        L->shed_col(drop);
+        --nrActive; // decrease number of active variables
+        for(i = drop; i < nrActive; ++i) {
+            a = L->at(i, i);
+            b = L->at(i + 1, i);
+
+            if(b != 0.0) {
+                /* compute the rotation */
+                if(std::abs(b) > std::abs(a)) {
+                    tau = -a / b;
+                    s = 1.0 / sqrt(1.0 + tau * tau);
+                    c = s * tau;
+                } else {
+                    tau = -b / a;
+                    c = 1.0 / sqrt(1.0 + tau * tau);
+                    s = c * tau;
+                }
+
+                /*
+                 * update 'L'
+                 */
+                L->at(i,i) = c * a - s * b;
+                for(j = i + 1; j < nrActive; ++j) {
+                    a = L->at(i, j);
+                    b = L->at(i + 1, j);
+                    L->at(i, j) = c * a - s * b;
+                    L->at(i + 1, j) = s * a + c * b;
+                }
+            }
+        }
+
+        L->shed_row(nrActive);
+        --rank;
+    }
+}
+

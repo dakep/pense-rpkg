@@ -18,11 +18,13 @@
 using namespace arma;
 
 static double softThreshold(const double z, const double gamma);
-static uword findMaxActive(const uword n, const uword p, const bool useIntercept);
 static sword sign(const double x);
-static double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
-                       const double corActiveU, const vec& corInactiveU,
-                       const double eps);
+static inline double findStepGram(const double corActiveY, const vec& corY, const uvec& inactive,
+                              const double corActiveEqui, const vec& corEquiV,
+                              const double eps);
+static inline double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
+                              const double corActiveEqui, const vec& corInactiveEquiV,
+                              const double eps);
 static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
                       const double eps, double& step);
 
@@ -575,13 +577,19 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                             maxActive = usableVariables;
                         }
                     } else {
-                        // no singularity: add variable to active set
-                        active.insert_rows(nrActive, 1, false);	// do not initialize new memory
+                        /* 
+                         * no singularity: add variable to active set
+                         */
+                        active.insert_rows(nrActive, 1, false);
                         active(nrActive) = newPred;
-                        // keep track of sign of correlation for new active variable
-                        signs.insert_rows(nrActive, 1, false);		// do not initialize new memory
+
+                        /*
+                         * keep track of sign of correlation for new active variable
+                         */
+                        signs.insert_rows(nrActive, 1, false);
                         signs(nrActive) = sign(corY(newPred));
-                        ++nrActive;	// increase number of active variables
+
+                        ++nrActive;
                     }
                 }
 
@@ -607,11 +615,11 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             vec equiangularVec;
             vec corEquiV;
             // correlations of active variables with equiangular vector
-            double corActiveU = 1 / sqrt(dot(w, signs));
+            double corActiveEqui = 1 / sqrt(dot(w, signs));
 
             // coefficients of active variables in linear combination forming the
             // equiangular vector
-            w *= corActiveU;	// note that this has the right signs
+            w *= corActiveEqui;	// note that this has the right signs
             // equiangular vector
 
             if(useGram) {
@@ -637,17 +645,17 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                      * compute step size in the direction of the equiangular vector
                      * Here we only need the correlations for the INACTIVE variables
                      */
-                    step = findStep(maxCor, corY, inactive, corActiveU, corEquiV.elem(inactive),
-                                    this->eps);
+                    step = findStepGram(maxCor, corY, inactive, corActiveEqui, corEquiV,
+                                        this->eps);
                 } else {
                     corEquiV = xs.rows(inactive) * equiangularVec;
 
                     // compute step size in the direction of the equiangular vector
-                    step = findStep(maxCor, corY, inactive, corActiveU, corEquiV, this->eps);
+                    step = findStep(maxCor, corY, inactive, corActiveEqui, corEquiV, this->eps);
                 }
             } else {
                 // last step: take maximum possible step
-                step = maxCor / corActiveU;
+                step = maxCor / corActiveEqui;
             }
 
             /*
@@ -814,13 +822,7 @@ void ElasticNetLARS::augmentData(const Data& data)
 }
 
 
-static inline uword findMaxActive(const uword n, const uword p, const bool useIntercept) {
-	uword maxActive = n - useIntercept;
-	if(p < maxActive) {
-		maxActive = p;
-	}
-	return maxActive;
-}
+
 
 static inline sword sign(const double x) {
 	return (x > 0) - (x < 0);
@@ -835,24 +837,26 @@ static inline sword sign(const double x) {
  * corInactiveU ... correlations of inactive variables with equiangular vector
  * eps ............ small numerical value (effective zero)
  */
-static inline double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
-                       const double corActiveU, const vec& corInactiveU,
+static inline double findStepGram(const double corActiveY, const vec& corY, const uvec& inactive,
+                       const double corActiveEqui, const vec& corEquiV,
                        const double eps) {
-    double step = corActiveY / corActiveU;      // maximum possible step;
+    double step = corActiveY / corActiveEqui;      // maximum possible step;
     uword i;
-    double cor;
+    double corWY, corWEquiv;
     double tmp;
 
     for (i = 0; i < inactive.n_elem; ++i) {
-        cor = corY(inactive(i));
-        tmp = (corActiveY - cor) / (corActiveU - corInactiveU(i));
+        corWY = corY(inactive(i));
+        corWEquiv = corEquiV(inactive(i));
+
+        tmp = (corActiveY - corWY) / (corActiveEqui - corWEquiv);
 
         if ((tmp > eps) && (tmp < step)) {
             step = tmp;
         }
 
 
-        tmp = (corActiveY + cor) / (corActiveU + corInactiveU(i));
+        tmp = (corActiveY + corWY) / (corActiveEqui + corWEquiv);
 
         if ((tmp > eps) && (tmp < step)) {
             step = tmp;
@@ -861,6 +865,44 @@ static inline double findStep(const double corActiveY, const vec& corY, const uv
 
 	return step;
 }
+
+/**
+ * compute step size in the direction of the equiangular vector
+ *
+ * corActiveY.. ... correlations of active variables with current response
+ * corInactiveY ... correlations of inactive variables with current response
+ * corActiveU ..... correlations of active variables with equiangular vector
+ * corInactiveU ... correlations of inactive variables with equiangular vector
+ * eps ............ small numerical value (effective zero)
+ */
+static inline double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
+                       const double corActiveEqui, const vec& corInactiveEquiV,
+                       const double eps) {
+    double step = corActiveY / corActiveEqui;      // maximum possible step;
+    uword i;
+    double corWY;
+    double tmp;
+
+    for (i = 0; i < inactive.n_elem; ++i) {
+        corWY = corY(inactive(i));
+
+        tmp = (corActiveY - corWY) / (corActiveEqui - corInactiveEquiV(i));
+
+        if ((tmp > eps) && (tmp < step)) {
+            step = tmp;
+        }
+
+
+        tmp = (corActiveY + corWY) / (corActiveEqui + corInactiveEquiV(i));
+
+        if ((tmp > eps) && (tmp < step)) {
+            step = tmp;
+        }
+    }
+
+	return step;
+}
+
 
 /**
  * adjust step size if any sign changes before the designated step size,

@@ -38,7 +38,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
     const double *RESTRICT yIter;
     const double *RESTRICT XtrIter;
 
-    ElasticNet en(this->ctrl.enMaxIt, this->ctrl.enEPS, FALSE);
+    ElasticNetGDESC en(this->ctrl.enMaxIt, this->ctrl.enEPS, FALSE);
     Data wgtData;
     RhoFunction rhoFun = getRhoFunctionByName(this->ctrl.mscaleRhoFun);
 

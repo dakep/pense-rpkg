@@ -34,11 +34,11 @@ static void downdateCholesky(const uvec& drops, mat *const L, uword& nrActive, u
 
 
 
-ElasticNet::ElasticNet(const int maxIt, const double eps, const bool center) :
-			maxIt(maxIt), center(center), eps(eps), XtrSize(0), XmeansSize(0)
+ElasticNetGDESC::ElasticNetGDESC(const int maxIt, const double eps, const bool center) :
+			ElasticNet(eps, center), maxIt(maxIt), XtrSize(0), XmeansSize(0)
 {}
 
-ElasticNet::~ElasticNet()
+ElasticNetGDESC::~ElasticNetGDESC()
 {
     if(this->XtrSize > 0) {
         delete[] this->Xtr;
@@ -50,7 +50,7 @@ ElasticNet::~ElasticNet()
     }
 }
 
-void ElasticNet::setLambdas(const double lambda1, const double lambda2)
+void ElasticNetGDESC::setLambdas(const double lambda1, const double lambda2)
 {
     this->lambda = lambda2 + lambda1 / 2;
     this->alpha = lambda1 / (2 * lambda2 + lambda1);
@@ -59,20 +59,15 @@ void ElasticNet::setLambdas(const double lambda1, const double lambda2)
     }
 }
 
-void ElasticNet::setAlphaLambda(const double alpha, const double lambda)
+void ElasticNetGDESC::setAlphaLambda(const double alpha, const double lambda)
 {
     this->alpha = alpha;
     this->lambda = lambda;
 }
 
-void ElasticNet::setThreshold(const double eps)
-{
-    this->eps = eps;
-}
 
-
-bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
-                              const bool warm)
+bool ElasticNetGDESC::computeCoefs(const Data& data, double *RESTRICT coefs,
+                                   double *RESTRICT residuals, const bool warm)
 {
     /*
      * NOTE:
@@ -268,7 +263,7 @@ bool ElasticNet::computeCoefs(const Data& data, double *RESTRICT coefs, double *
 }
 
 
-void ElasticNet::resizeBuffer(const Data& data)
+void ElasticNetGDESC::resizeBuffer(const Data& data)
 {
     if (this->center && ((data.numObs() * data.numVar()) > (this->XtrSize))) {
         if(this->XtrSize > 0) {
@@ -311,8 +306,7 @@ static inline double softThreshold(const double z, const double gamma)
  *
  ***************************************************************************/
 ElasticNetLARS::ElasticNetLARS(const double eps, const bool center) :
-        ElasticNet(0, eps, center),
-        lambda1(0), sqrtLambda2(0), augNobs(0)
+        ElasticNet(eps, center), lambda1(0), sqrtLambda2(0), augNobs(0)
 {
 }
 
@@ -355,8 +349,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
     uword i, j;
     sword ri;
-	mat xs = this->XtrAug;
-	vec ys = this->yAug;
 
 	vec meanX;
 	double meanY;
@@ -373,11 +365,11 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
      * Center data if requested
      */
 	if(this->center) {
-		meanX = mean(xs.cols(0, data.numObs() - 1), 1);
+		meanX = mean(this->XtrAug.cols(0, data.numObs() - 1), 1);
         meanX[0] = 0; // Don't change the intercept-column
-        xs.cols(0, data.numObs() - 1).each_col() -= meanX;
-		meanY = mean(ys.rows(0, data.numObs() - 1));
-		ys.rows(0, data.numObs() - 1) -= meanY;
+        this->XtrAug.cols(0, data.numObs() - 1).each_col() -= meanX;
+		meanY = mean(this->yAug.rows(0, data.numObs() - 1));
+		this->yAug.rows(0, data.numObs() - 1) -= meanY;
 	} else {
 		meanY = 0;		  // just to avoid warning, this is never used
 //		intercept = 0;	  // zero intercept
@@ -392,13 +384,13 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     }
 
 	if(useGram) {
-		Gram = xs * xs.t();
+		Gram = this->XtrAug * this->XtrAug.t();
 	}
 
     /*
      * Compute current correlations
      */
-    corY = xs * ys;
+    corY = this->XtrAug * this->yAug;
 
 
     if(this->XtrAug.n_rows == 2) {
@@ -410,7 +402,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             maxStep = -maxStep; // absolute value
         }
         // compute coefficients for least squares solution
-        vec betaLS = solve(xs.unsafe_col(j), ys);
+        vec betaLS = solve(this->XtrAug.unsafe_col(j), this->yAug);
         // compute lasso coefficients
         beta.zeros();
         if(rescaledLambda < maxStep) {
@@ -508,7 +500,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                         xNewPred = Gram.unsafe_col(newPred);	// reuses memory
                         newX = xNewPred[newPred];
                     } else {
-                        xNewPred = conv_to<colvec>::from(xs.row(newPred));
+                        xNewPred = conv_to<colvec>::from(this->XtrAug.row(newPred));
                         newX = dot(xNewPred, xNewPred);
                     }
 
@@ -523,7 +515,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                         if(useGram) {
                             oldX = xNewPred.elem(active);
                         } else {
-                            oldX = xs.rows(active) * xNewPred;
+                            oldX = this->XtrAug.rows(active) * xNewPred;
                         }
                         vec l = solve(trimatl(L), oldX);
                         tmp = newX - dot(l, l);
@@ -634,7 +626,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                  * Gram matrix, otherwise we can compute the correlations directly
                  * from the Gram matrix
                  */
-                equiangularVec = xs.rows(active).t() * w;
+                equiangularVec = this->XtrAug.rows(active).t() * w;
             }
 
             // compute step size in equiangular direction
@@ -648,7 +640,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     step = findStepGram(maxCor, corY, inactive, corActiveEqui, corEquiV,
                                         this->eps);
                 } else {
-                    corEquiV = xs.rows(inactive) * equiangularVec;
+                    corEquiV = this->XtrAug.rows(inactive) * equiangularVec;
 
                     // compute step size in the direction of the equiangular vector
                     step = findStep(maxCor, corY, inactive, corActiveEqui, corEquiV, this->eps);
@@ -680,8 +672,8 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                  */
                 corY -= step * corEquiV;
             } else {
-                ys -= step * equiangularVec;	// take step in equiangular direction
-                corY = xs * ys;
+                this->yAug -= step * equiangularVec;	// take step in equiangular direction
+                corY = this->XtrAug * this->yAug;
             }
 
             /*
@@ -798,15 +790,24 @@ void ElasticNetLARS::augmentData(const Data& data)
         this->yAug.set_size(newNobs);
 
         if (newNobs > this->augNobs) {
-            memset(this->yAug.memptr() + this->augNobs, 0,
-                   (this->XtrAug.n_rows - 1) * sizeof(double));
-
             memset(this->XtrAug.memptr() + this->augNobs * this->XtrAug.n_rows, 0,
                    (this->XtrAug.n_rows - 1) * this->XtrAug.n_rows * sizeof(double));
        }
     }
 
+    /*
+     * Copy first n elements of y and set the remaining to 0
+     * (this has to be done everytime because it will be overwritten by
+     * LARS algorithm)
+     * The augmented part of Xtr won't be changed, so we don't have to re-initialize
+     * it.
+     */
     memcpy(this->yAug.memptr(), data.getYConst(), this->augNobs * sizeof(double));
+
+    if (newNobs > this->augNobs) {
+        memset(this->yAug.memptr() + this->augNobs, 0, (this->XtrAug.n_rows - 1) * sizeof(double));
+    }
+
     memcpy(this->XtrAug.memptr(), data.getXtrConst(),
            this->augNobs * this->XtrAug.n_rows * sizeof(double));
 

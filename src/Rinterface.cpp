@@ -155,11 +155,11 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     return result;
 }
 
-RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
-                        SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm)
+RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha,
+                        SEXP Rlambda, SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
-    ElasticNet en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
+    ElasticNetGDESC en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
     bool warm = (*INTEGER(Rwarm) == 1);
     SEXP result = R_NilValue;
     SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
@@ -261,7 +261,7 @@ RcppExport SEXP C_pscs_en(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralph
                           SEXP RmaxIt, SEXP Reps, SEXP Rcentering)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
-    ElasticNet en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
+    ElasticNetGDESC en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
     PSC_EN psc(en);
 
     SEXP ret = R_NilValue;

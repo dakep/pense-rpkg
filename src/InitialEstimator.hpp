@@ -141,7 +141,7 @@ private:
     const double lambda1LS;
     const double lambda2LS;
 
-	ElasticNet en;
+	ElasticNetGDESC en;
 
     PSC_OLS pscOls;
     Data pscFilteredData;
@@ -171,7 +171,7 @@ private:
     const double lambda1LS;
     const double lambda2LS;
 
-	ElasticNet en;
+	ElasticNetGDESC en;
 
     PSC_EN pscEn;
     Data pscFilteredData;

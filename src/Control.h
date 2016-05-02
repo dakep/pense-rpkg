@@ -15,6 +15,14 @@ typedef enum RhoFunctionNameTag {
     GAUSS_WEIGHT = 2
 } RhoFunctionName;
 
+
+typedef enum ENAlgorithmTag {
+    GRADIENT_DESCENT = 0,
+    AUGMENTED_LARS_GRAM = 1,
+    AUGMENTED_LARS_NOGRAM = 2,
+    AUGMENTED_LARS_AUTO = 3
+} ENAlgorithm;
+
 typedef struct ControlTag {
     /*
      * NOTE: Adjust lambdas for cc.scale BUT NOT FOR LS!
@@ -35,6 +43,7 @@ typedef struct ControlTag {
     const int enMaxIt;
     const double enEPS;
     const int enCentering;
+    const ENAlgorithm enAlgorithm;
 
     const double mscaleB;
     const double mscaleCC;

@@ -4,17 +4,21 @@
 \alias{enpy.control}
 \title{Control Parameters for ENPY}
 \usage{
-enpy.control(en.maxit = 50000, en.tol = 1e-08, en.centering = TRUE,
-  mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
-  "huber"))
+enpy.control(en.maxit = 50000, en.tol, en.centering = TRUE,
+  en.algorithm = c("augmented-lars", "coordinate-descent",
+  "augmented-lars-gram", "augmented-lars-nogram"), mscale.maxit = 200,
+  mscale.tol = 1e-08, mscale.rho.fun = c("bisquare", "huber"))
 }
 \arguments{
 \item{en.maxit}{Maximum number of iterations allowed for the elastic net algorithm.}
 
-\item{en.tol}{Convergence threshold for elastic net.}
+\item{en.tol}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
+the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)}
 
 \item{en.centering}{Should the data be centered for the elastic net algorithm. Only those rows
 with leading 1's will be considered for centering.}
+
+\item{en.algorithm}{algorithm to use to compute the elastic net solution.}
 
 \item{mscale.maxit}{Maximum number of iterations allowed for the m-scale algorithm.}
 

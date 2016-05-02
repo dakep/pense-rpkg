@@ -4,23 +4,26 @@
 \alias{pense.control}
 \title{Control Parameters for PENSE}
 \usage{
-\method{pense}{control}(pense.maxit = 500, pense.tol = 1e-06,
-  pense.en.tol = 1e-09, pense.en.maxit = 5e+05, cv.objective = scaleTau2,
-  init.tol = 1e-06, init.maxit = 10,
-  init.resid.clean.method = c("proportion", "threshold"),
+\method{pense}{control}(pense.maxit = 500, pense.tol = 1e-06, pense.en.tol,
+  pense.en.maxit = 5e+05, cv.objective = scaleTau2, init.tol = 1e-06,
+  init.maxit = 10, init.resid.clean.method = c("proportion", "threshold"),
   init.resid.proportion = 0.4, init.resid.threshold = 2,
   init.psc.method = c("auto", "rr", "Mn"), init.psc.proportion = 0.8,
-  init.csteps = 10, init.nkeep = 5, init.en.tol = 1e-08,
-  init.en.maxit = pense.en.maxit, mscale.cc = 1.54764, mscale.delta = 0.5,
-  mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
-  "huber"))
+  init.csteps = 10, init.nkeep = 5, init.en.tol,
+  init.en.maxit = pense.en.maxit, init.en.algorithm = pense.en.algorithm,
+  mscale.cc = 1.54764, mscale.delta = 0.5, mscale.maxit = 200,
+  mscale.tol = 1e-08, mscale.rho.fun = c("bisquare", "huber"),
+  en.algorithm = c("augmented-lars", "coordinate-descent",
+  "augmented-lars-gram", "augmented-lars-nogram"))
 }
 \arguments{
 \item{pense.maxit}{maximum number of iterations for PENSE.}
 
 \item{pense.tol}{convergence tolerance for PENSE.}
 
-\item{pense.en.tol}{convergence tolerance for the elastic net in PENSE}
+\item{pense.en.tol}{The relative tolerance for convergence for gradient-descent (default 1e-9) or
+the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) in the
+PENSE step.}
 
 \item{pense.en.maxit}{maximum number of iterations for each elastic net fit in PENSE}
 
@@ -54,8 +57,6 @@ the initial estimates.}
 
 \item{init.nkeep}{how many initial estimates should be kept to perform full PENSE iterations?}
 
-\item{init.en.tol}{convergence tolerance for elastic net fits to find initial estimates.}
-
 \item{init.en.maxit}{maximum number of iterations for each elastic net fit for initial estimates.}
 
 \item{mscale.cc}{tuning parameter for the M-estimate of scale.}
@@ -68,6 +69,13 @@ constant equal to \code{mscale.cc}.}
 \item{mscale.tol}{convergence tolerance for calculating the M-estimate of scale.}
 
 \item{mscale.rho.fun}{string specifying the rho function of the S-estimator.}
+
+\item{en.algorithm}{algorithm to use to compute the (weighted) elastic net solutions for the
+         inital estimates and PENSE.}
+
+\item{pense.en.tol}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
+the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) for
+the initial estimate.}
 }
 \value{
 A list with the given arguments, checked for errors.

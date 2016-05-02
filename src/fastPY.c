@@ -113,7 +113,8 @@ SEXP C_initpy(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP RnumIt,
         .lambda2 = 0,
         .enMaxIt = 0,
         .enEPS = 0,
-        .enCentering = 0
+        .enCentering = 0,
+        .enAlgorithm = 0
     };
 
     const int nobs = *INTEGER(Rnobs);

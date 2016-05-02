@@ -38,11 +38,11 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
     const double *RESTRICT yIter;
     const double *RESTRICT XtrIter;
 
-    ElasticNetGDESC en(this->ctrl.enMaxIt, this->ctrl.enEPS, FALSE);
+    ElasticNet *en = getElasticNetImpl(this->ctrl);
     Data wgtData;
     RhoFunction rhoFun = getRhoFunctionByName(this->ctrl.mscaleRhoFun);
 
-    bool enConverged;
+    bool enConverged, enUseGram = true;
     double *RESTRICT oldCoef = new double[data.numVar()];
     double *RESTRICT XtrWgtIter;
     double *RESTRICT yWgtIter;
@@ -55,7 +55,16 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     this->iteration = 0;
 
-    en.setAlphaLambda(this->alpha, this->lambda);
+    switch (this->ctrl.enAlgorithm) {
+        case GRADIENT_DESCENT:
+            en->setAlphaLambda(this->alpha, this->lambda);
+            break;
+        default:
+            en->setLambdas(this->alpha * this->lambda, 2 * this->lambda * (1 - this->alpha));
+            break;
+    }
+
+
     wgtData.setNumObs(data.numObs());
     wgtData.setNumVar(data.numVar());
     wgtData.resize();
@@ -104,13 +113,13 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
          * Adjust convergency threshold for EN
          */
         tmp = mscale(wgtData.getY(), this->data.numObs(), 0.5, 1e-8, 200, rhoBisquare, 1.54764);
-        en.setThreshold(this->ctrl.enEPS * this->data.numObs() * tmp * tmp);
+        en->setThreshold(this->ctrl.enEPS * this->data.numObs() * tmp * tmp);
 
         /*
          * Perform EN using current coefficients as warm start
          */
         memcpy(oldCoef, currentCoef, this->data.numVar() * sizeof(double));
-        enConverged = en.computeCoefs(wgtData, currentCoef, residuals, TRUE);
+        enConverged = en->computeCoefs(wgtData, currentCoef, residuals, enUseGram);
 
         if (!enConverged) {
             Rcpp::warning("Weighted elastic net did not converge");
@@ -168,6 +177,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
     } while((this->iteration < this->ctrl.numIt) && (this->relChange > this->ctrl.eps));
 
     wgtData.free();
+    delete en;
     delete[] oldCoef;
     delete[] weightBeta;
 }

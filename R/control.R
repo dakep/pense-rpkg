@@ -5,9 +5,10 @@
 #'
 #' @param pense.maxit maximum number of iterations for PENSE.
 #' @param pense.tol convergence tolerance for PENSE.
-#' @param pense.en.tol convergence tolerance for the elastic net in PENSE
+#' @param pense.en.tol The relative tolerance for convergence for gradient-descent (default 1e-9) or
+#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) in the
+#'      PENSE step.
 #' @param pense.en.maxit maximum number of iterations for each elastic net fit in PENSE
-#'
 #' @param cv.objective a user-supplied function taking the cross-validated residuals
 #'          to choose lambda. Default is to choose the lambda the minimizes the
 #'          \link[robustbase:scaleTau2]{tau-scale}.
@@ -30,8 +31,13 @@
 #' @param init.csteps the number of PENSE iterations (concentration steps) to perform on
 #'          the initial estimates.
 #' @param init.nkeep how many initial estimates should be kept to perform full PENSE iterations?
-#' @param init.en.tol convergence tolerance for elastic net fits to find initial estimates.
+#' @param pense.en.tol The relative tolerance for convergence for gradient-descent (default 1e-8) or
+#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) for
+#'      the initial estimate.
 #' @param init.en.maxit maximum number of iterations for each elastic net fit for initial estimates.
+#'
+#' @param en.algorithm algorithm to use to compute the (weighted) elastic net solutions for the
+#'          inital estimates and PENSE.
 #'
 #' @param mscale.cc tuning parameter for the M-estimate of scale.
 #' @param mscale.delta expected value under the normal model of the rho function with tuning
@@ -51,7 +57,7 @@
 pense.control <- function(
     pense.maxit = 500,
     pense.tol = 1e-6,
-    pense.en.tol = 1e-9,
+    pense.en.tol,
     pense.en.maxit = 5e5,
 
     cv.objective = scaleTau2,
@@ -65,21 +71,38 @@ pense.control <- function(
     init.psc.proportion = 0.8,
     init.csteps = 10,
     init.nkeep = 5,
-    init.en.tol = 1e-8,
+    init.en.tol,
     init.en.maxit = pense.en.maxit,
+    init.en.algorithm = pense.en.algorithm,
 
     mscale.cc = 1.54764,
     mscale.delta = 0.5,
     mscale.maxit = 200,
     mscale.tol = 1e-8,
-    mscale.rho.fun = c("bisquare", "huber")
+    mscale.rho.fun = c("bisquare", "huber"),
+
+    en.algorithm = c("augmented-lars",
+                     "coordinate-descent",
+                     "augmented-lars-gram",
+                     "augmented-lars-nogram")
 ) {
+    en.algorithm <- match.arg(en.algorithm)
+
+    if (missing(pense.en.tol)) {
+        pense.en.tol <- switch(en.algorithm, `coordinate-descent` = 1e-9, .Machine$double.eps)
+    }
+
+    if (missing(init.en.tol)) {
+        init.en.tol <- switch(en.algorithm, `coordinate-descent` = 1e-8, .Machine$double.eps)
+    }
+
     ret <- as.list(environment())
 
     ret$cv.objective <- match.fun(ret$cv.objective)
     ret$init.psc.method <- match.arg(init.psc.method)
     ret$init.resid.clean.method <- match.arg(init.resid.clean.method)
     ret$mscale.rho.fun <- match.arg(mscale.rho.fun)
+    ret$en.algorithm <- match.arg(en.algorithm)
 
     return(.check.pense.control(ret))
 }
@@ -89,9 +112,11 @@ pense.control <- function(
 #' Set control parameters for ENPY.
 #'
 #' @param en.maxit Maximum number of iterations allowed for the elastic net algorithm.
-#' @param en.tol Convergence threshold for elastic net.
+#' @param en.tol The relative tolerance for convergence for gradient-descent (default 1e-8) or
+#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)
 #' @param en.centering Should the data be centered for the elastic net algorithm. Only those rows
 #'          with leading 1's will be considered for centering.
+#' @param en.algorithm algorithm to use to compute the elastic net solution.
 #' @param mscale.maxit Maximum number of iterations allowed for the m-scale algorithm.
 #' @param mscale.tol Convergence threshold for the m-scale
 #' @param mscale.rho.fun The rho function to use for the m-scale.
@@ -100,11 +125,19 @@ pense.control <- function(
 #'
 #' @export
 enpy.control <- function(en.maxit = 50000,
-                         en.tol = 1e-8,
+                         en.tol,
                          en.centering = TRUE,
+                         en.algorithm = c("augmented-lars",
+                                          "coordinate-descent",
+                                          "augmented-lars-gram",
+                                          "augmented-lars-nogram"),
                          mscale.maxit = 200,
                          mscale.tol = 1e-8,
                          mscale.rho.fun = c("bisquare", "huber")) {
+
+    en.algorithm <- match.arg(en.algorithm)
+    en.tol <- switch(en.algorithm, `coordinate-descent` = 1e-8, .Machine$double.eps)
+
     ret <- as.list(environment())
     ret$mscale.rho.fun <- match.arg(mscale.rho.fun)
     return(ret)
@@ -126,6 +159,11 @@ enpy.control <- function(en.maxit = 50000,
                                               c("proportion", "threshold"))
     ctrl$init.psc.method <- match.arg(ctrl$init.psc.method, c("auto", "rr", "Mn"))
     ctrl$mscale.rho.fun <- match.arg(ctrl$mscale.rho.fun, c("bisquare", "huber"))
+
+    ctrl$en.algorithm <- match.arg(ctrl$en.algorithm, c("augmented-lars",
+                                                        "coordinate-descent",
+                                                        "augmented-lars-gram",
+                                                        "augmented-lars-nogram"))
 
     with(ctrl, {
         simpleCheck(pense.maxit)
@@ -220,9 +258,9 @@ initest.control <- function(
     }
 
     ret$resid.clean.method <- match.arg(resid.clean.method)
-    ret$mscale.rho.fun <- as.integer(pmatch(ret$mscale.rho.fun, c("bisquare", "huber"))) - 1L
+    ret$mscale.rho.fun <- .rho2IntRho(ret$mscale.rho.fun)
 
-    ret$mscale.rho.fun <- ret$mscale.rho.fun[which(!is.na(ret$mscale.rho.fun))[1L]]
+    ret$en.algorithm <- .enalgo2IntEnalgo(ret$en.algorithm)
 
     if (ret$resid.clean.method == "proportion") {
         simpleCheck(resid.proportion)
@@ -249,6 +287,7 @@ initest.control <- function(
     simpleCheck(ret$mscale.maxit)
     simpleCheck(ret$mscale.tol)
     simpleCheck(ret$mscale.rho.fun, FALSE)
+    simpleCheck(ret$en.algorithm, FALSE)
 
     if (length(ret$en.centering) != 1L || !is.logical(ret$en.centering) || is.na(ret$en.centering)) {
         stop("`en.centering` must be single logical value")
@@ -263,5 +302,34 @@ initest.control <- function(
     ret$mscale.maxit <- as.integer(ret$mscale.maxit)
 
     return(ret)
+}
+
+.rho2IntRho <- function(rho.fun) {
+    rho.fun <- as.integer(pmatch(rho.fun, c("bisquare", "huber"))) - 1L
+
+    rho.fun <- rho.fun[which(!is.na(rho.fun))[1L]]
+
+    if (is.na(rho.fun)) {
+        rho.fun <- 0L
+        warning("Unknown rho function selected. Using Tukey's bisquare.")
+    }
+
+    return(rho.fun)
+}
+
+.enalgo2IntEnalgo <- function(en.algorithm) {
+    en.algorithm <- as.integer(pmatch(en.algorithm, c("coordinate-descent",
+                                                      "augmented-lars-gram",
+                                                      "augmented-lars-nogram",
+                                                      "augmented-lars"))) - 1L
+
+    en.algorithm <- en.algorithm[which(!is.na(en.algorithm))[1L]]
+
+    if (is.na(en.algorithm)) {
+        en.algorithm <- 0L
+        warning("Unknown Elastic Net algorithm selected. Using coordinate descent.")
+    }
+
+    return(en.algorithm)
 }
 

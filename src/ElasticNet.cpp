@@ -13,26 +13,76 @@
 
 #include <RcppArmadillo.h>
 
+#include "Control.h"
 #include "ElasticNet.hpp"
 
 using namespace arma;
 
-static double softThreshold(const double z, const double gamma);
-static sword sign(const double x);
+/**
+ * Static inline functions only used in this compile unit
+ */
+static inline double softThreshold(const double z, const double gamma);
+static inline sword sign(const double x);
 static inline double findStepGram(const double corActiveY, const vec& corY, const uvec& inactive,
-                              const double corActiveEqui, const vec& corEquiV,
-                              const double eps);
+                                  const double corActiveEqui, const vec& corEquiV,
+                                  const double eps);
 static inline double findStep(const double corActiveY, const vec& corY, const uvec& inactive,
                               const double corActiveEqui, const vec& corInactiveEquiV,
                               const double eps);
-static uvec findDrops(const vec& beta, const uvec& active, const vec& w,
-                      const double eps, double& step);
-
-
+static inline uvec findDrops(const vec& beta, const uvec& active, const vec& w,
+                             const double eps, double& step);
 
 static void downdateCholesky(const uvec& drops, mat *const L, uword& nrActive, uword& rank);
 
 
+
+/****************************************************************************
+ *
+ * Convenience functions to choose one of the two possible
+ * Elastic Net implementations
+ *
+ ***************************************************************************/
+ElasticNet* getElasticNetImpl(const ENAlgorithm enAlgorithm, const double eps, const bool center,
+							  const int maxIt)
+{
+    ElasticNet* en = NULL;
+    ElasticNetLARS::UseGram useGram = ElasticNetLARS::AUTO;
+
+    switch (enAlgorithm) {
+        case GRADIENT_DESCENT:
+            en = new ElasticNetGDESC(maxIt, eps, center);
+            break;
+        case AUGMENTED_LARS_GRAM:
+            useGram = ElasticNetLARS::YES;
+            break;
+        case AUGMENTED_LARS_NOGRAM:
+            useGram = ElasticNetLARS::NO;
+            break;
+        case AUGMENTED_LARS_AUTO:
+        default:
+            useGram = ElasticNetLARS::AUTO;
+            break;
+    }
+
+    if (enAlgorithm != GRADIENT_DESCENT) {
+        en = new ElasticNetLARS(eps, center, useGram);
+    }
+
+    return en;
+}
+
+ElasticNet* getElasticNetImpl(const Control& ctrl)
+{
+    return getElasticNetImpl(ctrl.enAlgorithm, ctrl.enEPS, ctrl.enCentering, ctrl.enMaxIt);
+}
+
+
+/****************************************************************************
+ *
+ * Elastic Net using the Coordinatewise Gradient Descent method
+ *
+ *
+ ***************************************************************************/
 
 ElasticNetGDESC::ElasticNetGDESC(const int maxIt, const double eps, const bool center) :
 			ElasticNet(eps, center), maxIt(maxIt), XtrSize(0), XmeansSize(0)
@@ -305,8 +355,8 @@ static inline double softThreshold(const double z, const double gamma)
  * the LASSO solution.
  *
  ***************************************************************************/
-ElasticNetLARS::ElasticNetLARS(const double eps, const bool center) :
-        ElasticNet(eps, center), lambda1(0), sqrtLambda2(0), augNobs(0)
+ElasticNetLARS::ElasticNetLARS(const double eps, const bool center, const UseGram useGram) :
+        ElasticNet(eps, center), lambda1(0), sqrtLambda2(0), gramMode(useGram), augNobs(0)
 {
 }
 
@@ -344,9 +394,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     vec beta(coefs, data.numVar(), false, true);
     vec residuals(resids, data.numObs(), false, true);
 
-    bool useGram = false;
-
-
     uword i, j;
     sword ri;
 
@@ -356,9 +403,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 	uvec inactive(this->XtrAug.n_rows - 1),
          ignores;
 
+    /*
+     * Check if we should use the Gram matrix
+     */
+    bool useGram = (this->gramMode == YES ||
+                    (this->gramMode == AUTO && this->XtrAug.n_rows <= MAX_PREDICTORS_GRAM));
+
     mat Gram;
     vec corY;	// current correlations
     uword nrInactive = this->XtrAug.n_rows;
+    uword nrActive = 0;	// number of active predictors
 
 
     /*
@@ -442,7 +496,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         vec xNewPred;
 
         uvec active;        // active predictors
-        uword nrActive = 0;	// number of active predictors
 
         /*
          * keep track of sign of correlations for the active variables
@@ -760,16 +813,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
 void ElasticNetLARS::augmentData(const Data& data)
 {
-    int i;
+    uword i;
     bool resize = false;
     uword newNobs = this->XtrAug.n_cols,
           newNvar = this->XtrAug.n_rows;
     double *RESTRICT XtrAugIter;
     double tmp;
 
-    if ((data.numVar() != this->XtrAug.n_rows) || (data.numObs() != this->XtrAug.n_cols)) {
-        newNobs = data.numObs();
-        newNvar = data.numVar();
+    if (((uword) data.numVar() != this->XtrAug.n_rows) || ((uword) data.numObs() != this->XtrAug.n_cols)) {
+        newNobs = (uword) data.numObs();
+        newNvar = (uword) data.numVar();
         this->augNobs = newNobs;
         resize = true;
     }
@@ -825,6 +878,11 @@ void ElasticNetLARS::augmentData(const Data& data)
 
 
 
+/**
+ * get the sign of the double x (either -1 if x < 0, +1 if x > 0, 0 if x == 0)
+ *
+ * x ... the number to compute the sign from
+ */
 static inline sword sign(const double x) {
 	return (x > 0) - (x < 0);
 }

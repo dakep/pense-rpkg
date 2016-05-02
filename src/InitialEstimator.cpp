@@ -380,10 +380,14 @@ double OLS::evaluateEstimate() const
  **************************************************************************************************/
 ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscOls, MAX_NUM_PSCS(originalData.numVar())),
+
            /* lambda1 for EN should not depend on N, but the given one does, so divide! */
            lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
            lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
-           en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
+
+           /* Select correct ElasticNet implementation */
+           en(*getElasticNetImpl(ctrl)),
+
            dataToUse(residualFilteredData),
            currentNullDeviance(1)
 {
@@ -401,6 +405,7 @@ ENPY::ENPY(const Data& originalData, const Control& ctrl) :
 
 ENPY::~ENPY()
 {
+    delete &this->en;
     this->pscFilteredData.free();
     if (this->lambda1LS == 0) {
         delete[] this->XtX;
@@ -563,9 +568,14 @@ double ENPY::evaluateEstimate() const
  **************************************************************************************************/
 ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscEn, MAX_NUM_PSCS(originalData.numObs())),
+
+           /* Adjust lambda1 and lambda2 for LS objective */
            lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
            lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
-           en(ctrl.enMaxIt, ctrl.enEPS, ctrl.enCentering),
+
+           /* Select correct ElasticNet implementation */
+           en(*getElasticNetImpl(ctrl)),
+
            pscEn(en),
            dataToUse(residualFilteredData)
 {
@@ -575,6 +585,7 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
 
 ENPY_Exact::~ENPY_Exact()
 {
+    delete &this->en;
     this->pscFilteredData.free();
 }
 

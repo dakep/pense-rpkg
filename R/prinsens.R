@@ -9,8 +9,10 @@
 #' @param intercept Should an intercept be added or not.
 #' @param alpha,lambda The values for the parameters controlling the penalization for elastic net.
 #' @param maxit The maximum number of iterations for elastic net.
-#' @param eps The relative tolerance for convergence for elastic net.
+#' @param eps The relative tolerance for convergence for gradient-descent (default 1e-8) or
+#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)
 #' @param centering Should the rows be centered first for elastic net.
+#' @param en.algorithm algorithm to use to compute the elastic net solution.
 #'
 #' @return A numeric matrix with as many rows as \code{X} and as many columns as
 #'      PSCs found (at most the number of columns in \code{X} plus one for the intercept).
@@ -23,7 +25,11 @@
 #' @useDynLib penseinit C_pscs_ols C_pscs_en C_augtrans
 #' @export
 prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
-                     alpha, lambda, maxit = 50000, eps = 1e-8, centering = TRUE) {
+                     alpha, lambda, maxit = 50000, eps, centering = TRUE,
+                     en.algorithm = c("augmented-lars",
+                                      "coordinate-descent",
+                                      "augmented-lars-gram",
+                                      "augmented-lars-nogram")) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -65,6 +71,11 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
             stop("`maxit` must be single integer > 1")
         }
 
+        en.algorithm <- match.arg(en.algorithm);
+        if (missing(eps)) {
+            eps <- switch(en.algorithm, `coordinate-descent` = 1e-8, .Machine$double.eps)
+        }
+
         if (length(eps) != 1L || !is.numeric(eps) || is.na(eps) || eps <= 0) {
             stop("`eps` must be single number > 0")
         }
@@ -77,9 +88,10 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
         lambda <- as.numeric(lambda)
         maxit <- as.integer(maxit)
         centering <- 1L - as.integer(identical(centering, FALSE))
+        en.algorithm <- .enalgo2IntEnalgo(en.algorithm)
 
         pscres <- .Call(C_pscs_en, Xtr, y, dX[1L], dX[2L],
-                        alpha, lambda, maxit, eps, centering)
+                        alpha, lambda, maxit, eps, centering, en.algorithm)
 
         if (is.null(pscres)) {
             stop("Could not compute principal sensitivity components.")

@@ -4,8 +4,9 @@
 \alias{elnet}
 \title{Elastic Net Regression}
 \usage{
-elnet(X, y, alpha, lambda, maxit = 10000, eps = 1e-08, centering = TRUE,
-  addLeading1s = TRUE)
+elnet(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
+  addLeading1s = TRUE, en.algorithm = c("augmented-lars",
+  "coordinate-descent", "augmented-lars-gram", "augmented-lars-nogram"))
 }
 \arguments{
 \item{X}{The data matrix X}
@@ -16,12 +17,15 @@ elnet(X, y, alpha, lambda, maxit = 10000, eps = 1e-08, centering = TRUE,
 
 \item{maxit}{The maximum number of iterations}
 
-\item{eps}{The relative tolerance for convergence}
+\item{eps}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
+the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)}
 
 \item{centering}{Should the rows be centered first}
 
 \item{addLeading1s}{Should a leading column of 1's be appended? If \code{FALSE}, this has
-     to be done before calling this function.}
+to be done before calling this function.}
+
+\item{en.algorithm}{algorithm to use to compute the elastic net solution.}
 }
 \value{
 \item{coefficients}{The regression coefficients}

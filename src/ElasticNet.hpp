@@ -13,8 +13,8 @@
 
 #include <RcppArmadillo.h>
 
+#include "Control.h"
 #include "Data.hpp"
-
 
 class ElasticNet
 {
@@ -79,8 +79,6 @@ protected:
 
 
 
-
-
 class ElasticNetGDESC : public ElasticNet
 {
 public:
@@ -105,14 +103,6 @@ public:
 	void setAlphaLambda(const double alpha, const double lambda);
 
 	/*
-	 * Solve the EN problem
-	 *
-	 * (1 / 2N) * RSS + lambda * (((1 - alpha) / 2) * L2(beta) + alpha * L1(beta))
-	 *
-	 * which is equivalent to solving
-	 *
-	 * (1 / N) * RSS + lambda2 * L2(beta) + lambda1 * L1(beta))
-	 *
 	 * @param data Is assumed to have the leading column of 1's for the intercept
 	 * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
      *          the starting point for the coordinate-descend algorithm. (see argument warm)
@@ -147,20 +137,45 @@ private:
 
 class ElasticNetLARS : public ElasticNet {
 public:
-    ElasticNetLARS(const double eps, const bool center);
+	enum UseGram {
+		AUTO = 0,
+		NO = 1,
+		YES = 2
+	};
+
+    ElasticNetLARS(const double eps, const bool center, const UseGram useGram = AUTO);
     ~ElasticNetLARS();
 
 	void setLambdas(const double lambda1, const double lambda2);
 
 	void setAlphaLambda(const double alpha, const double lambda);
 
+	void useGram(const UseGram useGram)
+	{
+		this->gramMode = useGram;
+	}
+
+	/*
+	 * @param data Is assumed to have the leading column of 1's for the intercept
+	 * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
+     *          the starting point for the coordinate-descend algorithm. (see argument warm)
+     * @param warm Should the Gram matrix be computed once and used throughout the algorithm?
+     *             This can improve the speed significantly, if the number of variables is not
+     *             too large.
+	 *
+	 * @returns always TRUE
+	 */
     bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
                       const bool warm = FALSE);
 
 
 private:
+	static const int MAX_PREDICTORS_GRAM = 750;
+
 	double lambda1;
 	double sqrtLambda2;
+	UseGram gramMode;
+
 
 	arma::mat XtrAug;
 	arma::vec yAug;
@@ -169,5 +184,16 @@ private:
 	void augmentData(const Data& data);
 
 };
+
+
+
+
+/**
+ * Convenience functions to choose one of the above Elastic Net implementation.
+ */
+ElasticNet* getElasticNetImpl(const ENAlgorithm enAlgorithm, const double eps, const bool center,
+							  const int maxIt);
+ElasticNet* getElasticNetImpl(const Control& ctrl);
+
 
 #endif /* ElasticNet_hpp */

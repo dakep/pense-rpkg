@@ -10,10 +10,12 @@
 #' @param y The response vector
 #' @param alpha,lambda The values for the parameters controlling the penalization
 #' @param maxit The maximum number of iterations
-#' @param eps The relative tolerance for convergence
+#' @param eps The relative tolerance for convergence for gradient-descent (default 1e-8) or
+#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)
 #' @param centering Should the rows be centered first
 #' @param addLeading1s Should a leading column of 1's be appended? If \code{FALSE}, this has
 #'      to be done before calling this function.
+#' @param en.algorithm algorithm to use to compute the elastic net solution.
 #'
 #' @return \item{coefficients}{The regression coefficients}
 #'         \item{residuals}{The residuals}
@@ -21,8 +23,11 @@
 #'
 #' @useDynLib penseinit C_elnet
 #' @export
-elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TRUE,
-                  addLeading1s = TRUE) {
+elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
+                  addLeading1s = TRUE, en.algorithm = c("augmented-lars",
+                                                        "coordinate-descent",
+                                                        "augmented-lars-gram",
+                                                        "augmented-lars-nogram")) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -53,6 +58,12 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
         stop("`maxit` must be single integer > 1")
     }
 
+    en.algorithm <- match.arg(en.algorithm)
+
+    if (missing(eps)) {
+        eps <- switch(en.algorithm, `coordinate-descent` = 1e-8, .Machine$double.eps)
+    }
+
     if (length(eps) != 1L || !is.numeric(eps) || is.na(eps) || eps <= 0) {
         stop("`eps` must be single number > 0")
     }
@@ -61,7 +72,8 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
         warning("`centering` must be single logical value. Using TRUE as default.")
     }
 
-    elnetres <- .elnet.fit(X, y, alpha, lambda, maxit, eps, centering, addLeading1s)
+    elnetres <- .elnet.fit(X, y, alpha, lambda, maxit, eps, centering, addLeading1s,
+                           warmCoef = NULL, en.algorithm = en.algorithm)
 
     return(elnetres)
 }
@@ -69,7 +81,7 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib penseinit C_augtrans
 .elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
-                       warmCoef = NULL) {
+                       warmCoef = NULL, en.algorithm) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -90,6 +102,7 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
     lambda <- as.numeric(lambda)
     maxit <- as.integer(maxit)
     centering <- 1L - as.integer(identical(centering, FALSE))
+    en.algorithm <- .enalgo2IntEnalgo(en.algorithm)
 
     elnetres <- .Call(C_elnet, Xtr, y,
                       warmCoef,
@@ -99,7 +112,8 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps = 1e-8, centering = TR
                       maxit,
                       eps,
                       centering,
-                      warm)
+                      warm,
+                      en.algorithm)
 
     if (!identical(elnetres[[1L]], TRUE)) {
         warning("Elastic Net algorithm did not converge.")

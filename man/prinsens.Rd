@@ -5,7 +5,8 @@
 \title{Principal Sensitivity Components}
 \usage{
 prinsens(X, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
-  maxit = 50000, eps = 1e-08, centering = TRUE)
+  maxit = 50000, eps, centering = TRUE, en.algorithm = c("augmented-lars",
+  "coordinate-descent", "augmented-lars-gram", "augmented-lars-nogram"))
 }
 \arguments{
 \item{X}{The data matrix X}
@@ -21,9 +22,12 @@ the PSCs.}
 
 \item{maxit}{The maximum number of iterations for elastic net.}
 
-\item{eps}{The relative tolerance for convergence for elastic net.}
+\item{eps}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
+the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)}
 
 \item{centering}{Should the rows be centered first for elastic net.}
+
+\item{en.algorithm}{algorithm to use to compute the elastic net solution.}
 }
 \value{
 A numeric matrix with as many rows as \code{X} and as many columns as

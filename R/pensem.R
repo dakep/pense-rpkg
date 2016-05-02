@@ -44,7 +44,8 @@ pensemstep <- function(Xs, y, cc, init.scale, init.coef, lambda, control) {
 
         res.elnet <- .elnet.fit(xort, yast, alpha = 1, lambda = lambda,
                                 maxit = control$pense.en.maxit, eps = control$pense.en.tol,
-                                centering = FALSE, warmCoef = beta.o)
+                                centering = FALSE, warmCoef = beta.o,
+                                en.algorithm = control$en.algorithm)
         beta.Lasso <- res.elnet$coefficients[-1L]
 
         # try(res.Lasso <- robustHD:::fastLasso(xort, yast, 2 * lambda, intercept=FALSE,

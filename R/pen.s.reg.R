@@ -22,7 +22,8 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
             en.centering = FALSE,
             mscale.maxit = control$mscale.maxit,
             mscale.tol = control$mscale.tol,
-            mscale.rho.fun = "bisquare"
+            mscale.rho.fun = "bisquare",
+            en.algorithm = control$en.algorithm
         ),
 
         # Not needed, set for completeness

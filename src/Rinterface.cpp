@@ -155,11 +155,15 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcont
     return result;
 }
 
+
 RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha,
-                        SEXP Rlambda, SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm)
+                        SEXP Rlambda, SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm,
+                        SEXP RenAlgorithm)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
-    ElasticNetGDESC en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
+    ElasticNet *en = getElasticNetImpl((ENAlgorithm) *INTEGER(RenAlgorithm),
+                                       *REAL(Reps), (bool) *INTEGER(Rcentering),
+                                       *INTEGER(RmaxIt));
     bool warm = (*INTEGER(Rwarm) == 1);
     SEXP result = R_NilValue;
     SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
@@ -173,8 +177,8 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar,
         memcpy(retCoefPtr, REAL(Rcoefs), data.numVar() * sizeof(double));
     }
 
-    en.setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
-    *LOGICAL(converged) = en.computeCoefs(data, retCoefPtr, REAL(retResid), warm);
+    en->setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
+    *LOGICAL(converged) = en->computeCoefs(data, retCoefPtr, REAL(retResid), warm);
 
     result = PROTECT(Rf_allocVector(VECSXP, 3));
 
@@ -182,6 +186,7 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar,
     SET_VECTOR_ELT(result, 1, retCoef);
     SET_VECTOR_ELT(result, 2, retResid);
 
+    delete en;
     UNPROTECT(1);
 
     VOID_END_RCPP
@@ -258,11 +263,12 @@ RcppExport SEXP C_pscs_ols(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar)
 }
 
 RcppExport SEXP C_pscs_en(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralpha, SEXP Rlambda,
-                          SEXP RmaxIt, SEXP Reps, SEXP Rcentering)
+                          SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP RenAlgorithm)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
-    ElasticNetGDESC en(*INTEGER(RmaxIt), *REAL(Reps), (bool) *INTEGER(Rcentering));
-    PSC_EN psc(en);
+    ElasticNet *en = getElasticNetImpl((ENAlgorithm) *INTEGER(RenAlgorithm),
+                                       *REAL(Reps), (bool) *INTEGER(Rcentering),
+                                       *INTEGER(RmaxIt));
 
     SEXP ret = R_NilValue;
 
@@ -273,12 +279,14 @@ RcppExport SEXP C_pscs_en(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralph
 
     BEGIN_RCPP
 
-    en.setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
-    converged = en.computeCoefs(data, coefs, residuals);
+    en->setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
+    converged = en->computeCoefs(data, coefs, residuals);
 
     if (!converged) {
         throw std::runtime_error("Elastic Net did not converge");
     }
+
+    PSC_EN psc(*en);
 
     psc.setData(data);
     psc.setResiduals(residuals);
@@ -286,7 +294,9 @@ RcppExport SEXP C_pscs_en(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Ralph
 
     ret = PROTECT(Rf_allocVector(REALSXP, data.numObs() * npscs));
     memcpy(REAL(ret), psc.getPSC(), data.numObs() * npscs * sizeof(double));
+
     UNPROTECT(1);
+    delete en;
 
     VOID_END_RCPP
 
@@ -311,6 +321,7 @@ static inline Control parseControlList(SEXP Rcontrol)
         as<int>(control["en.maxit"]),
         as<double>(control["en.tol"]),
         as<int>(control["en.centering"]),
+        (ENAlgorithm) as<int>(control["en.algorithm"]),
 
         as<double>(control["mscale.delta"]),
         as<double>(control["mscale.cc"]),

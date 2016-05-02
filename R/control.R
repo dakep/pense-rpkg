@@ -73,7 +73,6 @@ pense.control <- function(
     init.nkeep = 5,
     init.en.tol,
     init.en.maxit = pense.en.maxit,
-    init.en.algorithm = pense.en.algorithm,
 
     mscale.cc = 1.54764,
     mscale.delta = 0.5,

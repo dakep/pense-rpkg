@@ -170,7 +170,12 @@ public:
 
 
 private:
-	static const int MAX_PREDICTORS_GRAM = 750;
+    /**
+     * Automatically switch to non-Gram when more than the following
+     * number of predictors are present.
+     * 1400 ~ 15 MiByte of memory -- should be okay for most systems
+     */
+	static const int MAX_PREDICTORS_GRAM = 1400;
 
 	double lambda1;
 	double sqrtLambda2;

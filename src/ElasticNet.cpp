@@ -367,13 +367,13 @@ ElasticNetLARS::~ElasticNetLARS()
 
 void ElasticNetLARS::setLambdas(const double lambda1, const double lambda2)
 {
-    this->lambda1 = lambda1;
-    this->sqrtLambda2 = sqrt(2 * lambda2);
+    this->lambda1 = lambda1 / 2;
+    this->sqrtLambda2 = sqrt(lambda2);
 }
 
 void ElasticNetLARS::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->setLambdas(lambda * alpha, 0.5 * lambda * (1 - alpha));
+    this->setLambdas(2 * lambda * alpha, lambda * (1 - alpha));
 }
 
 
@@ -804,7 +804,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
     if(this->center) {
         beta(0) = meanY - dot(beta, meanX);
-        residuals -= beta(0);
     }
 
 	return true;

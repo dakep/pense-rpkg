@@ -32,26 +32,26 @@ test_that("enpy.rr", {
         expect_lt(sum(abs(diffs)), 1e-8)
 
 
-        ##
-        ## Ridge regression penalty
-        ##
-        lambda1 <- 0
-        lambda2 <- 1.5
-
-        new <- penseinit::enpy(X, y, lambda1 = lambda1, lambda2 = lambda2,
-                               deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
-                               prosac = 0.8, clean.method = "proportion", prop = 0.4, C.res = NULL,
-                               py.nit = 5, en.tol = 1e-8)
-
-        target <- enpy(X, y, lambda1 = lambda1, lambda2 = lambda2,
-                       deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
-                       prosac = 0.8, clean.method = "proportion", prop = 0.4,
-                       py.nit = 5, en.tol = 1e-8)
-
-        diffs <- apply(new$coeff, 2, function(x) {
-            min(colSums(abs(target$coeff - x)))
-        })
-
-        expect_lt(sum(abs(diffs)), 1e-8)
+#         ##
+#         ## Ridge regression penalty
+#         ##
+#         lambda1 <- 0
+#         lambda2 <- 1.5
+#
+#         new <- penseinit::enpy(X, y, lambda1 = lambda1, lambda2 = lambda2,
+#                                deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
+#                                prosac = 0.8, clean.method = "proportion", prop = 0.4, C.res = NULL,
+#                                py.nit = 5, en.tol = 1e-8)
+#
+#         target <- enpy(X, y, lambda1 = lambda1, lambda2 = lambda2,
+#                        deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
+#                        prosac = 0.8, clean.method = "proportion", prop = 0.4,
+#                        py.nit = 5, en.tol = 1e-8)
+#
+#         diffs <- apply(new$coeff, 2, function(x) {
+#             min(colSums(abs(target$coeff - x)))
+#         })
+#
+#         expect_lt(sum(abs(diffs)), 1e-8)
     }
 })

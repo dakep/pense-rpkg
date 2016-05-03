@@ -55,15 +55,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     this->iteration = 0;
 
-    switch (this->ctrl.enAlgorithm) {
-        case GRADIENT_DESCENT:
-            en->setAlphaLambda(this->alpha, this->lambda);
-            break;
-        default:
-            en->setLambdas(this->alpha * this->lambda, 2 * this->lambda * (1 - this->alpha));
-            break;
-    }
-
+    en->setAlphaLambda(this->alpha, this->lambda);
 
     wgtData.setNumObs(data.numObs());
     wgtData.setNumVar(data.numVar());

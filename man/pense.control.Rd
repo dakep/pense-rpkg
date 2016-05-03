@@ -10,10 +10,9 @@
   init.resid.proportion = 0.4, init.resid.threshold = 2,
   init.psc.method = c("auto", "rr", "Mn"), init.psc.proportion = 0.8,
   init.csteps = 10, init.nkeep = 5, init.en.tol,
-  init.en.maxit = pense.en.maxit, init.en.algorithm = pense.en.algorithm,
-  mscale.cc = 1.54764, mscale.delta = 0.5, mscale.maxit = 200,
-  mscale.tol = 1e-08, mscale.rho.fun = c("bisquare", "huber"),
-  en.algorithm = c("augmented-lars", "coordinate-descent",
+  init.en.maxit = pense.en.maxit, mscale.cc = 1.54764, mscale.delta = 0.5,
+  mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
+  "huber"), en.algorithm = c("augmented-lars", "coordinate-descent",
   "augmented-lars-gram", "augmented-lars-nogram"))
 }
 \arguments{

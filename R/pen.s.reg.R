@@ -98,7 +98,8 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
 
         beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
                                centering = FALSE, maxit = control$pense.en.maxit,
-                               eps = en.eps, warmCoef = current.coefs)
+                               eps = en.eps, warmCoef = current.coefs,
+                               en.algorithm = control$en.algorithm)
 
         prev.coefs <- current.coefs
         current.coefs <- beta.obj$coefficients

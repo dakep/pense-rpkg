@@ -76,7 +76,7 @@ enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     if (length(dups) > 0) {
         remove <- resorder[dups]
         result$objF <- result$objF[-remove]
-        result$coeff <- result$coeff[ , -remove]
+        result$coeff <- result$coeff[ , -remove, drop = FALSE]
     }
 
     return(result)

@@ -134,7 +134,7 @@ int InitialEstimator::compute()
     const int origNobs = this->originalData.numObs();
     int iter = 0;
     int j;
-    int numPSCs = 0;
+    int numPSCs = 0, newNumPSCs = 0;
     double *const minObjective = this->coefObjFunScore;
     double * tmpObjective;
     double *RESTRICT bestCoefEst;
@@ -166,7 +166,18 @@ int InitialEstimator::compute()
         computeResiduals(this->residualFilteredData, this->coefEst, this->residuals);
         this->psc.setData(this->residualFilteredData);
         this->psc.setResiduals(this->residuals);
-        numPSCs = this->psc.computePSC();
+        newNumPSCs = this->psc.computePSC();
+
+        if (newNumPSCs < 2) {
+            /*
+             * Either no PSCs or only one have been found.
+             * A single PSC is observed when all coefficients
+             * are all zero.
+             */
+             break;
+        }
+
+        numPSCs = newNumPSCs;
 
         for(j = 0; j < numPSCs; ++j) {
             currentPSC = this->psc.getPSC() + this->residualFilteredData.numObs() * j;

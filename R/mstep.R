@@ -15,8 +15,8 @@
 #' @export
 mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
                   ncores = getOption("mc.cores", 2L), cl = NULL) {
-    X <- data.matrix(eval(penseobj$call$X))
-    y <- eval(penseobj$call$y)
+    X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
+    y <- eval(penseobj$call$y, envir = parent.frame())
 
     if (penseobj$alpha != 1) {
         stop("M-step not yet implemented for alpha != 1.")

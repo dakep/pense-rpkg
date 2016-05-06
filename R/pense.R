@@ -144,8 +144,8 @@ pense.default <- function(X, y, alpha = 0.5,
     control <- .check.pense.control(control)
 
     ## store the call
-    cl <- match.call()
-    cl[[1L]] <- as.name("pense")
+    call <- match.call()
+    call[[1L]] <- as.name("pense")
 
 
     ## Automatically select the PSC method
@@ -289,7 +289,7 @@ pense.default <- function(X, y, alpha = 0.5,
         alpha = alpha,
         standardize = standardize,
         control = control,
-        call = cl
+        call = call
     ), class = "pense"))
 }
 

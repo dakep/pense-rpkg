@@ -61,7 +61,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
         1L
     )
     edf <- sum(abs(pense.coef) > .Machine$double.eps) # includes intercept, no need to + 1!
-    delta.adj <- control$mscale.delta * (1 - edf / n)
+    delta.adj <- control$mscale.delta * (1 - edf / dX[1L])
     delta.adj <- max(0.25, delta.adj) # Don't go below 0.25
 
     c.scale <- consistency.rho(delta.adj, int.rho.fun)
@@ -73,7 +73,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     corr.fact.a <- mean(.Mchi(resid.scaled, c.scale, int.rho.fun, deriv = 1L)^2)
     corr.fact.b <- mean(.Mchi(resid.scaled, c.scale, int.rho.fun, deriv = 2L))
     corr.fact.c <- mean(.Mchi(resid.scaled, c.scale, int.rho.fun, deriv = 1L) * resid.scaled)
-    scale.corr.fact <- 1 + edf / (2 * n) * (corr.fact.a / (corr.fact.b * corr.fact.c))
+    scale.corr.fact <- 1 + edf / (2 * dX[1L]) * (corr.fact.a / (corr.fact.b * corr.fact.c))
 
     scale.init.corr <- scale.init * scale.corr.fact
 

@@ -39,9 +39,10 @@
 #' @param en.algorithm algorithm to use to compute the (weighted) elastic net solutions for the
 #'          inital estimates and PENSE.
 #'
-#' @param mscale.cc tuning parameter for the M-estimate of scale.
-#' @param mscale.delta expected value under the normal model of the rho function with tuning
-#'          constant equal to \code{mscale.cc}.
+#' @param mscale.delta determines the breakdown point of the S-estimator.
+#' @param mscale.cc tuning parameter for the M-estimate of scale. If missing or lte 0,
+#'          chosen such that the expected value under the normal model of the rho function
+#'          equals to \code{mscale.delta}.
 #' @param mscale.maxit maximum number of iterations to calculate the M-estimate of scale.
 #' @param mscale.tol convergence tolerance for calculating the M-estimate of scale.
 #' @param mscale.rho.fun string specifying the rho function of the S-estimator.
@@ -74,7 +75,7 @@ pense.control <- function(
     init.en.tol,
     init.en.maxit = pense.en.maxit,
 
-    mscale.cc = 1.54764,
+    mscale.cc,
     mscale.delta = 0.5,
     mscale.maxit = 200,
     mscale.tol = 1e-8,
@@ -93,6 +94,10 @@ pense.control <- function(
 
     if (missing(init.en.tol)) {
         init.en.tol <- switch(en.algorithm, `coordinate-descent` = 1e-8, .Machine$double.eps)
+    }
+
+    if (missing(mscale.cc)) {
+        mscale.cc <- 0
     }
 
     ret <- as.list(environment())
@@ -178,7 +183,6 @@ enpy.control <- function(en.maxit = 50000,
         simpleCheck(init.en.tol)
         simpleCheck(init.en.maxit)
 
-        simpleCheck(mscale.cc)
         simpleCheck(mscale.delta)
         simpleCheck(mscale.maxit)
         simpleCheck(mscale.tol)
@@ -187,6 +191,11 @@ enpy.control <- function(en.maxit = 50000,
             stop("`init.psc.proportion` must be less than 1")
         }
     })
+
+    if (is.null(ctrl$mscale.cc) || length(ctrl$mscale.cc) != 1L || !is.numeric(ctrl$mscale.cc) ||
+        anyNA(ctrl$mscale.cc) || ctrl$mscale.cc <= 0) {
+        ctrl$mscale.cc <- consistency.rho(ctrl$mscale.delta, ctrl$mscale.rho.fun)
+    }
 
     if (ctrl$init.resid.clean.method == "proportion") {
         with(ctrl, simpleCheck(init.resid.proportion))

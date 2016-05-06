@@ -89,7 +89,8 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ## Adjust lambda for the M step
     ##
     lambda.opt.ls <- pense.lambda.opt * control$mscale.cc^2 / facon(control$mscale.delta)
-    lambda.opt.mm <- lambda.opt.ls * 3 / (c0 * scale.init.corr)^2
+    lambda.opt.mm <- lambda.opt.ls * 3 / c0^2
+
 
     lambda.opt.mm.cv <- lambda.opt.mm
     lambda.grid.m <- matrix(c(lambda.opt.mm, NA_real_), ncol = 2L)
@@ -207,18 +208,3 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ), class = c("pensem1", "pense")))
 }
 
-
-## Get the constant needed for consistency for the given delta
-## and the given rho function
-#' @importFrom robustbase .Mchi
-consistency.rho <- function(delta, int.rho.fun) {
-    integrand <- function(x, cc) {
-        dnorm(x) * .Mchi(x, cc, int.rho.fun)
-    }
-
-    expectation <- function(cc, delta) {
-        integrate(integrand, lower = -Inf, upper = Inf, cc)$value - delta
-    }
-
-    uniroot(expectation, interval = c(0.3, 10), delta)$root
-}

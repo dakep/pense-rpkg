@@ -16,8 +16,11 @@
 #' @param y The response vector.
 #' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
-#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. The default
-#'          rho function is Tukey's bisquare. This can be changed by the parameter \code{control}.
+#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. If \code{cc.scale}
+#'          is missing or invalid, it will be chosen such that the expected value of the
+#'          rho function under the normal model is equal to \code{deltaesc}.
+#'          The default rho function (Tukey's bisquare) can be changed by
+#'          parameter \code{control}.
 #' @param psc.method The method to use for computing the principal sensitivity components.
 #'      See details.
 #' @param prosac The proportion of observations to remove based on PSCs.
@@ -56,8 +59,9 @@ enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
         stop("Missing values are not supported")
     }
 
-    if (length(cc.scale) != 1L || !is.numeric(cc.scale) || is.na(cc.scale) || cc.scale <= 0) {
-        stop("`cc.scale` must be single positive number")
+    if (missing(cc.scale) || length(cc.scale) != 1L || !is.numeric(cc.scale) || is.na(cc.scale) ||
+        cc.scale <= 0) {
+        cc.scale <- 0
     }
 
     psc.method <- match.arg(psc.method)

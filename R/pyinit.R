@@ -5,7 +5,9 @@
 #' @param X the data matrix X.
 #' @param y the response vector.
 #' @param intercept should an intercept be included in the models. Defaults to \code{TRUE}.
-#' @param deltaesc,cc.scale parameters for the M-equation of the scale. To specify the
+#' @param deltaesc,cc.scale parameters for the M-equation of the scale. If \code{cc.scale}
+#'          is missing or invalid, it will be chosen such that the expected value of the
+#'          rho function under the normal model is equal to \code{deltaesc}. To specify the
 #'          rho function, see parameter \code{control}.
 #' @param prosac the proportion of observations to remove based on PSCs.
 #' @param clean.method how to clean the data based on large residuals.

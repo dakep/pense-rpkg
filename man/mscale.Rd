@@ -4,8 +4,8 @@
 \alias{mscale}
 \title{Robust M-estimate of Scale}
 \usage{
-mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc = 1.54764,
-  eps = 1e-08, max.it = 200)
+mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc, eps = 1e-08,
+  max.it = 200)
 }
 \arguments{
 \item{x}{A numeric vector.}
@@ -14,7 +14,9 @@ mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc = 1.54764,
 
 \item{rho}{The rho function to use in the M-estimation equation.}
 
-\item{cc}{Non-negative constant for the chosen rho function.}
+\item{cc}{Non-negative constant for the chosen rho function. If missing, it will be
+chosen such that the expected value of the rho function under the normal model
+is equal to \code{b}.}
 
 \item{eps}{Threshold for convergence}
 

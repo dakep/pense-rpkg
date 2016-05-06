@@ -10,7 +10,9 @@
 #' @param x A numeric vector.
 #' @param b The value of the M-estimation equation.
 #' @param rho The rho function to use in the M-estimation equation.
-#' @param cc Non-negative constant for the chosen rho function.
+#' @param cc Non-negative constant for the chosen rho function. If missing, it will be
+#'          chosen such that the expected value of the rho function under the normal model
+#'          is equal to \code{b}.
 #' @param eps Threshold for convergence
 #' @param max.it The maximum number of iterations
 #'
@@ -18,7 +20,7 @@
 #'
 #' @useDynLib penseinit C_mscale
 #' @export
-mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc = 1.54764,
+mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc,
                    eps = 1e-8, max.it = 200) {
 
     if (!is.numeric(x) || !is.null(dim(x)) || length(x) == 0) {
@@ -26,6 +28,10 @@ mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc = 1.54764,
     }
     if (any(is.na(x))) {
         x <- x[!is.na(x)]
+    }
+
+    if (missing(cc)) {
+        cc <- consitency.rho(b, rho)
     }
 
     ctrl <- initest.control(mscale.delta = b,

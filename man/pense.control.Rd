@@ -10,7 +10,7 @@
   init.resid.proportion = 0.4, init.resid.threshold = 2,
   init.psc.method = c("auto", "rr", "Mn"), init.psc.proportion = 0.8,
   init.csteps = 10, init.nkeep = 5, init.en.tol,
-  init.en.maxit = pense.en.maxit, mscale.cc = 1.54764, mscale.delta = 0.5,
+  init.en.maxit = pense.en.maxit, mscale.cc, mscale.delta = 0.5,
   mscale.maxit = 200, mscale.tol = 1e-08, mscale.rho.fun = c("bisquare",
   "huber"), en.algorithm = c("augmented-lars", "coordinate-descent",
   "augmented-lars-gram", "augmented-lars-nogram"))
@@ -58,10 +58,11 @@ the initial estimates.}
 
 \item{init.en.maxit}{maximum number of iterations for each elastic net fit for initial estimates.}
 
-\item{mscale.cc}{tuning parameter for the M-estimate of scale.}
+\item{mscale.cc}{tuning parameter for the M-estimate of scale. If missing or lte 0,
+chosen such that the expected value under the normal model of the rho function
+equals to \code{mscale.delta}.}
 
-\item{mscale.delta}{expected value under the normal model of the rho function with tuning
-constant equal to \code{mscale.cc}.}
+\item{mscale.delta}{determines the breakdown point of the S-estimator.}
 
 \item{mscale.maxit}{maximum number of iterations to calculate the M-estimate of scale.}
 

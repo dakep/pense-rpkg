@@ -15,7 +15,9 @@ pyinit(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
 
 \item{intercept}{should an intercept be included in the models. Defaults to \code{TRUE}.}
 
-\item{deltaesc,cc.scale}{parameters for the M-equation of the scale. To specify the
+\item{deltaesc,cc.scale}{parameters for the M-equation of the scale. If \code{cc.scale}
+is missing or invalid, it will be chosen such that the expected value of the
+rho function under the normal model is equal to \code{deltaesc}. To specify the
 rho function, see parameter \code{control}.}
 
 \item{prosac}{the proportion of observations to remove based on PSCs.}

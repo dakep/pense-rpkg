@@ -99,16 +99,60 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ## Optionally choose optimal lambda from a grid of candidate values
     ##
     if (isTRUE(complete.grid)) {
-        lambda.grid.m <- lambda.grid(Xs, yc, 1, nlambda, control, standardize = FALSE,
-                                     lambda.min.ratio = eval(penseobj$call$lambda.min.ratio))
-        lambda.grid.m <- sort(c(lambda.grid.m, lambda.opt.mm))
-
         ## Setup cluster
         cluster <- setupCluster(ncores, cl,
                                 export = c("Xs", "yc"),
                                 eval = {
                                     library(penseinit)
                                 })
+
+        ##
+        ## Find maximum lambda, starting from adjusted "optimum"
+        ## in log-2 steps (i.e., always double the previous value)
+        ##
+        lambda.max <- lambda.opt.mm
+
+        checkAllZero <- function(lambda, init.scale, init.coef, c0, control) {
+            check.coefs <- penseinit:::pensemstep(Xs, yc, cc = c0,
+                                                  init.scale = init.scale,
+                                                  init.coef = init.coef,
+                                                  lambda = lambda,
+                                                  control)
+            return(all(check.coefs[-1L] == 0))
+        }
+
+        repeat {
+            check.lambdas <- c(lambda.max, 2 * seq_len(cluster$ncores - 1L) * lambda.max)
+
+            all.zero <- cluster$lapply(check.lambdas, checkAllZero,
+                                        init.scale = scale.init.corr,
+                                        init.coef = pense.coef,
+                                        c0 = c0,
+                                        control = control)
+
+            all.zero <- which(unlist(all.zero))
+
+            if (length(all.zero) > 0) {
+                lambda.max <- check.lambdas[all.zero[1L]]
+                break
+            }
+
+            lambda.max <- 2 * check.lambdas[cluster$ncores]
+        }
+
+        ##
+        ## Create grid of nlambda values in [lambda.min; lambda.max]
+        ## where lambda.min is the adjusted minimum of the grid for the S-estimator
+        ##
+        lambda.tmp.grid <- lambda.grid(Xs, yc, penseobj$alpha, 2L, control, standardize = FALSE,
+                                     lambda.min.ratio = eval(penseobj$call$lambda.min.ratio))
+
+        ## Make the value even smaller than with the usual adjustment of 3 / c0^2
+        ## to make sure we cover enough ground
+        lambda.min <- lambda.tmp.grid[1L] / c0^2
+
+        lambda.grid.m <- exp(seq(from = log(lambda.min), to = log(lambda.max), length = nlambda))
+        lambda.grid.m <- sort(c(lambda.grid.m, lambda.opt.mm))
 
         ## Determine CV segments
         cv.segments <- if(cv.k > 1L) {

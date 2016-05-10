@@ -10,12 +10,6 @@ pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control)
 
     resid <- as.vector(y - current.coefs[1L] - X %*% current.coefs[-1L])
 
-    ##
-    ## Adjust penalties for derivative
-    ##
-    lambda.tilde <- lambda * (1 + alpha)
-    alpha.tilde <- 2 * alpha / (1 + alpha)
-
     tol <- control$pense.tol^2
     it <- 0L
     rel.change <- Inf
@@ -34,7 +28,7 @@ pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control)
         Xweight <- X * Wbeta.tilde
         yweight <- (y - current.coefs[1L]) * Wbeta.tilde
 
-        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha.tilde, lambda = lambda.tilde,
+        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
                                centering = FALSE, maxit = control$pense.en.maxit,
                                eps = control$pense.en.tol, warmCoef = current.coefs,
                                en.algorithm = control$en.algorithm)

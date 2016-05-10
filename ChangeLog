@@ -1,8 +1,8 @@
-2016-05-02: Version 0.3.3-X
+2016-05-08: Version 0.3.4
     *) Switch from coordinate gradient descent to augmented LARS by default for computing
        the elastic net solution. The old algorithm is still available and can be chosen
        with the `en.algorithm` parameter.
-    *) New funciton "mstep": add M-step for L1 penalty to PENSE
+    *) New funciton "mstep": add M-step to PENSE
     *) Port pen.s.reg to C++
 
 2016-04-06: Version 0.3.2

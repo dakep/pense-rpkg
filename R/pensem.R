@@ -13,8 +13,8 @@ pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control)
     ##
     ## Adjust penalties for derivative
     ##
-    lambda.tilde = lambda * (1 + alpha)
-    alpha.tilde = 2 * alpha / (1 + alpha)
+    lambda.tilde <- lambda * (1 + alpha)
+    alpha.tilde <- 2 * alpha / (1 + alpha)
 
     tol <- control$pense.tol^2
     it <- 0L

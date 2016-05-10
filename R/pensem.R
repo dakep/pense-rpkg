@@ -1,14 +1,82 @@
+##
+#' @importFrom robustbase Mwgt MrhoInf
+pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control) {
+    dX <- dim(X)
+    p <- dX[2L]
+    n <- dX[1L]
+
+    current.coefs <- init.coef
+    prev.coefs <- NULL
+
+    resid <- as.vector(y - current.coefs[1L] - X %*% current.coefs[-1L])
+
+    ##
+    ## Adjust penalties for derivative
+    ##
+    lambda.tilde = lambda * (1 + alpha)
+    alpha.tilde = 2 * alpha / (1 + alpha)
+
+    tol <- control$pense.tol^2
+    it <- 0L
+    rel.change <- Inf
+
+    mrhoinf <- 1 / MrhoInf(cc, control$mscale.rho.fun)
+
+    repeat {
+        it <- it + 1L
+
+        resid.scaled <- resid / init.scale
+        # Mwgt is safer then Mchi in the case 0/0!
+        wbeta <- Mwgt(resid.scaled, cc = cc, psi = control$mscale.rho.fun) * mrhoinf
+
+        Wbeta.tilde <- sqrt(wbeta)
+
+        Xweight <- X * Wbeta.tilde
+        yweight <- (y - current.coefs[1L]) * Wbeta.tilde
+
+        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha.tilde, lambda = lambda.tilde,
+                               centering = FALSE, maxit = control$pense.en.maxit,
+                               eps = control$pense.en.tol, warmCoef = current.coefs,
+                               en.algorithm = control$en.algorithm)
+
+        prev.coefs <- current.coefs
+        current.coefs <- beta.obj$coefficients
+
+        resid <- as.vector(y - X %*% current.coefs[-1L])
+        # New intercept
+        wintercept <- wbeta / sum(wbeta)
+        current.coefs[1L] <- sum(wintercept * resid)
+
+        # Update residuals and scale
+        resid <- resid - current.coefs[1L]
+        rel.change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
+
+        if (is.nan(rel.change)) { # if 0/0
+            rel.change <- 0
+        }
+
+        ## Check convergence
+        if (it >= control$pense.maxit || all(rel.change < tol)) {
+            break
+        }
+    }
+
+    if (rel.change > tol && identical(warn, TRUE)) {
+        warning(sprintf("PENSE M-step did not converge for lambda = %.3f", lambda))
+    }
+
+    return(current.coefs)
+}
+
+
 ################################################################################
 ##
 ## All of the following code is taken from R package mmlasso-1.3.4
 ## Copyright Ezequiel Smucler <ezequiels.90@gmail.com>
 ##
 ##################################################################################
-
-
-# @-import robustHD
 #' @importFrom mmlasso mmlasso
-pensemstep <- function(Xs, y, cc, init.scale, init.coef, lambda, control) {
+pensemstepL1 <- function(Xs, y, cc, init.scale, init.coef, lambda, control) {
     #Performs iteratively re-weighted Lasso
     #INPUT
     #Xs,y: data

@@ -60,7 +60,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
 
 ## Internal function to calculate PENSE for a given initial estimate (init.coef) in R
 ##
-#' @importFrom robustbase Mchi
+#' @importFrom robustbase Mwgt MrhoInf
 pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
     dX <- dim(X)
     p <- dX[2L]
@@ -81,12 +81,14 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
     it <- 0L
     rel.change <- Inf
 
+    mrhoinf <- 1 / MrhoInf(cc, control$mscale.rho.fun)
+
     repeat {
         it <- it + 1L
 
         resid.scaled <- resid / scale
-        wbeta <- Mchi(resid.scaled, cc = control$mscale.cc, deriv = 1,
-                      psi = control$mscale.rho.fun) / resid.scaled
+        # Mwgt is safer then Mchi in the case 0/0!
+        wbeta <- Mwgt(resid.scaled, cc = cc, psi = control$mscale.rho.fun) * mrhoinf
         tau.beta <- n * 2 * scale^2 / sum(resid^2 * wbeta)
         Wbeta.tilde <- sqrt(tau.beta * wbeta)
 

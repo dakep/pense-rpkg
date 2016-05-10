@@ -18,9 +18,9 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     y <- eval(penseobj$call$y, envir = parent.frame())
 
-    if (penseobj$alpha != 1) {
-        stop("M-step not yet implemented for alpha != 1.")
-    }
+    # if (penseobj$alpha != 1) {
+    #     stop("M-step not yet implemented for alpha != 1.")
+    # }
 
     dX <- dim(X)
 
@@ -112,10 +112,11 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
         ##
         lambda.max <- lambda.opt.mm
 
-        checkAllZero <- function(lambda, init.scale, init.coef, c0, control) {
+        checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
             check.coefs <- penseinit:::pensemstep(Xs, yc, cc = c0,
                                                   init.scale = init.scale,
                                                   init.coef = init.coef,
+                                                  alpha = alpha,
                                                   lambda = lambda,
                                                   control)
             return(all(check.coefs[-1L] == 0))
@@ -128,6 +129,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
                                         init.scale = scale.init.corr,
                                         init.coef = pense.coef,
                                         c0 = c0,
+                                        alpha = penseobj$alpha,
                                         control = control)
 
             all.zero <- which(unlist(all.zero))
@@ -172,7 +174,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
         jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
 
         ## Run all jobs (combination of all CV segments and all lambda values)
-        dojobcv <- function(job, init.scale, init.coef, c0, control) {
+        dojobcv <- function(job, init.scale, init.coef, c0, alpha, control) {
             if (length(job$segment) == 0L) {
                 X.train <- Xs
                 y.train <- yc
@@ -185,7 +187,8 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
                 y.test <- yc[job$segment]
             }
 
-            coefsm <- penseinit:::pensemstep(X.train, y.train, c0, init.scale, init.coef, job$lambda,
+            coefsm <- penseinit:::pensemstep(X.train, y.train, c0, init.scale, init.coef,
+                                             alpha = alpha, lambda = job$lambda,
                                              control)
 
             return(drop(y.test - coefsm[1L] - X.test %*% coefsm[-1L]))
@@ -196,6 +199,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
                                                 init.scale = scale.init.corr,
                                                 init.coef = pense.coef,
                                                 c0 = c0,
+                                                alpha = penseobj$alpha,
                                                 control = control)
         },
         finally = {
@@ -218,7 +222,8 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ##
     ## Compute M-estimator for lambda.opt.mm.cv
     ##
-    coefs.mm <- pensemstep(Xs, yc, c0, scale.init.corr, pense.coef, lambda.opt.mm.cv,
+    coefs.mm <- pensemstep(Xs, yc, c0, scale.init.corr, pense.coef,
+                           alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
                            control)
 
     coefs.mm <- drop(coefs.mm)

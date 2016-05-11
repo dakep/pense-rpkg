@@ -5,6 +5,8 @@
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
 #' @param complete.grid should the optimal lambda be chosen from a grid of values
 #'      or approximate it from the optimal lambda
+#' @param version Which M-step should be performed? The newly derived ("new") or the one
+#'      from mmlasso?
 #' @param cv.k perform k-fold CV to choose optimal lambda (only used if
 #'      \code{complete.grid = FALSE}).
 #' @param nlambda the number of lambda values to try.
@@ -13,14 +15,18 @@
 #' @importFrom robustbase .Mchi
 #' @importFrom stats mad median
 #' @export
-mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
+mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k = 5L, nlambda = 30L,
                   ncores = getOption("mc.cores", 2L), cl = NULL) {
     X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     y <- eval(penseobj$call$y, envir = parent.frame())
 
-    # if (penseobj$alpha != 1) {
-    #     stop("M-step not yet implemented for alpha != 1.")
-    # }
+    version <- match.arg(version)
+
+    if ((version == "mmlasso") && (penseobj$alpha != 1)) {
+        stop("M-step from V&E only valid for alpha = 1.")
+    }
+
+    mstepfun <- switch(version, "mmlasso" = pensemstepL1, pensemstep)
 
     dX <- dim(X)
 
@@ -101,9 +107,12 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     if (isTRUE(complete.grid)) {
         ## Setup cluster
         cluster <- setupCluster(ncores, cl,
-                                export = c("Xs", "yc"),
+                                export = c("Xs", "yc", "version"),
                                 eval = {
                                     library(penseinit)
+                                    mstepfun <- switch(version,
+                                                       "mmlasso" = penseinit:::pensemstepL1,
+                                                       penseinit:::pensemstep)
                                 })
 
         ##
@@ -113,12 +122,12 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
         lambda.max <- lambda.opt.mm
 
         checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
-            check.coefs <- penseinit:::pensemstep(Xs, yc, cc = c0,
-                                                  init.scale = init.scale,
-                                                  init.coef = init.coef,
-                                                  alpha = alpha,
-                                                  lambda = lambda,
-                                                  control)
+            check.coefs <- mstepfun(Xs, yc, cc = c0,
+                                    init.scale = init.scale,
+                                    init.coef = init.coef,
+                                    alpha = alpha,
+                                    lambda = lambda,
+                                    control)
             return(all(check.coefs[-1L] == 0))
         }
 
@@ -187,9 +196,9 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
                 y.test <- yc[job$segment]
             }
 
-            coefsm <- penseinit:::pensemstep(X.train, y.train, c0, init.scale, init.coef,
-                                             alpha = alpha, lambda = job$lambda,
-                                             control)
+            coefsm <- mstepfun(X.train, y.train, c0, init.scale, init.coef,
+                               alpha = alpha, lambda = job$lambda,
+                               control)
 
             return(drop(y.test - coefsm[1L] - X.test %*% coefsm[-1L]))
         }
@@ -222,7 +231,7 @@ mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
     ##
     ## Compute M-estimator for lambda.opt.mm.cv
     ##
-    coefs.mm <- pensemstep(Xs, yc, c0, scale.init.corr, pense.coef,
+    coefs.mm <- mstepfun(Xs, yc, c0, scale.init.corr, pense.coef,
                            alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
                            control)
 

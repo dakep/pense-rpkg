@@ -4,14 +4,17 @@
 \alias{mstep}
 \title{Perform an M-step on the PENSE result}
 \usage{
-mstep(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
-  ncores = getOption("mc.cores", 2L), cl = NULL)
+mstep(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k = 5L,
+  nlambda = 30L, ncores = getOption("mc.cores", 2L), cl = NULL)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
 
 \item{complete.grid}{should the optimal lambda be chosen from a grid of values
 or approximate it from the optimal lambda}
+
+\item{version}{Which M-step should be performed? The newly derived ("new") or the one
+from mmlasso?}
 
 \item{cv.k}{perform k-fold CV to choose optimal lambda (only used if
 \code{complete.grid = FALSE}).}

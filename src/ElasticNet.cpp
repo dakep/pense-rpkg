@@ -102,8 +102,8 @@ ElasticNetGDESC::~ElasticNetGDESC()
 
 void ElasticNetGDESC::setLambdas(const double lambda1, const double lambda2)
 {
-    this->lambda = lambda2 + lambda1 / 2;
-    this->alpha = lambda1 / (2 * lambda2 + lambda1);
+    this->lambda = lambda2 + lambda1;
+    this->alpha = lambda1 / (lambda2 + lambda1);
     if (lambda2 == 0 && lambda1 == 0) {
         this->alpha = 0;
     }
@@ -111,8 +111,8 @@ void ElasticNetGDESC::setLambdas(const double lambda1, const double lambda2)
 
 void ElasticNetGDESC::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->alpha = alpha;
-    this->lambda = lambda;
+    this->alpha = 2 * alpha / (1 + alpha);
+    this->lambda = 0.5 * lambda * (1 + alpha);
 }
 
 
@@ -367,13 +367,13 @@ ElasticNetLARS::~ElasticNetLARS()
 
 void ElasticNetLARS::setLambdas(const double lambda1, const double lambda2)
 {
-    this->lambda1 = lambda1 / 2;
+    this->lambda1 = lambda1;
     this->sqrtLambda2 = sqrt(lambda2);
 }
 
 void ElasticNetLARS::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->setLambdas(2 * lambda * alpha, lambda * (1 - alpha));
+    this->setLambdas(lambda * alpha, 0.5 * lambda * (1 - alpha));
 }
 
 

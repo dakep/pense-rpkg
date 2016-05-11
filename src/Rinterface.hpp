@@ -50,7 +50,7 @@ RcppExport SEXP C_augtrans(SEXP X, SEXP nrow, SEXP ncol);
 
 /**
  * Solve following minimzation problem:
- * (1 / (2*N)) * RSS + lambda * ( ((1 - alpha)/2)*L1(beta) + alpha*L2(beta) )
+ * (1 / (2*N)) * RSS + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
  *
  *
  * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
@@ -77,6 +77,37 @@ RcppExport SEXP C_augtrans(SEXP X, SEXP nrow, SEXP ncol);
 RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP alpha,
 						SEXP lambda, SEXP maxIt, SEXP eps, SEXP centering, SEXP warm,
 						SEXP enAlgorithm);
+
+
+/**
+ * Solve following minimzation problem:
+ * (1 / (2*N)) * RSS + lambda2 * L2(beta)^2 + lambda1 * L1(beta)
+ *
+ *
+ * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y           numeric The numeric y vector (size `nobs`)
+ * @param coefs		  numeric The inital coefficients, will be copied if `warm` is 1, otherwise
+ *							  not referenced.
+ * @param nobs        integer The number of observations
+ * @param nvar        integer The number of variables (including the intercept)
+ * @param lambda1     numeric The lambda1 parameter for the penalization
+ * @param lambda2     numeric The lambda2 parameter for the penalization
+ * @param maxIt       integer The maximum number of iterations allowed
+ * @param eps         numeric The relative tolerance for convergence
+ * @param centering   integer Should centering be done (1=yes, 0=no) for rows with a leading 1.
+ * @param warm		  integer Should warm coefficients be used (1=yes, 0=no).
+ * @param enAlgorithm integer Defines the EN algorithm to use (0 = coordinate descent,
+ *							  1 = augmented LARS w/o Gram, 2 = augmented LARS w/ Gram,
+ *							  3 = augmented LARS automatically decide if use Gram)
+ *
+ * @return List Returns a list with two elements:
+ *		item 1: Logical telling if the algorithm converged
+ *      item 1: Numeric vector with the cofficient estimates
+ *      item 2: Numeric vector with the residuals
+ */
+RcppExport SEXP C_elnet_ll(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP lambda1,
+						   SEXP lambda2, SEXP maxIt, SEXP eps, SEXP centering, SEXP warm,
+                           SEXP enAlgorithm);
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)

@@ -16,6 +16,13 @@
 #include "Control.h"
 #include "Data.hpp"
 
+
+/**
+ * Solve the EN problem
+ *
+ * (1 / 2N) * RSS + lambda * (((1 - alpha) / 2) * L2(beta)^2 + alpha * L1(beta))
+ *
+ */
 class ElasticNet
 {
 public:
@@ -26,21 +33,23 @@ public:
 	virtual ~ElasticNet()
     {}
 
-	/*
-	 * Set the regularization based on two independent
-	 * lambda values.
-	 * The conversion formula is:
-	 * lambda = lambda2 + lambda1 / 2
-	 * alpha = lambda1 / (2 * lambda)
+	/**
+	 * Set the regularization based on one parameter for the L1 penalization
+     * and one for the L2 penalization.
 	 *
 	 * NOTE: The values for lambda1 and lambda2 are INDEPENDENT
-	 *		 of the number of observations! This is different
-	 *		 from the R package lars!
-	 *		 lambda1 = lambda_lars / numObs
+	 *		 of the number of observations!
 	 *
 	 */
 	virtual void setLambdas(const double lambda1, const double lambda2) = 0;
 
+	/**
+	 * Set the regularization based on alpha and lambda
+	 *
+	 * NOTE: The values for lambda1 and lambda2 are INDEPENDENT
+	 *		 of the number of observations!
+	 *
+	 */
 	virtual void setAlphaLambda(const double alpha, const double lambda) = 0;
 
 	void setThreshold(const double eps)
@@ -48,26 +57,23 @@ public:
 		this->eps = eps;
 	}
 
-	/*
-	 * Solve the EN problem
-	 *
-	 * (1 / 2N) * RSS + lambda * (((1 - alpha) / 2) * L2(beta) + alpha * L1(beta))
-	 *
-	 * which is equivalent to solving
-	 *
-	 * (1 / N) * RSS + lambda2 * L2(beta) + lambda1 * L1(beta))
-	 *
-	 * @param data Is assumed to have the leading column of 1's for the intercept
-	 * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
+    /**
+     * Solve the EN problem
+     *
+     * (1 / 2N) * RSS + lambda * (((1 - alpha) / 2) * L2(beta)^2 + alpha * L1(beta))
+     *
+     *
+     * @param data Is assumed to have the leading column of 1's for the intercept
+     * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
      *          the starting point for the coordinate-descend algorithm. (see argument warm)
      * @param residuals A vector of residuals with as many observations as in data. The
      *          residuals will be recalculated for the given (warm) coefficients
-	 *
-	 * NOTE: The leading column of X is used as weight for the row in
-	 *		 in centering the data.
-	 *
-	 * @returns TRUE if the algorithm converged, FALSE otherwise
-	 */
+     *
+     * NOTE: The leading column of X is used as weight for the row in
+     *		 in centering the data.
+     *
+     * @returns TRUE if the algorithm converged, FALSE otherwise
+     */
     virtual bool computeCoefs(const Data& data, double *RESTRICT coefs,
 							  double *RESTRICT residuals, const bool warm = FALSE) = 0;
 
@@ -85,32 +91,11 @@ public:
 	ElasticNetGDESC(const int maxIt, const double eps, const bool center);
 	~ElasticNetGDESC();
 
-	/*
-	 * Set the regularization based on two independent
-	 * lambda values.
-	 * The conversion formula is:
-	 * lambda = lambda2 + lambda1 / 2
-	 * alpha = lambda1 / (2 * lambda)
-	 *
-	 * NOTE: The values for lambda1 and lambda2 are INDEPENDENT
-	 *		 of the number of observations! This is different
-	 *		 from the R package lars!
-	 *		 lambda1 = lambda_lars / numObs
-	 *
-	 */
 	void setLambdas(const double lambda1, const double lambda2);
 
 	void setAlphaLambda(const double alpha, const double lambda);
 
 	/*
-	 * @param data Is assumed to have the leading column of 1's for the intercept
-	 * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
-     *          the starting point for the coordinate-descend algorithm. (see argument warm)
-     * @param residuals A vector of residuals with as many observations as in data. The
-     *          residuals will be recalculated for the given (warm) coefficients
-	 *
-	 * NOTE: The leading column of X is used as weight for the row in
-	 *		 in centering the data.
 	 *
 	 * @returns TRUE if the algorithm converged, FALSE otherwise
 	 */
@@ -155,16 +140,9 @@ public:
 		this->gramMode = useGram;
 	}
 
-	/*
-	 * @param data Is assumed to have the leading column of 1's for the intercept
-	 * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
-     *          the starting point for the coordinate-descend algorithm. (see argument warm)
-     * @param warm Should the Gram matrix be computed once and used throughout the algorithm?
-     *             This can improve the speed significantly, if the number of variables is not
-     *             too large.
-	 *
-	 * @returns always TRUE
-	 */
+    /**
+     * @return Always returns TRUE as this algorithm is not iterative
+     */
     bool computeCoefs(const Data& data, double *RESTRICT coefs, double *RESTRICT residuals,
                       const bool warm = FALSE);
 

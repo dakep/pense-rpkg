@@ -1,6 +1,6 @@
 ##
 #' @importFrom robustbase Mwgt MrhoInf
-pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control) {
+pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
     dX <- dim(X)
     p <- dX[2L]
     n <- dX[1L]
@@ -55,7 +55,7 @@ pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control)
         }
     }
 
-    if (rel.change > tol && identical(warn, TRUE)) {
+    if (rel.change > tol) {
         warning(sprintf("PENSE M-step did not converge for lambda = %.3f", lambda))
     }
 
@@ -70,7 +70,7 @@ pensemstep <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control)
 ##
 ##################################################################################
 #' @importFrom mmlasso mmlasso
-pensemstepL1 <- function(Xs, y, cc, init.scale, init.coef, lambda, control) {
+pensemstepL1 <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, control) {
     #Performs iteratively re-weighted Lasso
     #INPUT
     #Xs,y: data

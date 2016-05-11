@@ -195,6 +195,47 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar,
     return result;
 }
 
+
+RcppExport SEXP C_elnet_ll(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar, SEXP Rlambda1,
+                           SEXP Rlambda2, SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm,
+                           SEXP RenAlgorithm)
+{
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+    ElasticNet *en = getElasticNetImpl((ENAlgorithm) *INTEGER(RenAlgorithm),
+                                       *REAL(Reps), (bool) *INTEGER(Rcentering),
+                                       *INTEGER(RmaxIt));
+    bool warm = (*INTEGER(Rwarm) == 1);
+    SEXP result = R_NilValue;
+    SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
+    SEXP retResid = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    SEXP converged = PROTECT(Rf_allocVector(LGLSXP, 1));
+    double *retCoefPtr = REAL(retCoef);
+
+    BEGIN_RCPP
+
+    if (warm) {
+        memcpy(retCoefPtr, REAL(Rcoefs), data.numVar() * sizeof(double));
+    }
+
+    en->setLambdas(*REAL(Rlambda1), *REAL(Rlambda2));
+    *LOGICAL(converged) = en->computeCoefs(data, retCoefPtr, REAL(retResid), warm);
+
+    result = PROTECT(Rf_allocVector(VECSXP, 3));
+
+    SET_VECTOR_ELT(result, 0, converged);
+    SET_VECTOR_ELT(result, 1, retCoef);
+    SET_VECTOR_ELT(result, 2, retResid);
+
+    delete en;
+    UNPROTECT(1);
+
+    VOID_END_RCPP
+
+    UNPROTECT(3);
+    return result;
+}
+
+
 RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP Rcontrol)
 {
     const Control ctrl = parseControlList(Rcontrol);

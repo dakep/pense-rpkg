@@ -3,8 +3,8 @@
 #' Compute the elastic net regression coefficients
 #'
 #' This solves the minimization problem
-#' \deqn{\frac{1}{2 N} RSS + \lambda \left( (1 - \alpha) \frac{1}{2} \| \beta \|_1 + \alpha \| \beta \|_2^2 \right)}{
-#'      (1/2N) RSS + \lambda ( (1 - \alpha) (1/2) L1(\beta) + \alpha L2(\beta)^2 )}
+#' \deqn{\frac{1}{2 N} RSS + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
+#'      (1/2N) RSS + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
 #'
 #' @param X The data matrix X
 #' @param y The response vector
@@ -79,7 +79,7 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib penseinit C_augtrans
+#' @useDynLib penseinit C_augtrans C_elnet
 .elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
                        warmCoef = NULL, en.algorithm) {
     y <- drop(y)
@@ -109,6 +109,52 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
                       dX[1L], nrow(Xtr),
                       alpha,
                       lambda,
+                      maxit,
+                      eps,
+                      centering,
+                      warm,
+                      en.algorithm)
+
+    if (!identical(elnetres[[1L]], TRUE)) {
+        warning("Elastic Net algorithm did not converge.")
+    }
+
+    names(elnetres) <- c("converged", "coefficients", "residuals")
+
+    return(elnetres)
+}
+
+## Internal function to fit an EN linear regression WITHOUT parameter checks!
+#' @useDynLib penseinit C_augtrans C_elnet_ll
+.elnet.fit.ll <- function(X, y, lambda1, lambda2, maxit, eps, centering = TRUE, addLeading1s = TRUE,
+                          warmCoef = NULL, en.algorithm) {
+    y <- drop(y)
+    dX <- dim(X)
+
+    ## Add leading column of 1's
+    if (!identical(addLeading1s, FALSE)) {
+        Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    } else {
+        Xtr <- t(X)
+    }
+
+    warm <- 0L
+
+    if (!is.null(warmCoef)) {
+        warm <- 1L
+    }
+
+    lambda1 <- as.numeric(lambda1)
+    lambda2 <- as.numeric(lambda2)
+    maxit <- as.integer(maxit)
+    centering <- 1L - as.integer(identical(centering, FALSE))
+    en.algorithm <- .enalgo2IntEnalgo(en.algorithm)
+
+    elnetres <- .Call(C_elnet_ll, Xtr, y,
+                      warmCoef,
+                      dX[1L], nrow(Xtr),
+                      lambda1,
+                      lambda2,
                       maxit,
                       eps,
                       centering,

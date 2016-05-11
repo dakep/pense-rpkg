@@ -37,7 +37,7 @@ Compute the elastic net regression coefficients
 }
 \details{
 This solves the minimization problem
-\deqn{\frac{1}{2 N} RSS + \lambda \left( (1 - \alpha) \frac{1}{2} \| \beta \|_1 + \alpha \| \beta \|_2^2 \right)}{
-     (1/2N) RSS + \lambda ( (1 - \alpha) (1/2) L1(\beta) + \alpha L2(\beta)^2 )}
+\deqn{\frac{1}{2 N} RSS + \lambda \left( (1 - \alpha) \frac{1}{2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
+     (1/2N) RSS + \lambda ( (1 - \alpha) (1/2) L2(\beta)^2 + \alpha L1(\beta) )}
 }
 

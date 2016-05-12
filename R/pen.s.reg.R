@@ -81,24 +81,28 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
     it <- 0L
     rel.change <- Inf
 
-    mrhoinf <- 1 / MrhoInf(cc, control$mscale.rho.fun)
+    mrhoinf <- 1 / MrhoInf(control$mscale.cc, control$mscale.rho.fun)
+    en.eps <- control$pense.en.tol
 
     repeat {
         it <- it + 1L
 
         resid.scaled <- resid / scale
         # Mwgt is safer then Mchi in the case 0/0!
-        wbeta <- Mwgt(resid.scaled, cc = cc, psi = control$mscale.rho.fun) * mrhoinf
-        tau.beta <- n * 2 * scale^2 / sum(resid^2 * wbeta)
+        wbeta <- Mwgt(resid.scaled, cc = control$mscale.cc, psi = control$mscale.rho.fun) * mrhoinf
+        tau.beta <- scale^2 / sum(resid^2 * wbeta)
         Wbeta.tilde <- sqrt(tau.beta * wbeta)
 
         Xweight <- X * Wbeta.tilde
         yweight <- (y - current.coefs[1L]) * Wbeta.tilde
 
-        ## Adjust convergence threshold for elastic net
-        en.eps <- control$pense.en.tol * dX[1L] * mscale(yweight)^2
+        ## Adjust convergence threshold for elastic net if we use coordinate descent
+        if (control$en.algorithm == "coordinate-descent") {
+            en.eps <- control$pense.en.tol * dX[1L] * mscale(yweight)^2
+        }
 
-        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
+        ## We need to
+        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda / (2 * n),
                                centering = FALSE, maxit = control$pense.en.maxit,
                                eps = en.eps, warmCoef = current.coefs,
                                en.algorithm = control$en.algorithm)

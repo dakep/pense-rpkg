@@ -30,8 +30,10 @@ mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc,
         x <- x[!is.na(x)]
     }
 
+    rho <- match.arg(rho)
+
     if (missing(cc)) {
-        cc <- consitency.rho(b, rho)
+        cc <- consistency.rho(b, rho)
     }
 
     ctrl <- initest.control(mscale.delta = b,

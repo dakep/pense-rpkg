@@ -164,6 +164,14 @@ private:
 	arma::vec yAug;
 	arma::uword augNobs;
 
+	/**
+	 * Certain matrices/vectors which are useful to store
+	 * between calls if the size of the data doesn't change too often.
+	 */
+	arma::mat gramMat;
+	arma::vec corY;
+	arma::vec meanX;
+
 	void augmentData(const Data& data);
 
 };

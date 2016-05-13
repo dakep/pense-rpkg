@@ -397,7 +397,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     uword i, j;
     sword ri;
 
-	vec meanX;
 	double meanY;
 
 	uvec inactive(this->XtrAug.n_rows - 1),
@@ -409,8 +408,6 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     bool useGram = (this->gramMode == YES ||
                     (this->gramMode == AUTO && this->XtrAug.n_rows <= MAX_PREDICTORS_GRAM));
 
-    mat Gram;
-    vec corY;	// current correlations
     uword nrInactive = this->XtrAug.n_rows;
     uword nrActive = 0;	// number of active predictors
 
@@ -419,9 +416,9 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
      * Center data if requested
      */
 	if(this->center) {
-		meanX = mean(this->XtrAug.cols(0, data.numObs() - 1), 1);
-        meanX[0] = 0; // Don't change the intercept-column
-        this->XtrAug.cols(0, data.numObs() - 1).each_col() -= meanX;
+		this->meanX = mean(this->XtrAug.cols(0, data.numObs() - 1), 1);
+        this->meanX[0] = 0; // Don't change the intercept-column
+        this->XtrAug.cols(0, data.numObs() - 1).each_col() -= this->meanX;
 		meanY = mean(this->yAug.rows(0, data.numObs() - 1));
 		this->yAug.rows(0, data.numObs() - 1) -= meanY;
 	} else {
@@ -438,27 +435,32 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     }
 
 	if(useGram) {
-		Gram = this->XtrAug * this->XtrAug.t();
+		this->gramMat = this->XtrAug * this->XtrAug.t();
 	}
 
     /*
      * Compute current correlations
      */
-    corY = this->XtrAug * this->yAug;
+    this->corY = this->XtrAug * this->yAug;
+
+    /*
+     * Reset coefficients
+     */
+    beta.zeros();
 
 
     if(this->XtrAug.n_rows == 2) {
         // special case of only one variable (with sufficiently large norm)
         j = inactive(0);
         // set maximum step size in the direction of that variable
-        double maxStep = corY(j);
+        double maxStep = this->corY(j);
         if(maxStep < 0) {
             maxStep = -maxStep; // absolute value
         }
         // compute coefficients for least squares solution
         vec betaLS = solve(this->XtrAug.unsafe_col(j), this->yAug);
+
         // compute lasso coefficients
-        beta.zeros();
         if(rescaledLambda < maxStep) {
             // interpolate towards least squares solution
             beta(j) = (maxStep - rescaledLambda) * betaLS[0] / maxStep;
@@ -471,14 +473,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         /*
          * previous and current regression coefficients
          */
-        vec previousBeta = zeros(this->XtrAug.n_rows),
-            currentBeta = zeros(this->XtrAug.n_rows);
+        vec previousBeta = zeros(this->XtrAug.n_rows);
+//            currentBeta = zeros(this->XtrAug.n_rows);
 
-        // previous and current penalty parameter
+
+
+        /* previous and current penalty parameter */
         double previousLambda = R_PosInf,
                currentLambda = R_PosInf;
 
-        // indicates variables to be dropped
+        /* indicates variables to be dropped */
         uvec drops;
 
         /*
@@ -488,7 +492,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         mat L;
         uword rank = 0;
 
-        // maximum number of variables to be sequenced
+        /* maximum number of variables to be sequenced */
         uword maxActive = std::min(this->XtrAug.n_cols - this->center, this->XtrAug.n_rows - 1);
 
         uword usableVariables = this->XtrAug.n_rows;
@@ -505,14 +509,16 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
         double maxCor, tmp;
 
-        // modified LARS algorithm for lasso solution
+        /*
+         * Modified LARS algorithm for lasso solution
+         */
         while(nrActive < maxActive) {
             /*
              * Find maximum absolute correlation with Y for the inactive
              */
             maxCor = 0;
             for (i = 0; i < inactive.n_elem; ++i) {
-                tmp = fabs(corY[inactive[i]]);
+                tmp = fabs(this->corY[inactive[i]]);
                 if (maxCor < tmp) {
                     maxCor = tmp;
                 }
@@ -535,7 +541,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             if(drops.n_elem == 0) {
                 for(j = 0; j < inactive.n_elem; ++j) {
                     newPred = inactive[j];
-                    if (maxCor - eps > fabs(corY[newPred])) {
+                    if (maxCor - eps > fabs(this->corY[newPred])) {
                         /*
                          * This one won't be activated -- skip
                          */
@@ -550,7 +556,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
                     double newX, normNewX;
                     if(useGram) {
-                        xNewPred = Gram.unsafe_col(newPred);	// reuses memory
+                        xNewPred = this->gramMat.unsafe_col(newPred);	// reuses memory
                         newX = xNewPred[newPred];
                     } else {
                         xNewPred = conv_to<colvec>::from(this->XtrAug.row(newPred));
@@ -632,7 +638,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                          * keep track of sign of correlation for new active variable
                          */
                         signs.insert_rows(nrActive, 1, false);
-                        signs(nrActive) = sign(corY(newPred));
+                        signs(nrActive) = sign(this->corY(newPred));
 
                         ++nrActive;
                     }
@@ -640,7 +646,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 
                 for(ri = inactive.n_elem - 1; ri >= 0; --ri) {
                     i = inactive(ri);
-                    if (maxCor - eps <= fabs(corY(i))) {
+                    if (maxCor - eps <= fabs(this->corY(i))) {
                         /*
                          * This one was activated -- remove from inactivated list
                          */
@@ -662,17 +668,20 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             // correlations of active variables with equiangular vector
             double corActiveEqui = 1 / sqrt(dot(w, signs));
 
-            // coefficients of active variables in linear combination forming the
-            // equiangular vector
-            w *= corActiveEqui;	// note that this has the right signs
-            // equiangular vector
+            /*
+             * Coefficients of active variables in linear combination forming the
+             * equiangular vector.
+             *
+             * Note that this has the right signs
+             */
+            w *= corActiveEqui;
 
             if(useGram) {
                 /*
                  * If we use the Gram matrix, we need the correlations between the
                  * equiangular vector and ALL variables
                  */
-                corEquiV = Gram.cols(active) * w;
+                corEquiV = this->gramMat.cols(active) * w;
             } else {
                 /*
                  * we only need equiangular vector if we don't use the precomputed
@@ -690,13 +699,13 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                      * compute step size in the direction of the equiangular vector
                      * Here we only need the correlations for the INACTIVE variables
                      */
-                    step = findStepGram(maxCor, corY, inactive, corActiveEqui, corEquiV,
+                    step = findStepGram(maxCor, this->corY, inactive, corActiveEqui, corEquiV,
                                         this->eps);
                 } else {
                     corEquiV = this->XtrAug.rows(inactive) * equiangularVec;
 
                     // compute step size in the direction of the equiangular vector
-                    step = findStep(maxCor, corY, inactive, corActiveEqui, corEquiV, this->eps);
+                    step = findStep(maxCor, this->corY, inactive, corActiveEqui, corEquiV, this->eps);
                 }
             } else {
                 // last step: take maximum possible step
@@ -706,14 +715,13 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             /*
              * Adjust step size if any sign changes and drop corresponding variables
              */
-            drops = findDrops(currentBeta, active, w, this->eps, step);
+            drops = findDrops(beta, active, w, this->eps, step);
 
             /*
              * Update regression coefficients
              */
-            previousBeta = currentBeta;
-            currentBeta.elem(active) += step * w;
-
+            previousBeta = beta;
+            beta.elem(active) += step * w;
 
             /*
              * Update correlations
@@ -723,10 +731,10 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                  * Here we also need the correlation for active variables, since they may be
                  * dropped at a later stage
                  */
-                corY -= step * corEquiV;
+                this->corY -= step * corEquiV;
             } else {
                 this->yAug -= step * equiangularVec;	// take step in equiangular direction
-                corY = this->XtrAug * this->yAug;
+                this->corY = this->XtrAug * this->yAug;
             }
 
             /*
@@ -752,7 +760,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                 for(j = 0; j < drops.n_elem; ++j) {
                     newInactive = active(drops(j));
                     inactive(nrInactive + j) = newInactive;
-                    currentBeta(newInactive) = 0;	// make sure coefficient is 0
+                    beta(newInactive) = 0;	// make sure coefficient is 0
                 }
 
                 nrInactive = inactive.n_elem;	// update number of inactive variables
@@ -791,7 +799,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
             }
             // interpolate coefficients
             beta = ((rescaledLambda - currentLambda) * previousBeta +
-                    (previousLambda - rescaledLambda) * currentBeta) /
+                    (previousLambda - rescaledLambda) * beta) /
                         (previousLambda - currentLambda);
         }
     }
@@ -803,7 +811,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
                     this->XtrAug.cols(0, data.numObs() - 1).t() * beta;
 
     if(this->center) {
-        beta(0) = meanY - dot(beta, meanX);
+        beta(0) = meanY - dot(beta, this->meanX);
     }
 
 	return true;

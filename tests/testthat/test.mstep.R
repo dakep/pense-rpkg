@@ -175,4 +175,55 @@ test_that("mstep", {
                                alpha = alpha, lambda = lambda, control = ctrl),
         regexp = 'did not converge'
     )
+
+
+    ##
+    ## Test case 5 -- leverage points
+    ##
+    remove(list = ls())
+    n <- 500L
+    p <- 50L
+    set.seed(12345)
+    X <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+
+    X[1:50, ] <- 200 + X[1:50, ]
+
+    lambda <- 0.01
+    cc <- 1.5
+    init.scale <- 1.1
+    init.coef <- numeric(p + 1)
+    ctrl <- pense.control()
+
+    ## LASSO penalty
+    alpha <- 1
+
+    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+                                         init.scale = init.scale, init.coef = init.coef,
+                                         alpha = alpha, lambda = lambda, control = ctrl)
+
+    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+                                   init.scale = init.scale, init.coef = init.coef,
+                                   alpha = alpha, lambda = lambda, control = ctrl)
+
+    expect_equal(mr.c$intercept, mr.r$intercept)
+    expect_equal(mr.c$beta, mr.r$beta)
+    expect_equal(mr.c$objF, mr.r$objF)
+
+
+    ## EN penalty
+    alpha <- 0.5
+
+    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+                                         init.scale = init.scale, init.coef = init.coef,
+                                         alpha = alpha, lambda = lambda, control = ctrl)
+
+    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+                                   init.scale = init.scale, init.coef = init.coef,
+                                   alpha = alpha, lambda = lambda, control = ctrl)
+
+    expect_equal(mr.c$intercept, mr.r$intercept)
+    expect_equal(mr.c$beta, mr.r$beta)
+    expect_equal(mr.c$objF, mr.r$objF)
+
 })

@@ -79,16 +79,17 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
         weightBetaSum = 0;
         for (i = 0; i < this->data.numObs(); ++i, ++yIter, ++yWgtIter) {
             weightBeta[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC);
+            tmp = sqrt(weightBeta[i]);
             weightBetaSum += weightBeta[i];
 
-            *yWgtIter = ((*yIter) - currentCoef[0]) * weightBeta[i];
+            *yWgtIter = ((*yIter) - currentCoef[0]) * tmp;
 
             /* Skip first row of 1's! */
             ++XtrWgtIter;
             ++XtrIter;
 
             for (j = 1; j < data.numVar(); ++j, ++XtrWgtIter, ++XtrIter) {
-                *XtrWgtIter = (*XtrIter) * weightBeta[i];
+                *XtrWgtIter = (*XtrIter) * tmp;
             }
         }
 

@@ -1,6 +1,61 @@
 ##
-#' @importFrom robustbase Mwgt MrhoInf
+#' @useDynLib penseinit C_augtrans C_pen_mstep
+#' @importFrom robustbase Mchi
 pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
+    dX <- dim(X)
+
+    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    dX[2L] <- dX[2L] + 1L
+
+    cctrl <- penseinit:::initest.control(
+        numIt = control$pense.maxit,
+        eps = control$pense.tol^2,
+        mscale.delta = control$mscale.delta,
+        mscale.cc = cc,
+        enpy.control = enpy.control(
+            en.maxit = control$pense.en.maxit,
+            en.tol = control$pense.en.tol,
+            en.centering = FALSE,
+            mscale.maxit = control$mscale.maxit,
+            mscale.tol = control$mscale.tol,
+            mscale.rho.fun = "bisquare",
+            en.algorithm = control$en.algorithm
+        ),
+
+        # Not needed, set for completeness
+        lambda1 = 0,
+        lambda2 = 0,
+        resid.clean.method = "proportion",
+        resid.threshold = 0.5,
+        resid.proportion = 0.5,
+        psc.proportion = 0.5
+    )
+
+    res <- .Call(C_pen_mstep, Xtr, y, dX[1L], dX[2L], init.coef, init.scale, alpha, lambda, cctrl)
+
+    ret <- list(
+        intercept = res[[1L]][1L],
+        beta = res[[1L]][-1L],
+        resid = res[[2L]],
+        rel.change = sqrt(res[[3L]]),
+        iterations = res[[4L]],
+        objF = NA_real_
+    )
+
+    ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
+        lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
+
+    if (ret$rel.change > control$pense.tol) {
+        warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
+    }
+
+    return(ret)
+}
+
+
+##
+#' @importFrom robustbase Mwgt MrhoInf Mchi
+pensemstep.rimpl <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
     dX <- dim(X)
     p <- dX[2L]
     n <- dX[1L]
@@ -55,11 +110,23 @@ pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) 
         }
     }
 
-    if (rel.change > tol) {
-        warning(sprintf("PENSE M-step did not converge for lambda = %.3f", lambda))
+    ret <- list(
+        intercept = current.coefs[1L],
+        beta = current.coefs[-1L],
+        resid = resid,
+        rel.change = sqrt(rel.change),
+        iterations = it,
+        objF = NA_real_
+    )
+
+    ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
+        lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
+
+    if (ret$rel.change > control$pense.tol) {
+        warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
     }
 
-    return(current.coefs)
+    return(ret)
 }
 
 
@@ -127,7 +194,28 @@ pensemstepL1 <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, contro
             break
         }
     }
-    return(beta.n)
+
+
+    ret <- list(
+        intercept = beta.n[1L],
+        beta = beta.n[-1L],
+        resid = NULL,
+        rel.change = tol,
+        iterations = m,
+        objF = NA_real_
+    )
+
+
+    ret$resid <- drop(y - ret$intercept - Xs %*% ret$beta)
+
+    ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
+        lambda * sum(abs(ret$beta))
+
+    if (ret$rel.change > control$pense.tol) {
+        warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
+    }
+
+    return(ret)
 }
 
 

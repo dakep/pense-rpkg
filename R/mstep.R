@@ -122,13 +122,13 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         lambda.max <- lambda.opt.mm
 
         checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
-            check.coefs <- mstepfun(Xs, yc, cc = c0,
-                                    init.scale = init.scale,
-                                    init.coef = init.coef,
-                                    alpha = alpha,
-                                    lambda = lambda,
-                                    control)
-            return(all(check.coefs[-1L] == 0))
+            msres <- mstepfun(Xs, yc, cc = c0,
+                              init.scale = init.scale,
+                              init.coef = init.coef,
+                              alpha = alpha,
+                              lambda = lambda,
+                              control)
+            return(all(msres$beta == 0))
         }
 
         repeat {
@@ -156,7 +156,7 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         ## where lambda.min is the adjusted minimum of the grid for the S-estimator
         ##
         lambda.tmp.grid <- lambda.grid(Xs, yc, penseobj$alpha, 2L, control, standardize = FALSE,
-                                     lambda.min.ratio = eval(penseobj$call$lambda.min.ratio))
+                                       lambda.min.ratio = eval(penseobj$call$lambda.min.ratio))
 
         ## Make the value even smaller than with the usual adjustment of 3 / c0^2
         ## to make sure we cover enough ground
@@ -196,11 +196,11 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
                 y.test <- yc[job$segment]
             }
 
-            coefsm <- mstepfun(X.train, y.train, c0, init.scale, init.coef,
-                               alpha = alpha, lambda = job$lambda,
-                               control)
+            msres <- mstepfun(X.train, y.train, c0, init.scale, init.coef,
+                              alpha = alpha, lambda = job$lambda,
+                              control)
 
-            return(drop(y.test - coefsm[1L] - X.test %*% coefsm[-1L]))
+            return(drop(y.test - msres$intercept - X.test %*% msres$beta))
         }
 
         tryCatch({
@@ -231,28 +231,25 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
     ##
     ## Compute M-estimator for lambda.opt.mm.cv
     ##
-    coefs.mm <- mstepfun(Xs, yc, c0, scale.init.corr, pense.coef,
-                           alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
-                           control)
-
-    coefs.mm <- drop(coefs.mm)
-
-    residuals <- yc - coefs.mm[1L] - Xs %*% coefs.mm[-1L]
+    msres <- mstepfun(Xs, yc, c0, scale.init.corr, pense.coef,
+                      alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
+                      control)
 
     ## Un-standardize the coefficients
     if (penseobj$standardize == TRUE) {
-        coefs.mm[-1L] <- coefs.mm[-1L] / scale.x
-        coefs.mm[1L] <- coefs.mm[1L] + muy - drop(coefs.mm[-1L] %*% mux)
+        msres$beta <- msres$beta / scale.x
+        msres$intercept <- msres$intercept + muy - drop(msres$beta %*% mux)
 
         lambda.opt.mm.cv <- lambda.opt.mm.cv * max(scale.x)
     }
 
 
     return(structure(list(
-        residuals = residuals,
-        coefficients = nameCoefVec(coefs.mm, X),
+        residuals = msres$resid,
+        coefficients = nameCoefVec(c(msres$intercept, msres$beta), X),
         sest.coefficients = penseobj$coefficients,
-        objective = penseobj$objF,
+        objective.s = penseobj$objF,
+        objective = msres$objF,
         delta.adj = delta.adj,
         lambda.opt = lambda.opt.mm.cv,
         lambda.grid = lambda.grid.m,

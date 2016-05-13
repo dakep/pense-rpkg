@@ -15,6 +15,7 @@
 #include "PSCxx.hpp"
 #include "InitialEstimator.hpp"
 #include "PENSEreg.hpp"
+#include "MStep.hpp"
 #include "olsreg.h"
 
 using namespace Rcpp;
@@ -81,6 +82,43 @@ RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coe
     SET_VECTOR_ELT(result, 4, iterations);
 
     UNPROTECT(4);
+
+    VOID_END_RCPP
+
+    UNPROTECT(2);
+
+    return result;
+}
+
+RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coefs, SEXP scale,
+                            SEXP Ralpha, SEXP Rlambda, SEXP Rcontrol)
+{
+    const Control ctrl = parseControlList(Rcontrol);
+    const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
+
+    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), ctrl);
+    SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
+    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    SEXP relChange;
+    SEXP iterations;
+    SEXP result = R_NilValue;
+    double *RESTRICT newCoefsPtr = REAL(newCoefs);
+
+    BEGIN_RCPP
+
+    memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
+    ms.compute(newCoefsPtr, *REAL(scale), REAL(residuals));
+
+    result = PROTECT(Rf_allocVector(VECSXP, 4));
+    relChange = PROTECT(Rf_ScalarReal(ms.getRelChange()));
+    iterations = PROTECT(Rf_ScalarInteger(ms.getIterations()));
+
+    SET_VECTOR_ELT(result, 0, newCoefs);
+    SET_VECTOR_ELT(result, 1, residuals);
+    SET_VECTOR_ELT(result, 2, relChange);
+    SET_VECTOR_ELT(result, 3, iterations);
+
+    UNPROTECT(3);
 
     VOID_END_RCPP
 

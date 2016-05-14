@@ -376,6 +376,11 @@ void ElasticNetLARS::setAlphaLambda(const double alpha, const double lambda)
     this->setLambdas(lambda * alpha, 0.5 * lambda * (1 - alpha));
 }
 
+void ElasticNetLARS::setThreshold(const double eps)
+{
+    /* Don't allow adjusting the threshold */
+}
+
 
 bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 								  double *RESTRICT resids, const bool warm)

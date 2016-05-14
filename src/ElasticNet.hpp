@@ -52,7 +52,7 @@ public:
 	 */
 	virtual void setAlphaLambda(const double alpha, const double lambda) = 0;
 
-	void setThreshold(const double eps)
+	virtual void setThreshold(const double eps)
 	{
 		this->eps = eps;
 	}
@@ -130,6 +130,8 @@ public:
 
     ElasticNetLARS(const double eps, const bool center, const UseGram useGram = AUTO);
     ~ElasticNetLARS();
+
+	void setThreshold(const double eps);
 
 	void setLambdas(const double lambda1, const double lambda2);
 

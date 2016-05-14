@@ -228,8 +228,8 @@ enpy.control <- function(en.maxit = 50000,
 #'
 #' Takes care of the correct storage mode for the arguments passed to the C/C++ code
 #'
-#' @param lambda1 numeric >= 0
-#' @param lambda2 numeric >= 0
+#' @param lambda numeric >= 0
+#' @param alpha numeric 0 <= alpha <= 1
 #' @param numIt integer > 0
 #' @param eps numeric > 0
 #' @param resid.clean.method character
@@ -242,8 +242,8 @@ enpy.control <- function(en.maxit = 50000,
 #' @param mscale.cc numeric > 0
 #'
 initest.control <- function(
-    lambda1,
-    lambda2,
+    lambda,
+    alpha,
     numIt,
     eps = 1e-6,
     resid.clean.method = c("proportion", "threshold"),
@@ -259,9 +259,11 @@ initest.control <- function(
     ret <- c(ret, enpy.control)
 
 
-    simpleCheck <- function(x, checkLTE = TRUE) {
-        if (length(x) != 1L || !is.numeric(x) || is.na(x) || x < 0 || (checkLTE && (x == 0))) {
-            stop(sprintf("`%s` must be single positive number", deparse(substitute(x))))
+    simpleCheck <- function(x, min = 0, max = Inf, eqMin = FALSE, eqMax = FALSE) {
+        if (length(x) != 1L || !is.numeric(x) || is.na(x) || x < min || x > max ||
+            (!eqMin && (x == min)) || (!eqMax && (x == max))) {
+            stop(sprintf("`%s` must be single number between %f and %f",
+                         deparse(substitute(x)), min, max))
         }
     }
 
@@ -283,8 +285,8 @@ initest.control <- function(
         ret$resid.proportion <- -1
     }
 
-    simpleCheck(lambda1, FALSE)
-    simpleCheck(lambda2, FALSE)
+    simpleCheck(lambda, eqMin = TRUE)
+    simpleCheck(alpha, 0, 1, TRUE, TRUE)
     simpleCheck(numIt)
     simpleCheck(eps)
     simpleCheck(psc.proportion)
@@ -294,8 +296,8 @@ initest.control <- function(
     simpleCheck(mscale.cc)
     simpleCheck(ret$mscale.maxit)
     simpleCheck(ret$mscale.tol)
-    simpleCheck(ret$mscale.rho.fun, FALSE)
-    simpleCheck(ret$en.algorithm, FALSE)
+    simpleCheck(ret$mscale.rho.fun, eqMin = TRUE)
+    simpleCheck(ret$en.algorithm, eqMin = TRUE)
 
     if (length(ret$en.centering) != 1L || !is.logical(ret$en.centering) || is.na(ret$en.centering)) {
         stop("`en.centering` must be single logical value")

@@ -19,8 +19,8 @@ static BLAS_INT BLAS_M1L = -1;
 static const double BLAS_0F = 0.0;
 static const double BLAS_1F = 1.0;
 
-static const double LAPACK_EV_ABSTOL = 1e-18;
-static const double LAPACK_EV_RANGE_LOWER = 1e-12;
+static const double LAPACK_EV_ABSTOL = NUMERIC_EPS;
+static const double LAPACK_EV_RANGE_LOWER = LAPACK_EV_MIN;
 static const double LAPACK_EV_RANGE_UPPER = DBL_MAX;
 
 static BLAS_CHAR BLAS_SIDE_LEFT = "L";

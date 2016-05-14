@@ -138,8 +138,7 @@ protected:
 	virtual double evaluateEstimate() const;
 
 private:
-    const double lambda1LS;
-    const double lambda2LS;
+    const double lambdaLS;
 
 	ElasticNet &en;
 
@@ -168,8 +167,7 @@ protected:
 	virtual double evaluateEstimate() const;
 
 private:
-    const double lambda1LS;
-    const double lambda2LS;
+    const double lambdaLS;
 
 	ElasticNet &en;
 

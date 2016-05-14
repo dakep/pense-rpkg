@@ -24,16 +24,8 @@ typedef enum ENAlgorithmTag {
 } ENAlgorithm;
 
 typedef struct ControlTag {
-    /*
-     * NOTE: Adjust lambdas for cc.scale BUT NOT FOR LS!
-     * Also the EN solver used solves
-     *  (1/N) * RSS + lambda1 || beta ||_1 + lambda2 || beta ||_2^2
-     * so make sure the lambda values are ADJUSTED for this (i.e. divided by N).
-     *
-     * e.g.: lambda1_C = lambda1_R * cc.scale^2 / N
-     */
-    const double lambda1;
-    const double lambda2;
+    const double lambda;
+    const double alpha;
     const int numIt;
     const double eps;
     const double residThreshold;

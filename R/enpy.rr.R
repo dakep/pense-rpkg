@@ -5,7 +5,7 @@
 #'
 #' @param X The data matrix X -- a leading column of 1's will be added!
 #' @param y The response vector.
-#' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
+#' @param alpha,lambda The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
 #' @param deltaesc,cc.scale Parameters for the M-equation of the scale. The default
 #'          rho function is Tukey's bisquare. This can be changed by the parameter \code{control}.
@@ -25,7 +25,7 @@
 #'
 #' @useDynLib penseinit C_enpy_rr
 #' @importFrom Rcpp evalCpp
-enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
+enpy.rr <- function(X, y, alpha, lambda, deltaesc, cc.scale,
                     prosac, clean.method = c("threshold", "proportion"),
                     C.res, prop, py.nit, en.tol, control) {
 
@@ -34,8 +34,8 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
     dX[2L] <- dX[2L] + 1L
 
-    ctrl <- initest.control(lambda1 = lambda1,
-                            lambda2 = lambda2,
+    ctrl <- initest.control(lambda = lambda,
+                            alpha = alpha,
                             numIt = py.nit,
                             eps = en.tol,
 
@@ -62,14 +62,14 @@ enpy.rr <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
         usableProp <- ctrl$resid.proportion
     }
 
-    if (ctrl$lambda2 == 0) {
+    if (ctrl$alpha == 1) {
         if (dX[2L] >= dX[1L]) {
             stop("`enpy.rr` can not be used for data with more variables than observations if ",
-                 "`lambda2` is 0.")
+                 "`alpha` is 1.")
         } else if (dX[2L] >= ceiling(usableProp * dX[1L])) {
             stop("With the specified proportion of observations to remove, the number of ",
                  "observations will be smaller than the number of variables.\nIn this case ",
-                 "`enpy.rr` can not be used with `lambda2` = 0")
+                 "`enpy.rr` can not be used with `alpha` is 1")
         }
     }
 

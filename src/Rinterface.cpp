@@ -389,8 +389,8 @@ static inline Control parseControlList(SEXP Rcontrol)
 {
     List control = List(Rcontrol);
     Control tmp = {
-        as<double>(control["lambda1"]),
-        as<double>(control["lambda2"]),
+        as<double>(control["lambda"]),
+        as<double>(control["alpha"]),
         as<int>(control["numIt"]),
         as<double>(control["eps"]),
         as<double>(control["resid.threshold"]),

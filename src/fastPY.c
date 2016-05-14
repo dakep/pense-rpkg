@@ -109,8 +109,8 @@ SEXP C_initpy(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP RnumIt,
         .mscaleRhoFun = *INTEGER(RmscaleRhoFun),
 
         /* We don't need the elastic net parameters */
-        .lambda1 = 0,
-        .lambda2 = 0,
+        .lambda = 0,
+        .alpha = 0,
         .enMaxIt = 0,
         .enEPS = 0,
         .enCentering = 0,

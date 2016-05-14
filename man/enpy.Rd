@@ -4,7 +4,7 @@
 \alias{enpy}
 \title{PY (Peña-Yohai) initial estimates for EN}
 \usage{
-enpy(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("rr", "Mn",
+enpy(X, y, alpha, lambda, deltaesc, cc.scale, psc.method = c("rr", "Mn",
   "Qp"), prosac, clean.method = c("threshold", "proportion"), C.res = NULL,
   prop = NULL, py.nit, en.tol, control = enpy.control())
 }
@@ -13,7 +13,7 @@ enpy(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("rr", "Mn",
 
 \item{y}{The response vector.}
 
-\item{lambda1,lambda2}{The EN penalty parameters (NOT adjusted for the number of observations
+\item{alpha,lambda}{The EN penalty parameters (NOT adjusted for the number of observations
 in \code{X}).}
 
 \item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. If \code{cc.scale}
@@ -52,7 +52,7 @@ Three different methods to calculate the sensitivity components are implemented:
 \describe{
      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
                         and the hat matrix from the ridge regression. This method only works
-                        if \code{lambda2} > 0 or \code{ncol(X)} < \code{nrow(X)}.}
+                        if \code{alpha} < 1 or \code{ncol(X)} < \code{nrow(X)}.}
      \item{\code{"Mn"}}{Calculate the PSCs from the difference between the
                         residuals and leave-one-out residuals from elastic net.}
 }

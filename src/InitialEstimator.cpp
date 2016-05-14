@@ -21,6 +21,9 @@
 
 #define MAX_NUM_PSCS(numVar) (3 * numVar + 2)
 
+#define LAMBDA_1(lambda, alpha) lambda * alpha
+#define LAMBDA_2(lambda, alpha) 0.5 * lambda * (1 - alpha)
+
 static BLAS_INT BLAS_1L = 1;
 
 static const double BLAS_0F = 0.0;
@@ -392,9 +395,7 @@ double OLS::evaluateEstimate() const
 ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscOls, MAX_NUM_PSCS(originalData.numVar())),
 
-           /* lambda1 for EN should not depend on N, but the given one does, so divide! */
-           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
-           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
+           lambdaLS(ctrl.lambda * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
 
            /* Select correct ElasticNet implementation */
            en(*getElasticNetImpl(ctrl)),
@@ -406,19 +407,18 @@ ENPY::ENPY(const Data& originalData, const Control& ctrl) :
     delete[] this->residuals;
     this->residuals = new double[this->originalData.numObs() + this->originalData.numVar()];
 
-    if (this->lambda1LS == 0) {
+    if (this->ctrl.alpha == 0) {
         this->XtX = new double[this->originalData.numVar() * this->originalData.numVar()];
     }
 
-    /* lambda1LS must not be adjusted for the number of observations! */
-    this->en.setLambdas(this->lambda1LS, 0);
+    this->en.setAlphaLambda(1, LAMBDA_1(this->ctrl.alpha, this->lambdaLS));
 }
 
 ENPY::~ENPY()
 {
     delete &this->en;
     this->pscFilteredData.free();
-    if (this->lambda1LS == 0) {
+    if (this->ctrl.alpha == 0) {
         delete[] this->XtX;
     }
 }
@@ -430,10 +430,11 @@ void ENPY::estimateCoefficients()
     bool converged;
     int lapackInfo;
     int j;
-    const double minusSqrtLambda2LS = -sqrt(this->lambda2LS * this->residualFilteredNobs);
+    const double minusSqrtLambda2LS = -sqrt(LAMBDA_2(this->lambdaLS, this->ctrl.alpha) *
+                                            this->residualFilteredNobs);
 
-    if (this->lambda1LS == 0) {
-        /* lambda1 is zero, i.e. we can do a simple OLS fit to the augmented X and Y */
+    if (this->ctrl.alpha == 0) {
+        /* alpha is zero, i.e. we can do a simple OLS fit to the augmented X and Y */
 
         /* XtX = t(X) %*% X */
         BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
@@ -465,14 +466,14 @@ void ENPY::estimateCoefficients()
 
         if (!converged) {
             Rcpp::warning("LASSO did not converge. Either increase the number of "
-                          "iterations or lambda1.");
+                          "iterations or lambda.");
         }
     }
 
     /* Now update the residuals */
     computeResiduals(this->originalData, this->coefEst, this->residuals);
 
-    if (this->lambda2LS > 0) {
+    if (this->ctrl.alpha < 1) {
         /* The last elements of the residuals are just - sqrt(lambda2) * beta[j] */
         for (j = 1; j < this->originalData.numVar(); ++j) {
             this->residuals[this->originalData.numObs() + j - 1] = minusSqrtLambda2LS *
@@ -488,11 +489,11 @@ void ENPY::resetData()
     this->residualFilteredData.free();
     this->residualFilteredData.setNumVar(this->originalData.numVar());
 
-    if (this->lambda2LS > 0) {
+    if (this->ctrl.alpha < 1) {
         this->residualFilteredData.setNumObs(this->originalData.numObs() + this->originalData.numVar() - 1);
         this->residualFilteredData.resize();
         extendData(this->residualFilteredData, this->originalData,
-                   this->lambda2LS * this->originalData.numObs(), true);
+                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha) * this->originalData.numObs(), true);
     } else {
         this->residualFilteredData.free();
         this->residualFilteredData.copy(this->originalData);
@@ -518,9 +519,9 @@ void ENPY::filterDataResiduals(double threshold)
 {
     InitialEstimator::filterDataResiduals(threshold);
 
-    if (this->lambda2LS > 0) {
+    if (this->ctrl.alpha < 1) {
         extendData(this->residualFilteredData, this->residualFilteredData,
-                   this->lambda2LS * this->residualFilteredNobs,
+                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha) * this->residualFilteredNobs,
                    false);
 
         this->residualFilteredData.setNumObs(this->residualFilteredNobs +
@@ -544,9 +545,9 @@ void ENPY::filterDataPSC(const double *RESTRICT values, const double threshold,
     doFiltering(this->residualFilteredData, this->pscFilteredData, values, threshold, compare,
                 this->residualFilteredNobs);
 
-    if (this->lambda2LS > 0) {
+    if (this->ctrl.alpha < 1) {
         extendData(this->pscFilteredData, this->pscFilteredData,
-                   this->lambda2LS * this->pscFilteredData.numObs(),
+                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha) * this->pscFilteredData.numObs(),
                    false);
 
         this->pscFilteredData.setNumObs(this->pscFilteredData.numObs() +
@@ -560,14 +561,17 @@ double ENPY::evaluateEstimate() const
 {
     int j;
     double penalty = 0;
-    double scale = this->MscaleOfResiduals();
+    double tmp = 0.5 * (1 - this->ctrl.alpha);
 
     for (j = 1; j < this->originalData.numVar(); ++j) {
-        penalty += this->ctrl.lambda2 * this->coefEst[j] * this->coefEst[j] +
-                   this->ctrl.lambda1 * fabs(this->coefEst[j]);
+        penalty += this->ctrl.lambda * (
+                        tmp * this->coefEst[j] * this->coefEst[j] +
+                        this->ctrl.alpha * fabs(this->coefEst[j])
+                   );
     }
 
-    return scale * scale + penalty; // We don't need *n
+    tmp = this->MscaleOfResiduals();
+    return tmp * tmp + penalty;
 }
 
 
@@ -581,8 +585,7 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscEn, MAX_NUM_PSCS(originalData.numObs())),
 
            /* Adjust lambda1 and lambda2 for LS objective */
-           lambda1LS(ctrl.lambda1 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
-           lambda2LS(ctrl.lambda2 * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
+           lambdaLS(ctrl.lambda * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
 
            /* Select correct ElasticNet implementation */
            en(*getElasticNetImpl(ctrl)),
@@ -590,8 +593,7 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
            pscEn(en),
            dataToUse(residualFilteredData)
 {
-    /* lambda(1,2)LS must not be adjusted for the number of observations! */
-    this->en.setLambdas(this->lambda1LS, this->lambda2LS);
+    this->en.setAlphaLambda(this->ctrl.alpha, this->lambdaLS);
 }
 
 ENPY_Exact::~ENPY_Exact()
@@ -669,14 +671,17 @@ double ENPY_Exact::evaluateEstimate() const
 {
     int j;
     double penalty = 0;
-    double scale = this->MscaleOfResiduals();
+    double tmp = 0.5 * (1 - this->ctrl.alpha);
 
     for (j = 1; j < this->originalData.numVar(); ++j) {
-        penalty += this->ctrl.lambda2 * this->coefEst[j] * this->coefEst[j] +
-                   this->ctrl.lambda1 * fabs(this->coefEst[j]);
+        penalty += this->ctrl.lambda * (
+                        tmp * this->coefEst[j] * this->coefEst[j] +
+                        this->ctrl.alpha * fabs(this->coefEst[j])
+                   );
     }
 
-    return scale * scale + penalty; // Don't need * n
+    tmp = this->MscaleOfResiduals();
+    return tmp * tmp + penalty;
 }
 
 /***************************************************************************************************

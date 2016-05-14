@@ -47,6 +47,8 @@
 #endif
 
 
+#define NUMERIC_EPS 1e-16
+#define LAPACK_EV_MIN 1e-12
 
 #endif
 

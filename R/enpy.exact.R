@@ -4,7 +4,7 @@
 #'
 #' @param X The data matrix X -- a leading column of 1's will be added!
 #' @param y The response vector.
-#' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
+#' @param lambda,alpha The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
 #' @param deltaesc,cc.scale Parameters for the M-equation of the scale. The default
 #'          rho function is Tukey's bisquare. This can be changed by the parameter \code{control}.
@@ -26,7 +26,7 @@
 #'
 #' @useDynLib penseinit C_enpy_exact C_augtrans
 #' @importFrom Rcpp evalCpp
-enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
+enpy.exact <- function(X, y, alpha, lambda, deltaesc, cc.scale,
                        psc.method = c("Mn", "Qp"), prosac,
                        clean.method = c("threshold", "proportion"),
                        C.res, prop, py.nit, en.tol, control) {
@@ -35,8 +35,8 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
     dX[2L] <- dX[2L] + 1L
 
-    ctrl <- initest.control(lambda1 = lambda1,
-                            lambda2 = lambda2,
+    ctrl <- initest.control(lambda = lambda,
+                            alpha = alpha,
                             numIt = py.nit,
                             eps = en.tol,
 
@@ -47,9 +47,6 @@ enpy.exact <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
                             mscale.delta = deltaesc,
                             mscale.cc = cc.scale,
                             enpy.control = control)
-
-    ctrl$lambda1 <- ctrl$lambda1
-    ctrl$lambda2 <- ctrl$lambda2
 
     ##
     ## The C++ code needs to now how many observations to *keep*

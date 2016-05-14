@@ -4,7 +4,7 @@
 \alias{enpy.rr}
 \title{PY (Peña-Yohai) initial estimates for EN}
 \usage{
-enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac,
+enpy.rr(X, y, alpha, lambda, deltaesc, cc.scale, prosac,
   clean.method = c("threshold", "proportion"), C.res, prop, py.nit, en.tol,
   control)
 }
@@ -13,7 +13,7 @@ enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac,
 
 \item{y}{The response vector.}
 
-\item{lambda1,lambda2}{The EN penalty parameters (NOT adjusted for the number of observations
+\item{alpha,lambda}{The EN penalty parameters (NOT adjusted for the number of observations
 in \code{X}).}
 
 \item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. The default

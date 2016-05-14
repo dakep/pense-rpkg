@@ -4,7 +4,7 @@
 \alias{enpy.exact}
 \title{PY (Peña-Yohai) initial estimates for EN}
 \usage{
-enpy.exact(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("Mn",
+enpy.exact(X, y, alpha, lambda, deltaesc, cc.scale, psc.method = c("Mn",
   "Qp"), prosac, clean.method = c("threshold", "proportion"), C.res, prop,
   py.nit, en.tol, control)
 }
@@ -13,7 +13,7 @@ enpy.exact(X, y, lambda1, lambda2, deltaesc, cc.scale, psc.method = c("Mn",
 
 \item{y}{The response vector.}
 
-\item{lambda1,lambda2}{The EN penalty parameters (NOT adjusted for the number of observations
+\item{lambda,alpha}{The EN penalty parameters (NOT adjusted for the number of observations
 in \code{X}).}
 
 \item{deltaesc,cc.scale}{Parameters for the M-equation of the scale. The default

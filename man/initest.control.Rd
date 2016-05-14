@@ -4,15 +4,15 @@
 \alias{initest.control}
 \title{Creates the internal control list for PY initial estimators}
 \usage{
-initest.control(lambda1, lambda2, numIt, eps = 1e-06,
+initest.control(lambda, alpha, numIt, eps = 1e-06,
   resid.clean.method = c("proportion", "threshold"), resid.threshold,
   resid.proportion, psc.proportion, mscale.delta = 0.5, mscale.cc = 1.54764,
   enpy.control)
 }
 \arguments{
-\item{lambda1}{numeric >= 0}
+\item{lambda}{numeric >= 0}
 
-\item{lambda2}{numeric >= 0}
+\item{alpha}{numeric 0 <= alpha <= 1}
 
 \item{numIt}{integer > 0}
 

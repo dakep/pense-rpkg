@@ -7,14 +7,14 @@
 #' \describe{
 #'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
 #'                         and the hat matrix from the ridge regression. This method only works
-#'                         if \code{lambda2} > 0 or \code{ncol(X)} < \code{nrow(X)}.}
+#'                         if \code{alpha} < 1 or \code{ncol(X)} < \code{nrow(X)}.}
 #'      \item{\code{"Mn"}}{Calculate the PSCs from the difference between the
 #'                         residuals and leave-one-out residuals from elastic net.}
 #' }
 #'
 #' @param X The data matrix X.
 #' @param y The response vector.
-#' @param lambda1,lambda2 The EN penalty parameters (NOT adjusted for the number of observations
+#' @param alpha,lambda The EN penalty parameters (NOT adjusted for the number of observations
 #'          in \code{X}).
 #' @param deltaesc,cc.scale Parameters for the M-equation of the scale. If \code{cc.scale}
 #'          is missing or invalid, it will be chosen such that the expected value of the
@@ -37,7 +37,7 @@
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
 #' @export
-enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
+enpy <- function(X, y, alpha, lambda, deltaesc, cc.scale,
                  psc.method=c("rr", "Mn", "Qp"), prosac,
                  clean.method = c("threshold", "proportion"), C.res = NULL, prop = NULL,
                  py.nit, en.tol, control = enpy.control()) {
@@ -67,9 +67,9 @@ enpy <- function(X, y, lambda1, lambda2, deltaesc, cc.scale,
     psc.method <- match.arg(psc.method)
 
     result <- switch(psc.method,
-                     rr = enpy.rr(X, y, lambda1, lambda2, deltaesc, cc.scale, prosac, clean.method,
+                     rr = enpy.rr(X, y, alpha, lambda, deltaesc, cc.scale, prosac, clean.method,
                                   C.res, prop, py.nit, en.tol, control),
-                     Mn = enpy.exact(X, y, lambda1, lambda2, deltaesc, cc.scale,
+                     Mn = enpy.exact(X, y, alpha, lambda, deltaesc, cc.scale,
                                      psc.method, prosac, clean.method, C.res, prop, py.nit,
                                      en.tol, control),
                      stop(sprintf("`psc.method` '%s' not supported", psc.method)))

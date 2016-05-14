@@ -52,10 +52,7 @@ pense.coldwarm <- function(X, y, alpha, lambda.grid, standardize, control) {
 
 
 initest.cold <- function(X, y, alpha, lambda, control) {
-    lambda1 <- alpha * lambda
-    lambda2 <- 0.5 * lambda * (1 - alpha)
-
-    initraw <- enpy(X, y, lambda1, lambda2,
+    initraw <- enpy(X, y, alpha, lambda,
                     deltaesc = control$mscale.delta,
                     cc.scale = control$mscale.cc,
                     psc.method = control$init.psc.method,

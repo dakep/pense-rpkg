@@ -17,7 +17,7 @@
 #include "olsreg.h"
 #include "mscale.h"
 
-static const double NUMERICAL_TOLERANCE = 1e-22;
+static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 
 static inline double wgtBisquare2(double x, double c);
 

@@ -50,13 +50,12 @@ RcppExport SEXP C_augtrans(SEXP RX, SEXP Rnrow, SEXP Rncol)
     return RXaug;
 }
 
-RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coefs,
-                            SEXP Ralpha, SEXP Rlambda, SEXP Rcontrol)
+RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coefs, SEXP Rcontrol)
 {
     const Control ctrl = parseControlList(Rcontrol);
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
-    PENSEReg pr(data, *REAL(Ralpha), *REAL(Rlambda), ctrl);
+    PENSEReg pr(data, ctrl.alpha, ctrl.lambda, ctrl);
     SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
     SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
     SEXP relChange;
@@ -91,12 +90,12 @@ RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coe
 }
 
 RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP Rnobs, SEXP Rnvar, SEXP coefs, SEXP scale,
-                            SEXP Ralpha, SEXP Rlambda, SEXP Rcontrol)
+                            SEXP Rcontrol)
 {
     const Control ctrl = parseControlList(Rcontrol);
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
 
-    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), ctrl);
+    MStep ms(data, ctrl.alpha, ctrl.lambda, ctrl);
     SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
     SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
     SEXP relChange;

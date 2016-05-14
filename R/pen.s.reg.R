@@ -12,6 +12,8 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
     lambda2 <- lambda * (1 - alpha) * dX[1L] / 2
 
     cctrl <- penseinit:::initest.control(
+        lambda = lambda,
+        alpha = alpha,
         numIt = maxit,
         eps = control$pense.tol^2,
         mscale.delta = control$mscale.delta,
@@ -27,15 +29,13 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         ),
 
         # Not needed, set for completeness
-        lambda1 = 0,
-        lambda2 = 0,
         resid.clean.method = "proportion",
         resid.threshold = 0.5,
         resid.proportion = 0.5,
         psc.proportion = 0.5
     )
 
-    res <- .Call(C_pen_s_reg, Xtr, y, dX[1L], dX[2L], init.coef, alpha, lambda, cctrl)
+    res <- .Call(C_pen_s_reg, Xtr, y, dX[1L], dX[2L], init.coef, cctrl)
 
     ret <- list(
         intercept = res[[1L]][1L],

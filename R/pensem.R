@@ -8,6 +8,8 @@ pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) 
     dX[2L] <- dX[2L] + 1L
 
     cctrl <- penseinit:::initest.control(
+        lambda = lambda,
+        alpha = alpha,
         numIt = control$pense.maxit,
         eps = control$pense.tol^2,
         mscale.delta = control$mscale.delta,
@@ -23,15 +25,13 @@ pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) 
         ),
 
         # Not needed, set for completeness
-        lambda1 = 0,
-        lambda2 = 0,
         resid.clean.method = "proportion",
         resid.threshold = 0.5,
         resid.proportion = 0.5,
         psc.proportion = 0.5
     )
 
-    res <- .Call(C_pen_mstep, Xtr, y, dX[1L], dX[2L], init.coef, init.scale, alpha, lambda, cctrl)
+    res <- .Call(C_pen_mstep, Xtr, y, dX[1L], dX[2L], init.coef, init.scale, cctrl)
 
     ret <- list(
         intercept = res[[1L]][1L],

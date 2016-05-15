@@ -460,6 +460,15 @@ void ENPY::estimateCoefficients()
         BLAS_DTRSV(BLAS_UPLO_UPPER, BLAS_TRANS_NO, BLAS_DIAG_NO, nvar, this->XtX, nvar,
                    this->coefEst, BLAS_1L);
     } else {
+        /*
+         * We actually need to adjust lambda for the number of observations as
+         * we operate on the *augmented* data, in order to get the same results
+         * as from the elastic net on the true data
+         */
+        this->en.setAlphaLambda(1, LAMBDA_1(this->ctrl.alpha, this->lambdaLS) *
+                                        this->residualFilteredNobs /
+                                            (residualFilteredNobs + this->originalData.numVar() - 1));
+
         this->en.setThreshold(this->ctrl.enEPS * this->currentNullDeviance);
         converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
 

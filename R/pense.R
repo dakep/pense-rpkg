@@ -97,27 +97,7 @@ pense.default <- function(X, y, alpha = 0.5,
     }
 
     if (alpha == 0) {
-        alpha <- 1e-3
-    }
-
-    if (!is.null(lambda)) {
-        if (!is.numeric(lambda) || !is.null(dim(lambda)) || anyNA(lambda) || any(lambda < 0)) {
-            stop("Supplied `lambda` must be a numeric vector of non-negative values ",
-                 "without NAs")
-        }
-        lambda <- sort(lambda)
-        nlambda <- length(lambda)
-    } else if (length(nlambda) != 1L || !is.numeric(nlambda) || anyNA(nlambda) ||
-               any(nlambda < 1)) {
-        stop("`nlambda` must be a single positive numeric value.")
-    }
-
-    nlambda <- as.integer(nlambda)
-
-    if (is.null(lambda) && !is.null(lambda.min.ratio) &&
-        (length(lambda.min.ratio) != 1L || !is.numeric(lambda.min.ratio) ||
-         anyNA(lambda.min.ratio) || any(lambda.min.ratio <= 0))) {
-        stop("`lambda.min.ratio` must be a single positive numeric value.")
+        alpha <- 1e-4
     }
 
     if (length(standardize) != 1L || !is.logical(standardize) || anyNA(standardize)) {
@@ -140,6 +120,31 @@ pense.default <- function(X, y, alpha = 0.5,
         stop("`warm.reset` must be a single numeric value greater than 0.")
     }
     warm.reset <- as.integer(warm.reset)
+
+    if (!is.null(lambda)) {
+        if (!is.numeric(lambda) || !is.null(dim(lambda)) || anyNA(lambda) || any(lambda < 0)) {
+            stop("Supplied `lambda` must be a numeric vector of non-negative values ",
+                 "without NAs")
+        }
+        lambda <- sort(lambda)
+        nlambda <- length(lambda)
+    } else if (length(nlambda) != 1L || !is.numeric(nlambda) || anyNA(nlambda) ||
+               any(nlambda < 1)) {
+        stop("`nlambda` must be a single positive numeric value.")
+    }
+
+    nlambda <- as.integer(nlambda)
+    warm.reset <- min(nlambda, warm.reset)
+
+
+    if (is.null(lambda) && !is.null(lambda.min.ratio) &&
+        (length(lambda.min.ratio) != 1L || !is.numeric(lambda.min.ratio) ||
+         anyNA(lambda.min.ratio) || any(lambda.min.ratio <= 0))) {
+        stop("`lambda.min.ratio` must be a single positive numeric value.")
+    }
+
+
+
 
     control <- .check.pense.control(control)
 

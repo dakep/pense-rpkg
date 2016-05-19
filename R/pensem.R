@@ -17,7 +17,7 @@ pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) 
         enpy.control = enpy.control(
             en.maxit = control$pense.en.maxit,
             en.tol = control$pense.en.tol,
-            en.centering = FALSE,
+            en.centering = TRUE,
             mscale.maxit = control$mscale.maxit,
             mscale.tol = control$mscale.tol,
             mscale.rho.fun = "bisquare",

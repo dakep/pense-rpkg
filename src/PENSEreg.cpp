@@ -35,20 +35,12 @@ PENSEReg::~PENSEReg()
 
 void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 {
-    const double *RESTRICT yIter;
-    const double *RESTRICT XtrIter;
-
     ElasticNet *en = getElasticNetImpl(this->ctrl);
-    Data wgtData;
     RhoFunction rhoFun = getRhoFunctionByName(this->ctrl.mscaleRhoFun);
 
     bool enConverged;
     double *RESTRICT oldCoef = new double[data.numVar()];
-    double *RESTRICT XtrWgtIter;
-    double *RESTRICT yWgtIter;
-    double *RESTRICT weightBeta = new double[data.numObs()];
-    double weightBetaSum;
-    double tauBeta;
+    double *RESTRICT weights = new double[data.numObs()];
     double tmp;
     double norm2Old;
     int i, j;
@@ -57,15 +49,22 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     en->setAlphaLambda(this->alpha, this->lambda / (2 * data.numObs()));
 
-    wgtData.setNumObs(data.numObs());
-    wgtData.setNumVar(data.numVar());
-    wgtData.resize();
-
     computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
                      currentCoef, residuals);
 
     this->scale = mscale(residuals, data.numObs(), this->ctrl.mscaleB, this->ctrl.mscaleEPS,
                          this->ctrl.mscaleMaxIt, rhoFun, this->ctrl.mscaleCC);
+
+    /*
+     * For the coordinate descent EN algorithm we have to perform
+     * some additional steps:
+     *  - adjust convergency threshold
+     */
+    if (this->ctrl.enAlgorithm == GRADIENT_DESCENT) {
+        tmp = mscale(this->data.getYConst(), this->data.numObs(), 0.5, 1e-8, 200, rhoBisquare,
+                     1.54764);
+        en->setThreshold(this->ctrl.enEPS * this->data.numObs() * tmp * tmp);
+    }
 
     do {
         ++this->iteration;
@@ -74,41 +73,15 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
          * Compute weights
          */
         tmp = 0;
-        weightBetaSum = 0;
         for (i = 0; i < this->data.numObs(); ++i) {
-            weightBeta[i] = wgtBisquare2(residuals[i] / this->scale, this->ctrl.mscaleCC);
-            weightBetaSum += weightBeta[i];
-            tmp += residuals[i] * residuals[i] * weightBeta[i];
+            weights[i] = wgtBisquare2(residuals[i] / this->scale, this->ctrl.mscaleCC);
+            tmp += residuals[i] * residuals[i] * weights[i];
         }
 
-        tauBeta = this->scale * this->scale / tmp;
+        tmp = this->scale * this->scale / tmp;
 
-        XtrWgtIter = wgtData.getXtr();
-        yWgtIter = wgtData.getY();
-        yIter = this->data.getYConst();
-        XtrIter = this->data.getXtrConst();
-
-        for (i = 0; i < this->data.numObs(); ++i, ++yIter, ++yWgtIter) {
-            tmp = sqrt(tauBeta * weightBeta[i]);
-            *yWgtIter = ((*yIter) - currentCoef[0]) * tmp;
-
-            /* Skip first row of 1's! */
-            ++XtrWgtIter;
-            ++XtrIter;
-
-            for (j = 1; j < data.numVar(); ++j, ++XtrWgtIter, ++XtrIter) {
-                *XtrWgtIter = (*XtrIter) * tmp;
-            }
-        }
-
-        /*
-         * For the coordinate descent EN algorithm we have to perform
-         * some additional steps:
-         *  - adjust convergency threshold
-         */
-        if (this->ctrl.enAlgorithm == GRADIENT_DESCENT) {
-            tmp = mscale(wgtData.getY(), this->data.numObs(), 0.5, 1e-8, 200, rhoBisquare, 1.54764);
-            en->setThreshold(this->ctrl.enEPS * this->data.numObs() * tmp * tmp);
+        for (i = 0; i < this->data.numObs(); ++i) {
+            weights[i] *= tmp;
         }
 
         /*
@@ -120,35 +93,16 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
          * Perform EN using current coefficients as warm start (only applicable for the coordinate
          * descent algorithm)
          */
-        enConverged = en->computeCoefs(wgtData, currentCoef, residuals, true);
+        enConverged = en->computeCoefsWeighted(this->data, currentCoef, residuals, weights, true);
 
         if (!enConverged) {
             Rcpp::warning("Weighted elastic net did not converge");
         }
 
         /*
-         * Compute residuals for ORIGINAL data (not weighted)
-         */
-        computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
-                         currentCoef, residuals);
-
-        /*
-         * Compute intercept and adjust residuals
-         */
-        currentCoef[0] = 0;
-        for (i = 0; i < data.numObs(); ++i) {
-            currentCoef[0] += residuals[i] * weightBeta[i];
-        }
-        currentCoef[0] /= weightBetaSum;
-
-        for (i = 0; i < data.numObs(); ++i) {
-            residuals[i] -= currentCoef[0];
-        }
-
-        /*
          * Compute scale
          */
-        this->scale = mscale(residuals, data.numObs(), this->ctrl.mscaleB,
+        this->scale = mscale(residuals, this->data.numObs(), this->ctrl.mscaleB,
                              this->ctrl.mscaleEPS, this->ctrl.mscaleMaxIt, rhoFun,
                              this->ctrl.mscaleCC);
 
@@ -177,10 +131,9 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     } while((this->iteration < this->ctrl.numIt) && (this->relChange > this->ctrl.eps));
 
-    wgtData.free();
     delete en;
     delete[] oldCoef;
-    delete[] weightBeta;
+    delete[] weights;
 }
 
 
@@ -191,7 +144,7 @@ static inline double wgtBisquare2(double x, double c)
     }
 
     x /= c;
-    x = (1 - x * x);
-    return 6. * x * x / (c * c);
+    x = (1 - x) * (1 + x);
+    return x * x; // * 6 / (c * c)?
 }
 

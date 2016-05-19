@@ -173,6 +173,12 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
         warm <- 1L
     }
 
+    if (en.algorithm == "coordinate-descent") {
+        en.algorithm <- "augmented-lars"
+        warning("Weighted EN is not implemented for coordinate descent. ",
+                "Using augmented lars instead.")
+    }
+
     weights <- as.numeric(weights)
     alpha <- as.numeric(alpha)
     lambda <- as.numeric(lambda)

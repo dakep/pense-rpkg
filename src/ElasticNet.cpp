@@ -115,6 +115,7 @@ void ElasticNetGDESC::setAlphaLambda(const double alpha, const double lambda)
     this->lambda = 0.5 * lambda * (1 + alpha);
 }
 
+
 bool ElasticNetGDESC::computeCoefsWeighted(const Data& data, double *RESTRICT coefs,
                                            double *RESTRICT residuals,
                                            const double *RESTRICT weights,
@@ -129,11 +130,6 @@ bool ElasticNetGDESC::computeCoefsWeighted(const Data& data, double *RESTRICT co
 bool ElasticNetGDESC::computeCoefs(const Data& data, double *RESTRICT coefs,
                                    double *RESTRICT residuals, const bool warm)
 {
-    /*
-     * NOTE:
-     * We have to divide the lambdas by N in order to get the same results as
-     * from lars
-     */
     const double la = (this->lambda * this->alpha);
     const double updateDenom = this->lambda * (1 - this->alpha);
 

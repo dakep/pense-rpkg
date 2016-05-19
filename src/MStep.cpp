@@ -37,18 +37,11 @@ MStep::~MStep()
 
 void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RESTRICT residuals)
 {
-    const double *RESTRICT yIter;
-    const double *RESTRICT XtrIter;
-
     ElasticNet *en = getElasticNetImpl(this->ctrl);
-    Data wgtData;
 
     bool enConverged;
     double *RESTRICT oldCoef = new double[data.numVar()];
-    double *RESTRICT XtrWgtIter;
-    double *RESTRICT yWgtIter;
-    double *RESTRICT weightBeta = new double[data.numObs()];
-    double weightBetaSum;
+    double *RESTRICT weights = new double[data.numObs()];
     double tmp;
     double norm2Old;
     int i, j;
@@ -57,50 +50,29 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
 
     en->setAlphaLambda(this->alpha, this->lambda);
 
-    wgtData.setNumObs(data.numObs());
-    wgtData.setNumVar(data.numVar());
-    wgtData.resize();
-
     computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
                      currentCoef, residuals);
+
+
+    /*
+     * For the coordinate descent EN algorithm we have to perform
+     * some additional steps:
+     *  - adjust convergency threshold
+     */
+    if (this->ctrl.enAlgorithm == GRADIENT_DESCENT) {
+        tmp = mscale(this->data.getYConst(), this->data.numObs(), 0.5, 1e-8, 200, rhoBisquare,
+                     1.54764);
+        en->setThreshold(this->ctrl.enEPS * this->data.numObs() * tmp * tmp);
+    }
 
     do {
         ++this->iteration;
 
         /*
-         * Compute weights and weight observations
+         * Compute weights
          */
-
-        XtrWgtIter = wgtData.getXtr();
-        yWgtIter = wgtData.getY();
-        yIter = this->data.getYConst();
-        XtrIter = this->data.getXtrConst();
-
-        weightBetaSum = 0;
-        for (i = 0; i < this->data.numObs(); ++i, ++yIter, ++yWgtIter) {
-            weightBeta[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC);
-            tmp = sqrt(weightBeta[i]);
-            weightBetaSum += weightBeta[i];
-
-            *yWgtIter = ((*yIter) - currentCoef[0]) * tmp;
-
-            /* Skip first row of 1's! */
-            ++XtrWgtIter;
-            ++XtrIter;
-
-            for (j = 1; j < data.numVar(); ++j, ++XtrWgtIter, ++XtrIter) {
-                *XtrWgtIter = (*XtrIter) * tmp;
-            }
-        }
-
-        /*
-         * For the coordinate descent EN algorithm we have to perform
-         * some additional steps:
-         *  - adjust convergency threshold
-         */
-        if (this->ctrl.enAlgorithm == GRADIENT_DESCENT) {
-            tmp = mscale(wgtData.getY(), this->data.numObs(), 0.5, 1e-8, 200, rhoBisquare, 1.54764);
-            en->setThreshold(this->ctrl.enEPS * this->data.numObs() * tmp * tmp);
+        for (i = 0; i < this->data.numObs(); ++i) {
+            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC);
         }
 
         /*
@@ -112,29 +84,10 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
          * Perform EN using current coefficients as warm start (only applicable for the coordinate
          * descent algorithm)
          */
-        enConverged = en->computeCoefs(wgtData, currentCoef, residuals, true);
+        enConverged = en->computeCoefsWeighted(this->data, currentCoef, residuals, weights, true);
 
         if (!enConverged) {
             Rcpp::warning("Weighted elastic net did not converge");
-        }
-
-        /*
-         * Compute residuals for ORIGINAL data (not weighted)
-         */
-        computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
-                         currentCoef, residuals);
-
-        /*
-         * Compute intercept and adjust residuals
-         */
-        currentCoef[0] = 0;
-        for (i = 0; i < data.numObs(); ++i) {
-            currentCoef[0] += residuals[i] * weightBeta[i];
-        }
-        currentCoef[0] /= weightBetaSum;
-
-        for (i = 0; i < data.numObs(); ++i) {
-            residuals[i] -= currentCoef[0];
         }
 
         /*
@@ -162,10 +115,9 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
 
     } while((this->iteration < this->ctrl.numIt) && (this->relChange > this->ctrl.eps));
 
-    wgtData.free();
     delete en;
     delete[] oldCoef;
-    delete[] weightBeta;
+    delete[] weights;
 }
 
 
@@ -176,7 +128,7 @@ static inline double wgtBisquare2(double x, double c)
     }
 
     x /= c;
-    x = (1 - x * x);
-    return 6. * x * x / (c * c);
+    x = (1 - x) * (1 + x);
+    return x * x; // * 6 / (c * c)?
 }
 

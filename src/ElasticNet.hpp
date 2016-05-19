@@ -136,13 +136,13 @@ private:
 	double alpha;
 	double lambda;
 
-	void resizeBuffer(const Data& data);
-
 	double *RESTRICT Xtr;
 	double *RESTRICT Xmeans;
 	double *RESTRICT Xvars;
 	int XtrSize;
 	int XmeansSize;
+    
+	void resizeBuffer(const Data& data);
 };
 
 

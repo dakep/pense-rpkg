@@ -21,7 +21,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         enpy.control = enpy.control(
             en.maxit = control$pense.en.maxit,
             en.tol = control$pense.en.tol,
-            en.centering = FALSE,
+            en.centering = TRUE,
             mscale.maxit = control$mscale.maxit,
             mscale.tol = control$mscale.tol,
             mscale.rho.fun = "bisquare",
@@ -74,14 +74,16 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
                     b = control$mscale.delta, rho = control$mscale.rho.fun,
                     eps = control$mscale.tol, max.it = control$mscale.maxit)
 
-    lambda1 <- alpha * lambda * n
-    lambda2 <- lambda * (1 - alpha) * n / 2
-
     tol <- control$pense.tol^2
     it <- 0L
     rel.change <- Inf
 
     en.eps <- control$pense.en.tol
+
+    ## Adjust convergence threshold for elastic net if we use coordinate descent
+    if (control$en.algorithm == "coordinate-descent") {
+        en.eps <- control$pense.en.tol * dX[1L] * mscale(y)^2
+    }
 
     repeat {
         it <- it + 1L
@@ -89,16 +91,11 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
         resid.scaled <- resid / scale
         # Mwgt is safer then Mchi in the case 0/0!
         wbeta <- Mwgt(resid.scaled, cc = control$mscale.cc, psi = control$mscale.rho.fun)
-        weights <- scale^2 / sum(resid^2 * wbeta)
-
-        ## Adjust convergence threshold for elastic net if we use coordinate descent
-        if (control$en.algorithm == "coordinate-descent") {
-            en.eps <- control$pense.en.tol * dX[1L] * mscale(y * sqrt(weights))^2
-        }
+        weights <- wbeta * (scale^2 / sum(resid^2 * wbeta))
 
         ## Perform weighted elastic net
         weight.en <- .elnet.wfit(X, y, weights = weights, alpha = alpha, lambda = lambda / (2 * n),
-                                 centering = FALSE, maxit = control$pense.en.maxit,
+                                 centering = TRUE, maxit = control$pense.en.maxit,
                                  eps = en.eps, warmCoef = current.coefs,
                                  en.algorithm = control$en.algorithm)
 
@@ -128,7 +125,7 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
     }
 
     beta <- current.coefs[-1L]
-    objf <- n * scale^2 + lambda2 * sum(beta^2) + lambda1 * sum(abs(beta))
+    objf <- n * (scale^2 + lambda * (0.5 * (1 - alpha) * sum(beta^2) + alpha * sum(abs(beta))))
 
     return(list(
         intercept = current.coefs[1L],

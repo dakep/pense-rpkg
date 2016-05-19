@@ -475,6 +475,8 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
         }
 
         coefs[0] *= recipSumWeights;
+
+        residuals -= coefs[0];
     }
 
     return true;

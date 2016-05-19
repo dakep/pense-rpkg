@@ -69,35 +69,23 @@ pensemstep.rimpl <- function(X, y, cc, init.scale, init.coef, alpha, lambda, con
     it <- 0L
     rel.change <- Inf
 
-    mrhoinf <- 1 / MrhoInf(cc, control$mscale.rho.fun)
-
     repeat {
         it <- it + 1L
 
         resid.scaled <- resid / init.scale
         # Mwgt is safer then Mchi in the case 0/0!
-        wbeta <- Mwgt(resid.scaled, cc = cc, psi = control$mscale.rho.fun) * mrhoinf
+        weights <- Mwgt(resid.scaled, cc = cc, psi = control$mscale.rho.fun)
 
-        Wbeta.tilde <- sqrt(wbeta)
-
-        Xweight <- X * Wbeta.tilde
-        yweight <- (y - current.coefs[1L]) * Wbeta.tilde
-
-        beta.obj <- .elnet.fit(Xweight, yweight, alpha = alpha, lambda = lambda,
-                               centering = FALSE, maxit = control$pense.en.maxit,
-                               eps = control$pense.en.tol, warmCoef = current.coefs,
-                               en.algorithm = control$en.algorithm)
+        weighted.en <- .elnet.wfit(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                                   centering = TRUE, maxit = control$pense.en.maxit,
+                                   eps = control$pense.en.tol, warmCoef = current.coefs,
+                                   en.algorithm = control$en.algorithm)
 
         prev.coefs <- current.coefs
-        current.coefs <- beta.obj$coefficients
+        current.coefs <- weighted.en$coefficients
 
-        resid <- as.vector(y - X %*% current.coefs[-1L])
-        # New intercept
-        wintercept <- wbeta / sum(wbeta)
-        current.coefs[1L] <- sum(wintercept * resid)
+        resid <- weighted.en$residuals
 
-        # Update residuals and scale
-        resid <- resid - current.coefs[1L]
         rel.change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
 
         if (is.nan(rel.change)) { # if 0/0
@@ -160,7 +148,7 @@ pensemstepL1 <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, contro
     while (tol >= control$pense.tol){
         beta.o <- beta.n
         if(all(beta.o == 0)){
-            return(beta.o)
+            break
         }
         MMcpp1 <- MMLassoCpp1(x, y, beta.o, init.scale, cc)
         xort <- MMcpp1$xort # X* orthogonal in the paper
@@ -168,7 +156,7 @@ pensemstepL1 <- function(Xs, y, cc, init.scale, init.coef, alpha, lambda, contro
         yast <- MMcpp1$yast # y* = W %*% y, W = diag(sqrt(weight_i))
         alpha <- MMcpp1$alpha # .. eta_j in the paper
         if(all(xjota == 0)){
-            return(beta.o)
+            break
         }
 
         res.elnet <- .elnet.fit(xort, yast, alpha = 1, lambda = lambda,

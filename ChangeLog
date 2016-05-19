@@ -1,3 +1,8 @@
+2016-05-19: Version 0.3.6
+    *) Added functionality for weighted elastic net.
+    *) Utilize weighted elastic net in PENSE iterations as well as M-step iterations
+    *) Port pensemstep to C++
+
 2016-05-08: Version 0.3.4
     *) Switch from coordinate gradient descent to augmented LARS by default for computing
        the elastic net solution. The old algorithm is still available and can be chosen

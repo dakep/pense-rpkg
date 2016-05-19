@@ -233,9 +233,9 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar,
 }
 
 
-RcppExport SEXP C_elnet_ll(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnvar, SEXP Rlambda1,
-                           SEXP Rlambda2, SEXP RmaxIt, SEXP Reps, SEXP Rcentering, SEXP Rwarm,
-                           SEXP RenAlgorithm)
+RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs, SEXP Rnobs,
+                                 SEXP Rnvar, SEXP Ralpha, SEXP Rlambda, SEXP RmaxIt, SEXP Reps,
+                                 SEXP Rcentering, SEXP Rwarm, SEXP RenAlgorithm)
 {
     const Data data(REAL(RXtr), REAL(Ry), *INTEGER(Rnobs), *INTEGER(Rnvar));
     ElasticNet *en = getElasticNetImpl((ENAlgorithm) *INTEGER(RenAlgorithm),
@@ -254,8 +254,9 @@ RcppExport SEXP C_elnet_ll(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Rnobs, SEXP Rnv
         memcpy(retCoefPtr, REAL(Rcoefs), data.numVar() * sizeof(double));
     }
 
-    en->setLambdas(*REAL(Rlambda1), *REAL(Rlambda2));
-    *LOGICAL(converged) = en->computeCoefs(data, retCoefPtr, REAL(retResid), warm);
+    en->setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
+    *LOGICAL(converged) = en->computeCoefsWeighted(data, retCoefPtr, REAL(retResid), REAL(Rweights),
+                                                   warm);
 
     result = PROTECT(Rf_allocVector(VECSXP, 3));
 

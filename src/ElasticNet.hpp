@@ -60,7 +60,8 @@ public:
     /**
      * Solve the EN problem
      *
-     * (1 / 2N) * RSS + lambda * (((1 - alpha) / 2) * L2(beta)^2 + alpha * L1(beta))
+     * argmin_{beta0, beta} (1 / 2N) * L2(y - beta0 - X . beta)^2 +
+	 *						 lambda * (((1 - alpha) / 2) * L2(beta)^2 + alpha * L1(beta))
      *
      *
      * @param data Is assumed to have the leading column of 1's for the intercept
@@ -76,6 +77,29 @@ public:
      */
     virtual bool computeCoefs(const Data& data, double *RESTRICT coefs,
 							  double *RESTRICT residuals, const bool warm = FALSE) = 0;
+
+    /**
+     * Solve the weighted EN problem
+     *
+     * argmin_{beta0, beta} (1 / 2N) * L2(weights * (y - beta0 - X . beta))^2 +
+	 *						 lambda * (((1 - alpha) / 2) * L2(beta)^2 + alpha * L1(beta))
+     *
+     *
+     * @param data Is assumed to have the leading column of 1's for the intercept
+     * @param coefs Is assumed to be at least data.numVar() long! This can be taken as
+     *          the starting point for the coordinate-descend algorithm. (see argument warm)
+     * @param residuals A vector of residuals with as many observations as in data. The
+     *          residuals will be recalculated for the given (warm) coefficients
+     *
+     * NOTE: The leading column of X is used as weight for the row in
+     *		 in centering the data.
+     *
+     * @returns TRUE if the algorithm converged, FALSE otherwise
+     */
+    virtual bool computeCoefsWeighted(const Data& data, double *RESTRICT coefs,
+									  double *RESTRICT residuals,
+									  const double *RESTRICT weights,
+									  const bool warm = FALSE) = 0;
 
 protected:
     const bool center;
@@ -100,7 +124,12 @@ public:
 	 * @returns TRUE if the algorithm converged, FALSE otherwise
 	 */
     bool computeCoefs(const Data& data, double *RESTRICT coefs,
-							  double *RESTRICT residuals, const bool warm = FALSE);
+					  double *RESTRICT residuals, const bool warm = FALSE);
+
+	bool computeCoefsWeighted(const Data& data, double *RESTRICT coefs,
+							  double *RESTRICT residuals,
+							  const double *RESTRICT weights,
+							  const bool warm = FALSE);
 
 private:
 	const int maxIt;
@@ -149,6 +178,11 @@ public:
                       const bool warm = FALSE);
 
 
+	bool computeCoefsWeighted(const Data& data, double *RESTRICT coefs,
+							  double *RESTRICT residuals,
+							  const double *RESTRICT weights,
+							  const bool warm = FALSE);
+
 private:
     /**
      * Automatically switch to non-Gram when more than the following
@@ -176,6 +210,9 @@ private:
 
 	void augmentData(const Data& data);
 
+
+	void augmentedLASSO(arma::vec& coefs, arma::vec& residuals, const arma::uword nobs,
+						const bool intercept);
 };
 
 

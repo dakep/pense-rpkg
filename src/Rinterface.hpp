@@ -50,7 +50,7 @@ RcppExport SEXP C_augtrans(SEXP X, SEXP nrow, SEXP ncol);
 
 /**
  * Solve following minimzation problem:
- * (1 / (2*N)) * RSS + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
+ * (1 / (2*N)) * L2(y - beta0 - X . beta)^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
  *
  *
  * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
@@ -79,19 +79,21 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP
 						SEXP enAlgorithm);
 
 
+
 /**
  * Solve following minimzation problem:
- * (1 / (2*N)) * RSS + lambda2 * L2(beta)^2 + lambda1 * L1(beta)
+ * (1 / (2*N)) * L2(weights (y - beta0 - X . beta))^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
  *
  *
  * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
  * @param y           numeric The numeric y vector (size `nobs`)
+ * @param weights	  numeric The numeric weights vector (size `nobs`)
  * @param coefs		  numeric The inital coefficients, will be copied if `warm` is 1, otherwise
  *							  not referenced.
  * @param nobs        integer The number of observations
  * @param nvar        integer The number of variables (including the intercept)
- * @param lambda1     numeric The lambda1 parameter for the penalization
- * @param lambda2     numeric The lambda2 parameter for the penalization
+ * @param alpha       numeric The alpha parameter for the penalization
+ * @param lambda      numeric The lambda parameter for the penalization
  * @param maxIt       integer The maximum number of iterations allowed
  * @param eps         numeric The relative tolerance for convergence
  * @param centering   integer Should centering be done (1=yes, 0=no) for rows with a leading 1.
@@ -105,9 +107,10 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP
  *      item 1: Numeric vector with the cofficient estimates
  *      item 2: Numeric vector with the residuals
  */
-RcppExport SEXP C_elnet_ll(SEXP Xtr, SEXP y, SEXP coefs, SEXP nobs, SEXP nvar, SEXP lambda1,
-						   SEXP lambda2, SEXP maxIt, SEXP eps, SEXP centering, SEXP warm,
-                           SEXP enAlgorithm);
+RcppExport SEXP C_elnet_weighted(SEXP Xtr, SEXP y, SEXP weights, SEXP coefs, SEXP nobs, SEXP nvar,
+								 SEXP alpha, SEXP lambda, SEXP maxIt, SEXP eps, SEXP centering,
+								 SEXP warm, SEXP enAlgorithm);
+
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)

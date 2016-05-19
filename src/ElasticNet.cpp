@@ -7,7 +7,6 @@
 //
 #include "config.h"
 
-
 #include <cfloat>
 #include <Rmath.h>
 
@@ -15,6 +14,7 @@
 
 #include "Control.h"
 #include "ElasticNet.hpp"
+#include "olsreg.h"
 
 using namespace arma;
 
@@ -115,6 +115,16 @@ void ElasticNetGDESC::setAlphaLambda(const double alpha, const double lambda)
     this->lambda = 0.5 * lambda * (1 + alpha);
 }
 
+bool ElasticNetGDESC::computeCoefsWeighted(const Data& data, double *RESTRICT coefs,
+                                           double *RESTRICT residuals,
+                                           const double *RESTRICT weights,
+                                           const bool warm)
+{
+
+    throw Rcpp::exception("Weighted EN is not yet implemented with coordinate-descent");
+
+    return true;
+}
 
 bool ElasticNetGDESC::computeCoefs(const Data& data, double *RESTRICT coefs,
                                    double *RESTRICT residuals, const bool warm)
@@ -382,6 +392,95 @@ void ElasticNetLARS::setThreshold(const double eps)
 }
 
 
+bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coefs,
+                                          double *RESTRICT resids,
+                                          const double *RESTRICT weights,
+                                          const bool warm)
+{
+    uword i;
+    vec sqrtWeights(data.numObs());
+    double recipSumWeights = 0; /* This is also the squared L2 norm of the sqrtWeights */
+
+    /*
+     * First augment data
+     */
+    this->augmentData(data);
+
+    /*
+     * Second weight the observations
+     *
+     * If we assume the data is centered already -- we only need to weight the observations
+     * Otherwise, we also have make the design orthogonal to (y - beta0)
+     */
+    mat tmpMat;
+    mat& XtrWeighted = (this->center ? tmpMat : this->XtrAug);
+
+    if (this->center) {
+        XtrWeighted.set_size(data.numVar(), data.numObs());
+    }
+
+    recipSumWeights = 0;
+    for (i = 0; i < (uword) data.numObs(); ++i) {
+        sqrtWeights[i] = sqrt(weights[i]);
+        recipSumWeights += weights[i];
+
+        this->yAug[i] *= sqrtWeights[i];
+        XtrWeighted.unsafe_col(i) = sqrtWeights[i] * this->XtrAug.unsafe_col(i);
+    }
+
+    if (this->center) {
+        vec orth;
+
+        recipSumWeights = 1 / recipSumWeights;
+
+        for (i = 0; i < (uword) data.numObs(); ++i) {
+            orth = (-sqrtWeights[i] * recipSumWeights) * sqrtWeights;
+            orth[i] += 1;
+
+            this->XtrAug.unsafe_col(i) = XtrWeighted * orth;
+        }
+
+        XtrWeighted.reset();
+    }
+
+    /*
+     * Depending on the dimensions of the data matrix, we will use different strategies
+     * of how to compute the orthogonal transformation
+     *
+     * Although we copy a p x n matrix, this is in general faster and more
+     * numerically stable than computing the outer product of the normalized (sqrt) weights
+     */
+
+    /*
+     * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
+     * We don't have an intercept (due to the orthogonalization)
+     */
+    vec beta(coefs, data.numVar(), false, true);
+    vec residuals(resids, data.numObs(), false, true);
+
+    this->augmentedLASSO(beta, residuals, data.numObs(), false);
+
+
+    /*
+     * Recover intercept if requested
+     */
+    if (this->center) {
+        coefs[0] = 0;
+
+        computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(), coefs,
+                         resids);
+
+        for (i = 0; i < (uword) data.numObs(); ++i) {
+            coefs[0] += weights[i] * resids[i];
+        }
+
+        coefs[0] *= recipSumWeights;
+    }
+
+    return true;
+}
+
+
 bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 								  double *RESTRICT resids, const bool warm)
 {
@@ -391,13 +490,32 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     this->augmentData(data);
 
     /*
+     * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
+     */
+    vec beta(coefs, data.numVar(), false, true);
+    vec residuals(resids, data.numObs(), false, true);
+
+    this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
+
+	return true;
+}
+
+
+/**
+ * This algorithm is an extended version of the "fastLasso" algorithm written by
+ * Andreas Alfons for the R package robustHD-0.5.1
+ */
+void ElasticNetLARS::augmentedLASSO(vec& beta, vec& residuals, const uword nobs,
+                                    const bool intercept)
+{
+    /*
      * START of fastLasso algorithm from Andreas Alfons from
      * R package robustHD
      */
     const double rescaledLambda = this->augNobs * this->lambda1;
 
-    vec beta(coefs, data.numVar(), false, true);
-    vec residuals(resids, data.numObs(), false, true);
+//    vec beta(coefs, this->XtrAug.n_rows, false, true);
+//    vec residuals(resids, nobs, false, true);
 
     uword i, j;
     sword ri;
@@ -420,12 +538,12 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     /*
      * Center data if requested
      */
-	if(this->center) {
-		this->meanX = mean(this->XtrAug.cols(0, data.numObs() - 1), 1);
+	if(intercept) {
+		this->meanX = mean(this->XtrAug.cols(0, nobs - 1), 1);
         this->meanX[0] = 0; // Don't change the intercept-column
-        this->XtrAug.cols(0, data.numObs() - 1).each_col() -= this->meanX;
-		meanY = mean(this->yAug.rows(0, data.numObs() - 1));
-		this->yAug.rows(0, data.numObs() - 1) -= meanY;
+        this->XtrAug.cols(0, nobs - 1).each_col() -= this->meanX;
+		meanY = mean(this->yAug.rows(0, nobs - 1));
+		this->yAug.rows(0, nobs - 1) -= meanY;
 	} else {
 		meanY = 0;		  // just to avoid warning, this is never used
 //		intercept = 0;	  // zero intercept
@@ -498,7 +616,7 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         uword rank = 0;
 
         /* maximum number of variables to be sequenced */
-        uword maxActive = std::min(this->XtrAug.n_cols - this->center, this->XtrAug.n_rows - 1);
+        uword maxActive = std::min(this->XtrAug.n_cols - intercept, this->XtrAug.n_rows - 1);
 
         uword usableVariables = this->XtrAug.n_rows;
         uword newPred;
@@ -790,19 +908,28 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
          * Interpolate coefficients for given lambda
          */
         if(nrActive == 0) {
-            // lambda larger than largest lambda from steps of LARS algorithm
+            /*
+             * lambda larger than largest lambda from steps of LARS algorithm
+             */
             beta.zeros();
         } else {
-            // penalty parameter within two steps
+            /*
+             * penalty parameter within two steps
+             */
             if(nrActive == maxActive) {
-                // current coefficients are the least squares solution (in the
-                // high-dimensional case, as far along the solution path as possible)
-                // current and previous values of the penalty parameter need to be
-                // reset for interpolation
+                /*
+                 * Current coefficients are the least squares solution (in the
+                 * high-dimensional case, as far along the solution path as possible)
+                 * current and previous values of the penalty parameter need to be
+                 * reset for interpolation
+                 */
                 previousLambda = currentLambda;
                 currentLambda = 0;
             }
-            // interpolate coefficients
+
+            /*
+             * interpolate coefficients
+             */
             beta = ((rescaledLambda - currentLambda) * previousBeta +
                     (previousLambda - rescaledLambda) * beta) /
                         (previousLambda - currentLambda);
@@ -812,14 +939,11 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
     /*
      * Compute residuals and intercept
      */
-    residuals = this->yAug.rows(0, data.numObs() - 1) -
-                    this->XtrAug.cols(0, data.numObs() - 1).t() * beta;
+    residuals = this->yAug.rows(0, nobs - 1) - this->XtrAug.cols(0, nobs - 1).t() * beta;
 
-    if(this->center) {
+    if(intercept) {
         beta(0) = meanY - dot(beta, this->meanX);
     }
-
-	return true;
 }
 
 

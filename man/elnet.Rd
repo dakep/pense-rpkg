@@ -4,7 +4,7 @@
 \alias{elnet}
 \title{Elastic Net Regression}
 \usage{
-elnet(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
+elnet(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
   addLeading1s = TRUE, en.algorithm = c("augmented-lars",
   "coordinate-descent", "augmented-lars-gram", "augmented-lars-nogram"))
 }
@@ -14,6 +14,10 @@ elnet(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
 \item{y}{The response vector}
 
 \item{alpha,lambda}{The values for the parameters controlling the penalization}
+
+\item{weights}{an optional vector of weights to be used in the fitting process. Should be
+\code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
+\code{weights} See also ‘Details’.}
 
 \item{maxit}{The maximum number of iterations}
 
@@ -39,5 +43,9 @@ Compute the elastic net regression coefficients
 This solves the minimization problem
 \deqn{\frac{1}{2 N} RSS + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
      (1/2N) RSS + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+
+If weights are supplied, the minimization problem becomes
+\deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
+     (1/2N) sum(w * (y - r^2) + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
 }
 

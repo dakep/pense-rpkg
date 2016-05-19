@@ -6,9 +6,17 @@
 #' \deqn{\frac{1}{2 N} RSS + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
 #'      (1/2N) RSS + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
 #'
+#' If weights are supplied, the minimization problem becomes
+#' \deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
+#'      (1/2N) sum(w * (y - r^2) + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+#'
+#'
 #' @param X The data matrix X
 #' @param y The response vector
 #' @param alpha,lambda The values for the parameters controlling the penalization
+#' @param weights an optional vector of weights to be used in the fitting process. Should be
+#'                \code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
+#'                \code{weights} See also ‘Details’.
 #' @param maxit The maximum number of iterations
 #' @param eps The relative tolerance for convergence for gradient-descent (default 1e-8) or
 #'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)
@@ -23,7 +31,7 @@
 #'
 #' @useDynLib penseinit C_elnet
 #' @export
-elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
+elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
                   addLeading1s = TRUE, en.algorithm = c("augmented-lars",
                                                         "coordinate-descent",
                                                         "augmented-lars-gram",
@@ -34,6 +42,8 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
     dY <- dim(y)
     yl <- length(y)
 
+    weighted <- FALSE
+
     if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
         stop("`yl` must be a numeric vector")
     }
@@ -42,9 +52,23 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
         stop("`X` must be a numeric matrix with the same number of observations as `y`")
     }
 
-    if (anyNA(X) || anyNA(y)) {
+    if (missing(weights)) {
+        weights <- NULL
+    }
+
+    if (!is.null(weights)) {
+        weighted <- TRUE
+        weights <- drop(weights)
+
+        if (length(weights) != dX[1L] || !is.null(dim(weights))) {
+            stop("If `weights` are supplied, they must be a numeric vector the same length as `y`")
+        }
+    }
+
+    if (anyNA(X) || anyNA(y) || anyNA(weights)) {
         stop("Missing values are not supported")
     }
+
 
     if (length(alpha) != 1L || !is.numeric(alpha) || is.na(alpha) || alpha < 0 || alpha > 1) {
         stop("`alpha` must be single number in the range [0, 1]")
@@ -72,8 +96,13 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
         warning("`centering` must be single logical value. Using TRUE as default.")
     }
 
-    elnetres <- .elnet.fit(X, y, alpha, lambda, maxit, eps, centering, addLeading1s,
-                           warmCoef = NULL, en.algorithm = en.algorithm)
+    if (weighted) {
+        elnetres <- .elnet.wfit(X, y, weights, alpha, lambda, maxit, eps, centering, addLeading1s,
+                                warmCoef = NULL, en.algorithm = en.algorithm)
+    } else {
+        elnetres <- .elnet.fit(X, y, alpha, lambda, maxit, eps, centering, addLeading1s,
+                               warmCoef = NULL, en.algorithm = en.algorithm)
+    }
 
     return(elnetres)
 }
@@ -125,9 +154,9 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib penseinit C_augtrans C_elnet_ll
-.elnet.fit.ll <- function(X, y, lambda1, lambda2, maxit, eps, centering = TRUE, addLeading1s = TRUE,
-                          warmCoef = NULL, en.algorithm) {
+#' @useDynLib penseinit C_augtrans C_elnet_weighted
+.elnet.wfit <- function(X, y, weights, alpha, lambda, maxit, eps, centering = TRUE,
+                        addLeading1s = TRUE, warmCoef = NULL, en.algorithm) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -144,17 +173,19 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
         warm <- 1L
     }
 
-    lambda1 <- as.numeric(lambda1)
-    lambda2 <- as.numeric(lambda2)
+    weights <- as.numeric(weights)
+    alpha <- as.numeric(alpha)
+    lambda <- as.numeric(lambda)
     maxit <- as.integer(maxit)
     centering <- 1L - as.integer(identical(centering, FALSE))
     en.algorithm <- .enalgo2IntEnalgo(en.algorithm)
 
-    elnetres <- .Call(C_elnet_ll, Xtr, y,
+    elnetres <- .Call(C_elnet_weighted, Xtr, y,
+                      weights,
                       warmCoef,
                       dX[1L], nrow(Xtr),
-                      lambda1,
-                      lambda2,
+                      alpha,
+                      lambda,
                       maxit,
                       eps,
                       centering,
@@ -162,7 +193,7 @@ elnet <- function(X, y, alpha, lambda, maxit = 10000, eps, centering = TRUE,
                       en.algorithm)
 
     if (!identical(elnetres[[1L]], TRUE)) {
-        warning("Elastic Net algorithm did not converge.")
+        warning("Weighted Elastic Net algorithm did not converge.")
     }
 
     names(elnetres) <- c("converged", "coefficients", "residuals")

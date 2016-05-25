@@ -3,6 +3,8 @@
 sh cleanup
 ln src/Makevars.rel src/Makevars.in
 
+ROOT_DIR="pense-rpkg"
+
 VERSION=`sed -En 's/Version: ([0-9\.]+)/\1/p' DESCRIPTION`
 PACKAGE_NAME=`sed -En 's/Package: ([a-zA-Z0-9_]+)/\1/p' DESCRIPTION`
 
@@ -10,9 +12,9 @@ DIRNAME="${PACKAGE_NAME}_${VERSION}"
 
 pushd ..
 
-tar hczf "${PACKAGE_NAME}/builds/$DIRNAME.tar.gz" --exclude=".*" --exclude="*Makevars.dbg" --exclude="*Makevars.rel" \
+tar hczf "${ROOT_DIR}/builds/$DIRNAME.tar.gz" --exclude=".*" --exclude="*Makevars.dbg" --exclude="*Makevars.rel" \
     --exclude="*.Rproj" --exclude="*.o" --exclude="*.ac" --exclude="*.so"  --exclude="bundle" \
-    --exclude="builds/" --exclude="examples/" "${PACKAGE_NAME}"
+    --exclude="builds/" --exclude="examples/" "$ROOT_DIR"
 
 popd
 

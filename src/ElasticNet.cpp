@@ -111,8 +111,8 @@ void ElasticNetGDESC::setLambdas(const double lambda1, const double lambda2)
 
 void ElasticNetGDESC::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->alpha = 2 * alpha / (1 + alpha);
-    this->lambda = 0.5 * lambda * (1 + alpha);
+    this->alpha = alpha;
+    this->lambda = lambda;
 }
 
 
@@ -379,7 +379,7 @@ void ElasticNetLARS::setLambdas(const double lambda1, const double lambda2)
 
 void ElasticNetLARS::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->setLambdas(lambda * alpha, 0.5 * lambda * (1 - alpha));
+    this->setLambdas(lambda * alpha, lambda * (1 - alpha));
 }
 
 void ElasticNetLARS::setThreshold(const double eps)
@@ -425,27 +425,12 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
     }
 
     if (this->center) {
-        vec orth;
-
         recipSumWeights = 1 / recipSumWeights;
-
-        for (i = 0; i < (uword) data.numObs(); ++i) {
-            orth = (-sqrtWeights[i] * recipSumWeights) * sqrtWeights;
-            orth[i] += 1;
-
-            this->XtrAug.unsafe_col(i) = XtrWeighted * orth;
-        }
+        this->XtrAug.cols(0, data.numObs() - 1) = XtrWeighted -
+                            XtrWeighted * sqrtWeights * sqrtWeights.t() * recipSumWeights;
 
         XtrWeighted.reset();
     }
-
-    /*
-     * Depending on the dimensions of the data matrix, we will use different strategies
-     * of how to compute the orthogonal transformation
-     *
-     * Although we copy a p x n matrix, this is in general faster and more
-     * numerically stable than computing the outer product of the normalized (sqrt) weights
-     */
 
     /*
      * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)

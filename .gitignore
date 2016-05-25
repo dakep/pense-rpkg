@@ -1,2 +1,8 @@
 .DS_Store
 builds
+*.so
+*.o
+autoconfig.h
+Makevars
+config.log
+config.status

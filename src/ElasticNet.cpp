@@ -111,8 +111,8 @@ void ElasticNetGDESC::setLambdas(const double lambda1, const double lambda2)
 
 void ElasticNetGDESC::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->alpha = 2 * alpha / (1 + alpha);
-    this->lambda = 0.5 * lambda * (1 + alpha);
+    this->alpha = alpha;
+    this->lambda = lambda;
 }
 
 
@@ -379,7 +379,7 @@ void ElasticNetLARS::setLambdas(const double lambda1, const double lambda2)
 
 void ElasticNetLARS::setAlphaLambda(const double alpha, const double lambda)
 {
-    this->setLambdas(lambda * alpha, 0.5 * lambda * (1 - alpha));
+    this->setLambdas(lambda * alpha, lambda * (1 - alpha));
 }
 
 void ElasticNetLARS::setThreshold(const double eps)

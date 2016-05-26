@@ -273,6 +273,7 @@ test_that("Ridge", {
     remove(list = setdiff(ls(), c("gradient", "augment")))
 })
 
+
 test_that("EN", {
     augment <- function(X, y, lambda2, leading1s = TRUE) {
         d <- dim(X)
@@ -312,10 +313,14 @@ test_that("EN", {
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
                  numeric(p))
 
+    ## check if we can match the result by augmenting the data
+    au <- augment(X, y, lambda2, leading1s = FALSE)
+
+    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), centering = FALSE)
+    expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
+
     ## check if results match with lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        au <- augment(X, y, lambda2, leading1s = FALSE)
-
         larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
         expect_equal(enres$coefficients[-1L], larsres)
@@ -345,10 +350,14 @@ test_that("EN", {
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
                  numeric(p))
 
+    ## check if we can match the result by augmenting the data
+    au <- augment(X, y, lambda2, leading1s = FALSE)
+
+    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), centering = FALSE)
+    expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
+
     ## check if results match with lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        au <- augment(X, y, lambda2, leading1s = FALSE)
-
         larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
         expect_equal(enres$coefficients[-1L], larsres)
@@ -378,10 +387,14 @@ test_that("EN", {
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
                  numeric(p))
 
+    ## check if we can match the result by augmenting the data
+    au <- augment(X, y, lambda2, leading1s = FALSE)
+
+    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), centering = FALSE)
+    expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
+
     ## check if results match with lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        au <- augment(X, y, lambda2, leading1s = FALSE)
-
         larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
         expect_equal(enres$coefficients[-1L], larsres)

@@ -1,2 +1,2 @@
 # PENSE-package
-This repository hosts the an R package to run PENSE
+This repository hosts an R package implementing the PENSE robust Elastic Net estimators for linear regression.

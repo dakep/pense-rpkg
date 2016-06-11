@@ -15,18 +15,10 @@
 #' @importFrom robustbase .Mchi
 #' @importFrom stats mad median
 #' @export
-mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k = 5L, nlambda = 30L,
-                  ncores = getOption("mc.cores", 2L), cl = NULL) {
+mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
+                  ncores = getOption("mc.cores", 1L), cl = NULL) {
     X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     y <- eval(penseobj$call$y, envir = parent.frame())
-
-    version <- match.arg(version)
-
-    if ((version == "mmlasso") && (penseobj$alpha != 1)) {
-        stop("M-step from V&E only valid for alpha = 1.")
-    }
-
-    mstepfun <- switch(version, "mmlasso" = pensemstepL1, pensemstep)
 
     dX <- dim(X)
 
@@ -110,9 +102,6 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
                                 export = c("Xs", "yc", "version"),
                                 eval = {
                                     library(pense)
-                                    mstepfun <- switch(version,
-                                                       "mmlasso" = pense:::pensemstepL1,
-                                                       pense:::pensemstep)
                                 })
 
         ##
@@ -122,12 +111,12 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         lambda.max <- lambda.opt.mm
 
         checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
-            msres <- mstepfun(Xs, yc, cc = c0,
-                              init.scale = init.scale,
-                              init.coef = init.coef,
-                              alpha = alpha,
-                              lambda = lambda,
-                              control)
+            msres <- pensemstep(Xs, yc, cc = c0,
+                                init.scale = init.scale,
+                                init.coef = init.coef,
+                                alpha = alpha,
+                                lambda = lambda,
+                                control)
             return(all(msres$beta == 0))
         }
 
@@ -196,9 +185,9 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
                 y.test <- yc[job$segment]
             }
 
-            msres <- mstepfun(X.train, y.train, c0, init.scale, init.coef,
-                              alpha = alpha, lambda = job$lambda,
-                              control)
+            msres <- pense:::pensemstep(X.train, y.train, c0, init.scale, init.coef,
+                                        alpha = alpha, lambda = job$lambda,
+                                        control)
 
             return(drop(y.test - msres$intercept - X.test %*% msres$beta))
         }
@@ -231,9 +220,9 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
     ##
     ## Compute M-estimator for lambda.opt.mm.cv
     ##
-    msres <- mstepfun(Xs, yc, c0, scale.init.corr, pense.coef,
-                      alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
-                      control)
+    msres <- pensemstep(Xs, yc, c0, scale.init.corr, pense.coef,
+                        alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
+                        control)
 
     ## Un-standardize the coefficients
     if (penseobj$standardize == TRUE) {
@@ -242,7 +231,6 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
 
         lambda.opt.mm.cv <- lambda.opt.mm.cv * max(scale.x)
     }
-
 
     return(structure(list(
         residuals = msres$resid,
@@ -260,6 +248,6 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         standardize = penseobj$standardize,
         control = control,
         call = penseobj$call
-    ), class = c("pensem1", "pense")))
+    ), class = c("pensem", "pense")))
 }
 

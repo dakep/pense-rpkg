@@ -109,10 +109,10 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         cluster <- setupCluster(ncores, cl,
                                 export = c("Xs", "yc", "version"),
                                 eval = {
-                                    library(penseinit)
+                                    library(pense)
                                     mstepfun <- switch(version,
-                                                       "mmlasso" = penseinit:::pensemstepL1,
-                                                       penseinit:::pensemstep)
+                                                       "mmlasso" = pense:::pensemstepL1,
+                                                       pense:::pensemstep)
                                 })
 
         ##

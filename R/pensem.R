@@ -1,5 +1,5 @@
 ##
-#' @useDynLib penseinit C_augtrans C_pen_mstep
+#' @useDynLib pense C_augtrans C_pen_mstep
 #' @importFrom robustbase Mchi
 pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
     dX <- dim(X)
@@ -7,7 +7,7 @@ pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) 
     Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
     dX[2L] <- dX[2L] + 1L
 
-    cctrl <- penseinit:::initest.control(
+    cctrl <- initest.control(
         lambda = lambda,
         alpha = alpha,
         numIt = control$pense.maxit,

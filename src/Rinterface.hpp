@@ -1,6 +1,6 @@
 //
 //  Rinterface.hpp
-//  penseinit
+//  pense
 //
 //  Created by David Kepplinger on 2016-02-03.
 //  Copyright © 2016 David Kepplinger. All rights reserved.

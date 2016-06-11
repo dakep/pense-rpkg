@@ -18,7 +18,7 @@
 #'
 #' @return Numeric vector of length one
 #'
-#' @useDynLib penseinit C_mscale
+#' @useDynLib pense C_mscale
 #' @export
 mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc,
                    eps = 1e-8, max.it = 200) {

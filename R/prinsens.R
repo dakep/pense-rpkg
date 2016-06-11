@@ -22,7 +22,7 @@
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
 #' 434–445. \url{http://doi.org/10.2307/2670164}
 #'
-#' @useDynLib penseinit C_pscs_ols C_pscs_en C_augtrans
+#' @useDynLib pense C_pscs_ols C_pscs_en C_augtrans
 #' @export
 prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
                      alpha, lambda, maxit = 50000, eps, centering = TRUE,
@@ -99,7 +99,7 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
     } else {
 #         numPSCs <- 0L
 #         pscres <- .Call("C_pscs", t(X), y, dX[1L], ncol(X), numPSCs,
-#                         PACKAGE = "penseinit")
+#                         PACKAGE = "pense")
 #
 #         if (is.null(pscres)) {
 #             stop("Could not compute principal sensitivity components. Matrix `x` is singular.")

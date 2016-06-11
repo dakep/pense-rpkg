@@ -29,7 +29,7 @@
 #'         \item{residuals}{The residuals}
 #'         \item{converged}{Did the algorithm converge?}
 #'
-#' @useDynLib penseinit C_elnet
+#' @useDynLib pense C_elnet
 #' @export
 elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
                   addLeading1s = TRUE, en.algorithm = c("augmented-lars",
@@ -108,7 +108,7 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib penseinit C_augtrans C_elnet
+#' @useDynLib pense C_augtrans C_elnet
 .elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
                        warmCoef = NULL, en.algorithm) {
     y <- drop(y)
@@ -154,7 +154,7 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib penseinit C_augtrans C_elnet_weighted
+#' @useDynLib pense C_augtrans C_elnet_weighted
 .elnet.wfit <- function(X, y, weights, alpha, lambda, maxit, eps, centering = TRUE,
                         addLeading1s = TRUE, warmCoef = NULL, en.algorithm) {
     y <- drop(y)

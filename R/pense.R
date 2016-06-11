@@ -220,7 +220,7 @@ pense.default <- function(X, y, alpha = 0.5,
     cluster <- setupCluster(ncores, cl,
                             export = c("X", "y"),
                             eval = {
-                                library(penseinit)
+                                library(pense)
                             })
 
     ## Run all jobs (combination of all CV segments and all lambda-grids)
@@ -236,7 +236,7 @@ pense.default <- function(X, y, alpha = 0.5,
         }
 
 
-        est.all <- penseinit:::pense.coldwarm(X.train, y.train,
+        est.all <- pense:::pense.coldwarm(X.train, y.train,
                                               alpha, job$lambda, standardize, control)
 
         residuals <- NULL

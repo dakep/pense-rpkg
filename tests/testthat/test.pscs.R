@@ -31,12 +31,12 @@ test_that("Compute PSCs", {
     y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     res_r <- pscs_R(X, y)
-    res_c <- penseinit::prinsens(X, y)
+    res_c <- pense::prinsens(X, y)
 
     expect_lt(mean(abs(abs(res_r / res_c) - 1)), 1e-9)
 
     res_r <- pscs_R(X, y, intercept = FALSE)
-    res_c <- penseinit::prinsens(X, y, intercept = FALSE)
+    res_c <- pense::prinsens(X, y, intercept = FALSE)
 
     expect_lt(mean(abs(abs(res_r / res_c) - 1)), 1e-9)
 
@@ -49,5 +49,5 @@ test_that("Compute PSCs", {
     X <- matrix(rnorm(n * p), ncol = p)
     y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
-    expect_error(penseinit::prinsens(X, y), regexp = "singular")
+    expect_error(pense::prinsens(X, y), regexp = "singular")
 })

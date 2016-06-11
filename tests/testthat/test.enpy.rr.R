@@ -15,7 +15,7 @@ test_that("enpy.rr", {
         alpha <- 0
         lambda <- 0
 
-        new <- penseinit::enpy(X, y, alpha = alpha, lambda = lambda,
+        new <- pense::enpy(X, y, alpha = alpha, lambda = lambda,
                                deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
                                prosac = 0.8, clean.method = "proportion", prop = 0.4, C.res = NULL,
                                py.nit = 5, en.tol = 1e-8)

@@ -28,7 +28,7 @@
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
 #' 434–445. \url{http://doi.org/10.2307/2670164}
 #'
-#' @useDynLib penseinit C_initpy
+#' @useDynLib pense C_initpy
 #' @export
 pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
                    clean.method = c("threshold", "proportion"), C.res, prop,

@@ -1,6 +1,6 @@
 //
 //  ElasticNet.hpp
-//  penseinit
+//  pense
 //
 //  Created by David Kepplinger on 2016-01-31.
 //  Copyright © 2016 David Kepplinger. All rights reserved.

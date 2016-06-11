@@ -18,11 +18,11 @@ test_that("mstep", {
     ## LASSO penalty
     alpha <- 1
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -34,11 +34,11 @@ test_that("mstep", {
     ## EN penalty
     alpha <- 0.5
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -66,11 +66,11 @@ test_that("mstep", {
     ## LASSO penalty
     alpha <- 1
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -82,11 +82,11 @@ test_that("mstep", {
     ## EN penalty
     alpha <- 0.5
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -114,11 +114,11 @@ test_that("mstep", {
     ## LASSO penalty
     alpha <- 1
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -130,11 +130,11 @@ test_that("mstep", {
     ## EN penalty
     alpha <- 0.5
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -163,14 +163,14 @@ test_that("mstep", {
     alpha <- 1
 
     expect_warning(
-        penseinit:::pensemstep.rimpl(X, y, cc = cc,
+        pense:::pensemstep.rimpl(X, y, cc = cc,
                                      init.scale = init.scale, init.coef = init.coef,
                                      alpha = alpha, lambda = lambda, control = ctrl),
         regexp = 'did not converge'
     )
 
     expect_warning(
-        penseinit:::pensemstep(X, y, cc = cc,
+        pense:::pensemstep(X, y, cc = cc,
                                init.scale = init.scale, init.coef = init.coef,
                                alpha = alpha, lambda = lambda, control = ctrl),
         regexp = 'did not converge'
@@ -198,11 +198,11 @@ test_that("mstep", {
     ## LASSO penalty
     alpha <- 1
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 
@@ -214,11 +214,11 @@ test_that("mstep", {
     ## EN penalty
     alpha <- 0.5
 
-    mr.r <- penseinit:::pensemstep.rimpl(X, y, cc = cc,
+    mr.r <- pense:::pensemstep.rimpl(X, y, cc = cc,
                                          init.scale = init.scale, init.coef = init.coef,
                                          alpha = alpha, lambda = lambda, control = ctrl)
 
-    mr.c <- penseinit:::pensemstep(X, y, cc = cc,
+    mr.c <- pense:::pensemstep(X, y, cc = cc,
                                    init.scale = init.scale, init.coef = init.coef,
                                    alpha = alpha, lambda = lambda, control = ctrl)
 

@@ -1,4 +1,4 @@
-Package: penseinit
+Package: pense
 Type: Package
 Title: Penalized Elastic Net S-Estimator of Regression
 Version: 0.3.8

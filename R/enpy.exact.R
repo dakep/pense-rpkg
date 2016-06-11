@@ -24,7 +24,7 @@
 #' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
-#' @useDynLib penseinit C_enpy_exact C_augtrans
+#' @useDynLib pense C_enpy_exact C_augtrans
 #' @importFrom Rcpp evalCpp
 enpy.exact <- function(X, y, alpha, lambda, deltaesc, cc.scale,
                        psc.method = c("Mn", "Qp"), prosac,

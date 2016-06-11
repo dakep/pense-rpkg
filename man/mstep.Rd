@@ -4,7 +4,7 @@
 \alias{mstep}
 \title{Perform an M-step on the PENSE result}
 \usage{
-mstep(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
+mstep(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
   ncores = getOption("mc.cores", 1L), cl = NULL)
 }
 \arguments{
@@ -25,6 +25,6 @@ optima lambda. See \code{\link{pense}} for more details.}
 from mmlasso?}
 }
 \description{
-Performs an M-step on the L1 S-estimator returned from \code{\link{pense}}.
+Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 }
 

@@ -1,6 +1,6 @@
 #' Perform an M-step on the PENSE result
 #'
-#' Performs an M-step on the L1 S-estimator returned from \code{\link{pense}}.
+#' Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 #'
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
 #' @param complete.grid should the optimal lambda be chosen from a grid of values
@@ -15,7 +15,7 @@
 #' @importFrom robustbase .Mchi
 #' @importFrom stats mad median
 #' @export
-mstep <- function(penseobj, complete.grid, cv.k = 5L, nlambda = 30L,
+mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
                   ncores = getOption("mc.cores", 1L), cl = NULL) {
     X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     y <- eval(penseobj$call$y, envir = parent.frame())

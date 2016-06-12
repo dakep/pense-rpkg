@@ -17,12 +17,12 @@ elnet(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
 
 \item{weights}{an optional vector of weights to be used in the fitting process. Should be
 \code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
-\code{weights} See also ‘Details’.}
+\code{weights} See also 'Details'.}
 
 \item{maxit}{The maximum number of iterations}
 
 \item{eps}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
-the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)}
+the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps})}
 
 \item{centering}{Should the rows be centered first}
 

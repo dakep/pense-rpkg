@@ -18,7 +18,7 @@ coef.pense <- function(object, lambda, ...) {
     X <- data.matrix(eval(object$call$X))
     y <- drop(eval(object$call$y))
 
-    estimate <- pense.coldwarm(X, y, lambda = lambda,
+    estimate <- pense.coldwarm(X, y, lambda.grid = lambda,
                                alpha = object$alpha,
                                standardize = object$standardize,
                                control = object$control)

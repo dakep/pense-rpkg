@@ -1,6 +1,6 @@
 //
 //  PSCxx.hpp
-//  penseinit
+//  pense
 //
 //  Created by David Kepplinger on 2016-01-24.
 //  Copyright © 2016 David Kepplinger. All rights reserved.

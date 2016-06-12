@@ -1,7 +1,7 @@
 ## Internal function to calculate PENSE for a given initial estimate (init.coef)
 ## in C++
 ##
-#' @useDynLib penseinit C_augtrans C_pen_s_reg
+#' @useDynLib pense C_augtrans C_pen_s_reg
 pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
     dX <- dim(X)
 
@@ -11,7 +11,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
     lambda1 <- alpha * lambda * dX[1L]
     lambda2 <- lambda * (1 - alpha) * dX[1L] / 2
 
-    cctrl <- penseinit:::initest.control(
+    cctrl <- initest.control(
         lambda = lambda,
         alpha = alpha,
         numIt = maxit,

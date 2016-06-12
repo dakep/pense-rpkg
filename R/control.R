@@ -6,7 +6,7 @@
 #' @param pense.maxit maximum number of iterations for PENSE.
 #' @param pense.tol convergence tolerance for PENSE.
 #' @param pense.en.tol The relative tolerance for convergence for gradient-descent (default 1e-9) or
-#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) in the
+#'      the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps}) in the
 #'      PENSE step.
 #' @param pense.en.maxit maximum number of iterations for each elastic net fit in PENSE
 #' @param cv.objective a user-supplied function taking the cross-validated residuals
@@ -31,8 +31,8 @@
 #' @param init.csteps the number of PENSE iterations (concentration steps) to perform on
 #'          the initial estimates.
 #' @param init.nkeep how many initial estimates should be kept to perform full PENSE iterations?
-#' @param pense.en.tol The relative tolerance for convergence for gradient-descent (default 1e-8) or
-#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) for
+#' @param init.en.tol The relative tolerance for convergence for gradient-descent (default 1e-8) or
+#'      the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps}) for
 #'      the initial estimate.
 #' @param init.en.maxit maximum number of iterations for each elastic net fit for initial estimates.
 #'
@@ -51,7 +51,7 @@
 #'
 #' @references Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-#' 434–445. \url{http://doi.org/10.2307/2670164}
+#' 434-445. \url{http://doi.org/10.2307/2670164}
 #'
 #' @export pense.control
 #' @importFrom robustbase scaleTau2
@@ -148,7 +148,7 @@ enpy.control <- function(en.maxit = 50000,
 }
 
 
-#' Internal function to check PENSE control parameters
+## Internal function to check PENSE control parameters
 .check.pense.control <- function(ctrl) {
     simpleCheck <- function(x) {
         if (length(x) != 1L || !is.numeric(x) || anyNA(x) || x <= 0) {
@@ -224,23 +224,22 @@ enpy.control <- function(en.maxit = 50000,
 }
 
 
-#' Creates the internal control list for PY initial estimators
-#'
-#' Takes care of the correct storage mode for the arguments passed to the C/C++ code
-#'
-#' @param lambda numeric >= 0
-#' @param alpha numeric 0 <= alpha <= 1
-#' @param numIt integer > 0
-#' @param eps numeric > 0
-#' @param resid.clean.method character
-#' @param resid.threshold If \code{resid.clean.method = "threshold"} numeric > 0, otherwise not
-#'          referenced
-#' @param resid.proportion If \code{resid.clean.method = "proportion"} numeric > 0, otherwise not
-#'          referenced
-#' @param psc.proportion numeric > 0
-#' @param mscale.delta numeric > 0
-#' @param mscale.cc numeric > 0
-#'
+## Creates the internal control list for PY initial estimators
+##
+## Takes care of the correct storage mode for the arguments passed to the C/C++ code
+##
+## @param lambda numeric >= 0
+## @param alpha numeric 0 <= alpha <= 1
+## @param numIt integer > 0
+## @param eps numeric > 0
+## @param resid.clean.method character
+## @param resid.threshold If \code{resid.clean.method = "threshold"} numeric > 0, otherwise not
+##          referenced
+## @param resid.proportion If \code{resid.clean.method = "proportion"} numeric > 0, otherwise not
+##          referenced
+## @param psc.proportion numeric > 0
+## @param mscale.delta numeric > 0
+## @param mscale.cc numeric > 0
 initest.control <- function(
     lambda,
     alpha,

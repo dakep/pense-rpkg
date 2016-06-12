@@ -16,10 +16,10 @@
 #' @param alpha,lambda The values for the parameters controlling the penalization
 #' @param weights an optional vector of weights to be used in the fitting process. Should be
 #'                \code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
-#'                \code{weights} See also ‘Details’.
+#'                \code{weights} See also 'Details'.
 #' @param maxit The maximum number of iterations
 #' @param eps The relative tolerance for convergence for gradient-descent (default 1e-8) or
-#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)
+#'      the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps})
 #' @param centering Should the rows be centered first
 #' @param addLeading1s Should a leading column of 1's be appended? If \code{FALSE}, this has
 #'      to be done before calling this function.
@@ -29,7 +29,7 @@
 #'         \item{residuals}{The residuals}
 #'         \item{converged}{Did the algorithm converge?}
 #'
-#' @useDynLib penseinit C_elnet
+#' @useDynLib pense C_elnet
 #' @export
 elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
                   addLeading1s = TRUE, en.algorithm = c("augmented-lars",
@@ -108,7 +108,7 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib penseinit C_augtrans C_elnet
+#' @useDynLib pense C_augtrans C_elnet
 .elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
                        warmCoef = NULL, en.algorithm) {
     y <- drop(y)
@@ -154,7 +154,7 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib penseinit C_augtrans C_elnet_weighted
+#' @useDynLib pense C_augtrans C_elnet_weighted
 .elnet.wfit <- function(X, y, weights, alpha, lambda, maxit, eps, centering = TRUE,
                         addLeading1s = TRUE, warmCoef = NULL, en.algorithm) {
     y <- drop(y)

@@ -1,6 +1,6 @@
 //
 //  MStep.hpp
-//  penseinit
+//  pense
 //
 //  Created by David Kepplinger on 2016-05-13.
 //  Copyright © 2016 David Kepplinger. All rights reserved.

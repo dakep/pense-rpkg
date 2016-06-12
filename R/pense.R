@@ -1,22 +1,5 @@
 #' Penalized Elasitc Net S-estimators for Regression
 #'
-#' @param X the design matrix
-#'
-#' @return An object of class \code{"pense"} with elements
-#' \item{call}{the call that produced this object.}
-#' \item{lambda.opt}{the optimal value of the regularization parameter according to CV.}
-#' \item{coefficients}{the vector of coefficients for the optimal lambda \code{lambda.opt}.}
-#' \item{residuals}{the residuals, that is response minus fitted values for \code{lambda.opt}.}
-#' \item{scale}{the estimated scale for \code{lambda.opt}.}
-#' \item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
-#'                    tau-scale estimated via CV in the second column.}
-#' \item{alpha,standardize,control}{the given arguments.}
-#' \item{standardize}{}
-#' @export
-pense <- function(X, ...) {
-    UseMethod("pense")
-}
-
 #' @section Parallelization:
 #' With the parameter \code{ncores}, the number of available processor cores can be set.
 #' The grid of lambda values is split into \code{ncores} (almost) equally sized chunks.
@@ -27,6 +10,8 @@ pense <- function(X, ...) {
 #' previous estimate as warm-start. Similarly, if \code{ncores = nlambda}, a
 #' cold initial estimate is computed for every lambda on the grid and no warm-starts
 #' are necessary.
+#'
+#' @param X the design matrix
 #'
 #' @param y the response vector.
 #' @param alpha the elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
@@ -39,6 +24,8 @@ pense <- function(X, ...) {
 #'      generated (see parameter \code{nlambda}).
 #'      If given and \code{standardize = TRUE}, the lambda values will be adjusted
 #'      accordingly.
+#' @param lambda.min.ratio If the grid should be chosen automatically, the ratio of the
+#'      smallest lambda to the (computed) largest lambda.
 #' @param standardize should the data be standardized robustly? Estimates
 #'      are returned on the original scale. Defaults to \code{TRUE}.
 #' @param cv.k number of cross-validation segements to use to choose the optimal
@@ -50,15 +37,25 @@ pense <- function(X, ...) {
 #'      estimate the optimal value of lambda. See details for more information.
 #' @param control a list of control parameters as returned by \code{\link{pense.control}}.
 #'
-#' @rdname pense
-#' @importFrom stats mad median
+#' @return An object of class \code{"pense"} with elements
+#' \item{call}{the call that produced this object.}
+#' \item{lambda.opt}{the optimal value of the regularization parameter according to CV.}
+#' \item{coefficients}{the vector of coefficients for the optimal lambda \code{lambda.opt}.}
+#' \item{residuals}{the residuals, that is response minus fitted values for \code{lambda.opt}.}
+#' \item{scale}{the estimated scale for \code{lambda.opt}.}
+#' \item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
+#'                    tau-scale estimated via CV in the second column.}
+#' \item{alpha,standardize,control}{the given arguments.}
+#' \item{standardize}{}
 #' @export
-pense.default <- function(X, y, alpha = 0.5,
-                          nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
-                          standardize = TRUE,
-                          cv.k = 5, warm.reset = 10,
-                          ncores = getOption("mc.cores", 2L), cl = NULL,
-                          control = pense.control()) {
+#'
+#' @importFrom stats mad median
+pense <- function(X, y, alpha = 0.5,
+                  nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
+                  standardize = TRUE,
+                  cv.k = 5, warm.reset = 10,
+                  ncores = getOption("mc.cores", 2L), cl = NULL,
+                  control = pense.control()) {
     ##
     ## First all arguments are being sanity-checked
     ##
@@ -220,7 +217,7 @@ pense.default <- function(X, y, alpha = 0.5,
     cluster <- setupCluster(ncores, cl,
                             export = c("X", "y"),
                             eval = {
-                                library(penseinit)
+                                library(pense)
                             })
 
     ## Run all jobs (combination of all CV segments and all lambda-grids)
@@ -236,7 +233,7 @@ pense.default <- function(X, y, alpha = 0.5,
         }
 
 
-        est.all <- penseinit:::pense.coldwarm(X.train, y.train,
+        est.all <- pense:::pense.coldwarm(X.train, y.train,
                                               alpha, job$lambda, standardize, control)
 
         residuals <- NULL

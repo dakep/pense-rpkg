@@ -2,7 +2,7 @@
 % Please edit documentation in R/enpy.exact.R
 \name{enpy.exact}
 \alias{enpy.exact}
-\title{PY (Peña-Yohai) initial estimates for EN}
+\title{PY (Pena-Yohai) initial estimates for EN}
 \usage{
 enpy.exact(X, y, alpha, lambda, deltaesc, cc.scale, psc.method = c("Mn",
   "Qp"), prosac, clean.method = c("threshold", "proportion"), C.res, prop,

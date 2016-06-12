@@ -1,4 +1,4 @@
-AC_INIT(MGL2, version-1.0)
+AC_INIT(pense, version-1.0)
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then

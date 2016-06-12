@@ -1,9 +1,9 @@
-#' Convenience function for parallel computing
-#'
-#' This function handles setting up, using, and closing a potential cluster.
-#' If no cluster of computing nodes is requested, it will create a proxy to the local
-#' \code{lapply} function.
-#'
+## Convenience function for parallel computing
+##
+## This function handles setting up, using, and closing a potential cluster.
+## If no cluster of computing nodes is requested, it will create a proxy to the local
+## \code{lapply} function.
+##
 #' @importFrom parallel clusterEvalQ clusterExport clusterApplyLB stopCluster
 #' @importFrom parallel makePSOCKcluster clusterSetRNGStream
 #' @importFrom methods is

@@ -1,18 +1,18 @@
 /*
  * BLAS.h
- * penseinit
+ * pense
  *
  * Created by David Kepplinger on 2016-22-01.
  * Copyright (c) 2016 David Kepplinger. All rights reserved.
  *
- * This file is part of the R package penseinit.
+ * This file is part of the R package pense.
  *
- * penseinit is free software: you can redistribute it and/or modify
+ * pense is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * penseinit is distributed in the hope that it will be useful,
+ * pense is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
@@ -21,8 +21,8 @@
  * along with R. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef penseinit_BLAS_h
-#define penseinit_BLAS_h
+#ifndef pense_BLAS_h
+#define pense_BLAS_h
 
 #define BLAS_CHAR const char * const
 #define BLAS_INT const int

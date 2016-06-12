@@ -1,4 +1,4 @@
 library(testthat)
-library(penseinit)
+library(pense)
 
-test_check("penseinit")
+test_check("pense")

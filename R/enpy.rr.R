@@ -1,4 +1,4 @@
-#' PY (Peña-Yohai) initial estimates for EN
+#' PY (Pena-Yohai) initial estimates for EN
 #'
 #' Computes the PY initial estimates for EN with approximated principal sensitivity components
 #' by the ridge regression solution.
@@ -23,7 +23,7 @@
 #' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
-#' @useDynLib penseinit C_enpy_rr
+#' @useDynLib pense C_enpy_rr
 #' @importFrom Rcpp evalCpp
 enpy.rr <- function(X, y, alpha, lambda, deltaesc, cc.scale,
                     prosac, clean.method = c("threshold", "proportion"),

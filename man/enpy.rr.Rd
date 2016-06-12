@@ -2,7 +2,7 @@
 % Please edit documentation in R/enpy.rr.R
 \name{enpy.rr}
 \alias{enpy.rr}
-\title{PY (Peña-Yohai) initial estimates for EN}
+\title{PY (Pena-Yohai) initial estimates for EN}
 \usage{
 enpy.rr(X, y, alpha, lambda, deltaesc, cc.scale, prosac,
   clean.method = c("threshold", "proportion"), C.res, prop, py.nit, en.tol,

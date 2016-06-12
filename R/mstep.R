@@ -1,12 +1,10 @@
 #' Perform an M-step on the PENSE result
 #'
-#' Performs an M-step on the L1 S-estimator returned from \code{\link{pense}}.
+#' Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 #'
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
 #' @param complete.grid should the optimal lambda be chosen from a grid of values
 #'      or approximate it from the optimal lambda
-#' @param version Which M-step should be performed? The newly derived ("new") or the one
-#'      from mmlasso?
 #' @param cv.k perform k-fold CV to choose optimal lambda (only used if
 #'      \code{complete.grid = FALSE}).
 #' @param nlambda the number of lambda values to try.
@@ -15,18 +13,10 @@
 #' @importFrom robustbase .Mchi
 #' @importFrom stats mad median
 #' @export
-mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k = 5L, nlambda = 30L,
-                  ncores = getOption("mc.cores", 2L), cl = NULL) {
+mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
+                  ncores = getOption("mc.cores", 1L), cl = NULL) {
     X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     y <- eval(penseobj$call$y, envir = parent.frame())
-
-    version <- match.arg(version)
-
-    if ((version == "mmlasso") && (penseobj$alpha != 1)) {
-        stop("M-step from V&E only valid for alpha = 1.")
-    }
-
-    mstepfun <- switch(version, "mmlasso" = pensemstepL1, pensemstep)
 
     dX <- dim(X)
 
@@ -109,10 +99,7 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         cluster <- setupCluster(ncores, cl,
                                 export = c("Xs", "yc", "version"),
                                 eval = {
-                                    library(penseinit)
-                                    mstepfun <- switch(version,
-                                                       "mmlasso" = penseinit:::pensemstepL1,
-                                                       penseinit:::pensemstep)
+                                    library(pense)
                                 })
 
         ##
@@ -122,12 +109,12 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         lambda.max <- lambda.opt.mm
 
         checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
-            msres <- mstepfun(Xs, yc, cc = c0,
-                              init.scale = init.scale,
-                              init.coef = init.coef,
-                              alpha = alpha,
-                              lambda = lambda,
-                              control)
+            msres <- pensemstep(Xs, yc, cc = c0,
+                                init.scale = init.scale,
+                                init.coef = init.coef,
+                                alpha = alpha,
+                                lambda = lambda,
+                                control)
             return(all(msres$beta == 0))
         }
 
@@ -196,9 +183,9 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
                 y.test <- yc[job$segment]
             }
 
-            msres <- mstepfun(X.train, y.train, c0, init.scale, init.coef,
-                              alpha = alpha, lambda = job$lambda,
-                              control)
+            msres <- pense:::pensemstep(X.train, y.train, c0, init.scale, init.coef,
+                                        alpha = alpha, lambda = job$lambda,
+                                        control)
 
             return(drop(y.test - msres$intercept - X.test %*% msres$beta))
         }
@@ -231,9 +218,9 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
     ##
     ## Compute M-estimator for lambda.opt.mm.cv
     ##
-    msres <- mstepfun(Xs, yc, c0, scale.init.corr, pense.coef,
-                      alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
-                      control)
+    msres <- pensemstep(Xs, yc, c0, scale.init.corr, pense.coef,
+                        alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
+                        control)
 
     ## Un-standardize the coefficients
     if (penseobj$standardize == TRUE) {
@@ -242,7 +229,6 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
 
         lambda.opt.mm.cv <- lambda.opt.mm.cv * max(scale.x)
     }
-
 
     return(structure(list(
         residuals = msres$resid,
@@ -260,6 +246,127 @@ mstep <- function(penseobj, complete.grid, version = c("new", "mmlasso"), cv.k =
         standardize = penseobj$standardize,
         control = control,
         call = penseobj$call
-    ), class = c("pensem1", "pense")))
+    ), class = c("pensem", "pense")))
 }
+
+
+##
+#' @useDynLib pense C_augtrans C_pen_mstep
+#' @importFrom robustbase Mchi
+pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
+    dX <- dim(X)
+
+    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    dX[2L] <- dX[2L] + 1L
+
+    cctrl <- initest.control(
+        lambda = lambda,
+        alpha = alpha,
+        numIt = control$pense.maxit,
+        eps = control$pense.tol^2,
+        mscale.delta = control$mscale.delta,
+        mscale.cc = cc,
+        enpy.control = enpy.control(
+            en.maxit = control$pense.en.maxit,
+            en.tol = control$pense.en.tol,
+            en.centering = TRUE,
+            mscale.maxit = control$mscale.maxit,
+            mscale.tol = control$mscale.tol,
+            mscale.rho.fun = "bisquare",
+            en.algorithm = control$en.algorithm
+        ),
+
+        # Not needed, set for completeness
+        resid.clean.method = "proportion",
+        resid.threshold = 0.5,
+        resid.proportion = 0.5,
+        psc.proportion = 0.5
+    )
+
+    res <- .Call(C_pen_mstep, Xtr, y, dX[1L], dX[2L], init.coef, init.scale, cctrl)
+
+    ret <- list(
+        intercept = res[[1L]][1L],
+        beta = res[[1L]][-1L],
+        resid = res[[2L]],
+        rel.change = sqrt(res[[3L]]),
+        iterations = res[[4L]],
+        objF = NA_real_
+    )
+
+    ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
+        lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
+
+    if (ret$rel.change > control$pense.tol) {
+        warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
+    }
+
+    return(ret)
+}
+
+
+##
+#' @importFrom robustbase Mwgt MrhoInf Mchi
+pensemstep.rimpl <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
+    dX <- dim(X)
+    p <- dX[2L]
+    n <- dX[1L]
+
+    current.coefs <- init.coef
+    prev.coefs <- NULL
+
+    resid <- as.vector(y - current.coefs[1L] - X %*% current.coefs[-1L])
+
+    tol <- control$pense.tol^2
+    it <- 0L
+    rel.change <- Inf
+
+    repeat {
+        it <- it + 1L
+
+        resid.scaled <- resid / init.scale
+        # Mwgt is safer then Mchi in the case 0/0!
+        weights <- Mwgt(resid.scaled, cc = cc, psi = control$mscale.rho.fun)
+
+        weighted.en <- .elnet.wfit(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                                   centering = TRUE, maxit = control$pense.en.maxit,
+                                   eps = control$pense.en.tol, warmCoef = current.coefs,
+                                   en.algorithm = control$en.algorithm)
+
+        prev.coefs <- current.coefs
+        current.coefs <- weighted.en$coefficients
+
+        resid <- weighted.en$residuals
+
+        rel.change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
+
+        if (is.nan(rel.change)) { # if 0/0
+            rel.change <- 0
+        }
+
+        ## Check convergence
+        if (it >= control$pense.maxit || all(rel.change < tol)) {
+            break
+        }
+    }
+
+    ret <- list(
+        intercept = current.coefs[1L],
+        beta = current.coefs[-1L],
+        resid = resid,
+        rel.change = sqrt(rel.change),
+        iterations = it,
+        objF = NA_real_
+    )
+
+    ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
+        lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
+
+    if (ret$rel.change > control$pense.tol) {
+        warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
+    }
+
+    return(ret)
+}
+
 

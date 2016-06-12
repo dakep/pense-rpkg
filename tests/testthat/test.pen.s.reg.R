@@ -18,11 +18,11 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -34,11 +34,11 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -66,11 +66,11 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -82,11 +82,11 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -114,11 +114,11 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -130,11 +130,11 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -163,14 +163,14 @@ test_that("pen.s.reg", {
     alpha <- 1
 
     expect_warning(
-        penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+        pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                     init.coef = init.coef, maxit = ctrl$pense.maxit,
                                     control = ctrl),
         regexp = 'did not converge'
     )
 
     expect_warning(
-        penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+        pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                       init.coef = init.coef, maxit = ctrl$pense.maxit,
                                       control = ctrl),
         regexp = 'did not converge'
@@ -197,11 +197,11 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 
@@ -213,11 +213,11 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- penseinit:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
+    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
                                         init.coef = init.coef, maxit = ctrl$pense.maxit,
                                         control = ctrl)
 
-    pr.c <- penseinit:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
+    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
                                   init.coef = init.coef, maxit = ctrl$pense.maxit,
                                   control = ctrl)
 

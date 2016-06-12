@@ -1,3 +1,8 @@
+2016-06-12: Version 0.5.0
+    *) Rename package to "pense"
+    *) Remove dependencies on mmlasso
+    *) Fix all warnings/notes from R checks
+
 2016-05-19: Version 0.3.6
     *) Added functionality for weighted elastic net.
     *) Utilize weighted elastic net in PENSE iterations as well as M-step iterations

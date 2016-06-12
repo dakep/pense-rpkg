@@ -2,12 +2,9 @@
 % Please edit documentation in R/pense.R
 \name{pense}
 \alias{pense}
-\alias{pense.default}
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
-pense(X, ...)
-
-\method{pense}{default}(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
+pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
   lambda.min.ratio = NULL, standardize = TRUE, cv.k = 5,
   warm.reset = 10, ncores = getOption("mc.cores", 2L), cl = NULL,
   control = pense.control())
@@ -29,6 +26,9 @@ Defaults to \code{NULL}, which means a grid of lambda values is automatically
 generated (see parameter \code{nlambda}).
 If given and \code{standardize = TRUE}, the lambda values will be adjusted
 accordingly.}
+
+\item{lambda.min.ratio}{If the grid should be chosen automatically, the ratio of the
+smallest lambda to the (computed) largest lambda.}
 
 \item{standardize}{should the data be standardized robustly? Estimates
 are returned on the original scale. Defaults to \code{TRUE}.}

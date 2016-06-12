@@ -1,4 +1,4 @@
-#' PY (Peña-Yohai) initial estimates for S-estimates of regression
+#' PY (Pena-Yohai) initial estimates for S-estimates of regression
 #'
 #' Computes the PY initial estimates for S-estimates of regression.
 #'
@@ -26,9 +26,9 @@
 #'
 #' @references Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-#' 434–445. \url{http://doi.org/10.2307/2670164}
+#' 434-445. \url{http://doi.org/10.2307/2670164}
 #'
-#' @useDynLib penseinit C_initpy
+#' @useDynLib pense C_initpy
 #' @export
 pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
                    clean.method = c("threshold", "proportion"), C.res, prop,
@@ -68,8 +68,8 @@ pyinit <- function(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
                             enpy.control = control,
 
                             ## We don't need those parameters
-                            lambda1 = 0,
-                            lambda2 = 0)
+                            lambda = 0,
+                            alpha = 0)
 
     ##
     ## The C code needs to now how many observations to *keep*

@@ -4,7 +4,7 @@
 \alias{pense.control}
 \title{Control Parameters for PENSE}
 \usage{
-\method{pense}{control}(pense.maxit = 500, pense.tol = 1e-06, pense.en.tol,
+pense.control(pense.maxit = 500, pense.tol = 1e-06, pense.en.tol,
   pense.en.maxit = 5e+05, cv.objective = scaleTau2, init.tol = 1e-06,
   init.maxit = 10, init.resid.clean.method = c("proportion", "threshold"),
   init.resid.proportion = 0.4, init.resid.threshold = 2,
@@ -21,7 +21,7 @@
 \item{pense.tol}{convergence tolerance for PENSE.}
 
 \item{pense.en.tol}{The relative tolerance for convergence for gradient-descent (default 1e-9) or
-the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) in the
+the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps}) in the
 PENSE step.}
 
 \item{pense.en.maxit}{maximum number of iterations for each elastic net fit in PENSE}
@@ -56,6 +56,10 @@ the initial estimates.}
 
 \item{init.nkeep}{how many initial estimates should be kept to perform full PENSE iterations?}
 
+\item{init.en.tol}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
+the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps}) for
+the initial estimate.}
+
 \item{init.en.maxit}{maximum number of iterations for each elastic net fit for initial estimates.}
 
 \item{mscale.cc}{tuning parameter for the M-estimate of scale. If missing or lte 0,
@@ -72,10 +76,6 @@ equals to \code{mscale.delta}.}
 
 \item{en.algorithm}{algorithm to use to compute the (weighted) elastic net solutions for the
          inital estimates and PENSE.}
-
-\item{pense.en.tol}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
-the threshold for treating numbers as 0 in LARS (default .Machine$double.eps) for
-the initial estimate.}
 }
 \value{
 A list with the given arguments, checked for errors.
@@ -86,6 +86,6 @@ Set control parameters for PENSE.
 \references{
 Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
 Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-434–445. \url{http://doi.org/10.2307/2670164}
+434-445. \url{http://doi.org/10.2307/2670164}
 }
 

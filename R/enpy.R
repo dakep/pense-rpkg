@@ -1,4 +1,4 @@
-#' PY (Peña-Yohai) initial estimates for EN
+#' PY (Pena-Yohai) initial estimates for EN
 #'
 #' Computes the PY initial estimates for EN with different strategies for computing
 #' the principal sensitivity components
@@ -29,6 +29,7 @@
 #'          \code{C.res} will be removed.
 #'          If \code{"proportion"}, observations with the largest \code{prop} residuals
 #'          will be removed.
+#' @param C.res,prop See \code{clean.method} for details.
 #' @param py.nit The maximum number of iterations to perform.
 #' @param en.tol The relative tolerance for convergence.
 #' @param control Optional further control parameters from \code{\link{enpy.control}}.

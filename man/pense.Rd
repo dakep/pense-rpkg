@@ -2,12 +2,9 @@
 % Please edit documentation in R/pense.R
 \name{pense}
 \alias{pense}
-\alias{pense.default}
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
-pense(X, ...)
-
-\method{pense}{default}(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
+pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
   lambda.min.ratio = NULL, standardize = TRUE, cv.k = 5,
   warm.reset = 10, ncores = getOption("mc.cores", 2L), cl = NULL,
   control = pense.control())

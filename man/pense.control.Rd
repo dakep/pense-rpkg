@@ -4,7 +4,7 @@
 \alias{pense.control}
 \title{Control Parameters for PENSE}
 \usage{
-\method{pense}{control}(pense.maxit = 500, pense.tol = 1e-06, pense.en.tol,
+pense.control(pense.maxit = 500, pense.tol = 1e-06, pense.en.tol,
   pense.en.maxit = 5e+05, cv.objective = scaleTau2, init.tol = 1e-06,
   init.maxit = 10, init.resid.clean.method = c("proportion", "threshold"),
   init.resid.proportion = 0.4, init.resid.threshold = 2,

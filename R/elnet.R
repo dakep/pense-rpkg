@@ -16,10 +16,10 @@
 #' @param alpha,lambda The values for the parameters controlling the penalization
 #' @param weights an optional vector of weights to be used in the fitting process. Should be
 #'                \code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
-#'                \code{weights} See also ‘Details’.
+#'                \code{weights} See also 'Details'.
 #' @param maxit The maximum number of iterations
 #' @param eps The relative tolerance for convergence for gradient-descent (default 1e-8) or
-#'      the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)
+#'      the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps})
 #' @param centering Should the rows be centered first
 #' @param addLeading1s Should a leading column of 1's be appended? If \code{FALSE}, this has
 #'      to be done before calling this function.

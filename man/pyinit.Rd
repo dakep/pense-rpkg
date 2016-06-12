@@ -2,7 +2,7 @@
 % Please edit documentation in R/pyinit.R
 \name{pyinit}
 \alias{pyinit}
-\title{PY (Peña-Yohai) initial estimates for S-estimates of regression}
+\title{PY (Pena-Yohai) initial estimates for S-estimates of regression}
 \usage{
 pyinit(X, y, intercept = TRUE, deltaesc, cc.scale, prosac,
   clean.method = c("threshold", "proportion"), C.res, prop, py.nit, en.tol,
@@ -47,6 +47,6 @@ Computes the PY initial estimates for S-estimates of regression.
 \references{
 Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
 Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-434–445. \url{http://doi.org/10.2307/2670164}
+434-445. \url{http://doi.org/10.2307/2670164}
 }
 

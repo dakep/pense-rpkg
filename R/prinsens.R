@@ -20,7 +20,7 @@
 #'
 #' @references Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
 #' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-#' 434–445. \url{http://doi.org/10.2307/2670164}
+#' 434-445. \url{http://doi.org/10.2307/2670164}
 #'
 #' @useDynLib pense C_pscs_ols C_pscs_en C_augtrans
 #' @export

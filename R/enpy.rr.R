@@ -1,4 +1,4 @@
-#' PY (Peña-Yohai) initial estimates for EN
+#' PY (Pena-Yohai) initial estimates for EN
 #'
 #' Computes the PY initial estimates for EN with approximated principal sensitivity components
 #' by the ridge regression solution.

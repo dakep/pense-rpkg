@@ -27,6 +27,9 @@ generated (see parameter \code{nlambda}).
 If given and \code{standardize = TRUE}, the lambda values will be adjusted
 accordingly.}
 
+\item{lambda.min.ratio}{If the grid should be chosen automatically, the ratio of the
+smallest lambda to the (computed) largest lambda.}
+
 \item{standardize}{should the data be standardized robustly? Estimates
 are returned on the original scale. Defaults to \code{TRUE}.}
 

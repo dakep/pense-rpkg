@@ -20,9 +20,6 @@ or approximate it from the optimal lambda}
 
 \item{ncores,cl}{use this many cores or the supplied cluster for choosing the
 optima lambda. See \code{\link{pense}} for more details.}
-
-\item{version}{Which M-step should be performed? The newly derived ("new") or the one
-from mmlasso?}
 }
 \description{
 Performs an M-step on the S-estimator returned from \code{\link{pense}}.

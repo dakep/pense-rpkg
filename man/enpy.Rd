@@ -2,7 +2,7 @@
 % Please edit documentation in R/enpy.R
 \name{enpy}
 \alias{enpy}
-\title{PY (Peña-Yohai) initial estimates for EN}
+\title{PY (Pena-Yohai) initial estimates for EN}
 \usage{
 enpy(X, y, alpha, lambda, deltaesc, cc.scale, psc.method = c("rr", "Mn",
   "Qp"), prosac, clean.method = c("threshold", "proportion"), C.res = NULL,
@@ -32,6 +32,8 @@ If \code{"threshold"}, all observations with scaled residuals larger than
 \code{C.res} will be removed.
 If \code{"proportion"}, observations with the largest \code{prop} residuals
 will be removed.}
+
+\item{C.res,prop}{See \code{clean.method} for details.}
 
 \item{py.nit}{The maximum number of iterations to perform.}
 

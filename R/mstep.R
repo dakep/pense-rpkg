@@ -5,8 +5,6 @@
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
 #' @param complete.grid should the optimal lambda be chosen from a grid of values
 #'      or approximate it from the optimal lambda
-#' @param version Which M-step should be performed? The newly derived ("new") or the one
-#'      from mmlasso?
 #' @param cv.k perform k-fold CV to choose optimal lambda (only used if
 #'      \code{complete.grid = FALSE}).
 #' @param nlambda the number of lambda values to try.

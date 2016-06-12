@@ -40,6 +40,6 @@ Compute the principal sensitiviy components (PSC) for regression.
 \references{
 Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
 Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-434–445. \url{http://doi.org/10.2307/2670164}
+434-445. \url{http://doi.org/10.2307/2670164}
 }
 

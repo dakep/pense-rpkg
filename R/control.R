@@ -148,7 +148,7 @@ enpy.control <- function(en.maxit = 50000,
 }
 
 
-#' Internal function to check PENSE control parameters
+## Internal function to check PENSE control parameters
 .check.pense.control <- function(ctrl) {
     simpleCheck <- function(x) {
         if (length(x) != 1L || !is.numeric(x) || anyNA(x) || x <= 0) {

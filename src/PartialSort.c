@@ -16,6 +16,55 @@
 double getQuantile(const double *values, const int length, const double quantile,
                           CompareFunction compare)
 {
+    double retVal = 0;
+    int quantIndex = (int) ceil(length * quantile);
+	int start = 0;
+	int end = quantIndex;
+	int less = 0;
+	int i;
+    double *restrict valuescpy = (double*) malloc((length + 1) * sizeof(double));
+	double cmp;
+
+    memcpy(valuescpy, values, length * sizeof(double));
+
+    valuescpy[length] = compare(DBL_MAX, 0.0);
+
+	while (less < quantIndex && end <= length) {
+		partialQsort(valuescpy, start, end + 2, length - 1, compare);
+
+		retVal = valuescpy[end];
+
+		less = 0;
+		for (i = 0; i < end && less < quantIndex; ++i) {
+			less += (compare(valuescpy[i], retVal) < 0);
+		}
+
+		end = ((end + quantIndex < length) ? (end + quantIndex) : length);
+		start += quantIndex;
+	}
+
+	if (start > 0) {
+		less = 0;
+		retVal = valuescpy[quantIndex];
+		for (i = 0; i < end && less < quantIndex; ++i) {
+			cmp = compare(valuescpy[i], retVal);
+			if (cmp < 0) {
+				++less;
+			} else if (cmp > 0) {
+				retVal = valuescpy[i];
+				less = i;
+			}
+		}
+	}
+
+    free(valuescpy);
+
+    return retVal;
+
+    /*
+     * The following unused code does not
+     */
+    /*
     double retVal;
     int quantIndex = (int) ceil(length * quantile);
     double *restrict valuescpy = (double*) malloc((length + 1) * sizeof(double));
@@ -30,6 +79,7 @@ double getQuantile(const double *values, const int length, const double quantile
     free(valuescpy);
 
     return retVal;
+    */
 }
 
 /**

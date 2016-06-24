@@ -479,19 +479,18 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         beta.zeros();
         beta[0] = mean(residuals);
         residuals -= beta[0];
-        return true;
+    } else {
+        /*
+         * First augment data
+         */
+        this->augmentData(data);
+
+        /*
+         * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
+         */
+
+        this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
     }
-
-    /*
-     * First augment data
-     */
-    this->augmentData(data);
-
-    /*
-     * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
-     */
-
-    this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
 
 	return true;
 }

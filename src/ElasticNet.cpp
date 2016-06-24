@@ -467,18 +467,30 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
 bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
 								  double *RESTRICT resids, const bool warm)
 {
-    /*
-     * First augment data
-     */
-    this->augmentData(data);
-
-    /*
-     * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
-     */
     vec beta(coefs, data.numVar(), false, true);
     vec residuals(resids, data.numObs(), false, true);
 
-    this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
+    if (data.numObs() == 0 || data.numVar() == 0) {
+        memset(coefs, 0, data.numVar() * sizeof(double));
+        memcpy(resids, data.getYConst(), data.numObs() * sizeof(double));
+    } else if (data.numVar() == 1) {
+        /* Data has only the first column of 1's – compute mean and return */
+        memcpy(residuals.memptr(), data.getYConst(), data.numObs() * sizeof(double));
+        beta.zeros();
+        beta[0] = mean(residuals);
+        residuals -= beta[0];
+    } else {
+        /*
+         * First augment data
+         */
+        this->augmentData(data);
+
+        /*
+         * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
+         */
+
+        this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
+    }
 
 	return true;
 }

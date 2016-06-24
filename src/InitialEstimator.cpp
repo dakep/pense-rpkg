@@ -352,6 +352,13 @@ void OLS::estimateCoefficients()
     BLAS_INT nvar = this->dataToUse.numVar();
     int lapackInfo;
 
+    if (nobs == 0) {
+        memset(this->coefEst, 0, nvar * sizeof(double));
+        memcpy(this->residuals, this->originalData.getYConst(),
+               this->originalData.numObs() * sizeof(double));
+        return;
+    }
+
     /* XtX = t(X) %*% X */
     BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
         BLAS_1F, this->dataToUse.getXtr(), nvar, this->dataToUse.getXtr(), nvar,
@@ -432,6 +439,13 @@ void ENPY::estimateCoefficients()
     int j;
     const double minusSqrtLambda2LS = -sqrt(LAMBDA_2(this->lambdaLS, this->ctrl.alpha) *
                                             this->residualFilteredNobs);
+
+    if (nobs == 0) {
+        memset(this->coefEst, 0, nvar * sizeof(double));
+        memcpy(this->residuals, this->originalData.getYConst(),
+               this->originalData.numObs() * sizeof(double));
+        return;
+    }
 
     if (this->ctrl.alpha == 0) {
         /* alpha is zero, i.e. we can do a simple OLS fit to the augmented X and Y */
@@ -618,6 +632,13 @@ ENPY_Exact::~ENPY_Exact()
 void ENPY_Exact::estimateCoefficients()
 {
     bool converged;
+
+    if (this->dataToUse.numObs() == 0) {
+        memset(this->coefEst, 0, this->dataToUse.numVar() * sizeof(double));
+        memcpy(this->residuals, this->originalData.getYConst(),
+               this->originalData.numObs() * sizeof(double));
+        return;
+    }
 
     /* This already updates the residuals, but NOT for all observations */
     this->en.setThreshold(this->ctrl.enEPS * this->currentNullDeviance);

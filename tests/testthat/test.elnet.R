@@ -402,3 +402,40 @@ test_that("EN", {
 
     remove(list = setdiff(ls(), c("gradient", "augment")))
 })
+
+test_that("EN - Bugs", {
+    n <- 100L
+    p <- 100L
+    ##
+    ## Test behaviour when no observations are given
+    ##
+    X <- matrix(0.0, ncol = p, nrow = 0L)
+    y <- numeric(0L)
+    res <- elnet(X, y, alpha = 0.5, lambda = 2)
+
+    # All coefficients should be zero and residuals of length zero
+    expect_identical(res$coefficients, numeric(p + 1L))
+    expect_identical(res$residuals, numeric(0L))
+
+    ##
+    ## Test behaviour when no columns are given
+    ##
+    X <- matrix(0.0, ncol = 0L, nrow = n)
+    y <- rnorm(n)
+    res <- elnet(X, y, alpha = 0.5, lambda = 2, addLeading1s = FALSE)
+
+    # All coefficients should be zero and residuals of length zero
+    expect_identical(res$coefficients, numeric(0L))
+    expect_identical(res$residuals, y)
+
+    ##
+    ## Test behaviour when only the column of 1's is given (i.e., average)
+    ##
+    X <- matrix(0.0, ncol = 0L, nrow = n)
+    y <- rnorm(n)
+    res <- elnet(X, y, alpha = 0.5, lambda = 2)
+
+    # All coefficients should be zero and residuals of length zero
+    expect_equal(res$coefficients, mean(y))
+    expect_equal(res$residuals, y - mean(y))
+})

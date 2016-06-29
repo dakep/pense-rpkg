@@ -233,8 +233,8 @@ pense <- function(X, y, alpha = 0.5,
         }
 
 
-        est.all <- pense:::pense.coldwarm(X.train, y.train,
-                                              alpha, job$lambda, standardize, control)
+        est.all <- pense.coldwarm(X.train, y.train,
+                                  alpha, job$lambda, standardize, control)
 
         residuals <- NULL
 

@@ -1,3 +1,7 @@
+2016-06-29: Version 0.5.3
+    *) Guard against invalid numeric values of relative change when checking for convergence
+    *) Fix R check NOTES by removing unnecessary namespace prefixes in parallel executed functions
+
 2016-06-24: Version 0.5.2
     *) Bug fix release. Fix bad memory access bug when EN is called with no observations present
     *) Adjust quantile function such that it always returns the smallest value that is greater

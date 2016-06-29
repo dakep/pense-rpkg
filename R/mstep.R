@@ -183,9 +183,9 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
                 y.test <- yc[job$segment]
             }
 
-            msres <- pense:::pensemstep(X.train, y.train, c0, init.scale, init.coef,
-                                        alpha = alpha, lambda = job$lambda,
-                                        control)
+            msres <- pensemstep(X.train, y.train, c0, init.scale, init.coef,
+                                alpha = alpha, lambda = job$lambda,
+                                control)
 
             return(drop(y.test - msres$intercept - X.test %*% msres$beta))
         }
@@ -297,7 +297,11 @@ pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) 
     ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
         lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
 
-    if (ret$rel.change > control$pense.tol) {
+    ##
+    ## Check if the M-step converged.
+    ## Be extra careful with the comparison as rel.change may be NaN or NA
+    ##
+    if (!identical(ret$rel.change > control$pense.tol, FALSE)) {
         warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
     }
 
@@ -362,7 +366,11 @@ pensemstep.rimpl <- function(X, y, cc, init.scale, init.coef, alpha, lambda, con
     ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
         lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
 
-    if (ret$rel.change > control$pense.tol) {
+    ##
+    ## Check if the M-step converged.
+    ## Be extra careful with the comparison as rel.change may be NaN or NA
+    ##
+    if (!identical(ret$rel.change > control$pense.tol, FALSE)) {
         warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
     }
 

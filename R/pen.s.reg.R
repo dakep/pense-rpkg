@@ -49,7 +49,11 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
 
     ret$objF <- dX[1L] * ret$scale^2 + lambda1 * sum(abs(ret$beta)) + lambda2 * sum(ret$beta^2)
 
-    if (ret$rel.change > control$pense.tol && identical(warn, TRUE)) {
+    ##
+    ## Check if the S-step converged.
+    ## Be extra careful with the comparison as rel.change may be NaN or NA
+    ##
+    if (!identical(ret$rel.change > control$pense.tol, FALSE) && identical(warn, TRUE)) {
         warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
     }
 
@@ -120,7 +124,11 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
         }
     }
 
-    if (rel.change > tol && identical(warn, TRUE)) {
+    ##
+    ## Check if the S-step converged.
+    ## Be extra careful with the comparison as rel.change may be NaN or NA
+    ##
+    if (!identical(rel.change > tol, FALSE) && identical(warn, TRUE)) {
         warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
     }
 

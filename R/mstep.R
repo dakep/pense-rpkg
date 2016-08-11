@@ -108,7 +108,7 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ##
         lambda.max <- lambda.opt.mm
         lambda.min.ratio <- eval(penseobj$call$lambda.min.ratio)
-        lambda.min.ratio <- ifelse(is.null(lambda.min.ratio), 1e-5)
+        lambda.min.ratio <- ifelse(is.null(lambda.min.ratio), 1e-5, lambda.min.ratio)
 
         checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
             msres <- pensemstep(Xs, yc, cc = c0,

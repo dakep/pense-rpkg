@@ -107,6 +107,8 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ## in log-2 steps (i.e., always double the previous value)
         ##
         lambda.max <- lambda.opt.mm
+        lambda.min.ratio <- eval(penseobj$call$lambda.min.ratio)
+        lambda.min.ratio <- ifelse(is.null(lambda.min.ratio), 1e-5)
 
         checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
             msres <- pensemstep(Xs, yc, cc = c0,
@@ -118,6 +120,10 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
             return(all(msres$beta == 0))
         }
 
+        ##
+        ## Get largest lambda necessary
+        ##
+        moved.away <- FALSE
         repeat {
             check.lambdas <- c(lambda.max, 2 * seq_len(cluster$ncores - 1L) * lambda.max)
 
@@ -131,6 +137,8 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
             all.zero <- which(unlist(all.zero))
 
             if (length(all.zero) > 0) {
+                # Check if we moved away from the initial guess
+                moved.away <- !identical(all.zero[1L], 1L)
                 lambda.max <- check.lambdas[all.zero[1L]]
                 break
             }
@@ -138,18 +146,37 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
             lambda.max <- 2 * check.lambdas[cluster$ncores]
         }
 
+        if (!moved.away) {
+            # If we did not move away from the initial guess, we have to check the next smallest
+            # step if this may lead to all-zeros as well
+            # check lambda.max / 2, lambda.max / 4, lambda.max / 8, lambda.max / (2^...)
+            repeat {
+                check.lambdas <- lambda.max * 0.5^seq_len(cluster$ncores)
+
+                all.zero <- cluster$lapply(check.lambdas, checkAllZero,
+                                           init.scale = scale.init.corr,
+                                           init.coef = pense.coef,
+                                           c0 = c0,
+                                           alpha = penseobj$alpha,
+                                           control = control)
+
+                not.all.zero <- which(!unlist(all.zero))
+
+                if (length(not.all.zero) > 0) {
+                    choose <- not.all.zero[1L] - 1L
+                    lambda.max <- ifelse(choose < 1L, lambda.max, check.lambdas[choose])
+                    break
+                }
+
+                lambda.max <- check.lambdas[cluster$ncores] * 0.5
+            }
+        }
+
         ##
         ## Create grid of nlambda values in [lambda.min; lambda.max]
         ## where lambda.min is the adjusted minimum of the grid for the S-estimator
         ##
-        lambda.tmp.grid <- lambda.grid(Xs, yc, penseobj$alpha, 2L, control, standardize = FALSE,
-                                       lambda.min.ratio = eval(penseobj$call$lambda.min.ratio))
-
-        ## Make the value even smaller than with the usual adjustment of 3 / c0^2
-        ## to make sure we cover enough ground
-        lambda.min <- lambda.tmp.grid[1L] / c0^2
-
-        lambda.grid.m <- exp(seq(from = log(lambda.min), to = log(lambda.max), length = nlambda))
+        lambda.grid.m <- exp(seq(from = log(lambda.min.ratio * lambda.max), to = log(lambda.max), length = nlambda))
         lambda.grid.m <- sort(c(lambda.grid.m, lambda.opt.mm))
 
         ## Determine CV segments

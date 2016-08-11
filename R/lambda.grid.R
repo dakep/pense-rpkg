@@ -25,7 +25,7 @@ lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, lambd
     covxy <- apply(Xs, 2, covGK, ycs, sigmamu = scaleTau2)
 
     if (is.null(lambda.min.ratio)) {
-        lambda.min.ratio <- 10^-3 * 10^floor(log10(dX[2L] / dX[1L]))
+        lambda.min.ratio <- min(1e-2, 1e-3 * 10^floor(log10(dX[2L] / dX[1L])))
     }
 
     lmax <- max(abs(covxy))

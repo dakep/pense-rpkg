@@ -56,7 +56,22 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         bisquare = 1L,
         1L
     )
-    edf <- sum(abs(pense.coef) > .Machine$double.eps) # includes intercept, no need to + 1!
+
+    active.set <- (abs(pense.coef[-1L]) > .Machine$double.eps)
+
+    edf <- if (penseobj$alpha < 1) {
+        # this is not the lambda_2 in the objective used for optimization
+        # since the optimization uses differently scaled objective
+        lambda2 <- pense.lambda.opt * (1 - penseobj$alpha) * dX[1L]
+        xtx <- crossprod(Xs[, active.set])
+        hmat <- solve(xtx + lambda2 * diag(sum(active.set)), xtx)
+        sum(diag(hmat))
+    } else {
+        sum(active.set)
+    }
+
+    edf <- edf + 1 # add intercept
+
     delta.adj <- control$mscale.delta * (1 - edf / dX[1L])
     delta.adj <- max(0.25, delta.adj) # Don't go below 0.25
 

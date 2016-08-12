@@ -57,6 +57,13 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         1L
     )
 
+
+    ##
+    ## Compute effective degrees of freedom
+    ## according to
+    ## Tibshirani, Ryan J.; Taylor, Jonathan. Degrees of freedom in lasso problems.
+    ## Ann. Statist. 40 (2012), no. 2, 1198--1232. doi:10.1214/12-AOS1003.
+    ##
     active.set <- (abs(pense.coef[-1L]) > .Machine$double.eps)
 
     edf <- if (penseobj$alpha < 1) {

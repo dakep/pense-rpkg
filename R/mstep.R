@@ -125,7 +125,7 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ##
         moved.away <- FALSE
         repeat {
-            check.lambdas <- c(lambda.max, 2 * seq_len(cluster$ncores - 1L) * lambda.max)
+            check.lambdas <- c(lambda.max, (2 ^ seq_len(cluster$ncores - 1L)) * lambda.max)
 
             all.zero <- cluster$lapply(check.lambdas, checkAllZero,
                                         init.scale = scale.init.corr,
@@ -138,12 +138,13 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
 
             if (length(all.zero) > 0) {
                 # Check if we moved away from the initial guess
-                moved.away <- !identical(all.zero[1L], 1L)
+                moved.away <- moved.away | !identical(all.zero[1L], 1L)
                 lambda.max <- check.lambdas[all.zero[1L]]
                 break
             }
 
             lambda.max <- 2 * check.lambdas[cluster$ncores]
+            moved.away <- TRUE
         }
 
         if (!moved.away) {
@@ -169,6 +170,12 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
                 }
 
                 lambda.max <- check.lambdas[cluster$ncores] * 0.5
+
+                if (isTRUE(lambda.max < .Machine$double.eps)) {
+                    lambda.max <- lambda.opt.mm
+                    warning("M-step seems to converge to the zero-vector for all penalty values.")
+                    break
+                }
             }
         }
 

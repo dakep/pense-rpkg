@@ -66,7 +66,7 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
     ##
     active.set <- (abs(pense.coef[-1L]) > .Machine$double.eps)
 
-    edf <- if (penseobj$alpha < 1) {
+    edf <- if ((penseobj$alpha < 1) && (length(active.set) > 0L)) {
         # this is not the lambda_2 in the objective used for optimization
         # since the optimization uses differently scaled objective
         lambda2 <- pense.lambda.opt * (1 - penseobj$alpha) * dX[1L]

@@ -67,6 +67,10 @@ enpy <- function(X, y, alpha, lambda, deltaesc, cc.scale,
 
     psc.method <- match.arg(psc.method)
 
+    if (alpha == 0) {
+        psc.method <- 'rr'
+    }
+
     result <- switch(psc.method,
                      rr = enpy.rr(X, y, alpha, lambda, deltaesc, cc.scale, prosac, clean.method,
                                   C.res, prop, py.nit, en.tol, control),

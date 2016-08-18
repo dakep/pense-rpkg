@@ -439,7 +439,11 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
     vec beta(coefs, data.numVar(), false, true);
     vec residuals(resids, data.numObs(), false, true);
 
-    this->augmentedLASSO(beta, residuals, data.numObs(), false);
+    if (this->lambda1 > 0) {
+        this->augmentedLASSO(beta, residuals, data.numObs(), false);
+    } else {
+        this->augmentedOLS(beta, residuals, data.numObs(), false);
+    }
 
 
     /*
@@ -488,11 +492,31 @@ bool ElasticNetLARS::computeCoefs(const Data& data, double *RESTRICT coefs,
         /*
          * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
          */
-
-        this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
+        if (this->lambda1 > 0) {
+            this->augmentedLASSO(beta, residuals, data.numObs(), this->center);
+        } else {
+            this->augmentedOLS(beta, residuals, data.numObs(), this->center);
+        }
     }
 
 	return true;
+}
+
+
+void ElasticNetLARS::augmentedOLS(arma::vec& coefs, arma::vec& residuals, const arma::uword nobs,
+                                  const bool intercept)
+{
+    if (!intercept) {
+        this->XtrAug.row(0).zeros();
+    }
+
+    arma::solve(coefs, this->XtrAug.t(), this->yAug, arma::solve_opts::fast + arma::solve_opts::no_approx);
+
+    if (!intercept) {
+        coefs[0] = 0;
+    }
+
+    residuals = this->yAug.rows(0, nobs - 1) - this->XtrAug.cols(0, nobs - 1).t() * coefs;
 }
 
 

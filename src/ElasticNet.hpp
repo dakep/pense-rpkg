@@ -213,6 +213,9 @@ private:
 
 	void augmentedLASSO(arma::vec& coefs, arma::vec& residuals, const arma::uword nobs,
 						const bool intercept);
+
+	void augmentedOLS(arma::vec& coefs, arma::vec& residuals, const arma::uword nobs,
+					  const bool intercept);
 };
 
 

@@ -356,7 +356,7 @@ static inline double softThreshold(const double z, const double gamma)
 /****************************************************************************
  *
  * Elastic Net using the Least Angular Regression method
- * 
+ *
  * This augments the data matrix with a diagonal matrix and then computes
  * the LASSO solution.
  *
@@ -593,19 +593,18 @@ void ElasticNetLARS::augmentedLASSO(vec& beta, vec& residuals, const uword nobs,
 
     if(this->XtrAug.n_rows == 2) {
         // special case of only one variable (with sufficiently large norm)
-        j = inactive(0);
         // set maximum step size in the direction of that variable
-        double maxStep = this->corY(j);
+        double maxStep = this->corY(1);
         if(maxStep < 0) {
             maxStep = -maxStep; // absolute value
         }
         // compute coefficients for least squares solution
-        vec betaLS = solve(this->XtrAug.unsafe_col(j), this->yAug);
+        vec betaLS = solve(this->XtrAug.row(1).t(), this->yAug);
 
         // compute lasso coefficients
         if(rescaledLambda < maxStep) {
             // interpolate towards least squares solution
-            beta(j) = (maxStep - rescaledLambda) * betaLS[0] / maxStep;
+            beta(1) = (maxStep - rescaledLambda) * betaLS[0] / maxStep;
         }
     } else if (this->XtrAug.n_rows > 2) {
         /*
@@ -770,7 +769,7 @@ void ElasticNetLARS::augmentedLASSO(vec& beta, vec& residuals, const uword nobs,
                             maxActive = usableVariables;
                         }
                     } else {
-                        /* 
+                        /*
                          * no singularity: add variable to active set
                          */
                         active.insert_rows(nrActive, 1, false);

@@ -6,3 +6,6 @@ autoconfig.h
 Makevars
 config.log
 config.status
+.Rproj.user
+*.Rproj
+.Rbuildignore

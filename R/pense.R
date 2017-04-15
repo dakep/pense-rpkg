@@ -140,15 +140,11 @@ pense <- function(X, y, alpha = 0.5,
         stop("`lambda.min.ratio` must be a single positive numeric value.")
     }
 
-
-
-
     control <- .check.pense.control(control)
 
     ## store the call
     call <- match.call()
     call[[1L]] <- as.name("pense")
-
 
     ## Automatically select the PSC method
     if (control$init.psc.method == "auto") {
@@ -214,15 +210,17 @@ pense <- function(X, y, alpha = 0.5,
     jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
 
     ## Setup cluster
-    cluster <- setupCluster(ncores, cl,
-                            export = c("X", "y"),
-                            eval = {
-                                library(pense)
-                            })
+    cluster <- setupCluster(
+        ncores,
+        cl,
+        export = c("X", "y", "scale.x"),
+        eval = {
+            library(pense)
+        }
+    )
 
     ## Run all jobs (combination of all CV segments and all lambda-grids)
     dojobcv <- function(job, alpha, standardize, control) {
-
         if (length(job$segment) == 0L) {
             X.train <- X
             y.train <- y
@@ -232,9 +230,14 @@ pense <- function(X, y, alpha = 0.5,
 
         }
 
-
-        est.all <- pense.coldwarm(X.train, y.train,
-                                  alpha, job$lambda, standardize, control)
+        est.all <- pense.coldwarm(
+            X = X.train,
+            y = y.train,
+            alpha = alpha,
+            lambda.grid = job$lambda,
+            standardize = standardize,
+            control = control
+        )
 
         residuals <- NULL
 
@@ -250,30 +253,72 @@ pense <- function(X, y, alpha = 0.5,
             }, FUN.VALUE = numeric(length(job$segment)), USE.NAMES = FALSE)
         }
 
-        return(residuals)
+        sol.stats <- vapply(est.all, function (est) {
+            c(
+                objF = est$objF,
+                scale = est$scale,
+                beta.L1 = sum(abs(est$beta / scale.x)),
+                beta.L2 = sqrt(sum((est$beta / scale.x)^2))
+            )
+        }, FUN.VALUE = numeric(4L), USE.NAMES = TRUE)
+
+        return(list(
+            residuals = residuals,
+            sol.stats = sol.stats
+        ))
     }
 
     tryCatch({
-        prediction.errors <- cluster$lapply(jobgrid, dojobcv, alpha = alpha,
-                                            standardize = standardize, control = control)
+        cv.results <- cluster$lapply(
+            jobgrid,
+            dojobcv,
+            alpha = alpha,
+            standardize = standardize,
+            control = control
+        )
+
+        cv.results <- split(cv.results, rep.int(seq_len(warm.reset), cv.k))
     },
     finally = {
         cluster$stopCluster()
     })
 
     ## Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
-    cv.performance <- unlist(lapply(split(prediction.errors, rep.int(seq_len(warm.reset), cv.k)),
-                                    function(preds) {
-                                        preds <- do.call(rbind, preds)
-                                        apply(preds, 2, control$cv.objective)
-                                    }), use.names = FALSE)
+    cv.performance <- unlist(lapply(cv.results, function(cv.res) {
+            pred.resids <- do.call(rbind, lapply(cv.res, "[[", "residuals"))
+            apply(pred.resids, 2, control$cv.objective)
+        }), use.names = FALSE)
 
-    lambda.grid <- cbind(lambda = lambda * max(scale.x), cv.performance = cv.performance)
+    cv.stats <- do.call(rbind, lapply(cv.results, function (cv.res) {
+        sol.stats <- unlist(lapply(cv.res, "[[", "sol.stats"))
+        sol.stats <- array(
+            sol.stats,
+            dim = c(4L, length(sol.stats) %/% (cv.k * 4L), cv.k),
+            dimnames = list(
+                c("obj.fun", "s.scale", "beta.L1", "beta.L2"),
+                NULL,
+                NULL
+            )
+        )
+        apply(sol.stats, 1L, rowMeans, na.rm = TRUE)
+    }))
+
+    lambda.grid <- data.frame(
+        lambda = lambda * max(scale.x),
+        cv.performance = cv.performance,
+        cv.stats
+    )
     lambda.opt <- lambda[which.min(cv.performance)]
 
     ## Fit PENSE with optimal lambda using a cold start
-    opt.est <- pense.coldwarm(Xs, yc, alpha, lambda.opt, standardize = FALSE, control)[[1L]]
-
+    opt.est <- pense.coldwarm(
+        X = Xs,
+        y = yc,
+        alpha = alpha,
+        lambda.grid = lambda.opt,
+        standardize = FALSE,
+        control = control
+    )[[1L]]
 
     ## Un-standardize the coefficients
     if (standardize == TRUE) {

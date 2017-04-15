@@ -20,4 +20,3 @@ A numeric vector of size \eqn{p + 1}.
 \description{
 Extract Model Coefficients
 }
-

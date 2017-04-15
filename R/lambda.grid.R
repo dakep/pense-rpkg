@@ -35,7 +35,7 @@ lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, lambd
     ## during estimation!
     lambda <- exp(seq(log(lmin), log(lmax), length.out = nlambda)) * 2 * scaleFun(y) / alpha
     #adjustment for an S-est (may not be enough)
-    lambda <- lambda * 1.1 * facon(control$mscale.delta) / control$mscale.cc^2
+    lambda <- lambda * 1.1 * 2
 
     return(lambda)
 }

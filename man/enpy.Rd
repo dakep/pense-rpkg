@@ -59,4 +59,3 @@ Three different methods to calculate the sensitivity components are implemented:
                         residuals and leave-one-out residuals from elastic net.}
 }
 }
-

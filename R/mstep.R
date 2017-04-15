@@ -106,7 +106,7 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
     ##
     ## Adjust lambda for the M step
     ##
-    lambda.opt.ls <- pense.lambda.opt * control$mscale.cc^2 / facon(control$mscale.delta)
+    lambda.opt.ls <- pense.lambda.opt * 0.5
     lambda.opt.mm <- lambda.opt.ls * 3 / c0^2
 
 

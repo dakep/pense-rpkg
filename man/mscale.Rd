@@ -34,4 +34,3 @@ This solves the M-estimation equation given by
 
 \code{NA} values in \code{x} are removed before calculating the
 }
-

@@ -40,13 +40,21 @@ consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
         dnorm(x) * .Mchi(x, cc, int.rho.fun)
     }
 
-    expectation <- function(cc, delta) {
-        integrate(integrand, lower = -Inf, upper = Inf, cc)$value - delta
+    expectation <- if (int.rho.fun == 1L) {
+        # For bisquare we have the closed form solution to the expectation as
+        function(cc, delta) {
+            pnorm.mcc <- 2 * pnorm(-cc)
+            1/cc^6 * exp(-(cc^2/2)) * (
+                -cc * (15 - 4 * cc^2 + cc^4) * sqrt(2 / pi) +
+                    3 * (5 - 3 * cc^2 + cc^4) * exp(cc^2/2) * (1 - pnorm.mcc) +
+                    cc^6 * exp(cc^2/2) * pnorm.mcc
+            ) - delta
+        }
+    } else {
+        function(cc, delta) {
+            integrate(integrand, lower = -Inf, upper = Inf, cc)$value - delta
+        }
     }
 
     uniroot(expectation, interval = interval, delta)$root
-}
-
-facon <- function(delta) {
-    23.9716 - 73.4391 * delta + 64.9480 * delta^2
 }

@@ -123,7 +123,6 @@ pense <- function(X, y, alpha = 0.5,
             stop("Supplied `lambda` must be a numeric vector of non-negative values ",
                  "without NAs")
         }
-        lambda <- sort(lambda)
         nlambda <- length(lambda)
     } else if (length(nlambda) != 1L || !is.numeric(nlambda) || anyNA(nlambda) ||
                any(nlambda < 1)) {

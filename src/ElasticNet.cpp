@@ -421,7 +421,7 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
         recipSqrtSumWeights += weights[i];
     }
 
-    recipSqrtSumWeights = 1 / sqrt(recipSqrtSumWeights);
+    recipSqrtSumWeights = sqrt((double) data.numObs() / recipSqrtSumWeights);
 
     for (i = 0; i < (uword) data.numObs(); ++i) {
         sqrtWeights[i] *= recipSqrtSumWeights;
@@ -463,7 +463,7 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
             coefs[0] += weights[i] * resids[i];
         }
 
-        coefs[0] *= recipSqrtSumWeights * recipSqrtSumWeights;
+        coefs[0] *= recipSqrtSumWeights * recipSqrtSumWeights / (double) data.numObs();
 
         residuals -= coefs[0];
     }

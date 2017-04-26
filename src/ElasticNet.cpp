@@ -395,7 +395,7 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
 {
     uword i;
     vec sqrtWeights(data.numObs());
-    double recipSumWeights = 0; /* This is also the squared L2 norm of the sqrtWeights */
+    double recipSqrtSumWeights = 0;
 
     /*
      * First augment data
@@ -415,19 +415,23 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
         XtrWeighted.set_size(data.numVar(), data.numObs());
     }
 
-    recipSumWeights = 0;
+    recipSqrtSumWeights = 0;
     for (i = 0; i < (uword) data.numObs(); ++i) {
         sqrtWeights[i] = sqrt(weights[i]);
-        recipSumWeights += weights[i];
+        recipSqrtSumWeights += weights[i];
+    }
 
+    recipSqrtSumWeights = 1 / sqrt(recipSqrtSumWeights);
+
+    for (i = 0; i < (uword) data.numObs(); ++i) {
+        sqrtWeights[i] *= recipSqrtSumWeights;
         this->yAug[i] *= sqrtWeights[i];
         XtrWeighted.unsafe_col(i) = sqrtWeights[i] * this->XtrAug.unsafe_col(i);
     }
 
     if (this->center) {
-        recipSumWeights = 1 / recipSumWeights;
         this->XtrAug.cols(0, data.numObs() - 1) = XtrWeighted -
-                            XtrWeighted * sqrtWeights * sqrtWeights.t() * recipSumWeights;
+                            XtrWeighted * sqrtWeights * sqrtWeights.t();
 
         XtrWeighted.reset();
     }
@@ -459,7 +463,7 @@ bool ElasticNetLARS::computeCoefsWeighted(const Data& data, double *RESTRICT coe
             coefs[0] += weights[i] * resids[i];
         }
 
-        coefs[0] *= recipSumWeights;
+        coefs[0] *= recipSqrtSumWeights * recipSqrtSumWeights;
 
         residuals -= coefs[0];
     }

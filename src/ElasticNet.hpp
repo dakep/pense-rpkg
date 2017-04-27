@@ -90,9 +90,10 @@ public:
      *          the starting point for the coordinate-descend algorithm. (see argument warm)
      * @param residuals A vector of residuals with as many observations as in data. The
      *          residuals will be recalculated for the given (warm) coefficients
+     * @param weights a vector of weights for each observation. NOTE: the weights will not
+     *          be normalized!
      *
-     * NOTE: The leading column of X is used as weight for the row in
-     *		 in centering the data.
+     * NOTE: The leading column of X is used as weight for the row in centering the data.
      *
      * @returns TRUE if the algorithm converged, FALSE otherwise
      */
@@ -141,7 +142,7 @@ private:
 	double *RESTRICT Xvars;
 	int XtrSize;
 	int XmeansSize;
-    
+
 	void resizeBuffer(const Data& data);
 };
 

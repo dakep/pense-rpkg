@@ -78,7 +78,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
             tmp += residuals[i] * residuals[i] * weights[i];
         }
 
-        tmp = this->scale * this->scale / tmp;
+        tmp = this->scale / (tmp * this->data.numObs());
 
         for (i = 0; i < this->data.numObs(); ++i) {
             weights[i] *= tmp;
@@ -145,6 +145,6 @@ static inline double wgtBisquare2(double x, double c)
 
     x /= c;
     x = (1 - x) * (1 + x);
-    return x * x; // * 6 / (c * c)?
+    return x * x * 6 / (c * c);
 }
 

@@ -72,7 +72,7 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
          * Compute weights
          */
         for (i = 0; i < this->data.numObs(); ++i) {
-            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC);
+            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC) / (scale * scale);
         }
 
         /*
@@ -129,6 +129,6 @@ static inline double wgtBisquare2(double x, double c)
 
     x /= c;
     x = (1 - x) * (1 + x);
-    return x * x; // * 6 / (c * c)?
+    return x * x * 6 / (c * c);
 }
 

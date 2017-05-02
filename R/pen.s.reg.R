@@ -8,8 +8,8 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
     Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
     dX[2L] <- dX[2L] + 1L
 
-    lambda1 <- alpha * lambda * dX[1L]
-    lambda2 <- lambda * (1 - alpha) * dX[1L] / 2
+    lambda1 <- alpha * lambda
+    lambda2 <- lambda * (1 - alpha) / 2
 
     cctrl <- initest.control(
         lambda = lambda,
@@ -47,7 +47,7 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
         objF = NA_real_
     )
 
-    ret$objF <- dX[1L] * ret$scale^2 + lambda1 * sum(abs(ret$beta)) +
+    ret$objF <- ret$scale^2 + lambda1 * sum(abs(ret$beta)) +
         lambda2 * sum(ret$beta^2)
 
     ##

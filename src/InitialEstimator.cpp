@@ -22,7 +22,7 @@
 #define MAX_NUM_PSCS(numVar) (3 * numVar + 2)
 
 #define LAMBDA_1(lambda, alpha) lambda * alpha
-#define LAMBDA_2(lambda, alpha) 0.5 * lambda * (1 - alpha)
+#define LAMBDA_2(lambda, alpha, nobs) 0.5 * lambda * (1 - alpha) * nobs
 
 static BLAS_INT BLAS_1L = 1;
 
@@ -437,8 +437,9 @@ void ENPY::estimateCoefficients()
     bool converged;
     int lapackInfo;
     int j;
-    const double minusSqrtLambda2LS = -sqrt(LAMBDA_2(this->lambdaLS, this->ctrl.alpha) *
-                                            this->residualFilteredNobs);
+    const double minusSqrtLambda2LS = -(1 + (this->ctrl.alpha > 0)) *
+                                        sqrt(LAMBDA_2(this->lambdaLS, this->ctrl.alpha,
+                                                      this->residualFilteredNobs));
 
     if (nobs == 0) {
         memset(this->coefEst, 0, nvar * sizeof(double));
@@ -448,8 +449,9 @@ void ENPY::estimateCoefficients()
     }
 
     if (this->ctrl.alpha == 0) {
-        /* alpha is zero, i.e. we can do a simple OLS fit to the augmented X and Y */
-
+        /*
+         * alpha is zero, i.e. we can do a simple OLS fit to the augmented X and Y
+         */
         /* XtX = t(X) %*% X */
         BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_TRANS, nvar, nvar, nobs,
             BLAS_1F, this->dataToUse.getXtr(), nvar, this->dataToUse.getXtr(), nvar,
@@ -481,7 +483,7 @@ void ENPY::estimateCoefficients()
          */
         this->en.setAlphaLambda(1, LAMBDA_1(this->ctrl.alpha, this->lambdaLS) *
                                         this->residualFilteredNobs /
-                                            (residualFilteredNobs + this->originalData.numVar() - 1));
+                                        (residualFilteredNobs + this->originalData.numVar() - 1));
 
         this->en.setThreshold(this->ctrl.enEPS * this->currentNullDeviance);
         converged = this->en.computeCoefs(this->dataToUse, this->coefEst, this->residuals);
@@ -514,8 +516,10 @@ void ENPY::resetData()
     if (this->ctrl.alpha < 1) {
         this->residualFilteredData.setNumObs(this->originalData.numObs() + this->originalData.numVar() - 1);
         this->residualFilteredData.resize();
+        /* In case of EN, we need to multiply lambda_2 by 2 to account for the 1/2 in the EN objective */
         extendData(this->residualFilteredData, this->originalData,
-                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha) * this->originalData.numObs(), true);
+                   (1 + (this->ctrl.alpha > 0)) *
+                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha, this->originalData.numObs()), true);
     } else {
         this->residualFilteredData.free();
         this->residualFilteredData.copy(this->originalData);
@@ -544,8 +548,10 @@ void ENPY::filterDataResiduals(double threshold)
     InitialEstimator::filterDataResiduals(threshold);
 
     if (this->ctrl.alpha < 1) {
+        /* In case of EN, we need to multiply lambda_2 by 2 to account for the 1/2 in the EN objective */
         extendData(this->residualFilteredData, this->residualFilteredData,
-                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha) * this->residualFilteredNobs,
+                   (1 + (this->ctrl.alpha > 0)) *
+                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha, this->residualFilteredNobs),
                    false);
 
         this->residualFilteredData.setNumObs(this->residualFilteredNobs +
@@ -572,8 +578,10 @@ void ENPY::filterDataPSC(const double *RESTRICT values, const double threshold,
                 this->residualFilteredNobs);
 
     if (this->ctrl.alpha < 1) {
+        /* In case of EN, we need to multiply lambda_2 by 2 to account for the 1/2 in the EN objective */
         extendData(this->pscFilteredData, this->pscFilteredData,
-                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha) * this->pscFilteredData.numObs(),
+                   (1 + (this->ctrl.alpha > 0)) *
+                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha, this->pscFilteredData.numObs()),
                    false);
 
         this->pscFilteredData.setNumObs(this->pscFilteredData.numObs() +

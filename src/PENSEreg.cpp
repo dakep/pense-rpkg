@@ -47,7 +47,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     this->iteration = 0;
 
-    en->setAlphaLambda(this->alpha, this->lambda / (2 * data.numObs()));
+    en->setAlphaLambda(this->alpha, this->lambda);
 
     computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
                      currentCoef, residuals);

@@ -6,7 +6,8 @@
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
   lambda.min.ratio = NULL, standardize = TRUE, cv.k = 5,
-  warm.reset = 10, ncores = getOption("mc.cores", 2L), cl = NULL,
+  warm.reset = 10, initial = c("warm", "warm0", "cold"),
+  ncores = getOption("mc.cores", 2L), cl = NULL,
   control = pense.control())
 }
 \arguments{
@@ -37,8 +38,16 @@ are returned on the original scale. Defaults to \code{TRUE}.}
 lambda from the grid. If only a single value of lambda is given, cross-validation
 can still done to estimate the prediction performance at this particular lambda.}
 
-\item{warm.reset}{how often should the warm-start be reset to a cold initial estimate?
-If \code{NULL}, no warm starts will be used.}
+\item{warm.reset}{if \code{initial = "warm"}, how often should the warm-start
+be reset to a cold initial estimate?}
+
+\item{initial}{how to initialize the estimator at a new lambda in the grid.
+The default, \code{"warm"}, computes a cold initial estimator at several
+lambda values and uses the PENSE coefficient to warm-start the estimator at
+the next larger lambda value. A variant, \code{"warm0"}, will initialze
+PENSE at the largest lambda value with an all-0 coefficient vector and
+use the PENSE result for the next smaller lambda value. \code{"cold"}
+computes the full initial estimator at every lambda value.}
 
 \item{ncores, cl}{the number of processor cores or an actual parallel cluster to use to
 estimate the optimal value of lambda. See details for more information.}

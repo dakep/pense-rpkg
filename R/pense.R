@@ -31,8 +31,15 @@
 #' @param cv.k number of cross-validation segements to use to choose the optimal
 #'      lambda from the grid. If only a single value of lambda is given, cross-validation
 #'      can still done to estimate the prediction performance at this particular lambda.
-#' @param warm.reset how often should the warm-start be reset to a cold initial estimate?
-#'      If \code{NULL}, no warm starts will be used.
+#' @param initial how to initialize the estimator at a new lambda in the grid.
+#'      The default, \code{"warm"}, computes a cold initial estimator at several
+#'      lambda values and uses the PENSE coefficient to warm-start the estimator at
+#'      the next larger lambda value. A variant, \code{"warm0"}, will initialze
+#'      PENSE at the largest lambda value with an all-0 coefficient vector and
+#'      use the PENSE result for the next smaller lambda value. \code{"cold"}
+#'      computes the full initial estimator at every lambda value.
+#' @param warm.reset if \code{initial = "warm"}, how often should the warm-start
+#'      be reset to a cold initial estimate?
 #' @param ncores,cl the number of processor cores or an actual parallel cluster to use to
 #'      estimate the optimal value of lambda. See details for more information.
 #' @param control a list of control parameters as returned by \code{\link{pense.control}}.
@@ -54,6 +61,7 @@ pense <- function(X, y, alpha = 0.5,
                   nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
                   standardize = TRUE,
                   cv.k = 5, warm.reset = 10,
+                  initial = c("warm", "warm0", "cold"),
                   ncores = getOption("mc.cores", 2L), cl = NULL,
                   control = pense.control()) {
     ##
@@ -108,15 +116,24 @@ pense <- function(X, y, alpha = 0.5,
     }
     cv.k <- as.integer(cv.k)
 
-    if (is.null(warm.reset)) {
-        warm.reset <- nlambda
-    }
+    initial <- match.arg(initial)
 
-    if (length(warm.reset) != 1L || !is.numeric(warm.reset) || anyNA(warm.reset) ||
-        any(warm.reset < 1)) {
-        stop("`warm.reset` must be a single numeric value greater than 0.")
+    warm.reset <- if (isTRUE(initial == "warm")) {
+        if (is.null(warm.reset)) {
+            warm.reset <- nlambda
+        }
+
+        if (length(warm.reset) != 1L || !is.numeric(warm.reset) || anyNA(warm.reset) ||
+            any(warm.reset < 1)) {
+            stop("`warm.reset` must be a single numeric value greater than 0.")
+        }
+
+        as.integer(warm.reset)
+    } else if (isTRUE(initial == "cold")) {
+        Inf
+    } else {
+        1L
     }
-    warm.reset <- as.integer(warm.reset)
 
     if (!is.null(lambda)) {
         if (!is.numeric(lambda) || !is.null(dim(lambda)) || anyNA(lambda) || any(lambda < 0)) {
@@ -131,7 +148,6 @@ pense <- function(X, y, alpha = 0.5,
 
     nlambda <- as.integer(nlambda)
     warm.reset <- min(nlambda, warm.reset)
-
 
     if (is.null(lambda) && !is.null(lambda.min.ratio) &&
         (length(lambda.min.ratio) != 1L || !is.numeric(lambda.min.ratio) ||
@@ -185,41 +201,11 @@ pense <- function(X, y, alpha = 0.5,
                               lambda.min.ratio = lambda.min.ratio)
     }
 
-    ## Create CV segments
-    cv.segments <- if(cv.k > 1L) {
-        split(seq_len(dX[1L]), sample(rep_len(seq_len(cv.k), dX[1L])))
-    } else {
-        list(integer(0))
-    }
+    ## Reverse the order if we use a warm-0 start
+    lambda <- sort(lambda, decreasing = isTRUE(initial == "warm0"))
 
-    subgrid.lengths <- nlambda %/% warm.reset
-    overlength <- nlambda %% warm.reset
-    subgrid.lengths <- c(rep.int(subgrid.lengths, warm.reset - overlength),
-                         rep.int(subgrid.lengths + 1L, overlength))
-
-    lambda.subgrids <- split(lambda, rep.int(seq_len(warm.reset), subgrid.lengths))
-
-    jobgrid <- lapply(cv.segments, function(cvs) {
-        lapply(lambda.subgrids, function(lvs) {
-            list(segment = cvs,
-                 lambda = lvs)
-        })
-    })
-
-    jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
-
-    ## Setup cluster
-    cluster <- setupCluster(
-        ncores,
-        cl,
-        export = c("X", "y", "scale.x"),
-        eval = {
-            library(pense)
-        }
-    )
-
-    ## Run all jobs (combination of all CV segments and all lambda-grids)
-    dojobcv <- function(job, alpha, standardize, control) {
+    ## CV function (needs X, y, and scale.x available in the environment)
+    penseJobCV <- function(job, alpha, standardize, control, start.0) {
         if (length(job$segment) == 0L) {
             X.train <- X
             y.train <- y
@@ -235,6 +221,7 @@ pense <- function(X, y, alpha = 0.5,
             alpha = alpha,
             lambda.grid = job$lambda,
             standardize = standardize,
+            start.0 = start.0,
             control = control
         )
 
@@ -267,47 +254,89 @@ pense <- function(X, y, alpha = 0.5,
         ))
     }
 
-    tryCatch({
-        cv.results <- cluster$lapply(
-            jobgrid,
-            dojobcv,
-            alpha = alpha,
-            standardize = standardize,
-            control = control
+    ## Perform CV (if we have more than a single lambda value)
+    if(nlambda > 1L) {
+        # Create CV segments
+        cv.segments <- if (cv.k > 1L) {
+            split(seq_len(dX[1L]), sample(rep_len(seq_len(cv.k), dX[1L])))
+        } else {
+            list(integer(0L))
+        }
+
+        # Define CV jobs (i.e., all combinations of CV splits and warm resets)
+        subgrid.lengths <- nlambda %/% warm.reset
+        overlength <- nlambda %% warm.reset
+        subgrid.lengths <- c(rep.int(subgrid.lengths, warm.reset - overlength),
+                             rep.int(subgrid.lengths + 1L, overlength))
+
+        lambda.subgrids <- split(lambda, rep.int(seq_len(warm.reset), subgrid.lengths))
+
+        jobgrid <- lapply(cv.segments, function(cvs) {
+            lapply(lambda.subgrids, function(lvs) {
+                list(segment = cvs,
+                     lambda = lvs)
+            })
+        })
+
+        jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
+
+        # Setup cluster
+        cluster <- setupCluster(
+            ncores,
+            cl,
+            export = c("X", "y", "scale.x"),
+            eval = {
+                library(pense)
+            }
         )
 
-        cv.results <- split(cv.results, rep.int(seq_len(warm.reset), cv.k))
-    },
-    finally = {
-        cluster$stopCluster()
-    })
+        # Run all jobs (combination of all CV segments and all lambda-grids)
+        tryCatch({
+            cv.results <- cluster$lapply(
+                jobgrid,
+                penseJobCV,
+                alpha = alpha,
+                standardize = standardize,
+                control = control,
+                start.0 = isTRUE(initial == "warm0")
+            )
 
-    ## Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
-    cv.performance <- unlist(lapply(cv.results, function(cv.res) {
+            cv.results <- split(cv.results, rep.int(seq_len(warm.reset), cv.k))
+        },
+        finally = {
+            cluster$stopCluster()
+        })
+
+        # Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
+        cv.performance <- unlist(lapply(cv.results, function(cv.res) {
             pred.resids <- do.call(rbind, lapply(cv.res, "[[", "residuals"))
             apply(pred.resids, 2, control$cv.objective)
         }), use.names = FALSE)
 
-    cv.stats <- do.call(rbind, lapply(cv.results, function (cv.res) {
-        sol.stats <- unlist(lapply(cv.res, "[[", "sol.stats"))
-        sol.stats <- array(
-            sol.stats,
-            dim = c(4L, length(sol.stats) %/% (cv.k * 4L), cv.k),
-            dimnames = list(
-                c("obj.fun", "s.scale", "beta.L1", "beta.L2"),
-                NULL,
-                NULL
+        cv.stats <- do.call(rbind, lapply(cv.results, function (cv.res) {
+            sol.stats <- unlist(lapply(cv.res, "[[", "sol.stats"))
+            sol.stats <- array(
+                sol.stats,
+                dim = c(4L, length(sol.stats) %/% (cv.k * 4L), cv.k),
+                dimnames = list(
+                    c("obj.fun", "s.scale", "beta.L1", "beta.L2"),
+                    NULL,
+                    NULL
+                )
             )
-        )
-        apply(sol.stats, 1L, rowMeans, na.rm = TRUE)
-    }))
+            apply(sol.stats, 1L, rowMeans, na.rm = TRUE)
+        }))
 
-    lambda.grid <- data.frame(
-        lambda = lambda * max(scale.x),
-        cv.performance = cv.performance,
-        cv.stats
-    )
-    lambda.opt <- lambda[which.min(cv.performance)]
+        lambda.grid <- data.frame(
+            lambda = lambda * max(scale.x),
+            cv.performance = cv.performance,
+            cv.stats
+        )
+        lambda.opt <- lambda[which.min(cv.performance)]
+    } else {
+        lambda.grid <- NULL
+        lambda.opt <- lambda[1L]
+    }
 
     ## Fit PENSE with optimal lambda using a cold start
     opt.est <- pense.coldwarm(
@@ -316,6 +345,7 @@ pense <- function(X, y, alpha = 0.5,
         alpha = alpha,
         lambda.grid = lambda.opt,
         standardize = FALSE,
+        start.0 = isTRUE(initial == "warm0"),
         control = control
     )[[1L]]
 

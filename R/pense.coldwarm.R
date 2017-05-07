@@ -2,8 +2,11 @@
 ## parameter estimate as warm-start
 ##
 ## @param lambda.grid A grid of lambda values NOT ADJUSTED for sample size!
+## @param start.0 should an initial estimator be computed at the first lambda
+##                value or simply initialized at the 0 vector?
 #' @importFrom stats mad median
-pense.coldwarm <- function(X, y, alpha, lambda.grid, standardize, control) {
+pense.coldwarm <- function(X, y, alpha, lambda.grid, start.0 = FALSE,
+                           standardize, control) {
     dX <- dim(X)
 
     scale.x <- 1
@@ -23,7 +26,11 @@ pense.coldwarm <- function(X, y, alpha, lambda.grid, standardize, control) {
     final.estimates <- vector("list", length(lambda.grid))
 
     ## For the first value of lambda, we will do a cold start
-    init.current <- initest.cold(X, y, alpha, lambda.grid[1L], control)$initCoef
+    init.current <- if (isTRUE(start.0)) {
+        matrix(c(median(y), numeric(dX[2L])), ncol = 1L)
+    } else {
+        initest.cold(X, y, alpha, lambda.grid[1L], control)$initCoef
+    }
 
     for (i in seq_along(lambda.grid)) {
         full.all <- apply(init.current, 2, function(coef, lambda) {

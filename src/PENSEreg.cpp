@@ -47,11 +47,7 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 
     this->iteration = 0;
 
-    /*
-     * The 0.5 is due to the missing 0.5 in the S objective function
-     * --> why doesn't it suffice to normalize the weights to sum to n?
-     */
-    en->setAlphaLambda(this->alpha, 0.5 * this->lambda);
+    en->setAlphaLambda(this->alpha, this->lambda);
 
     computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
                      currentCoef, residuals);

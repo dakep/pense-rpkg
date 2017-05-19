@@ -273,7 +273,6 @@ test_that("Ridge", {
     remove(list = setdiff(ls(), c("gradient", "augment")))
 })
 
-
 test_that("EN", {
     augment <- function(X, y, lambda2, leading1s = TRUE) {
         d <- dim(X)
@@ -438,4 +437,45 @@ test_that("EN - Bugs", {
     # All coefficients should be zero and residuals of length zero
     expect_equal(res$coefficients, mean(y))
     expect_equal(res$residuals, y - mean(y))
+})
+
+test_that("EN Objective", {
+    ## Check that we are indeed solving the problem
+    ## 1/(2N) * sum(residuals^2) + lambda * penalty
+
+    # For the following problem, we know that the minimum of our
+    # objective function is around 2.112 (between 2.106 and 2.118)
+    target_beta <- 2.112
+    n <- 500
+    set.seed(1234)
+    x <- matrix(rnorm(n, sd = 4), ncol = 1L)
+    y <- drop(3 * x + rnorm(n))
+
+    lambda <- 10
+    alpha <- 0.5
+
+    # Check that every algorithm minimizes the correct objective function
+    algos <- c("coordinate-descent", "augmented-lars-gram",
+               "augmented-lars-nogram")
+    invisible(lapply(algos, function (algorithm) {
+        elres <- elnet(x, y, alpha = alpha, lambda, centering = FALSE,
+                       en.algorithm = algorithm)
+
+        expect_equivalent(elres$coefficients[2L], target_beta, tolerance = 0.006,
+                          info = sprintf("Algorithm: %s", algorithm))
+    }))
+
+    # Check that every weighted algorithm minimizes the correct objective function
+    weight.algos <- c("augmented-lars-gram", "augmented-lars-nogram")
+    weights <- rep.int(1, n)
+    invisible(lapply(weight.algos, function (algorithm) {
+        elres <- elnet(x, y, alpha = alpha, lambda, centering = FALSE,
+                       en.algorithm = algorithm, weights = weights)
+
+        expect_equivalent(elres$coefficients[2L], target_beta, tolerance = 0.006,
+                          info = sprintf("Weighted algorithm: %s", algorithm))
+    }))
+
+    remove(list = setdiff(ls(), "gradient"))
+
 })

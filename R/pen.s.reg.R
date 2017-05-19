@@ -97,10 +97,16 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
         resid.scaled <- resid / scale
         # Mwgt is safer then Mchi in the case 0/0!
         wbeta <- Mwgt(resid.scaled, cc = control$mscale.cc, psi = control$mscale.rho.fun)
-        weights <- wbeta * (scale^2 / sum(resid^2 * wbeta))
+        # Not necessary to compute the "true" weights, as the normalization
+        # will remove this again
+        # weights <- wbeta * (scale / sum(resid^2 * wbeta))
+
+        # normalize weights to sum to n
+        weights <- n * wbeta / sum(wbeta)
 
         ## Perform weighted elastic net
-        weight.en <- .elnet.wfit(X, y, weights = weights, alpha = alpha, lambda = lambda / (2 * n),
+        weight.en <- .elnet.wfit(X, y, weights = weights, alpha = alpha,
+                                 lambda = 0.5 * lambda,
                                  centering = TRUE, maxit = control$pense.en.maxit,
                                  eps = en.eps, warmCoef = current.coefs,
                                  en.algorithm = control$en.algorithm)
@@ -135,7 +141,7 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
     }
 
     beta <- current.coefs[-1L]
-    objf <- n * (scale^2 + lambda * (0.5 * (1 - alpha) * sum(beta^2) + alpha * sum(abs(beta))))
+    objf <- scale^2 + lambda * (0.5 * (1 - alpha) * sum(beta^2) + alpha * sum(abs(beta)))
 
     return(list(
         intercept = current.coefs[1L],

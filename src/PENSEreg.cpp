@@ -75,11 +75,13 @@ void PENSEReg::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
         tmp = 0;
         for (i = 0; i < this->data.numObs(); ++i) {
             weights[i] = wgtBisquare2(residuals[i] / this->scale, this->ctrl.mscaleCC);
-            tmp += residuals[i] * residuals[i] * weights[i];
+            tmp += weights[i];
         }
 
-        tmp = this->scale / (tmp * this->data.numObs());
-
+        /*
+         * Normalize weights to sum to n --> just as in the unweighted case
+         */
+        tmp = this->data.numObs() / tmp;
         for (i = 0; i < this->data.numObs(); ++i) {
             weights[i] *= tmp;
         }

@@ -71,8 +71,18 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
         /*
          * Compute weights
          */
+        tmp = 0;
         for (i = 0; i < this->data.numObs(); ++i) {
-            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC) / (scale * scale);
+            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC);
+            tmp += weights[i];
+        }
+
+        /*
+         * Normalize weights to sum to n --> just as in the unweighted case
+         */
+        tmp = this->data.numObs() / tmp;
+        for (i = 0; i < this->data.numObs(); ++i) {
+            weights[i] *= tmp;
         }
 
         /*

@@ -48,7 +48,11 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
 
     this->iteration = 0;
 
-    en->setAlphaLambda(this->alpha, this->lambda);
+    /*
+     * The 0.5 is due to the missing 0.5 in the M objective function
+     * --> why doesn't it suffice to normalize the weights to sum to n?
+     */
+    en->setAlphaLambda(this->alpha, 0.5 * this->lambda);
 
     computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
                      currentCoef, residuals);
@@ -71,8 +75,18 @@ void MStep::compute(double *RESTRICT currentCoef, const double scale, double *RE
         /*
          * Compute weights
          */
+        tmp = 0;
         for (i = 0; i < this->data.numObs(); ++i) {
-            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC) / (scale * scale);
+            weights[i] = wgtBisquare2(residuals[i] / scale, this->ctrl.mscaleCC);
+            tmp += weights[i];
+        }
+
+        /*
+         * Normalize weights to sum to n --> just as in the unweighted case
+         */
+        tmp = this->data.numObs() / tmp;
+        for (i = 0; i < this->data.numObs(); ++i) {
+            weights[i] *= tmp;
         }
 
         /*

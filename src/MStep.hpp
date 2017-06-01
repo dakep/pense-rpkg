@@ -9,37 +9,22 @@
 #ifndef MStep_hpp
 #define MStep_hpp
 
-#include "Control.h"
+#include "IRWEN.hpp"
+#include "Options.hpp"
 #include "Data.hpp"
 #include "mscale.h"
 
-class MStep {
+class MStep : public IRWEN {
 public:
-	MStep(const Data& data, const double alpha, const double lambda,
-          const Control& ctrl);
+	MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, const Options &enOpts);
 	~MStep();
 
-	void compute(double *RESTRICT coefficients, const double scale, double *RESTRICT residuals);
-
-	int getIterations() const
-	{
-		return this->iteration;
-	}
-
-	double getRelChange() const
-	{
-		return this->relChange;
-	}
+protected:
+    void updateWeights(const double *RESTRICT residuals);
 
 private:
-	const Data& data;
-	const double alpha;
-	const double lambda;
-	const Control& ctrl;
-    const RhoFunction rhoBisquare;
-
-	int iteration;
-	double relChange;
+    const double cc;    // tuning constant
+    const double scale; // initial scale
 };
 
 #endif /* MStep_hpp */

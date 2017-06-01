@@ -12,6 +12,7 @@
 #include <string.h>
 #include <float.h>
 
+#include "config.h"
 #include "mscale.h"
 #include "PartialSort.h"
 
@@ -48,9 +49,6 @@ SEXP C_mscale(SEXP Rvalues, SEXP Rlength, SEXP Rb, SEXP Rcc, SEXP RmaxIt, SEXP R
     UNPROTECT(1);
     return Rscale;
 }
-
-
-
 
 RhoFunction getRhoFunctionByName(RhoFunctionName name)
 {

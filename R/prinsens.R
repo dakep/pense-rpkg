@@ -26,10 +26,7 @@
 #' @export
 prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
                      alpha, lambda, maxit = 50000, eps, centering = TRUE,
-                     en.algorithm = c("augmented-lars",
-                                      "coordinate-descent",
-                                      "augmented-lars-gram",
-                                      "augmented-lars-nogram")) {
+                     en.algorithm = c("augmented-lars", "dal")) {
     y <- drop(y)
 
     dX <- dim(X)

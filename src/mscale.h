@@ -10,7 +10,6 @@
 #define mscale_h
 
 #include "config.h"
-#include "Control.h"
 
 #ifdef __cplusplus
 extern "C" {

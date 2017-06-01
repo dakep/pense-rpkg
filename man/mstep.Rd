@@ -24,4 +24,3 @@ optima lambda. See \code{\link{pense}} for more details.}
 \description{
 Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 }
-

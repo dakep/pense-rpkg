@@ -48,14 +48,6 @@ void print_matf(int dr, int dc, const double *A, const char *header) {
 }
 #endif
 
-/**
- * Factor that corrects lambda to match RR-LS with -SE
- * It is estimated numerically based on (known?) ratios of scale^2/E(r^2)
- * for r~N(mu,sig^2) and different values of mu, sig, and b
- * where scale is the robust bisquare scale, and b is its BDP
- */
-static inline double facon(const double delta);
-
 /*
  * Compare functions
  */
@@ -194,7 +186,7 @@ int InitialEstimator::compute()
             this->coefEst += origNvar;
             this->estimateCoefficients();
             *tmpObjective = this->evaluateEstimate();
-            
+
             if (*tmpObjective < *minObjective) {
                 *minObjective = *tmpObjective;
                 bestCoefEst = this->coefEst;
@@ -402,7 +394,7 @@ double OLS::evaluateEstimate() const
 ENPY::ENPY(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscOls, MAX_NUM_PSCS(originalData.numVar())),
 
-           lambdaLS(ctrl.lambda * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
+           lambdaLS(ctrl.lambda * 0.5),
 
            /* Select correct ElasticNet implementation */
            en(*getElasticNetImpl(ctrl)),
@@ -619,7 +611,7 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const Control& ctrl) :
            InitialEstimator(originalData, ctrl, pscEn, MAX_NUM_PSCS(originalData.numObs())),
 
            /* Adjust lambda1 and lambda2 for LS objective */
-           lambdaLS(ctrl.lambda * ctrl.mscaleCC * ctrl.mscaleCC / facon(ctrl.mscaleB)),
+           lambdaLS(ctrl.lambda * 0.5),
 
            /* Select correct ElasticNet implementation */
            en(*getElasticNetImpl(ctrl)),
@@ -868,13 +860,6 @@ double ENPY_Exact::evaluateEstimate() const
 //}
 
 
-/**
- * Calculate lambda correction factor
- */
-static inline double facon(const double delta) {
-    return 23.9716 - 73.4391 * delta + 64.9480 * delta * delta;
-}
-
 /***************************************************************************************************
  *
  * Static compare functions
@@ -956,7 +941,7 @@ static inline void doFiltering(const Data& from, Data& to, const double *const v
         }
     }
 
-    /* 
+    /*
      * Copy last chunk of data
      */
     if (copyRows > 0) {
@@ -992,7 +977,7 @@ static inline void extendData(Data &dest, const Data& source, const double lambd
 
     memset(dest.getY() + source.numObs(), 0, (dest.numVar() - 1) * sizeof(double));
 
-    /* 
+    /*
      * nvar * (nvar - 1) because nvar includes the intercept!
      */
     memset(destPtr, 0, source.numVar() * (source.numVar() - 1) * sizeof(double));

@@ -22,4 +22,3 @@ a numeric vector of predicted values for the given lambda.
 \description{
 Predict Method for Penalized Elastic-Net S-estimator
 }
-

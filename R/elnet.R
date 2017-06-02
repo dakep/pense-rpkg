@@ -77,7 +77,7 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
             options
         )
     } else {
-        .elnet.wfit(
+        .elnet.fit(
             X,
             y,
             alpha,
@@ -106,7 +106,12 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
         t(X)
     }
 
-    options$warmStart <- !missing(warm_coefs)
+    if (missing(warm_coefs)) {
+        warm_coefs <- numeric(dX[2L])
+        options$warmStart <- FALSE
+    } else {
+        options$warmStart <- TRUE
+    }
 
     elnetres <- .Call(
         C_elnet,
@@ -143,7 +148,12 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
         t(X)
     }
 
-    options$warmStart <- !missing(warm_coefs)
+    if (missing(warm_coefs)) {
+        warm_coefs <- numeric(dX[2L])
+        options$warmStart <- FALSE
+    } else {
+        options$warmStart <- TRUE
+    }
 
     elnetres <- .Call(
         C_elnet_weighted,

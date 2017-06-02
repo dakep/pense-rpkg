@@ -97,7 +97,7 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 
     VOID_END_RCPP
 
-    UNPROTECT(3);
+    UNPROTECT(4);
     return result;
 }
 
@@ -135,7 +135,7 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     *INTEGER(status) = en->getStatus();
     statusMessage = Rcpp::wrap(en->getStatusMessage());
 
-    result = PROTECT(Rf_allocVector(VECSXP, 3));
+    result = PROTECT(Rf_allocVector(VECSXP, 4));
 
     SET_VECTOR_ELT(result, 0, status);
     SET_VECTOR_ELT(result, 1, statusMessage);
@@ -147,7 +147,7 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
 
     VOID_END_RCPP
 
-    UNPROTECT(3);
+    UNPROTECT(4);
     return result;
 }
 

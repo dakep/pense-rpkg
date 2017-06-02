@@ -4,32 +4,27 @@
 \alias{elnet}
 \title{Elastic Net Regression}
 \usage{
-elnet(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
-  addLeading1s = TRUE, en.algorithm = c("augmented-lars",
-  "coordinate-descent", "augmented-lars-gram", "augmented-lars-nogram"))
+elnet(X, y, alpha, lambda, weights, intercept = TRUE, addLeading1s = TRUE,
+  options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{The data matrix X}
+\item{X}{data matrix with predictors}
 
-\item{y}{The response vector}
+\item{y}{response vector}
 
-\item{alpha, lambda}{The values for the parameters controlling the penalization}
+\item{alpha, lambda}{values for the parameters controlling the penalization}
 
-\item{weights}{an optional vector of weights to be used in the fitting process. Should be
-\code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
-\code{weights} See also 'Details'.}
+\item{weights}{an optional vector of weights to be used in the fitting
+process. Should be \code{NULL} or a numeric vector. If non-NULL,
+weighted EN is used with weights \code{weights}. See also 'Details'.}
 
-\item{maxit}{The maximum number of iterations}
+\item{intercept}{should an intercept be estimated?}
 
-\item{eps}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
-the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps})}
+\item{addLeading1s}{should a leading column of 1's be appended?
+If \code{FALSE}, this has to be done before calling this function.}
 
-\item{centering}{Should the rows be centered first}
-
-\item{addLeading1s}{Should a leading column of 1's be appended? If \code{FALSE}, this has
-to be done before calling this function.}
-
-\item{en.algorithm}{algorithm to use to compute the elastic net solution.}
+\item{options}{additional options for the EN algorithm. See
+\code{\link{en_options}} for details.}
 }
 \value{
 \item{coefficients}{The regression coefficients}

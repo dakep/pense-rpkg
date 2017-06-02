@@ -5,34 +5,28 @@
 \title{Principal Sensitivity Components}
 \usage{
 prinsens(X, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
-  maxit = 50000, eps, centering = TRUE, en.algorithm = c("augmented-lars",
-  "coordinate-descent", "augmented-lars-gram", "augmented-lars-nogram"))
+  en_options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{The data matrix X}
+\item{X}{data matrix with predictors}
 
-\item{y}{The response vector}
+\item{y}{response vector}
 
-\item{method}{Use ordinary least squares (\code{"ols"}) or elastic net (\code{"en"}) to compute
-the PSCs.}
+\item{method}{use ordinary least squares (\code{"ols"}) or elastic net
+(\code{"en"}) to compute the PSCs.}
 
 \item{intercept}{Should an intercept be added or not.}
 
-\item{alpha, lambda}{The values for the parameters controlling the penalization for elastic net.}
+\item{alpha, lambda}{The values for the parameters controlling the
+penalization for elastic net.}
 
-\item{maxit}{The maximum number of iterations for elastic net.}
-
-\item{eps}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
-the threshold for treating numbers as 0 in LARS (default .Machine$double.eps)}
-
-\item{centering}{Should the rows be centered first for elastic net.}
-
-\item{en.algorithm}{algorithm to use to compute the elastic net solution.}
+\item{en_options}{additional options for the EN algorithm. See
+\code{\link{en_options}} for details.}
 }
 \value{
 A numeric matrix with as many rows as \code{X} and as many columns as
-     PSCs found (at most the number of columns in \code{X} plus one for the intercept).
-     Each column is a PSC.
+     PSCs found (at most the number of columns in \code{X} plus one for the
+     intercept). Each column is a PSC.
 }
 \description{
 Compute the principal sensitiviy components (PSC) for regression.

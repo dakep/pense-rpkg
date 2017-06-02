@@ -23,7 +23,6 @@
  */
 RcppExport SEXP C_augtrans(SEXP X);
 
-
 /**
  * Solve following minimzation problem:
  * (1 / (2*N)) * L2(y - beta0 - X . beta)^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
@@ -47,8 +46,6 @@ RcppExport SEXP C_augtrans(SEXP X);
  */
 RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
 						SEXP lambda, SEXP intercept, SEXP options);
-
-
 
 /**
  * Solve following minimzation problem:
@@ -74,7 +71,6 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
  */
 RcppExport SEXP C_elnet_weighted(SEXP Xtr, SEXP y, SEXP weights, SEXP coefs,
 								 SEXP alpha, SEXP lambda, SEXP intercept, SEXP enOptions);
-
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
@@ -114,6 +110,8 @@ RcppExport SEXP C_py_ols(SEXP Xtr, SEXP y, SEXP pyOptions);
 /**
  * @param Xtr       numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
  * @param y         numeric The numeric y vector (size `nobs`)
+ * @param alpha         numeric The alpha parameter for the penalization
+ * @param lambda        numeric The lambda parameter for the penalization
  * @param pyOptions List    The control list for the PY algorithm
  * @param enOptions List    The options for the EN algorithm
  *
@@ -121,11 +119,14 @@ RcppExport SEXP C_py_ols(SEXP Xtr, SEXP y, SEXP pyOptions);
  *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
  *      item 2: The value of the objective function for each initial estimate
  */
-RcppExport SEXP C_enpy_rr(SEXP Xtr, SEXP y, SEXP pyOptions, SEXP enOptions);
+RcppExport SEXP C_enpy_rr(SEXP Xtr, SEXP y, SEXP alpha, SEXP lambda,
+                          SEXP pyOptions, SEXP enOptions);
 
 /**
  * @param Xtr       numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
  * @param y         numeric The numeric y vector (size `nobs`)
+ * @param alpha         numeric The alpha parameter for the penalization
+ * @param lambda        numeric The lambda parameter for the penalization
  * @param pyOptions List    The control list for the PY algorithm
  * @param enOptions List    The options for the specific EN algorithm
  *
@@ -133,7 +134,8 @@ RcppExport SEXP C_enpy_rr(SEXP Xtr, SEXP y, SEXP pyOptions, SEXP enOptions);
  *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
  *      item 2: The value of the objective function for each initial estimate
  */
-RcppExport SEXP C_enpy_exact(SEXP Xtr, SEXP y, SEXP pyOptions, SEXP enOptions);
+RcppExport SEXP C_enpy_exact(SEXP Xtr, SEXP y, SEXP alpha, SEXP lambda,
+                             SEXP pyOptions, SEXP enOptions);
 
 
 /**
@@ -145,12 +147,15 @@ RcppExport SEXP C_enpy_exact(SEXP Xtr, SEXP y, SEXP pyOptions, SEXP enOptions);
  * @param penseOptions  List    The options for PENSE
  * @param enOptions     List    The options for the specific EN algorithm
  *
- * @return List Returns a list with two elements:
- *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
- *      item 2: The value of the objective function for each initial estimate
+ * @return List Returns a list with 5 elements:
+ *      item 1: coefficient vector (first element is the intercept)
+ *      item 2: residuals vector
+ *      item 3: estimate scale of the residuals
+ *      item 4: relative change in the last iteration
+ *      item 5: number of iterations
  */
-RcppExport SEXP C_pen_s_reg(SEXP Xtr, SEXP y, SEXP coefs,
-                            SEXP alpha, SEXP lambda, SEXP penseOptions, SEXP enOptions);
+RcppExport SEXP C_pen_s_reg(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha, SEXP lambda,
+                            SEXP penseOptions, SEXP enOptions);
 
 
 /**
@@ -163,9 +168,11 @@ RcppExport SEXP C_pen_s_reg(SEXP Xtr, SEXP y, SEXP coefs,
  * @param msOptions     List    The options for the M-Step
  * @param enOptions     List    The options for the specific EN algorithm
  *
- * @return List Returns a list with two elements:
- *      item 1: The numeric matrix of size `nvar` x (3 * `nvar` + 2)
- *      item 2: The value of the objective function for each initial estimate
+ * @return List Returns a list with four elements:
+ *      item 1: coefficient vector (first element is the intercept)
+ *      item 2: residuals vector
+ *      item 3: relative change in the last iteration
+ *      item 4: number of iterations
  */
 RcppExport SEXP C_pen_mstep(SEXP Xtr, SEXP y, SEXP coefs, SEXP scale,
                             SEXP alpha, SEXP lambda, SEXP msOptions, SEXP enOptions);

@@ -1,19 +1,20 @@
 ## PENSE with a cold start at the beginning and subsequently uses the previous
 ## parameter estimate as warm-start
 ##
-## @param lambda.grid A grid of lambda values NOT ADJUSTED for sample size!
-## @param start.0 should an initial estimator be computed at the first lambda
+## @param lambda_grid a grid of lambda values NOT ADJUSTED for sample size!
+## @param start_0 should an initial estimator be computed at the first lambda
 ##                value or simply initialized at the 0 vector?
 #' @importFrom stats mad median
-pense.coldwarm <- function(X, y, alpha, lambda.grid, start.0 = FALSE,
-                           standardize, control) {
+pense_coldwarm <- function(X, y, alpha, lambda_grid, start_0 = FALSE,
+                           standardize, pense_options, initest_options,
+                           en_options) {
     dX <- dim(X)
 
     scale.x <- 1
     mux <- 0
     muy <- 0
 
-    if (standardize == TRUE) {
+    if (isTRUE(standardize)) {
         scale.x <- apply(X, 2, mad)
         mux <- apply(X, 2, median)
         muy <- median(y)
@@ -22,35 +23,43 @@ pense.coldwarm <- function(X, y, alpha, lambda.grid, start.0 = FALSE,
         y <- y - muy
     }
 
-    # final.coefficients <- matrix(NA_real_, nrow = dX[2L] + 1L, ncol = length(lambda.grid))
     final.estimates <- vector("list", length(lambda.grid))
 
     ## For the first value of lambda, we will do a cold start
-    init.current <- if (isTRUE(start.0)) {
+    init.current <- if (isTRUE(start_0)) {
         matrix(c(median(y), numeric(dX[2L])), ncol = 1L)
     } else {
-        initest.cold(X, y, alpha, lambda.grid[1L], control)$initCoef
+        initest_cold(X, y, alpha, lambda_grid[1L], pense_options,
+                     initest_options, en_options)$initCoef
     }
 
-    for (i in seq_along(lambda.grid)) {
+    for (i in seq_along(lambda_grid)) {
         full.all <- apply(init.current, 2, function(coef, lambda) {
-            pen.s.reg(X, y, alpha, lambda,
-                      maxit = control$pense.maxit,
-                      init.coef = coef,
-                      control)
-        }, lambda = lambda.grid[i])
+            pen_s_reg(
+                X,
+                y,
+                alpha,
+                lambda,
+                init_coef = coef,
+                options = pense_options,
+                en_options = en_options
+            )
+        }, lambda = lambda_grid[i])
 
         best.est <- which.min(sapply(full.all, function(full) {
             full$objF
         }))
-        init.current <- matrix(c(full.all[[best.est]]$intercept, full.all[[best.est]]$beta), ncol = 1L)
+        init.current <- matrix(
+            c(full.all[[best.est]]$intercept, full.all[[best.est]]$beta),
+            ncol = 1L
+        )
 
         final.estimates[[i]] <- full.all[[best.est]]
 
         if (standardize == TRUE) {
             final.estimates[[i]]$beta <- final.estimates[[i]]$beta / scale.x
-            final.estimates[[i]]$intercept <- final.estimates[[i]]$intercept + muy -
-                drop(final.estimates[[i]]$beta %*% mux)
+            final.estimates[[i]]$intercept <- final.estimates[[i]]$intercept +
+                muy - drop(final.estimates[[i]]$beta %*% mux)
         }
     }
 
@@ -58,33 +67,29 @@ pense.coldwarm <- function(X, y, alpha, lambda.grid, start.0 = FALSE,
 }
 
 
-initest.cold <- function(X, y, alpha, lambda, control) {
-    initraw <- enpy(X, y, alpha, lambda,
-                    deltaesc = control$mscale.delta,
-                    cc.scale = control$mscale.cc,
-                    psc.method = control$init.psc.method,
-                    prosac = control$init.psc.proportion,
-                    clean.method = control$init.resid.clean.method,
-                    C.res = control$init.resid.threshold,
-                    prop = control$init.resid.proportion,
-                    py.nit = control$init.maxit,
-                    en.tol = control$init.tol,
-                    control = enpy.control(
-                        en.maxit = control$init.en.maxit,
-                        en.tol = control$init.en.tol,
-                        en.centering = TRUE,
-                        mscale.maxit = control$mscale.maxit,
-                        mscale.tol = control$mscale.tol,
-                        mscale.rho.fun = control$mscale.rho.fun
-                    ))
+initest_cold <- function(X, y, alpha, lambda, pense_options,
+                         initest_options, en_options) {
+    initraw <- enpy(
+        X,
+        y,
+        alpha,
+        lambda,
+        options = initest_options,
+        en_options = en_options
+    )
 
     ## Compute a "short" PENSE for each candidate solution
     initconc <- apply(initraw$coeff, 2, function(coef) {
-        conc <- pen.s.reg(X, y, alpha, lambda,
-                          maxit = control$init.csteps,
-                          init.coef = coef,
-                          control,
-                          warn = FALSE)
+        conc <- pen_s_reg(
+            X,
+            y,
+            alpha,
+            lambda,
+            init_coef = coef,
+            warn = FALSE,
+            options = pense_options,
+            en_options = en_options
+        )
 
         return(c(
             conc$objF,
@@ -93,9 +98,9 @@ initest.cold <- function(X, y, alpha, lambda, control) {
         ))
     })
 
-    objFRanking <- orderOmitTies(initconc[1L, ], tol = control$init.tol)
+    objFRanking <- orderOmitTies(initconc[1L, ], tol = initest_options$eps)
 
-    nkeep <- min(length(objFRanking$index), control$init.nkeep)
+    nkeep <- min(length(objFRanking$index), initest_options$keepSolutions)
     indkeep <- objFRanking$index[seq_len(nkeep)]
 
     return(list(

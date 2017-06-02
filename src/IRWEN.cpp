@@ -21,7 +21,7 @@ static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 
 IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
     data(data),
-    maxIt(opts.get("maxIt", DEFAULT_OPT_MAXIT)),
+    maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
     eps(opts.get("eps", DEFAULT_OPT_EPS))
 {
     this->weights = new double[data.numObs()];

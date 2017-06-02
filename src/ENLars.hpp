@@ -20,18 +20,13 @@ class ENLars : public ElasticNet {
 public:
 	enum UseGram {
 		AUTO = 0,
-		NO = 1,
-		YES = 2
+		YES,
+		NO
 	};
 
     ENLars(const bool intercept);
     ENLars(const bool intercept, const Options& options);
     ~ENLars();
-
-    enum Option {
-        USE_GRAM = 0,
-        EPS
-    };
 
     void setOptions(const Options& options);
     void setData(const Data& data);

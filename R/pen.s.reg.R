@@ -2,61 +2,47 @@
 ## in C++
 ##
 #' @useDynLib pense C_augtrans C_pen_s_reg
-pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
+pen_s_reg <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
+                      options, en_options) {
     dX <- dim(X)
 
-    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    Xtr <- .Call(C_augtrans, X)
     dX[2L] <- dX[2L] + 1L
 
     lambda1 <- alpha * lambda
     lambda2 <- lambda * (1 - alpha) / 2
 
-    cctrl <- initest.control(
-        lambda = lambda,
-        alpha = alpha,
-        numIt = maxit,
-        eps = control$pense.tol^2,
-        mscale.delta = control$mscale.delta,
-        mscale.cc = control$mscale.cc,
-        enpy.control = enpy.control(
-            en.maxit = control$pense.en.maxit,
-            en.tol = control$pense.en.tol,
-            en.centering = TRUE,
-            mscale.maxit = control$mscale.maxit,
-            mscale.tol = control$mscale.tol,
-            mscale.rho.fun = "bisquare",
-            en.algorithm = control$en.algorithm
-        ),
-
-        # Not needed, set for completeness
-        resid.clean.method = "proportion",
-        resid.threshold = 0.5,
-        resid.proportion = 0.5,
-        psc.proportion = 0.5
+    res <- .Call(
+        C_pen_s_reg,
+        Xtr,
+        y,
+        init_coef,
+        alpha,
+        lambda,
+        options,
+        en_options
     )
-
-    res <- .Call(C_pen_s_reg, Xtr, y, dX[1L], dX[2L], init.coef, cctrl)
 
     ret <- list(
         intercept = res[[1L]][1L],
         beta = res[[1L]][-1L],
         resid = res[[2L]],
         scale = res[[3L]],
-        rel.change = sqrt(res[[4L]]),
+        rel_change = sqrt(res[[4L]]),
         iterations = res[[5L]],
         objF = NA_real_
     )
 
-    ret$objF <- ret$scale^2 + lambda1 * sum(abs(ret$beta)) +
-        lambda2 * sum(ret$beta^2)
+    ret$objF <- ret$scale^2 + lambda * (
+        0.5 * (1 - alpha) * sum(ret$beta^2) + alpha * sum(abs(ret$beta))
+    )
 
     ##
     ## Check if the S-step converged.
-    ## Be extra careful with the comparison as rel.change may be NaN or NA
+    ## Be extra careful with the comparison as rel_change may be NaN or NA
     ##
-    if (!identical(ret$rel.change > control$pense.tol, FALSE) &&
-        identical(warn, TRUE)) {
-        warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
+    if (!isTRUE(ret$rel_change < options$eps) && isTRUE(warn)) {
+        warning(sprintf("PENSE did not converge for lambda = %.6f", lambda))
     }
 
     return(ret)
@@ -64,39 +50,39 @@ pen.s.reg <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRU
 
 
 
-## Internal function to calculate PENSE for a given initial estimate (init.coef) in R
+## Internal function to calculate PENSE for a given initial estimate
+## (init.coef) in R
 ##
 #' @importFrom robustbase Mwgt MrhoInf
-pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn = TRUE) {
+pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
+                            options, en_options) {
     dX <- dim(X)
     p <- dX[2L]
     n <- dX[1L]
 
-    current.coefs <- init.coef
+    current.coefs <- init_coef
     prev.coefs <- NULL
 
     resid <- as.vector(y - current.coefs[1L] - X %*% current.coefs[-1L])
-    scale <- mscale(resid, cc = control$mscale.cc,
-                    b = control$mscale.delta, rho = control$mscale.rho.fun,
-                    eps = control$mscale.tol, max.it = control$mscale.maxit)
+    scale <- mscale(
+        resid,
+        cc = options$cc,
+        b = options$bdp,
+        eps = control$mscaleEps,
+        maxit = control$mscaleMaxit
+    )
 
-    tol <- control$pense.tol^2
+    tol <- control$eps^2
     it <- 0L
-    rel.change <- Inf
+    rel_change <- Inf
 
-    en.eps <- control$pense.en.tol
-
-    ## Adjust convergence threshold for elastic net if we use coordinate descent
-    if (control$en.algorithm == "coordinate-descent") {
-        en.eps <- control$pense.en.tol * dX[1L] * mscale(y)^2
-    }
 
     repeat {
         it <- it + 1L
 
         resid.scaled <- resid / scale
         # Mwgt is safer then Mchi in the case 0/0!
-        wbeta <- Mwgt(resid.scaled, cc = control$mscale.cc, psi = control$mscale.rho.fun)
+        wbeta <- Mwgt(resid.scaled, cc = control$cc, psi = "bisquare")
         # Not necessary to compute the "true" weights, as the normalization
         # will remove this again
         # weights <- wbeta * (scale / sum(resid^2 * wbeta))
@@ -105,29 +91,36 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
         weights <- n * wbeta / sum(wbeta)
 
         ## Perform weighted elastic net
-        weight.en <- .elnet.wfit(X, y, weights = weights, alpha = alpha,
-                                 lambda = 0.5 * lambda,
-                                 centering = TRUE, maxit = control$pense.en.maxit,
-                                 eps = en.eps, warmCoef = current.coefs,
-                                 en.algorithm = control$en.algorithm)
+        weight.en <- .elnet.wfit(
+            X,
+            y,
+            weights = weights,
+            alpha = alpha,
+            lambda = 0.5 * lambda,
+            en_options
+        )
 
         prev.coefs <- current.coefs
         current.coefs <- weight.en$coefficients
 
         resid <- weight.en$residuals
 
-        scale <- mscale(resid, cc = control$mscale.cc,
-                        b = control$mscale.delta, rho = control$mscale.rho.fun,
-                        eps = control$mscale.tol, max.it = control$mscale.maxit)
+        scale <- mscale(
+            resid,
+            cc = options$cc,
+            b = options$bdp,
+            eps = control$mscaleEps,
+            maxit = control$mscaleMaxit
+        )
 
-        rel.change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
+        rel_change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
 
-        if (is.nan(rel.change)) { # if 0/0
-            rel.change <- 0
+        if (is.nan(rel_change)) { # if 0/0
+            rel_change <- 0
         }
 
         ## Check convergence
-        if (it >= maxit || all(rel.change < tol)) {
+        if (it >= maxit || all(rel_change < tol)) {
             break
         }
     }
@@ -136,12 +129,14 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
     ## Check if the S-step converged.
     ## Be extra careful with the comparison as rel.change may be NaN or NA
     ##
-    if (!identical(rel.change > tol, FALSE) && identical(warn, TRUE)) {
-        warning(sprintf("PENSE did not converge for lambda = %.3f", lambda))
+    if (!isTRUE(rel_change < tol) && isTRUE(warn)) {
+        warning(sprintf("PENSE did not converge for lambda = %.6f", lambda))
     }
 
     beta <- current.coefs[-1L]
-    objf <- scale^2 + lambda * (0.5 * (1 - alpha) * sum(beta^2) + alpha * sum(abs(beta)))
+    objf <- scale^2 + lambda * (
+        0.5 * (1 - alpha) * sum(beta^2) + alpha * sum(abs(beta))
+    )
 
     return(list(
         intercept = current.coefs[1L],
@@ -149,7 +144,7 @@ pen.s.reg.rimpl <- function(X, y, alpha, lambda, init.coef, maxit, control, warn
         resid = resid,
         scale = scale,
         iterations = it,
-        rel.change = sqrt(rel.change),
+        rel_change = sqrt(rel_change),
         objF = objf
     ))
 }

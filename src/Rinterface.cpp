@@ -293,7 +293,7 @@ RcppExport SEXP C_py_ols(SEXP RXtr, SEXP Ry, SEXP RpyOptions)
  * PY Initial Estimator for EN regularized problems, using an Ridge approximation
  *
  **************************************************************************************************/
-RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP RpyOptions,
+RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP Ralpha, SEXP Rlambda, SEXP RpyOptions,
                           SEXP RenOptions)
 {
     int nobs, nvar;
@@ -303,7 +303,7 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP RpyOptions,
     const Options enOpts = listToOptions(RenOptions);
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
 
-    ENPY enpy(data, opts, enOpts);
+    ENPY enpy(data, *REAL(Ralpha), *REAL(Rlambda), opts, enOpts);
     SEXP coefs;
     SEXP objF;
     int niest;
@@ -335,7 +335,7 @@ RcppExport SEXP C_enpy_rr(SEXP RXtr, SEXP Ry, SEXP RpyOptions,
  * PY Initial Estimator for EN regularized problems
  *
  **************************************************************************************************/
-RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP RpyOptions,
+RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP Ralpha, SEXP Rlambda, SEXP RpyOptions,
                              SEXP RenOptions)
 {
     int nobs, nvar;
@@ -344,7 +344,7 @@ RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP RpyOptions,
     const Options opts = listToOptions(RpyOptions);
     const Options enOpts = listToOptions(RenOptions);
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-    ENPY_Exact enpy(data, opts, enOpts);
+    ENPY_Exact enpy(data, *REAL(Ralpha), *REAL(Rlambda), opts, enOpts);
     SEXP coefs, objF;
     int niest;
     SEXP result = R_NilValue;

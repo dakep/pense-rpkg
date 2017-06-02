@@ -28,7 +28,7 @@ PENSEReg::PENSEReg(const Data& data, const double alpha, const double lambda, co
         bdp(opts.get("bdp", DEFAULT_OPT_BDP)),
         cc(opts.get("cc", DEFAULT_OPT_CC)),
         mscaleEps(opts.get("mscaleEps", DEFAULT_OPT_MSCALE_EPS)),
-        mscaleMaxIt(opts.get("mscaleMaxIt", DEFAULT_OPT_MSCALE_MAX_IT)),
+        mscaleMaxIt(opts.get("mscaleMaxit", DEFAULT_OPT_MSCALE_MAX_IT)),
         scale(1)
 {
 }

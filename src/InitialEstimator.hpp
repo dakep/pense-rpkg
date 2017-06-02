@@ -38,15 +38,18 @@ public:
 		return this->coefObjFunScore;
 	}
 
+    enum KeepResidualsMethod {
+        PROPORTION = 0,
+        THRESHOLD
+    };
+
 protected:
     typedef struct IEControlTag {
         const int maxIt;
-        const double residThreshold;
-        const double residProportion;
-        const double pscProportion;
-
-        const double lambda;
-        const double alpha;
+        const KeepResidualsMethod keepResidualsMethod;
+        const double keepResidualsThreshold;
+        const double keepResidualsProportion;
+        const double keepPSCProportion;
         const double eps;
 
         const double mscaleB;
@@ -141,7 +144,8 @@ private:
 class ENPY : public InitialEstimator
 {
 public:
-    ENPY(const Data& originalData, const Options& ctrl, const Options& enOpts);
+    ENPY(const Data& originalData, const double alpha, const double lambda, const Options& ctrl,
+         const Options& enOpts);
     virtual ~ENPY();
 
 protected:
@@ -153,6 +157,8 @@ protected:
 	virtual double evaluateEstimate() const;
 
 private:
+    const double alpha;
+    const double lambda;
     const double lambdaLS;
 
 	ElasticNet &en;
@@ -168,7 +174,8 @@ private:
 class ENPY_Exact : public InitialEstimator
 {
 public:
-    ENPY_Exact(const Data& originalData, const Options& ctrl, const Options& enOpts);
+    ENPY_Exact(const Data& originalData, const double alpha, const double lambda,
+               const Options& ctrl, const Options& enOpts);
     virtual ~ENPY_Exact();
 
 protected:
@@ -180,6 +187,8 @@ protected:
 	virtual double evaluateEstimate() const;
 
 private:
+    const double alpha;
+    const double lambda;
     const double lambdaLS;
 
 	ElasticNet &en;

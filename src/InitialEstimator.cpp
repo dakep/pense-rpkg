@@ -30,11 +30,10 @@
  */
 static const RhoFunctionName DEFAULT_OPT_RHO_FUNCTION = BISQUARE;
 static const int DEFAULT_OPT_MAXIT = 10;
-static const double DEFAULT_OPT_RESID_THRESHOLD = 2;
-static const double DEFAULT_OPT_RESID_PROPORTION = .8;
-static const double DEFAULT_OPT_PSC_PROPORTION = .4;
-static const double DEFAULT_OPT_LAMBDA = 1;
-static const double DEFAULT_OPT_ALPHA = 1;
+static const InitialEstimator::KeepResidualsMethod DEFAULT_OPT_KEEP_METHOD = InitialEstimator::PROPORTION;
+static const double DEFAULT_OPT_KEEP_RESID_THRESHOLD = 2;
+static const double DEFAULT_OPT_KEEP_RESID_PROPORTION = .8;
+static const double DEFAULT_OPT_KEEP_PSC_PROPORTION = .4;
 static const double DEFAULT_OPT_EPS = 1e-9;
 static const double DEFAULT_OPT_MSCALE_B = .5;
 static const double DEFAULT_OPT_MSCALE_CC = 1.5432;
@@ -131,16 +130,15 @@ InitialEstimator::InitialEstimator(const Data& originalData, const Options& opts
 InitialEstimator::IEControl InitialEstimator::initIEControl(const Options& opts)
 {
     IEControl ctrl = {
-        opts.get("maxIt", DEFAULT_OPT_MAXIT),
-        opts.get("residThreshold", DEFAULT_OPT_RESID_THRESHOLD),
-        opts.get("residProportion", DEFAULT_OPT_RESID_PROPORTION),
-        opts.get("pscProportion", DEFAULT_OPT_PSC_PROPORTION),
-        opts.get("lambda", DEFAULT_OPT_LAMBDA),
-        opts.get("alpha", DEFAULT_OPT_ALPHA),
+        opts.get("maxit", DEFAULT_OPT_MAXIT),
+        opts.get("keepResidualsMethod", DEFAULT_OPT_KEEP_METHOD),
+        opts.get("keepResidualsThreshold",DEFAULT_OPT_KEEP_RESID_THRESHOLD),
+        opts.get("keepResidualsProportion", DEFAULT_OPT_KEEP_RESID_PROPORTION),
+        opts.get("keepPSCProportion", DEFAULT_OPT_KEEP_PSC_PROPORTION),
         opts.get("eps", DEFAULT_OPT_EPS),
-        opts.get("mscaleB", DEFAULT_OPT_MSCALE_B),
+        opts.get("mscaleDelta", DEFAULT_OPT_MSCALE_B),
         opts.get("mscaleCC", DEFAULT_OPT_MSCALE_CC),
-        opts.get("mscaleMaxIt", DEFAULT_OPT_MSCALE_MAXIT),
+        opts.get("mscaleMaxit", DEFAULT_OPT_MSCALE_MAXIT),
         opts.get("mscaleEPS", DEFAULT_OPT_MSCALE_EPS)
     };
     return ctrl;
@@ -215,7 +213,7 @@ int InitialEstimator::compute()
             currentPSC = this->psc.getPSC() + this->residualFilteredData.numObs() * j;
             /* 4.1. Thin out X and y based on large values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
-                                    this->ctrl.pscProportion, lessThan);
+                                    this->ctrl.keepPSCProportion, lessThan);
 
             this->filterDataPSC(currentPSC, threshold, lessThan);
 
@@ -232,7 +230,7 @@ int InitialEstimator::compute()
 
             /* 4.1. Thin out X and y based on large values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
-                                    this->ctrl.pscProportion, greaterThan);
+                                    this->ctrl.keepPSCProportion, greaterThan);
 
             this->filterDataPSC(currentPSC, threshold, greaterThan);
 
@@ -249,7 +247,7 @@ int InitialEstimator::compute()
 
             /* 4.1. Thin out X and y based on large values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
-                                    this->ctrl.pscProportion, absoluteLessThan);
+                                    this->ctrl.keepPSCProportion, absoluteLessThan);
 
             this->filterDataPSC(currentPSC, threshold, absoluteLessThan);
 
@@ -290,11 +288,11 @@ int InitialEstimator::compute()
         this->coefEst = bestCoefEst;
         computeResiduals(this->originalData, this->coefEst, this->residuals);
 
-        if (this->ctrl.residThreshold < 0) {
+        if (this->ctrl.keepResidualsMethod == PROPORTION) {
             threshold = getQuantile(this->residuals, origNobs,
-                                    this->ctrl.residProportion, absoluteLessThan);
+                                    this->ctrl.keepResidualsProportion, absoluteLessThan);
         } else {
-            threshold = this->ctrl.residThreshold * this->MscaleOfResiduals();
+            threshold = this->ctrl.keepResidualsThreshold * this->MscaleOfResiduals();
         }
 
         this->filterDataResiduals(threshold);
@@ -428,32 +426,33 @@ double IEOls::evaluateEstimate() const
  * Elastic Net - Peña Yohai Initial estimator
  *
  **************************************************************************************************/
-ENPY::ENPY(const Data& originalData, const Options& opts, const Options& enOpts) :
+ENPY::ENPY(const Data& originalData, const double alpha, const double lambda, const Options& opts,
+           const Options& enOpts) :
            InitialEstimator(originalData, opts, pscOls, MAX_NUM_PSCS(originalData.numVar())),
-
-           lambdaLS(this->ctrl.lambda * 0.5),
-
+           alpha(alpha),
+           lambda(lambda),
+           lambdaLS(lambda * 0.5),
            /* Select correct ElasticNet implementation */
            en(*getElasticNetImpl(enOpts, true)),
 
            dataToUse(residualFilteredData)
 {
-    /* Resize the residuals memory allocated from by base class */
+    /* Resize the residuals memory allocated by base class */
     delete[] this->residuals;
     this->residuals = new double[this->originalData.numObs() + this->originalData.numVar()];
 
-    if (this->ctrl.alpha == 0) {
+    if (this->alpha == 0) {
         this->XtX = new double[this->originalData.numVar() * this->originalData.numVar()];
     }
 
-    this->en.setAlphaLambda(1, LAMBDA_1(this->ctrl.alpha, this->lambdaLS));
+    this->en.setAlphaLambda(1, LAMBDA_1(this->alpha, lambdaLS));
 }
 
 ENPY::~ENPY()
 {
     delete &this->en;
     this->pscFilteredData.free();
-    if (this->ctrl.alpha == 0) {
+    if (this->alpha == 0) {
         delete[] this->XtX;
     }
 }
@@ -464,8 +463,8 @@ void ENPY::estimateCoefficients()
     BLAS_INT nvar = this->dataToUse.numVar();
     int lapackInfo;
     int j;
-    const double minusSqrtLambda2LS = -(1 + (this->ctrl.alpha > 0)) *
-                                        sqrt(LAMBDA_2(this->lambdaLS, this->ctrl.alpha,
+    const double minusSqrtLambda2LS = -(1 + (this->alpha > 0)) *
+                                        sqrt(LAMBDA_2(this->lambdaLS, this->alpha,
                                                       this->residualFilteredNobs));
 
     if (nobs == 0) {
@@ -475,7 +474,7 @@ void ENPY::estimateCoefficients()
         return;
     }
 
-    if (this->ctrl.alpha == 0) {
+    if (this->alpha == 0) {
         /*
          * alpha is zero, i.e. we can do a simple OLS fit to the augmented X and Y
          */
@@ -508,7 +507,7 @@ void ENPY::estimateCoefficients()
          * we operate on the *augmented* data, in order to get the same results
          * as from the elastic net on the true data
          */
-        this->en.setAlphaLambda(1, LAMBDA_1(this->ctrl.alpha, this->lambdaLS) *
+        this->en.setAlphaLambda(1, LAMBDA_1(this->alpha, this->lambdaLS) *
                                         this->residualFilteredNobs /
                                         (residualFilteredNobs + this->originalData.numVar() - 1));
 
@@ -524,7 +523,7 @@ void ENPY::estimateCoefficients()
     /* Now update the residuals */
     computeResiduals(this->originalData, this->coefEst, this->residuals);
 
-    if (this->ctrl.alpha < 1) {
+    if (this->alpha < 1) {
         /* The last elements of the residuals are just - sqrt(lambda2) * beta[j] */
         for (j = 1; j < this->originalData.numVar(); ++j) {
             this->residuals[this->originalData.numObs() + j - 1] = minusSqrtLambda2LS *
@@ -540,13 +539,13 @@ void ENPY::resetData()
     this->residualFilteredData.free();
     this->residualFilteredData.setNumVar(this->originalData.numVar());
 
-    if (this->ctrl.alpha < 1) {
+    if (this->alpha < 1) {
         this->residualFilteredData.setNumObs(this->originalData.numObs() + this->originalData.numVar() - 1);
         this->residualFilteredData.resize();
         /* In case of EN, we need to multiply lambda_2 by 2 to account for the 1/2 in the EN objective */
         extendData(this->residualFilteredData, this->originalData,
-                   (1 + (this->ctrl.alpha > 0)) *
-                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha, this->originalData.numObs()), true);
+                   (1 + (this->alpha > 0)) *
+                   LAMBDA_2(this->lambdaLS, this->alpha, this->originalData.numObs()), true);
     } else {
         this->residualFilteredData.free();
         this->residualFilteredData.copy(this->originalData);
@@ -564,11 +563,11 @@ void ENPY::filterDataResiduals(double threshold)
 {
     InitialEstimator::filterDataResiduals(threshold);
 
-    if (this->ctrl.alpha < 1) {
+    if (this->alpha < 1) {
         /* In case of EN, we need to multiply lambda_2 by 2 to account for the 1/2 in the EN objective */
         extendData(this->residualFilteredData, this->residualFilteredData,
-                   (1 + (this->ctrl.alpha > 0)) *
-                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha, this->residualFilteredNobs),
+                   (1 + (this->alpha > 0)) *
+                   LAMBDA_2(this->lambdaLS, this->alpha, this->residualFilteredNobs),
                    false);
 
         this->residualFilteredData.setNumObs(this->residualFilteredNobs +
@@ -585,11 +584,11 @@ void ENPY::filterDataPSC(const double *RESTRICT values, const double threshold,
     doFiltering(this->residualFilteredData, this->pscFilteredData, values, threshold, compare,
                 this->residualFilteredNobs);
 
-    if (this->ctrl.alpha < 1) {
+    if (this->alpha < 1) {
         /* In case of EN, we need to multiply lambda_2 by 2 to account for the 1/2 in the EN objective */
         extendData(this->pscFilteredData, this->pscFilteredData,
-                   (1 + (this->ctrl.alpha > 0)) *
-                   LAMBDA_2(this->lambdaLS, this->ctrl.alpha, this->pscFilteredData.numObs()),
+                   (1 + (this->alpha > 0)) *
+                   LAMBDA_2(this->lambdaLS, this->alpha, this->pscFilteredData.numObs()),
                    false);
 
         this->pscFilteredData.setNumObs(this->pscFilteredData.numObs() +
@@ -603,12 +602,12 @@ double ENPY::evaluateEstimate() const
 {
     int j;
     double penalty = 0;
-    double tmp = 0.5 * (1 - this->ctrl.alpha);
+    double tmp = 0.5 * (1 - this->alpha);
 
     for (j = 1; j < this->originalData.numVar(); ++j) {
-        penalty += this->ctrl.lambda * (
+        penalty += this->lambda * (
                         tmp * this->coefEst[j] * this->coefEst[j] +
-                        this->ctrl.alpha * fabs(this->coefEst[j])
+                        this->alpha * fabs(this->coefEst[j])
                    );
     }
 
@@ -623,11 +622,14 @@ double ENPY::evaluateEstimate() const
  * of the principal sensitivity components
  *
  **************************************************************************************************/
-ENPY_Exact::ENPY_Exact(const Data& originalData, const Options& opts, const Options& enOpts) :
+ENPY_Exact::ENPY_Exact(const Data& originalData, const double alpha, const double lambda,
+                       const Options& opts, const Options& enOpts) :
            InitialEstimator(originalData, opts, pscEn, MAX_NUM_PSCS(originalData.numObs())),
+           alpha(alpha),
+           lambda(lambda),
 
            /* Adjust lambda1 and lambda2 for LS objective */
-           lambdaLS(this->ctrl.lambda * 0.5),
+           lambdaLS(lambda * 0.5),
 
            /* Select correct ElasticNet implementation */
            en(*getElasticNetImpl(enOpts, true)),
@@ -635,7 +637,7 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const Options& opts, const Opti
            pscEn(en),
            dataToUse(residualFilteredData)
 {
-    this->en.setAlphaLambda(this->ctrl.alpha, this->lambdaLS);
+    this->en.setAlphaLambda(this->alpha, this->lambdaLS);
 }
 
 ENPY_Exact::~ENPY_Exact()
@@ -701,12 +703,12 @@ double ENPY_Exact::evaluateEstimate() const
 {
     int j;
     double penalty = 0;
-    double tmp = 0.5 * (1 - this->ctrl.alpha);
+    double tmp = 0.5 * (1 - this->alpha);
 
     for (j = 1; j < this->originalData.numVar(); ++j) {
-        penalty += this->ctrl.lambda * (
+        penalty += this->lambda * (
                         tmp * this->coefEst[j] * this->coefEst[j] +
-                        this->ctrl.alpha * fabs(this->coefEst[j])
+                        this->alpha * fabs(this->coefEst[j])
                    );
     }
 

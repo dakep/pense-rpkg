@@ -1,19 +1,19 @@
-#' Perform an M-step on the PENSE result
+#' Perform an M-step after the EN S-Estimator
 #'
 #' Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 #'
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
-#' @param complete.grid should the optimal lambda be chosen from a grid of values
-#'      or approximate it from the optimal lambda
-#' @param cv.k perform k-fold CV to choose optimal lambda (only used if
-#'      \code{complete.grid = FALSE}).
+#' @param complete_grid should the optimal lambda be chosen from a grid of
+#'      values or approximate it from the optimal lambda?
+#' @param cv_k perform k-fold CV to choose optimal lambda (only used if
+#'      \code{complete_grid = TRUE}).
 #' @param nlambda the number of lambda values to try.
 #' @param ncores,cl use this many cores or the supplied cluster for choosing the
 #'      optima lambda. See \code{\link{pense}} for more details.
 #' @importFrom robustbase .Mchi
 #' @importFrom stats mad median
 #' @export
-mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
+mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
                   ncores = getOption("mc.cores", 1L), cl = NULL) {
     X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     y <- eval(penseobj$call$y, envir = parent.frame())
@@ -56,7 +56,6 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         bisquare = 1L,
         1L
     )
-
 
     ##
     ## Compute effective degrees of freedom
@@ -109,20 +108,22 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
     lambda.opt.ls <- pense.lambda.opt * 0.5
     lambda.opt.mm <- lambda.opt.ls * 3 / c0^2
 
-
     lambda.opt.mm.cv <- lambda.opt.mm
     lambda.grid.m <- matrix(c(lambda.opt.mm, NA_real_), ncol = 2L)
 
     ##
     ## Optionally choose optimal lambda from a grid of candidate values
     ##
-    if (isTRUE(complete.grid)) {
+    if (isTRUE(complete_grid)) {
         ## Setup cluster
-        cluster <- setupCluster(ncores, cl,
-                                export = c("Xs", "yc", "version"),
-                                eval = {
-                                    library(pense)
-                                })
+        cluster <- setupCluster(
+            ncores,
+            cl,
+            export = c("Xs", "yc", "version"),
+            eval = {
+                library(pense)
+            }
+        )
 
         ##
         ## Find maximum lambda, starting from adjusted "optimum"
@@ -130,15 +131,21 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ##
         lambda.max <- lambda.opt.mm
         lambda.min.ratio <- eval(penseobj$call$lambda.min.ratio)
-        lambda.min.ratio <- ifelse(is.null(lambda.min.ratio), 1e-5, lambda.min.ratio)
+        lambda.min.ratio <- ifelse(is.null(lambda.min.ratio), 1e-5,
+                                   lambda.min.ratio)
 
-        checkAllZero <- function(lambda, init.scale, init.coef, c0, alpha, control) {
-            msres <- pensemstep(Xs, yc, cc = c0,
-                                init.scale = init.scale,
-                                init.coef = init.coef,
-                                alpha = alpha,
-                                lambda = lambda,
-                                control)
+        checkAllZero <- function(lambda, init_scale, init_coef, alpha,
+                                 mstep_options, en_options) {
+            msres <- pensemstep(
+                Xs,
+                yc,
+                init_scale = init_scale,
+                init_coef = init_coef,
+                alpha = alpha,
+                lambda = lambda,
+                options = mstep_options,
+                en_options = en_options
+            )
             return(all(msres$beta == 0))
         }
 
@@ -147,14 +154,18 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ##
         moved.away <- FALSE
         repeat {
-            check.lambdas <- c(lambda.max, (2 ^ seq_len(cluster$ncores - 1L)) * lambda.max)
+            check.lambdas <- c(lambda.max, (2 ^ seq_len(cluster$ncores - 1L)) *
+                                   lambda.max)
 
-            all.zero <- cluster$lapply(check.lambdas, checkAllZero,
-                                        init.scale = scale.init.corr,
-                                        init.coef = pense.coef,
-                                        c0 = c0,
-                                        alpha = penseobj$alpha,
-                                        control = control)
+            all.zero <- cluster$lapply(
+                check.lambdas,
+                checkAllZero,
+                init_scale = scale.init.corr,
+                init_coef = pense.coef,
+                alpha = penseobj$alpha,
+                mstep_options = mstep_options,
+                en_options = en_options
+            )
 
             all.zero <- which(unlist(all.zero))
 
@@ -170,24 +181,28 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         }
 
         if (!moved.away) {
-            # If we did not move away from the initial guess, we have to check the next smallest
-            # step if this may lead to all-zeros as well
-            # check lambda.max / 2, lambda.max / 4, lambda.max / 8, lambda.max / (2^...)
+            # If we did not move away from the initial guess, we have to check
+            # the next smallest step if this may lead to all-zeros as well
+            # check lambda.max / 2, lambda.max / 4, lambda.max / (2^...)
             repeat {
                 check.lambdas <- lambda.max * 0.5^seq_len(cluster$ncores)
 
-                all.zero <- cluster$lapply(check.lambdas, checkAllZero,
-                                           init.scale = scale.init.corr,
-                                           init.coef = pense.coef,
-                                           c0 = c0,
-                                           alpha = penseobj$alpha,
-                                           control = control)
+                all.zero <- cluster$lapply(
+                    check.lambdas,
+                    checkAllZero,
+                    init_scale = scale.init.corr,
+                    init_coef = pense.coef,
+                    alpha = penseobj$alpha,
+                    mstep_options = mstep_options,
+                    en_options = en_options
+                )
 
                 not.all.zero <- which(!unlist(all.zero))
 
                 if (length(not.all.zero) > 0) {
                     choose <- not.all.zero[1L] - 1L
-                    lambda.max <- ifelse(choose < 1L, lambda.max, check.lambdas[choose])
+                    lambda.max <- ifelse(choose < 1L, lambda.max,
+                                         check.lambdas[choose])
                     break
                 }
 
@@ -195,7 +210,8 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
 
                 if (isTRUE(lambda.max < .Machine$double.eps)) {
                     lambda.max <- lambda.opt.mm
-                    warning("M-step seems to converge to the zero-vector for all penalty values.")
+                    warning("M-step seems to converge to the zero-vector for ",
+                            "all penalty values.")
                     break
                 }
             }
@@ -205,12 +221,13 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ## Create grid of nlambda values in [lambda.min; lambda.max]
         ## where lambda.min is the adjusted minimum of the grid for the S-estimator
         ##
-        lambda.grid.m <- exp(seq(from = log(lambda.min.ratio * lambda.max), to = log(lambda.max), length = nlambda))
+        lambda.grid.m <- exp(seq(from = log(lambda.min.ratio * lambda.max),
+                                 to = log(lambda.max), length = nlambda))
         lambda.grid.m <- sort(c(lambda.grid.m, lambda.opt.mm))
 
         ## Determine CV segments
-        cv.segments <- if(cv.k > 1L) {
-            split(seq_len(dX[1L]), sample(rep_len(seq_len(cv.k), dX[1L])))
+        cv.segments <- if(cv_k > 1L) {
+            split(seq_len(dX[1L]), sample(rep_len(seq_len(cv_k), dX[1L])))
         } else {
             list(integer(0))
         }
@@ -218,15 +235,19 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
         ## Combine CV segments and lambda grid to a list of jobs
         jobgrid <- lapply(cv.segments, function(cvs) {
             lapply(lambda.grid.m, function(lvs) {
-                list(segment = cvs,
-                     lambda = lvs)
+                list(
+                    segment = cvs,
+                    lambda = lvs
+                )
             })
         })
 
         jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
 
         ## Run all jobs (combination of all CV segments and all lambda values)
-        dojobcv <- function(job, init.scale, init.coef, c0, alpha, control) {
+        dojobcv <- function(job, init_scale, init_coef, alpha,
+                            mstep_options = mstep_options,
+                            en_options = en_options) {
             if (length(job$segment) == 0L) {
                 X.train <- Xs
                 y.train <- yc
@@ -239,44 +260,67 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
                 y.test <- yc[job$segment]
             }
 
-            msres <- pensemstep(X.train, y.train, c0, init.scale, init.coef,
-                                alpha = alpha, lambda = job$lambda,
-                                control)
+            msres <- pensemstep(
+                X.train,
+                y.train,
+                alpha = alpha,
+                lambda = job$lambda,
+                init_scale = init_scale,
+                init_coef = init_coef,
+                options = mstep_options,
+                en_options = en_options
+            )
 
             return(drop(y.test - msres$intercept - X.test %*% msres$beta))
         }
 
         tryCatch({
-            prediction.errors <- cluster$lapply(jobgrid, dojobcv,
-                                                init.scale = scale.init.corr,
-                                                init.coef = pense.coef,
-                                                c0 = c0,
-                                                alpha = penseobj$alpha,
-                                                control = control)
+            prediction.errors <- cluster$lapply(
+                jobgrid,
+                dojobcv,
+                alpha = penseobj$alpha,
+                init_scale = scale.init.corr,
+                init_coef = pense.coef,
+                options = mstep_options,
+                en_options = en_options
+            )
         },
         finally = {
             cluster$stopCluster()
         })
 
         ## Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
+        stop("Move cv.objective function from control somewhere else!")
         cv.obj.fun <- match.fun(control$cv.objective)
-        cv.performance <- unlist(lapply(split(prediction.errors, rep.int(seq_along(lambda.grid.m), cv.k)),
-                                        function(preds) {
-                                            preds <- unlist(preds)
-                                            cv.obj.fun(preds)
-                                        }), use.names = FALSE)
+        cv.performance <- unlist(
+            lapply(
+                split(prediction.errors, rep.int(seq_along(lambda.grid.m),
+                                                 cv_k)),
+                function(preds) {
+                    preds <- unlist(preds)
+                    cv.obj.fun(preds)
+                }
+            ),
+            use.names = FALSE
+        )
 
         lambda.opt.mm.cv <- lambda.grid.m[which.min(cv.performance)]
         lambda.grid.m <- cbind(lambda.grid.m * max(scale.x), cv.performance)
     }
 
-
     ##
     ## Compute M-estimator for lambda.opt.mm.cv
     ##
-    msres <- pensemstep(Xs, yc, c0, scale.init.corr, pense.coef,
-                        alpha = penseobj$alpha, lambda = lambda.opt.mm.cv,
-                        control)
+    msres <- pensemstep(
+        Xs,
+        yc,
+        init_scale = scale.init.corr,
+        init_coef = pense.coef,
+        alpha = penseobj$alpha,
+        lambda = lambda.opt.mm.cv,
+        options = mstep_options,
+        en_options = en_options
+    )
 
     ## Un-standardize the coefficients
     if (penseobj$standardize == TRUE) {
@@ -305,60 +349,40 @@ mstep <- function(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
     ), class = c("pensem", "pense")))
 }
 
-
 ##
 #' @useDynLib pense C_augtrans C_pen_mstep
 #' @importFrom robustbase Mchi
-pensemstep <- function(X, y, cc, init.scale, init.coef, alpha, lambda, control) {
+pensemstep <- function(X, y, init_scale, init_coef, alpha, lambda,
+                       options = mstep_options, en_options = en_options) {
     dX <- dim(X)
 
-    Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    Xtr <- .Call(C_augtrans, X)
     dX[2L] <- dX[2L] + 1L
 
-    cctrl <- initest.control(
-        lambda = lambda,
-        alpha = alpha,
-        numIt = control$pense.maxit,
-        eps = control$pense.tol^2,
-        mscale.delta = control$mscale.delta,
-        mscale.cc = cc,
-        enpy.control = enpy.control(
-            en.maxit = control$pense.en.maxit,
-            en.tol = control$pense.en.tol,
-            en.centering = TRUE,
-            mscale.maxit = control$mscale.maxit,
-            mscale.tol = control$mscale.tol,
-            mscale.rho.fun = "bisquare",
-            en.algorithm = control$en.algorithm
-        ),
-
-        # Not needed, set for completeness
-        resid.clean.method = "proportion",
-        resid.threshold = 0.5,
-        resid.proportion = 0.5,
-        psc.proportion = 0.5
-    )
-
-    res <- .Call(C_pen_mstep, Xtr, y, dX[1L], dX[2L], init.coef, init.scale, cctrl)
+    res <- .Call(C_pen_mstep, Xtr, y, init_coef, init_scale, alpha, lambda,
+                 mstep_options, en_options)
 
     ret <- list(
         intercept = res[[1L]][1L],
         beta = res[[1L]][-1L],
         resid = res[[2L]],
-        rel.change = sqrt(res[[3L]]),
+        rel_change = sqrt(res[[3L]]),
         iterations = res[[4L]],
         objF = NA_real_
     )
 
-    ret$objF <- sum(Mchi(drop(ret$resid / init.scale), cc = cc, psi = control$mscale.rho.fun)) +
-        lambda * (((1 - alpha) / 2) * sum(ret$beta^2) + alpha * sum(abs(ret$beta)))
+    ret$objF <- sum(Mchi(drop(ret$resid / init_scale),
+                         cc = options$cc, psi = "bisquare")) +
+        lambda * (
+            0.5 * (1 - alpha) * sum(ret$beta^2) + alpha * sum(abs(ret$beta))
+        )
 
     ##
     ## Check if the M-step converged.
     ## Be extra careful with the comparison as rel.change may be NaN or NA
     ##
-    if (!identical(ret$rel.change > control$pense.tol, FALSE)) {
-        warning(sprintf("M-step did not converge for lambda = %.3f", lambda))
+    if (!isTRUE(ret$rel_change < options$eps)) {
+        warning(sprintf("M-step did not converge for lambda = %.6f", lambda))
     }
 
     return(ret)

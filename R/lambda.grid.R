@@ -3,11 +3,12 @@
 ##
 #' @importFrom stats mad median
 #' @importFrom robustbase scaleTau2 covGK
-lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, lambda.min.ratio = NULL,
-                        scaleFun = mad, meanFun = median) {
+build_lambda_grid <- function(X, y, alpha, nlambda, standardize = TRUE,
+                              lambda_min_ratio = NULL, scaleFun = mad,
+                              meanFun = median) {
     dX <- dim(X)
 
-    if (identical(standardize, TRUE)) {
+    if (isTRUE(standardize)) {
         scale.x <- apply(X, 2, scaleFun)
         mu.x <- apply(X, 2, meanFun)
 
@@ -24,16 +25,15 @@ lambda.grid <- function(X, y, alpha, nlambda, control, standardize = TRUE, lambd
     ## Pairwise robust covariances
     covxy <- apply(Xs, 2, covGK, ycs, sigmamu = scaleTau2)
 
-    if (is.null(lambda.min.ratio)) {
-        lambda.min.ratio <- min(1e-2, 1e-3 * 10^floor(log10(dX[2L] / dX[1L])))
+    if (is.null(lambda_min_ratio)) {
+        lambda_min_ratio <- min(1e-2, 1e-3 * 10^floor(log10(dX[2L] / dX[1L])))
     }
 
     lmax <- max(abs(covxy))
-    lmin <- lambda.min.ratio * lmax
+    lmin <- lambda_min_ratio * lmax
 
-    ## the lambda grid is not yet adjusted for the sample size! This will be done separately
-    ## during estimation!
-    lambda <- exp(seq(log(lmin), log(lmax), length.out = nlambda)) * 2 * scaleFun(y) / alpha
+    lambda <- exp(seq(log(lmin), log(lmax), length.out = nlambda)) *
+        2 * scaleFun(y) / alpha
     #adjustment for an S-est (may not be enough)
     lambda <- lambda * 1.1 * 2
 

@@ -82,13 +82,6 @@ ENDal::~ENDal()
 
 void ENDal::setOptions(const Options& options)
 {
-//    this->maxIt = Rcpp::as<int>(options["maxit"]);
-//    this->eps = Rcpp::as<double>(options["eps"]);
-//    this->warmStart = Rcpp::as<bool>(options["warmStart"]);
-//    this->etaStart = Rcpp::as<double>(options["etaStart"]);
-//    this->etaStartNumerator = Rcpp::as<double>(options["etaStartNumerator"]);
-//    this->etaMultiplier = Rcpp::as<double>(options["etaMultiplier"]);
-
     this->maxIt = options.get("maxit", DEFAULT_OPT_MAXIT);
     this->eps = options.get("eps", DEFAULT_OPT_EPS);
     this->warmStart = options.get("warmStart", DEFAULT_OPT_WARM_START);
@@ -114,7 +107,7 @@ void ENDal::setAlphaLambda(const double alpha, const double lambda)
 
 inline double ENDal::fullObjectiveFun(const double intercept, const arma::vec& beta)
 {
-    return 0.5 * squaredL2Norm(this->Xtr * beta + intercept - this->y) + this->nLambda * (
+    return 0.5 * squaredL2Norm(this->Xtr.t() * beta + intercept - this->y) + this->nLambda * (
         0.5 * (1 - this->alpha) * squaredL2Norm(beta) +
         this->alpha * norm(beta, 1)
     );
@@ -199,7 +192,7 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
             dualFunVal = lossDual(dualVec, this->y, true);
         }
 
-        if (dualFunVal > dualFunValPrev) {
+        if (iter > 0 && dualFunVal > dualFunValPrev) {
             dualFunVal = dualFunValPrev;
         }
 
@@ -207,7 +200,7 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
         relativeDualityGap = (primalFunVal + dualFunVal) / primalFunVal;
 
         Rcpp::Rcout << "[[" << iter << "]]" <<
-            "fval=" << primalFunVal <<
+            " fval=" << primalFunVal <<
             "; dval=" << dualFunVal <<
             "; rdg=" << relativeDualityGap <<
             "; eta=" << this->eta[0] <<
@@ -287,10 +280,10 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
         normGradient = squaredL2Norm(phiGradient);
 
         Rcpp::Rcout << "[" << iter << "]" <<
-            "fval=" << phiVal <<
-            "norm(gg)=" << normGradient <<
-            "decr=" << decr <<
-            "step=" << stepSize <<
+            " fval=" << phiVal <<
+            "; norm(gg)=" << normGradient <<
+            "; decr=" << decr <<
+            "; step=" << stepSize <<
             std::endl;
 
         /*
@@ -385,9 +378,9 @@ static inline void vecSoftThreshold(vec& z, const double gamma, const double mul
 static inline double lossDual(const vec& a, const vec& y, const bool aNeg)
 {
     if (aNeg) {
-        return as_scalar(0.5 * a * a - a * y);
+        return as_scalar(0.5 * dot(a, a) - dot(a, y));
     } else {
-        return as_scalar(0.5 * a * a + a * y);
+        return as_scalar(0.5 * dot(a, a) + dot(a, y));
     }
 }
 

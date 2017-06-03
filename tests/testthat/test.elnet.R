@@ -29,7 +29,7 @@ test_that("LASSO", {
 
     lambda1 <- 0.02
 
-    enres <- elnet(X, y, 1, lambda1, centering = FALSE)
+    enres <- elnet(X, y, 1, lambda1, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -37,7 +37,8 @@ test_that("LASSO", {
 
     ## check if result is the same as for lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
 
         expect_equal(enres$coefficients, c(0, larsres))
@@ -57,7 +58,7 @@ test_that("LASSO", {
 
     lambda1 <- 0.02
 
-    enres <- elnet(X, y, 1, lambda1, centering = FALSE)
+    enres <- elnet(X, y, 1, lambda1, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -85,7 +86,7 @@ test_that("LASSO", {
 
     lambda1 <- 0.2
 
-    enres <- elnet(X, y, 1, lambda1, centering = FALSE)
+    enres <- elnet(X, y, 1, lambda1, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -93,7 +94,8 @@ test_that("LASSO", {
 
     ## check if result is the same as for lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
 
         expect_equal(enres$coefficients, c(0, larsres))
@@ -113,7 +115,7 @@ test_that("LASSO", {
 
     lambda1 <- 0.02
 
-    enres <- elnet(X, y, 1, lambda1, centering = FALSE)
+    enres <- elnet(X, y, 1, lambda1, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -121,7 +123,8 @@ test_that("LASSO", {
 
     ## check if result is the same as for lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
 
         expect_equal(enres$coefficients, c(0, larsres))
@@ -141,7 +144,7 @@ test_that("LASSO", {
 
     lambda1 <- 0.002
 
-    enres <- elnet(X, y, 1, lambda1, maxit = 1e5, centering = FALSE)
+    enres <- elnet(X, y, 1, lambda1, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -149,7 +152,8 @@ test_that("LASSO", {
 
     ## check if result is the same as for lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(X, y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
 
         expect_equal(enres$coefficients, c(0, larsres))
@@ -189,7 +193,7 @@ test_that("Ridge", {
 
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, centering = TRUE)
+    enres <- elnet(X, y, 0, lambda2, intercept = TRUE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(enres$coefficients, olsres$coefficients)
@@ -213,7 +217,7 @@ test_that("Ridge", {
     lambda2 <- 0.2
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, centering = TRUE)
+    enres <- elnet(X, y, 0, lambda2, intercept = TRUE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(enres$coefficients, olsres$coefficients)
@@ -237,7 +241,7 @@ test_that("Ridge", {
     lambda2 <- 3
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, centering = TRUE)
+    enres <- elnet(X, y, 0, lambda2, intercept = TRUE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(enres$coefficients, olsres$coefficients)
@@ -261,7 +265,7 @@ test_that("Ridge", {
     lambda2 <- 1
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, maxit = 1e5, centering = TRUE)
+    enres <- elnet(X, y, 0, lambda2, intercept = TRUE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(enres$coefficients, olsres$coefficients)
@@ -306,7 +310,7 @@ test_that("EN", {
     lambda <- 2 * lambda2 + lambda1
     alpha <- lambda1 / (2 * lambda2 + lambda1)
 
-    enres <- elnet(X, y, alpha, lambda, centering = FALSE)
+    enres <- elnet(X, y, alpha, lambda, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
@@ -315,12 +319,14 @@ test_that("EN", {
     ## check if we can match the result by augmenting the data
     au <- augment(X, y, lambda2, leading1s = FALSE)
 
-    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), centering = FALSE)
+    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p),
+                  intercept = FALSE)
     expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
 
     ## check if results match with lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
         expect_equal(enres$coefficients[-1L], larsres)
     }
@@ -343,7 +349,7 @@ test_that("EN", {
     lambda <- 2 * lambda2 + lambda1
     alpha <- lambda1 / (2 * lambda2 + lambda1)
 
-    enres <- elnet(X, y, alpha, lambda, centering = FALSE)
+    enres <- elnet(X, y, alpha, lambda, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
@@ -352,12 +358,14 @@ test_that("EN", {
     ## check if we can match the result by augmenting the data
     au <- augment(X, y, lambda2, leading1s = FALSE)
 
-    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), centering = FALSE)
+    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p),
+                  intercept = FALSE)
     expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
 
     ## check if results match with lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
         expect_equal(enres$coefficients[-1L], larsres)
     }
@@ -380,7 +388,7 @@ test_that("EN", {
     lambda <- 2 * lambda2 + lambda1
     alpha <- lambda1 / (2 * lambda2 + lambda1)
 
-    enres <- elnet(X, y, alpha, lambda, centering = FALSE)
+    enres <- elnet(X, y, alpha, lambda, intercept = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
@@ -389,12 +397,14 @@ test_that("EN", {
     ## check if we can match the result by augmenting the data
     au <- augment(X, y, lambda2, leading1s = FALSE)
 
-    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p), centering = FALSE)
+    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p),
+                  intercept = FALSE)
     expect_equal(enres$coefficients[-1L], elau$coefficients[-1L])
 
     ## check if results match with lars
     if (requireNamespace("lars", quietly = TRUE)) {
-        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE, intercept = FALSE)
+        larsobj <- lars::lars(au$X, au$y, type = "lasso", normalize = FALSE,
+                              intercept = FALSE)
         larsres <- lars::coef.lars(larsobj, s = n * lambda1, mode = "lambda")
         expect_equal(enres$coefficients[-1L], larsres)
     }
@@ -455,25 +465,31 @@ test_that("EN Objective", {
     alpha <- 0.5
 
     # Check that every algorithm minimizes the correct objective function
-    algos <- c("coordinate-descent", "augmented-lars-gram",
-               "augmented-lars-nogram")
-    invisible(lapply(algos, function (algorithm) {
-        elres <- elnet(x, y, alpha = alpha, lambda, centering = FALSE,
-                       en.algorithm = algorithm)
+    en_algos <- c("en_options_aug_lars")
 
-        expect_equivalent(elres$coefficients[2L], target_beta, tolerance = 0.006,
-                          info = sprintf("Algorithm: %s", algorithm))
+
+    invisible(lapply(en_algos, function (algorithm) {
+        opts_fun <- match.fun(algorithm)
+        elres <- elnet(x, y, alpha = alpha, lambda, intercept = FALSE,
+                       options = opts_fun())
+
+        expect_equal(elres$coefficients[2L], target_beta,
+                     tolerance = 0.006,
+                     check.attributes = FALSE,
+                     info = sprintf("Algorithm: %s", algorithm))
     }))
 
     # Check that every weighted algorithm minimizes the correct objective function
-    weight.algos <- c("augmented-lars-gram", "augmented-lars-nogram")
     weights <- rep.int(1, n)
-    invisible(lapply(weight.algos, function (algorithm) {
-        elres <- elnet(x, y, alpha = alpha, lambda, centering = FALSE,
-                       en.algorithm = algorithm, weights = weights)
+    invisible(lapply(en_algos, function (algorithm) {
+        opts_fun <- match.fun(algorithm)
+        elres <- elnet(x, y, alpha = alpha, lambda, intercept = FALSE,
+                       options = opts_fun(), weights = weights)
 
-        expect_equivalent(elres$coefficients[2L], target_beta, tolerance = 0.006,
-                          info = sprintf("Weighted algorithm: %s", algorithm))
+        expect_equal(elres$coefficients[2L], target_beta,
+                     tolerance = 0.006,
+                     check.attributes = FALSE,
+                     info = sprintf("Weighted algorithm: %s", algorithm))
     }))
 
     remove(list = setdiff(ls(), "gradient"))

@@ -1,4 +1,4 @@
-test_that("enpy.rr", {
+test_that("enpy", {
     if (requireNamespace("lars", quietly = TRUE) &&
         requireNamespace("robustbase", quietly = TRUE)) {
         source("enpy.old.R", local = TRUE)
@@ -15,10 +15,21 @@ test_that("enpy.rr", {
         alpha <- 0
         lambda <- 0
 
-        new <- pense::enpy(X, y, alpha = alpha, lambda = lambda,
-                               deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
-                               prosac = 0.8, clean.method = "proportion", prop = 0.4, C.res = NULL,
-                               py.nit = 5, en.tol = 1e-8)
+        new <- pense::enpy(
+            X,
+            y,
+            alpha = alpha,
+            lambda = lambda,
+            options = initest_options(
+                psc_method = "rr",
+                maxit = 5,
+                psc_keep = 0.2,
+                resid_keep_method = "proportion",
+                resid_keep_prop = 0.6,
+                delta = 0.5
+            ),
+            en_options = en_options_aug_lars()
+        )
 
         target <- enpy(X, y, lambda1 = alpha * lambda, lambda2 = 0.5 * (1 - alpha) * lambda,
                        deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",

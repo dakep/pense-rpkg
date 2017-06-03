@@ -5,9 +5,9 @@
 \alias{en_options_dal}
 \title{Additional Options for the Augmented LARS Algorithm}
 \usage{
-en_options_aug_lars(use_gram = c("auto", "yes", "no"), eps = 1e-09)
+en_options_aug_lars(use_gram = c("auto", "yes", "no"), eps = 1e-12)
 
-en_options_dal(maxit = 100, eps = 1e-09, eta_mult = 2,
+en_options_dal(maxit = 100, eps = 1e-06, eta_mult = 2,
   eta_start_numerator = 0.01, eta_start)
 }
 \arguments{

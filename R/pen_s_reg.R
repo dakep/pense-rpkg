@@ -68,11 +68,11 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
         resid,
         cc = options$cc,
         b = options$bdp,
-        eps = control$mscaleEps,
-        maxit = control$mscaleMaxit
+        eps = options$mscaleEps,
+        maxit = options$mscaleMaxit
     )
 
-    tol <- control$eps^2
+    tol <- options$eps^2
     it <- 0L
     rel_change <- Inf
 
@@ -82,7 +82,7 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
 
         resid.scaled <- resid / scale
         # Mwgt is safer then Mchi in the case 0/0!
-        wbeta <- Mwgt(resid.scaled, cc = control$cc, psi = "bisquare")
+        wbeta <- Mwgt(resid.scaled, cc = options$cc, psi = "bisquare")
         # Not necessary to compute the "true" weights, as the normalization
         # will remove this again
         # weights <- wbeta * (scale / sum(resid^2 * wbeta))
@@ -96,8 +96,8 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
             y,
             weights = weights,
             alpha = alpha,
-            lambda = 0.5 * lambda,
-            en_options
+            lambda = lambda,
+            options = en_options
         )
 
         prev.coefs <- current.coefs
@@ -109,8 +109,8 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
             resid,
             cc = options$cc,
             b = options$bdp,
-            eps = control$mscaleEps,
-            maxit = control$mscaleMaxit
+            eps = options$mscaleEps,
+            maxit = options$mscaleMaxit
         )
 
         rel_change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
@@ -120,7 +120,7 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
         }
 
         ## Check convergence
-        if (it >= maxit || all(rel_change < tol)) {
+        if (it >= options$maxit || all(rel_change < tol)) {
             break
         }
     }

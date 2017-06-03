@@ -102,6 +102,7 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
      * If we assume the data is centered already -- we only need to weight the observations
      * Otherwise, we also have make the design orthogonal to (y - beta0)
      */
+    mat origDataCopy = this->XtrAug;
     mat tmpMat;
     mat& XtrWeighted = (this->intercept ? tmpMat : this->XtrAug);
 
@@ -122,8 +123,6 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
         recipSumWeights = 1 / recipSumWeights;
         this->XtrAug.cols(0, trueNobs - 1) = XtrWeighted -
                     XtrWeighted * sqrtWeights * sqrtWeights.t() * recipSumWeights;
-
-        XtrWeighted.reset();
     }
 
     /*
@@ -139,6 +138,8 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
         this->augmentedOLS(beta, residuals, trueNobs, false);
     }
 
+    /* Restore original data */
+    this->XtrAug = origDataCopy;
 
     /*
      * Recover intercept if requested
@@ -671,7 +672,7 @@ void ENLars::setData(const Data& data)
         this->XtrAug.set_size(reqNvar, reqNobs);
         this->yAug.set_size(reqNobs);
 
-        if (this->sqrtLambda2 > 0) {
+        if (this->sqrtLambda2 > 0 && reqNvar > 0) {
             this->XtrAug.tail_cols(reqNvar - 1).zeros();
        }
     }
@@ -702,7 +703,7 @@ void ENLars::augmentData()
         this->XtrAug.resize(reqNvar, reqNobs);
         this->yAug.set_size(reqNobs);
 
-        if (this->sqrtLambda2 > 0) {
+        if (this->sqrtLambda2 > 0 && reqNvar > 0) {
             this->XtrAug.tail_cols(reqNvar - 1).zeros();
        }
     }

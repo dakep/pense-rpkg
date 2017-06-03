@@ -14,7 +14,7 @@
 #include "olsreg.h"
 
 static const int DEFAULT_OPT_MAXIT = 1000;
-static const double DEFAULT_OPT_EPS = 1e-9;
+static const double DEFAULT_OPT_EPS = 1e-6;
 
 static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 
@@ -22,7 +22,7 @@ static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
     data(data),
     maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
-    eps(opts.get("eps", DEFAULT_OPT_EPS))
+    eps(opts.get("eps", DEFAULT_OPT_EPS) * opts.get("eps", DEFAULT_OPT_EPS))
 {
     this->weights = new double[data.numObs()];
     this->en = getElasticNetImpl(enOpts, true);
@@ -39,14 +39,13 @@ IRWEN::~IRWEN()
 void IRWEN::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
 {
     double tmp;
-    double *RESTRICT oldCoef = new double[data.numVar()];
-    double *RESTRICT weights = new double[data.numObs()];
+    double *RESTRICT oldCoef = new double[this->data.numVar()];
     double norm2Old;
     int j;
 
     this->iteration = 0;
-    computeResiduals(data.getXtrConst(), data.getYConst(), data.numObs(), data.numVar(),
-                     currentCoef, residuals);
+    computeResiduals(this->data.getXtrConst(), this->data.getYConst(), this->data.numObs(),
+                     this->data.numVar(), currentCoef, residuals);
 
     do {
         ++this->iteration;
@@ -62,7 +61,7 @@ void IRWEN::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
          * Perform EN using current coefficients as warm start (only applicable for the coordinate
          * descent algorithm)
          */
-        en->computeCoefsWeighted(currentCoef, residuals, weights);
+        en->computeCoefsWeighted(currentCoef, residuals, this->weights);
 
         if (en->getStatus() > 0) {
             Rcpp::warning("Weighted elastic net had non-successful status:");

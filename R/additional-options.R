@@ -109,7 +109,7 @@ initest_options <- function (
 pense_options <- function (
     delta = 0.5,
     maxit = 1000,
-    eps = 1e-9,
+    eps = 1e-6,
     mscale_eps = 1e-8,
     mscale_maxit = 200,
     cc
@@ -140,7 +140,7 @@ pense_options <- function (
 mstep_options <- function (
     cc = 3.44,
     maxit = 1000,
-    eps = 1e-9
+    eps = 1e-6
 ) {
     return(list(
         maxit = .check_arg(maxit, "integer", range = 0),
@@ -162,7 +162,7 @@ mstep_options <- function (
 #' @rdname en_options
 en_options_aug_lars <- function (
     use_gram = c("auto", "yes", "no"),
-    eps = 1e-9
+    eps = 1e-12
 ) {
     use_gram <- match.arg(use_gram)
     use_gram <- as.integer(pmatch(use_gram, c("auto", "yes", "no"))) - 1L
@@ -191,7 +191,7 @@ en_options_aug_lars <- function (
 #' @rdname en_options
 en_options_dal <- function (
     maxit = 100,
-    eps = 1e-9,
+    eps = 1e-6,
     eta_mult = 2,
     eta_start_numerator = 1e-2,
     eta_start
@@ -298,7 +298,7 @@ en_options_dal <- function (
 .rho2IntRho <- function(rho_fun) {
     rho_fun <- as.integer(pmatch(rho_fun, c("bisquare", "huber", "gauss"))) - 1L
 
-    rho_fun <- rho.fun[which(!is.na(rho_fun))[1L]]
+    rho_fun <- rho_fun[which(!is.na(rho_fun))[1L]]
 
     if (is.na(rho_fun)) {
         rho_fun <- 0L

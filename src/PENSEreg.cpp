@@ -18,8 +18,8 @@
 static const RhoFunction rhoBisquare2 = getRhoFunctionByName(BISQUARE);
 static const double DEFAULT_OPT_BDP = 0.5;
 static const double DEFAULT_OPT_CC = 1.5476445356;
-static const double DEFAULT_OPT_MSCALE_EPS = 1e-9;
-static const int DEFAULT_OPT_MSCALE_MAX_IT = 100;
+static const double DEFAULT_OPT_MSCALE_EPS = 1e-8;
+static const int DEFAULT_OPT_MSCALE_MAX_IT = 200;
 
 static inline double wgtBisquare2(double x, double c);
 

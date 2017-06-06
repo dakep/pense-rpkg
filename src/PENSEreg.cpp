@@ -23,7 +23,7 @@ static const int DEFAULT_OPT_MSCALE_MAX_IT = 200;
 
 static inline double wgtBisquare2(double x, double c);
 
-PENSEReg::PENSEReg(const Data& data, const double alpha, const double lambda, const Options& opts, Options &enOpts) :
+PENSEReg::PENSEReg(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
         IRWEN(data, alpha, lambda, opts, enOpts),
         bdp(opts.get("bdp", DEFAULT_OPT_BDP)),
         cc(opts.get("cc", DEFAULT_OPT_CC)),

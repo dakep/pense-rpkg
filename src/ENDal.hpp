@@ -38,11 +38,12 @@ public:
 
 private:
     int maxIt;
-    double etaMultiplier;
     double eps;
+    bool warmStart;
     double etaStart;
     double etaStartNumerator;
-    bool warmStart;
+    double etaMultiplier;
+    bool useHessBuffer;
 
     double lambda;
     double alpha;
@@ -68,7 +69,6 @@ private:
     double evalPhi(const arma::vec& a, arma::vec& beta, double& intercept, arma::vec &grad, arma::mat& hess, bool evalGrad);
 
     const arma::mat& getHessBuff(const arma::uvec& keep);
-    bool useHessBuffer;
     arma::uvec hessBuffKeep;
     arma::mat hessBuff;
 };

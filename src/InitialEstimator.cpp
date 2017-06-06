@@ -118,7 +118,6 @@ InitialEstimator::InitialEstimator(const Data& originalData, const Options& opts
          */
         this->allCoefEstimates = new double[maxEstimators * this->originalData.numVar()
                                             + coefMemIncrease];
-
         this->coefObjFunScore = new double[maxEstimators];
     }
 
@@ -174,6 +173,9 @@ int InitialEstimator::compute()
 
     this->resetData();
 
+    /* Set the first estimate to all 0 */
+    memset(this->allCoefEstimates, 0, origNvar * sizeof(double));
+
     bestCoefEst = this->allCoefEstimates;
     this->coefEst = this->allCoefEstimates + origNvar;
     *minObjective = DBL_MAX;
@@ -182,6 +184,7 @@ int InitialEstimator::compute()
         tmpObjective = this->coefObjFunScore + 1;
 
         /* 1. Estimate coefficients for residuals-filtered data */
+        memcpy(this->coefEst, bestCoefEst, origNvar * sizeof(double)); /* make sure we start from a good point */
         this->estimateCoefficients();
 
         // Now evaluate this->coefEst on the
@@ -211,14 +214,14 @@ int InitialEstimator::compute()
 
         for(j = 0; j < numPSCs; ++j) {
             currentPSC = this->psc.getPSC() + this->residualFilteredData.numObs() * j;
-            /* 4.1. Thin out X and y based on large values of PSCs */
+            /* 4.1.1 Thin out X and y based on large values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
                                     this->ctrl.keepPSCProportion, lessThan);
-
             this->filterDataPSC(currentPSC, threshold, lessThan);
 
-            /* 4.2. Estimate coefficients */
+            /* 4.1.2. Estimate coefficients using the "smallest PSCs" */
             this->coefEst += origNvar;
+            memcpy(this->coefEst, bestCoefEst, origNvar * sizeof(double)); /* make sure we start from a good point */
             this->estimateCoefficients();
             *tmpObjective = this->evaluateEstimate();
 
@@ -228,14 +231,14 @@ int InitialEstimator::compute()
             }
             ++tmpObjective;
 
-            /* 4.1. Thin out X and y based on large values of PSCs */
+            /* 4.2.1 Thin out X and y based on small values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
                                     this->ctrl.keepPSCProportion, greaterThan);
-
             this->filterDataPSC(currentPSC, threshold, greaterThan);
 
-            /* 4.2. Estimate coefficients */
+            /* 4.2.2. Estimate coefficients using the "largest PSCs" */
             this->coefEst += origNvar;
+            memcpy(this->coefEst, bestCoefEst, origNvar * sizeof(double)); /* make sure we start from a good point */
             this->estimateCoefficients();
             *tmpObjective = this->evaluateEstimate();
 
@@ -245,14 +248,15 @@ int InitialEstimator::compute()
             }
             ++tmpObjective;
 
-            /* 4.1. Thin out X and y based on large values of PSCs */
+            /* 4.3.1. Thin out X and y based on large absolute values of PSCs */
             threshold = getQuantile(currentPSC, this->residualFilteredNobs,
                                     this->ctrl.keepPSCProportion, absoluteLessThan);
 
             this->filterDataPSC(currentPSC, threshold, absoluteLessThan);
 
-            /* 4.2. Estimate coefficients */
+            /* 4.3.2 Estimate coefficients using the "absolute smallest PSCs" */
             this->coefEst += origNvar;
+            memcpy(this->coefEst, bestCoefEst, origNvar * sizeof(double)); /* make sure we start from a good point */
             this->estimateCoefficients();
             *tmpObjective = this->evaluateEstimate();
 
@@ -437,6 +441,11 @@ ENPY::ENPY(const Data& originalData, const double alpha, const double lambda, co
 
            dataToUse(residualFilteredData)
 {
+    /* Force using warm starts */
+    Options overrideWarm;
+    overrideWarm.set("warmStart", true);
+    this->en.setOptions(overrideWarm);
+
     /* Resize the residuals memory allocated by base class */
     delete[] this->residuals;
     this->residuals = new double[this->originalData.numObs() + this->originalData.numVar()];
@@ -637,6 +646,11 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const double alpha, const doubl
            pscEn(en),
            dataToUse(residualFilteredData)
 {
+    /* Force using warm starts */
+    Options overrideWarm;
+    overrideWarm.set("warmStart", true);
+    this->en.setOptions(overrideWarm);
+
     this->en.setAlphaLambda(this->alpha, this->lambdaLS);
 }
 

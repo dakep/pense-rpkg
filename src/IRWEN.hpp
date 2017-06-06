@@ -15,7 +15,7 @@
 
 class IRWEN {
 public:
-	IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, Options &enOpts);
+	IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts);
 	~IRWEN();
 
 	void compute(double *RESTRICT coefficients, double *RESTRICT residuals);

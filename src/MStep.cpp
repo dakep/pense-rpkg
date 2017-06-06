@@ -21,13 +21,12 @@ static const double DEFAULT_OPT_CC = 3.44;
 
 static inline double wgtBisquare2(double x, double c);
 
-MStep::MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, Options &enOpts) :
+MStep::MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, const Options &enOpts) :
     IRWEN(data, alpha, lambda, opts, enOpts),
     cc(opts.get("cc", DEFAULT_OPT_CC)),
     scale(scale)
 {
 }
-
 
 MStep::~MStep()
 {

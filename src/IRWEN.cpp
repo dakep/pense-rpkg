@@ -18,14 +18,16 @@ static const double DEFAULT_OPT_EPS = 1e-6;
 
 static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 
-IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, Options &enOpts) :
+IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
     data(data),
     maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
     eps(opts.get("eps", DEFAULT_OPT_EPS) * opts.get("eps", DEFAULT_OPT_EPS))
 {
+    Options overrideWarm;
+    overrideWarm.set("warmStart", true);
     this->weights = new double[data.numObs()];
-    enOpts.set("warmStart", true);
     this->en = getElasticNetImpl(enOpts, true);
+    this->en->setOptions(overrideWarm);
     this->en->setAlphaLambda(alpha, lambda);
     this->en->setData(data);
 }

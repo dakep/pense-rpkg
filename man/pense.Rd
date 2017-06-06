@@ -8,7 +8,7 @@ pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
   lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
   "warm0", "cold"), warm_reset = 10, cv_k = 5, cv_objective,
   ncores = getOption("mc.cores", 1L), cl = NULL,
-  options = pense_options(), initest_options = initest_options(),
+  options = pense_options(), init_options = initest_options(),
   en_options = en_options_aug_lars())
 }
 \arguments{
@@ -64,12 +64,12 @@ information.}
 \item{options}{additional options for the PENSE algorithm.
 See \code{\link{pense_options}} for details.}
 
+\item{en_options}{additional options for the EN algorithm.
+See \code{\link{en_options}} for details.}
+
 \item{initest_options}{additional options for computing the initial
 estimator. Ignored if \code{initial = "warm0"}.
 See \code{\link{initest_options}} for details.}
-
-\item{en_options}{additional options for the EN algorithm.
-See \code{\link{en_options}} for details.}
 }
 \value{
 An object of class \code{"pense"} with elements

@@ -107,7 +107,7 @@ enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
     Xtr <- .Call(C_augtrans, X)
     dX[2L] <- dX[2L] + 1L
 
-    ies <- .Call(C_enpy_exact, Xtr, y, options, en_options)
+    ies <- .Call(C_enpy_exact, Xtr, y, alpha, lambda, options, en_options)
 
     return(list(
         coeff = matrix(ies[[1L]], nrow = dX[2L]),
@@ -154,7 +154,7 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
         }
     }
 
-    ies <- .Call(C_enpy_rr, Xtr, y, options, en_options)
+    ies <- .Call(C_enpy_rr, Xtr, y, alpha, lambda, options, en_options)
 
     return(list(
         coeff = matrix(ies[[1L]], nrow = dX[2L]),

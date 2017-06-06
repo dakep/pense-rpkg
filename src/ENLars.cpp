@@ -49,13 +49,16 @@ static void downdateCholesky(const uvec& drops, mat *const L, uword& nrActive, u
  *
  ***************************************************************************/
 ENLars::ENLars(const bool intercept) : ElasticNet(intercept),
-            lambda1(0), sqrtLambda2(0), eps(DEFAULT_OPT_EPS), gramMode(DEFAULT_OPT_GRAM_MODE)
+            lambda1(0), sqrtLambda2(0),
+            eps(DEFAULT_OPT_EPS),
+            gramMode(DEFAULT_OPT_GRAM_MODE)
 {
-    this->setOptions(Options());
 }
 
 ENLars::ENLars(const bool intercept, const Options& options) : ElasticNet(intercept),
-            lambda1(0), sqrtLambda2(0)
+            lambda1(0), sqrtLambda2(0),
+            eps(DEFAULT_OPT_EPS),
+            gramMode(DEFAULT_OPT_GRAM_MODE)
 {
     this->setOptions(options);
 }
@@ -67,8 +70,8 @@ ENLars::~ENLars()
 
 void ENLars::setOptions(const Options& options)
 {
-    this->gramMode = options.get("gramMode", DEFAULT_OPT_GRAM_MODE);
-    this->eps = options.get("eps", DEFAULT_OPT_EPS);
+    this->gramMode = options.get("gramMode", this->gramMode);
+    this->eps = options.get("eps", this->eps);
 }
 
 void ENLars::setLambdas(const double lambda1, const double lambda2)

@@ -67,16 +67,31 @@ static inline double lossDual(const vec& a, const vec& y, const bool aNeg);
  ***************************************************************************/
 
 ENDal::ENDal(const bool intercept) :
-			ElasticNet(intercept), bufferSizeNobs(0), bufferSizeNvar(0),
+			ElasticNet(intercept),
+            maxIt(DEFAULT_OPT_MAXIT),
+            eps(DEFAULT_OPT_EPS),
+            warmStart(DEFAULT_OPT_WARM_START),
+            etaStart(DEFAULT_OPT_ETA_START),
+            etaStartNumerator(DEFAULT_OPT_ETA_START_NUMERATOR),
+            etaMultiplier(DEFAULT_OPT_ETA_MULTIPLIER),
+            useHessBuffer(DEFAULT_OPT_USE_BUFFER),
+            bufferSizeNobs(0), bufferSizeNvar(0),
             y(NULL), Xtr(NULL),
             useWeights(false)
 {
     this->sqrtWeights = ones(1);
-    this->setOptions(Options());
 }
 
 ENDal::ENDal(const bool intercept, const Options& options) :
-			ElasticNet(intercept), bufferSizeNobs(0), bufferSizeNvar(0),
+			ElasticNet(intercept),
+            maxIt(DEFAULT_OPT_MAXIT),
+            eps(DEFAULT_OPT_EPS),
+            warmStart(DEFAULT_OPT_WARM_START),
+            etaStart(DEFAULT_OPT_ETA_START),
+            etaStartNumerator(DEFAULT_OPT_ETA_START_NUMERATOR),
+            etaMultiplier(DEFAULT_OPT_ETA_MULTIPLIER),
+            useHessBuffer(DEFAULT_OPT_USE_BUFFER),
+            bufferSizeNobs(0), bufferSizeNvar(0),
             y(NULL), Xtr(NULL),
             useWeights(false)
 {
@@ -96,13 +111,13 @@ ENDal::~ENDal()
 
 void ENDal::setOptions(const Options& options)
 {
-    this->maxIt = options.get("maxit", DEFAULT_OPT_MAXIT);
-    this->eps = options.get("eps", DEFAULT_OPT_EPS);
-    this->warmStart = options.get("warmStart", DEFAULT_OPT_WARM_START);
-    this->etaStart = options.get("etaStart", DEFAULT_OPT_ETA_START);
-    this->etaStartNumerator = options.get("etaStartNumerator", DEFAULT_OPT_ETA_START_NUMERATOR);
-    this->etaMultiplier = options.get("etaMultiplier", DEFAULT_OPT_ETA_MULTIPLIER);
-    this->useHessBuffer = options.get("useBuffer", DEFAULT_OPT_USE_BUFFER);
+    this->maxIt = options.get("maxit", this->maxIt);
+    this->eps = options.get("eps", this->eps);
+    this->warmStart = options.get("warmStart", this->warmStart);
+    this->etaStart = options.get("etaStart", this->etaStart);
+    this->etaStartNumerator = options.get("etaStartNumerator", this->etaStartNumerator);
+    this->etaMultiplier = options.get("etaMultiplier", this->etaMultiplier);
+    this->useHessBuffer = options.get("useBuffer", this->useHessBuffer);
 }
 
 void ENDal::setLambdas(const double lambda1, const double lambda2)

@@ -186,6 +186,12 @@ void ENDal::setData(const Data& data)
         this->a = -(*this->y);
         this->bufferSizeNobs = data.numObs();
     }
+
+
+    if (this->useHessBuffer) {
+        this->hessBuffKeep.reset();
+        this->hessBuff.zeros(this->bufferSizeNobs, this->bufferSizeNobs);
+    }
 }
 
 void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids,
@@ -525,40 +531,31 @@ inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& interc
 
     if (evalGrad) {
         const uvec keep = find(beta);
+        grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
         if (this->useHessBuffer) {
-            if (this->intercept) {
-                if (this->useWeights) {
-                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta +
-                        intercept * this->sqrtWeights;
-                    hess = this->eta[0] * multFact * this->getHessBuff(keep) +
-                        this->eta[1] * this->sqrtWeights * this->sqrtWeights.t();
-                } else {
-                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta + intercept;
-                    hess = this->eta[0] * multFact * this->getHessBuff(keep) +
-                        this->eta[1];
-                }
-            } else {
-                grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
-                hess = this->eta[0] * multFact * this->getHessBuff(keep);
-            }
+            hess = this->eta[0] * multFact * this->getHessBuff(keep);
         } else {
-            if (this->intercept) {
-                if (this->useWeights) {
-                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta +
-                        intercept * this->sqrtWeights;
-                    hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep) +
-                        this->eta[1] * this->sqrtWeights * this->sqrtWeights.t();
-                } else {
-                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta + intercept;
-                    hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep) +
-                        this->eta[1];
-                }
-            } else {
-                grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
-                hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
-            }
+            hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
         }
+
         hess.diag() += 1;
+
+        switch (this->intercept + 2 * this->useWeights)
+        {
+        case 1:
+            /* We have an intercept but no weights */
+            grad += intercept;
+            hess += this->eta[1];
+            break;
+        case 3:
+            /* We have an intercept and weights */
+            grad += intercept * this->sqrtWeights;
+            hess += this->eta[1] * this->sqrtWeights * this->sqrtWeights.t();
+            break;
+        default:
+            /* we have no intercept */
+            break;
+        }
     }
 
     beta *= multFact;

@@ -8,7 +8,7 @@
 en_options_aug_lars(use_gram = c("auto", "yes", "no"), eps = 1e-12)
 
 en_options_dal(maxit = 100, eps = 1e-06, eta_mult = 2,
-  eta_start_numerator = 0.01, eta_start)
+  eta_start_numerator = 0.01, eta_start, use_buffer = TRUE)
 }
 \arguments{
 \item{use_gram}{should the Gram matrix be pre-computed.}

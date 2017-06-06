@@ -18,13 +18,13 @@ static const double DEFAULT_OPT_EPS = 1e-6;
 
 static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 
-
-IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
+IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, Options &enOpts) :
     data(data),
     maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
     eps(opts.get("eps", DEFAULT_OPT_EPS) * opts.get("eps", DEFAULT_OPT_EPS))
 {
     this->weights = new double[data.numObs()];
+    enOpts.set("warmStart", true);
     this->en = getElasticNetImpl(enOpts, true);
     this->en->setAlphaLambda(alpha, lambda);
     this->en->setData(data);
@@ -89,6 +89,10 @@ void IRWEN::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
         } else {
             this->relChangeVal /= norm2Old;
         }
+
+#ifdef DEBUG
+        Rcpp::Rcout << "Rel. change: " << this->relChangeVal << std::endl;
+#endif
 
     } while((this->iteration < this->maxIt) && (this->relChangeVal > this->eps));
 

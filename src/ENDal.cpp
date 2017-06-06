@@ -23,6 +23,7 @@ static const bool   DEFAULT_OPT_WARM_START = true;
 static const double DEFAULT_OPT_ETA_START = -1;
 static const double DEFAULT_OPT_ETA_START_NUMERATOR = 0.01;
 static const double DEFAULT_OPT_ETA_MULTIPLIER = 2;
+static const bool   DEFAULT_OPT_USE_BUFFER = true;
 
 
 /**
@@ -30,8 +31,9 @@ static const double DEFAULT_OPT_ETA_MULTIPLIER = 2;
  * and the fraction of the decrease in the objective function predicted by
  * linear extrapolation that we will accept in the line search
  */
-static const double LINESEARCH_STEPSIZE_MULTIPLIER = 0.9;  // 0 < x < 1
-static const double LINESEARCH_STEP_CONDITION = 0.45;      // 0 < x < 0.5
+static const double LINESEARCH_STEPSIZE_MULTIPLIER = 0.8;  // 0 < x < 1
+static const double LINESEARCH_STEP_CONDITION = 0.3;      // 0 < x < 0.5
+static const int LINESEARCH_MAX_STEP = 20;
 
 using namespace arma;
 
@@ -65,19 +67,31 @@ static inline double lossDual(const vec& a, const vec& y, const bool aNeg);
  ***************************************************************************/
 
 ENDal::ENDal(const bool intercept) :
-			ElasticNet(intercept), bufferSizeNobs(0), y(), Xtr()
+			ElasticNet(intercept), bufferSizeNobs(0), bufferSizeNvar(0),
+            y(NULL), Xtr(NULL),
+            useWeights(false)
 {
+    this->sqrtWeights = ones(1);
     this->setOptions(Options());
 }
 
 ENDal::ENDal(const bool intercept, const Options& options) :
-			ElasticNet(intercept), bufferSizeNobs(0), y(), Xtr()
+			ElasticNet(intercept), bufferSizeNobs(0), bufferSizeNvar(0),
+            y(NULL), Xtr(NULL),
+            useWeights(false)
 {
+    this->sqrtWeights = ones(1);
     this->setOptions(options);
 }
 
 ENDal::~ENDal()
 {
+    if (this->y) {
+        delete this->y;
+    }
+    if (this->Xtr) {
+        delete this->Xtr;
+    }
 }
 
 void ENDal::setOptions(const Options& options)
@@ -88,6 +102,7 @@ void ENDal::setOptions(const Options& options)
     this->etaStart = options.get("etaStart", DEFAULT_OPT_ETA_START);
     this->etaStartNumerator = options.get("etaStartNumerator", DEFAULT_OPT_ETA_START_NUMERATOR);
     this->etaMultiplier = options.get("etaMultiplier", DEFAULT_OPT_ETA_MULTIPLIER);
+    this->useHessBuffer = options.get("useBuffer", DEFAULT_OPT_USE_BUFFER);
 }
 
 void ENDal::setLambdas(const double lambda1, const double lambda2)
@@ -107,45 +122,150 @@ void ENDal::setAlphaLambda(const double alpha, const double lambda)
 
 inline double ENDal::fullObjectiveFun(const double intercept, const arma::vec& beta)
 {
-    return 0.5 * squaredL2Norm(this->Xtr.t() * beta + intercept - this->y) + this->nLambda * (
+    double objf = this->nLambda * (
         0.5 * (1 - this->alpha) * squaredL2Norm(beta) +
         this->alpha * norm(beta, 1)
     );
 
+    if (this->intercept) {
+        if (this->useWeights) {
+            objf += 0.5 * squaredL2Norm(this->Xtr->t() * beta + intercept * this->sqrtWeights - (*this->y));
+        } else {
+            objf += 0.5 * squaredL2Norm(this->Xtr->t() * beta + intercept - (*this->y));
+        }
+    } else {
+        objf += 0.5 * squaredL2Norm(this->Xtr->t() * beta - (*this->y));
+    }
+
+    return objf;
 }
 
 void ENDal::setData(const Data& data)
 {
-    if (data.numObs() > 0 && data.numVar() > 0) {
-        this->y = vec(data.getYConst(), data.numObs());
-        this->Xtr = mat(data.getXtrConst(), data.numVar(), data.numObs());
-        this->Xtr.shed_row(0); // We need to take care of the intercept in a different way!
+    /* Remove previous data */
+    if (this->y) {
+        delete this->y;
+        this->y = NULL;
+    }
+    if (this->Xtr) {
+        delete this->Xtr;
+        this->Xtr = NULL;
+    }
+
+    this->bufferSizeNvar = data.numVar();
+
+    /* Initialize new data */
+    if (data.numObs() > 0 || data.numVar() > 0) {
+        this->y = new vec(data.getYConst(), data.numObs());
+        this->Xtr = new mat(data.getXtrConst(), data.numVar(), data.numObs());
+        if (data.numVar() > 0) {
+            this->Xtr->shed_row(0); // The intercept is handled differently!
+        }
     } else {
-        this->y.reset();
-        this->Xtr.reset();
+        this->y = new vec();
+        this->Xtr = new mat();
     }
 
     if (data.numObs() != this->bufferSizeNobs) {
         this->a.resize(data.numObs());
-        this->a = -this->y;
+        this->a = -(*this->y);
         this->bufferSizeNobs = data.numObs();
     }
+}
 
-    this->nLambda = this->y.n_elem * this->lambda;
+void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids,
+                                 const double *RESTRICT weights)
+{
+    vec *const origY = this->y;
+    mat *const origXtr = this->Xtr;
+    double *intercept = coefs;
+    vec residuals(resids, this->bufferSizeNobs, false, true);
+    vec beta(coefs + 1, this->bufferSizeNvar - 1, false, true);
+
+    /* First check the data if something has to be done at all */
+    if (this->bufferSizeNvar == 0) {
+        if (this->bufferSizeNobs > 0) {
+            residuals = *(this->y);
+        }
+        return;
+    }
+
+    this->sqrtWeights = sqrt(vec(weights, this->bufferSizeNobs));
+    this->useWeights = true;
+
+    if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
+        *intercept = ((this->bufferSizeNobs > 0) ? mean(this->sqrtWeights % *this->y) : 0);
+        beta.zeros();
+        residuals = (*this->y) - (*intercept);
+        return;
+    }
+
+    vec weightedY = (*this->y) % this->sqrtWeights;
+    mat weightedXtr = (*this->Xtr).each_row() % this->sqrtWeights.t();
+
+    this->y = &weightedY;
+    this->Xtr = &weightedXtr;
+
+    this->dal(*intercept, beta);
+
+    if (this->intercept) {
+        residuals = (*origY) - (*intercept) - origXtr->t() * beta;
+    } else {
+        residuals = (*origY) - origXtr->t() * beta;
+    }
+
+    this->y = origY;
+    this->Xtr = origXtr;
+    this->useWeights = false;
 }
 
 void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
 {
+    double *intercept = coefs;
+    vec residuals(resids, this->bufferSizeNobs, false, true);
+    vec beta(coefs + 1, this->bufferSizeNvar - 1, false, true);
+
+    /* First check the data if something has to be done at all */
+    if (this->bufferSizeNvar == 0) {
+        if (this->bufferSizeNobs > 0) {
+            residuals = *(this->y);
+        }
+        return;
+    } else if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
+        *intercept = ((this->bufferSizeNobs > 0) ? mean(*this->y) : 0);
+        beta.zeros();
+        residuals = (*this->y) - (*intercept);
+        return;
+    }
+
+    this->useWeights = false;
+
+    this->dal(*intercept, beta);
+
+    if (this->intercept) {
+        residuals = (*this->y) - (*intercept) - this->Xtr->t() * beta;
+    } else {
+        residuals = (*this->y) - this->Xtr->t() * beta;
+    }
+    this->useWeights = false;
+
+    /* Update residuals */
+    if (this->intercept) {
+        residuals = (*this->y) - (*intercept) - this->Xtr->t() * beta;
+    } else {
+        residuals = (*this->y) - this->Xtr->t() * beta;
+    }
+}
+
+inline void ENDal::dal(double& intercept, arma::vec& beta)
+{
+    const int nobs = this->y->n_elem;
+    this->nLambda = nobs * this->lambda;
     const double la = (this->nLambda * this->alpha);
     const double updateDenomMult = 1 / (this->nLambda * (1 - this->alpha));
-    const int nobs = this->y.n_elem;
-    const int nvar = this->Xtr.n_rows;
 
-    double *intercept = coefs;
     vec dualVec(nobs);
     vec tmpInnerProd(nobs);
-    vec beta(coefs + 1, nvar, false, true);
-    vec residuals(resids, nobs, false, true);
 
     int iter;
     double dualFunVal, dualFunValPrev;
@@ -164,12 +284,40 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
 
     this->eta[1] = this->eta[0];
 
-    if (!this->warmStart) {
-        *intercept = 0;
-        beta.zeros();
-        this->a = -this->y;
+    if (this->intercept) {
+
+    } else {
+        intercept = 0;
     }
 
+    if (this->warmStart) {
+        this->a = (*this->y) - this->Xtr->t() * beta;
+        if (this->intercept) {
+            if (this->useWeights) {
+                intercept = mean(this->sqrtWeights % this->a);
+                this->a -= this->sqrtWeights * intercept;
+            } else {
+                intercept = mean(this->a);
+                this->a -= intercept;
+            }
+        } else {
+            intercept = 0;
+        }
+    } else {
+        if (this->intercept) {
+            if (this->useWeights) {
+                intercept = mean(this->sqrtWeights % *this->y);
+                this->a = (*this->y) - this->sqrtWeights * intercept;
+            } else {
+                intercept = mean(*this->y);
+                this->a = (*this->y) - intercept;
+            }
+        } else {
+            this->a = *this->y;
+        }
+        beta.zeros();
+
+    }
 
     iter = 0;
     dualFunValPrev = dualFunVal = 0;
@@ -181,24 +329,34 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
          * Check if relative duality gap (rdg) is below the threshold
          */
         dualFunValPrev = dualFunVal;
-        dualVec = this->a - mean(this->a); // Now we have the duality vector
-        tmpInnerProd = this->Xtr * dualVec;
+        if (this->intercept) {
+            if (this->useWeights) {
+                dualVec = this->a - this->sqrtWeights * mean(this->sqrtWeights % this->a);
+            } else {
+                dualVec = this->a - mean(this->a);
+            }
+        } else {
+            dualVec = this->a;
+        }
+
+        tmpInnerProd = (*this->Xtr) * dualVec;
 
         if (this->alpha < 1) {
             vecSoftThreshold(tmpInnerProd, la, 1);
-            dualFunVal = lossDual(dualVec, this->y, true) + 0.5 * squaredL2Norm(tmpInnerProd) * updateDenomMult;
+            dualFunVal = lossDual(dualVec, *this->y, true) + 0.5 * squaredL2Norm(tmpInnerProd) * updateDenomMult;
         } else {
             dualVec *= fmin(nLambda / max(abs(tmpInnerProd)), 1);
-            dualFunVal = lossDual(dualVec, this->y, true);
+            dualFunVal = lossDual(dualVec, *this->y, true);
         }
 
         if (iter > 0 && dualFunVal > dualFunValPrev) {
             dualFunVal = dualFunValPrev;
         }
 
-        primalFunVal = this->fullObjectiveFun(*intercept, beta);
+        primalFunVal = this->fullObjectiveFun(intercept, beta);
         relativeDualityGap = (primalFunVal + dualFunVal) / primalFunVal;
 
+#ifdef DEBUG
         Rcpp::Rcout << "[[" << iter << "]]" <<
             " fval=" << primalFunVal <<
             "; dval=" << dualFunVal <<
@@ -206,6 +364,7 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
             "; eta=" << this->eta[0] <<
             "; eta(int)=" << this->eta[1] <<
             std::endl;
+#endif
 
         if (relativeDualityGap < this->eps) {
             break;
@@ -218,31 +377,30 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
             break;
         }
 
-        /* Minimize phi --> updates `a` and `beta` + `intercept` */
-        this->minimizePhi(beta, *intercept);
+        /* Minimize phi --> updates `a` and `beta` & `intercept` */
+        this->minimizePhi(beta, intercept);
 
         /* Update `eta` */
         this->eta[0] *= this->etaMultiplier;
 
         /* Update `eta (intercept)` */
-        aL1 = accu(this->a);
-        if ((iter > 1) && (aL1 > this->eps) && (aL1 > 0.5 * aL1Prev)) {
-            this->eta[1] *= 10 * this->etaMultiplier;
-        } else {
-            this->eta[1] *= this->etaMultiplier;
+        if (this->intercept) {
+            aL1 = (this->useWeights ? accu(this->sqrtWeights % this->a) : accu(this->a));
+            if ((iter > 1) && (aL1 > this->eps) && (aL1 > 0.5 * aL1Prev)) {
+                this->eta[1] *= 10 * this->etaMultiplier;
+            } else {
+                this->eta[1] *= this->etaMultiplier;
+            }
+            aL1Prev = aL1;
         }
-        aL1Prev = aL1;
     }
-
-    /* Update residuals */
-    residuals = this->y - (*intercept) - this->Xtr.t() * beta;
 
     if (iter > this->maxIt) {
         this->status = 1;
-        this->statusMessage = "Algorithm did not converge";
-//        throw Error("Algorithm did not converge");
+        this->statusMessage = "algorithm did not converge";
     }
 }
+
 
 inline bool ENDal::minimizePhi(vec& beta, double& intercept)
 {
@@ -250,7 +408,7 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
     const double interceptOrig = intercept;
     int iter = 0, lineSearchIter = 0;
     double stepSize = 1;
-    double phiVal;
+    double phiVal, phiValStep;
     double decr;
     double threshold;
     double normGradient;
@@ -273,25 +431,36 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
             break;
         }
 
-        stepDir = solve(phiHessian, phiGradient);
+        stepDir = solve(phiHessian, phiGradient, solve_opts::fast + solve_opts::no_approx);
         decr = dot(stepDir, phiGradient);
 
-        normDiffInt = (interceptOrig - intercept);
         normGradient = squaredL2Norm(phiGradient);
 
+        threshold = (1 / this->eta[0]) * squaredL2Norm(betaOrig - beta);
+        if (this->intercept) {
+            normDiffInt = (interceptOrig - intercept);
+            threshold += (1 / this->eta[1]) * normDiffInt * normDiffInt;
+        }
+
+        /* It is not necessary to go far below the actual precision */
+        if (threshold < this->eps) {
+            threshold = 0.5 * this->eps;
+        }
+
+#ifdef DEBUG
         Rcpp::Rcout << "[" << iter << "]" <<
             " fval=" << phiVal <<
-            "; norm(gg)=" << normGradient <<
+            "; norm(gg)=" << sqrt(normGradient) <<
+            "; thresh=" << sqrt(threshold) <<
             "; decr=" << decr <<
             "; step=" << stepSize <<
             std::endl;
+#endif
 
         /*
          * Check for convergence to desired tolerance
          */
-        threshold = (1 / this->eta[0]) * squaredL2Norm(betaOrig - beta) +
-            (1 / this->eta[1]) * normDiffInt * normDiffInt;
-        if ((iter > 1) && (threshold < normGradient)) {
+        if ((iter > 1) && (normGradient < threshold)) {
             break;
         }
 
@@ -300,20 +469,17 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
          */
         lineSearchIter = 0;
         stepSize = 1;
-        while (1) {
+        while (++lineSearchIter <= LINESEARCH_MAX_STEP) {
             candidateSolution = this->a - stepSize * stepDir;
             beta = betaOrig;
             intercept = interceptOrig;
-            phiVal = this->evalPhi(candidateSolution, beta, intercept, phiGradient,
-                                   phiHessian, false);
+            phiValStep = this->evalPhi(candidateSolution, beta, intercept, phiGradient,
+                                       phiHessian, false);
 
-            if (phiVal < phiVal - LINESEARCH_STEP_CONDITION * stepSize * decr) {
+            if (phiValStep < phiVal - LINESEARCH_STEP_CONDITION * stepSize * decr) {
                 break;
             }
 
-            if (++lineSearchIter > this->maxIt) {
-                break;
-            }
             stepSize *= LINESEARCH_STEPSIZE_MULTIPLIER;
         }
 
@@ -328,21 +494,55 @@ inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& interc
 {
     const double cutoff = this->nLambda * this->eta[0] * this->alpha;
     const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
-    beta += this->eta[0] * this->Xtr * a;
-    intercept += this->eta[1] * accu(a);
+    beta += this->eta[0] * (*this->Xtr) * a;
+
+    if (this->intercept) {
+        intercept += this->eta[1] * (this->useWeights ? accu(this->sqrtWeights % a) : accu(a));
+    }
 
     vecSoftThreshold(beta, cutoff, 1);
 
     const double phiMoreauEnv = 0.5 * multFact * squaredL2Norm(beta);
-    const double interceptMorauEnv = 0.5 * intercept * intercept;
+    const double interceptMorauEnv = (this->intercept ? 0.5 * intercept * intercept : 0 );
 
-    const double phiVal = lossDual(a, this->y, true) + (1 / this->eta[0]) * phiMoreauEnv +
+    const double phiVal = lossDual(a, *this->y, true) + (1 / this->eta[0]) * phiMoreauEnv +
         (1 / this->eta[1]) * interceptMorauEnv;
 
     if (evalGrad) {
-        mat tmp = this->Xtr.rows(find(beta));
-        grad = a - this->y + multFact * (this->Xtr.t() * beta) + intercept;
-        hess = this->eta[0] * multFact * (tmp.t() * tmp) + this->eta[1];
+        const uvec keep = find(beta);
+        if (this->useHessBuffer) {
+            if (this->intercept) {
+                if (this->useWeights) {
+                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta +
+                        intercept * this->sqrtWeights;
+                    hess = this->eta[0] * multFact * this->getHessBuff(keep) +
+                        this->eta[1] * this->sqrtWeights * this->sqrtWeights.t();
+                } else {
+                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta + intercept;
+                    hess = this->eta[0] * multFact * this->getHessBuff(keep) +
+                        this->eta[1];
+                }
+            } else {
+                grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
+                hess = this->eta[0] * multFact * this->getHessBuff(keep);
+            }
+        } else {
+            if (this->intercept) {
+                if (this->useWeights) {
+                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta +
+                        intercept * this->sqrtWeights;
+                    hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep) +
+                        this->eta[1] * this->sqrtWeights * this->sqrtWeights.t();
+                } else {
+                    grad = a - (*this->y) + multFact * this->Xtr->t() * beta + intercept;
+                    hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep) +
+                        this->eta[1];
+                }
+            } else {
+                grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
+                hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
+            }
+        }
         hess.diag() += 1;
     }
 
@@ -351,10 +551,13 @@ inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& interc
     return phiVal;
 }
 
-void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids,
-                                 const double *RESTRICT weights)
+const arma::mat& ENDal::getHessBuff(const uvec& keep)
 {
-    throw Rcpp::exception("Weighted EN is not yet implemented with DAL");
+    if (size(keep) != size(this->hessBuffKeep) || any(keep - this->hessBuffKeep)) {
+        this->hessBuff = this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
+        this->hessBuffKeep = keep;
+    }
+    return this->hessBuff;
 }
 
 

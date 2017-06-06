@@ -194,7 +194,8 @@ en_options_dal <- function (
     eps = 1e-6,
     eta_mult = 2,
     eta_start_numerator = 1e-2,
-    eta_start
+    eta_start,
+    use_buffer = TRUE
 ) {
     eta_start <- if (!missing(eta_start)) {
         .check_arg(eta_start, "numeric", range = 0)
@@ -206,10 +207,11 @@ en_options_dal <- function (
         algorithm = .enalgo2IntEnalgo("dal"),
         warmStart = FALSE,
         maxit = .check_arg(maxit, "integer", range = 0),
-        etaMult = .check_arg(eta_mult, "numeric", range = 1),
+        etaMultiplier = .check_arg(eta_mult, "numeric", range = 1),
         etaStartNumerator = .check_arg(eta_start_numerator, "numeric", range = 0),
         etaStart = eta_start,
-        eps = .check_arg(eps, "numeric", range = 0)
+        eps = .check_arg(eps, "numeric", range = 0),
+        useBuffer = .check_arg(use_buffer, "logical")
     ))
 }
 

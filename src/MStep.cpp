@@ -21,7 +21,7 @@ static const double DEFAULT_OPT_CC = 3.44;
 
 static inline double wgtBisquare2(double x, double c);
 
-MStep::MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, const Options &enOpts) :
+MStep::MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, Options &enOpts) :
     IRWEN(data, alpha, lambda, opts, enOpts),
     cc(opts.get("cc", DEFAULT_OPT_CC)),
     scale(scale)
@@ -38,7 +38,7 @@ void MStep::updateWeights(const double *RESTRICT residuals)
     int i;
     double tmp = 0;
     for (i = 0; i < this->data.numObs(); ++i) {
-        this->weights[i] = wgtBisquare2(residuals[i] / this->scale, this->cc);
+        this->weights[i] = wgtBisquare2(residuals[i], this->scale * this->cc);
         tmp += weights[i];
     }
 
@@ -59,6 +59,6 @@ static inline double wgtBisquare2(double x, double c)
 
     x /= c;
     x = (1 - x) * (1 + x);
-    return x * x * 6 / (c * c);
+    return x * x; // * 6 / (c * c);
 }
 

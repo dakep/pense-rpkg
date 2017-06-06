@@ -6,7 +6,7 @@
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
   lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
-  "warm0", "cold"), warm_reset = 10, cv_k = 5, cv_objective = "scaleTau2",
+  "warm0", "cold"), warm_reset = 10, cv_k = 5, cv_objective,
   ncores = getOption("mc.cores", 1L), cl = NULL,
   options = pense_options(), initest_options = initest_options(),
   en_options = en_options_aug_lars())

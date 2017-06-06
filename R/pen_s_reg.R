@@ -80,6 +80,8 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
     repeat {
         it <- it + 1L
 
+        cat("RSS: ", sqrt(sum(resid^2)), "\n");
+
         resid.scaled <- resid / scale
         # Mwgt is safer then Mchi in the case 0/0!
         wbeta <- Mwgt(resid.scaled, cc = options$cc, psi = "bisquare")
@@ -97,7 +99,8 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
             weights = weights,
             alpha = alpha,
             lambda = lambda,
-            options = en_options
+            options = en_options,
+            warm_coefs = current.coefs
         )
 
         prev.coefs <- current.coefs
@@ -114,6 +117,7 @@ pen_s_reg_rimpl <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
         )
 
         rel_change <- sum((prev.coefs - current.coefs)^2) / sum(prev.coefs^2)
+        cat(sprintf("Rel. change: %.5f\n", rel_change))
 
         if (is.nan(rel_change)) { # if 0/0
             rel_change <- 0

@@ -23,7 +23,7 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid, start_0 = FALSE,
         y <- y - muy
     }
 
-    final.estimates <- vector("list", length(lambda.grid))
+    final.estimates <- vector("list", length(lambda_grid))
 
     ## For the first value of lambda, we will do a cold start
     init.current <- if (isTRUE(start_0)) {

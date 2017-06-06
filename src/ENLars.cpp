@@ -141,14 +141,14 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
     /* Restore original data */
     this->XtrAug = origDataCopy;
 
+    computeResiduals(this->XtrAug.memptr(), this->yOrig.memptr(), trueNobs, nvar,
+                     coefs, resids);
+
     /*
      * Recover intercept if requested
      */
     if (this->intercept) {
         coefs[0] = 0;
-
-        computeResiduals(this->XtrAug.memptr(), this->yOrig.memptr(), trueNobs, nvar,
-                         coefs, resids);
 
         for (i = 0; i < trueNobs; ++i) {
             coefs[0] += weights[i] * resids[i];

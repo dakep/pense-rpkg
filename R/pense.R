@@ -80,10 +80,10 @@ pense <- function(X, y,
                   standardize = TRUE,
                   initial = c("warm", "warm0", "cold"),
                   warm_reset = 10,
-                  cv_k = 5, cv_objective = "scaleTau2",
+                  cv_k = 5, cv_objective,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
                   options = pense_options(),
-                  initest_options = initest_options(),
+                  init_options = initest_options(),
                   en_options = en_options_aug_lars()) {
     ##
     ## First all arguments are being sanity-checked
@@ -239,7 +239,11 @@ pense <- function(X, y,
 
     ## Perform CV (if we have more than a single lambda value)
     if(nlambda > 1L) {
-        cv_objective_fun <- match.fun(cv_objective)
+        cv_objective_fun <- if (missing(cv_objective)) {
+            scaleTau2
+        } else {
+            match.fun(cv_objective)
+        }
 
         # Create CV segments
         cv_segments <- if (cv_k > 1L) {
@@ -287,7 +291,7 @@ pense <- function(X, y,
                 standardize = standardize,
                 start_0 = isTRUE(initial == "warm0"),
                 pense_options = options,
-                initest_options = initest_options,
+                initest_options = init_options,
                 en_options = en_options
             )
 
@@ -329,7 +333,7 @@ pense <- function(X, y,
     }
 
     ## Fit PENSE with optimal lambda using a cold start
-    opt_est <- pense.coldwarm(
+    opt_est <- pense_coldwarm(
         X = Xs,
         y = yc,
         alpha = alpha,
@@ -337,7 +341,7 @@ pense <- function(X, y,
         standardize = FALSE,
         start_0 = isTRUE(initial == "warm0"),
         pense_options = options,
-        initest_options = initest_options,
+        initest_options = init_options,
         en_options = en_options
     )[[1L]]
 
@@ -357,7 +361,7 @@ pense <- function(X, y,
         alpha = alpha,
         standardize = standardize,
         pense_options = options,
-        initest_options = initest_options,
+        initest_options = init_options,
         en_options = en_options,
         call = call
     ), class = "pense"))

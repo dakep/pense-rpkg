@@ -15,7 +15,7 @@
 
 class PENSEReg : public IRWEN {
 public:
-	PENSEReg(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts);
+	PENSEReg(const Data& data, const double alpha, const double lambda, const Options& opts, Options &enOpts);
 	~PENSEReg();
 
     double getScale() const

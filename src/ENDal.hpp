@@ -16,7 +16,6 @@
 #include "Data.hpp"
 #include "ElasticNet.hpp"
 
-
 /**
  * Solve the EN problem
  *
@@ -52,16 +51,26 @@ private:
     double eta[2];
 
     int bufferSizeNobs;
+    int bufferSizeNvar;
 
     arma::vec a;
-    arma::vec y;
-    arma::mat Xtr;
+    arma::vec* y;
+    arma::mat* Xtr;
+    arma::vec sqrtWeights;
+    bool useWeights;
+
+    void dal(double& intercept, arma::vec& beta);
 
     double fullObjectiveFun(const double intercept, const arma::vec& beta);
 
     bool minimizePhi(arma::vec& beta, double& intercept);
 
     double evalPhi(const arma::vec& a, arma::vec& beta, double& intercept, arma::vec &grad, arma::mat& hess, bool evalGrad);
+
+    const arma::mat& getHessBuff(const arma::uvec& keep);
+    bool useHessBuffer;
+    arma::uvec hessBuffKeep;
+    arma::mat hessBuff;
 };
 
 

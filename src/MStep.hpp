@@ -16,7 +16,7 @@
 
 class MStep : public IRWEN {
 public:
-	MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, const Options &enOpts);
+	MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, Options &enOpts);
 	~MStep();
 
 protected:

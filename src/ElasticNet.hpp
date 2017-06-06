@@ -44,7 +44,8 @@ public:
 	}
 
 	virtual ~ElasticNet()
-    {}
+    {
+    }
 
     /*
      * Set algorithm-specific options

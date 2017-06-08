@@ -212,6 +212,7 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
     }
 
     this->sqrtWeights = sqrt(vec(weights, this->bufferSizeNobs));
+    this->sqrtWeightsOuter = this->sqrtWeights * this->sqrtWeights.t();
     this->useWeights = true;
 
     if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
@@ -425,25 +426,42 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
 
 inline bool ENDal::minimizePhi(vec& beta, double& intercept)
 {
+    const double cutoff = this->nLambda * this->eta[0] * this->alpha;
+    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
     const vec betaOrig(beta);
     const double interceptOrig = intercept;
     int iter = 0, lineSearchIter = 0;
-    double stepSize = 1;
+    double stepSize = 1, stepSizePrev;
     double phiVal, phiValStep;
     double decr;
     double threshold;
     double normGradient;
     double normDiffInt;
-    vec candidateSolution(this->a);
+    vec candA(this->a);
     vec stepDir;
+    vec XtrStepDir;
+    vec Xtra = (*this->Xtr) * this->a;
     vec phiGradient;
     mat phiHessian;
 
     while (1) {
-        beta = betaOrig;
-        intercept = interceptOrig;
+        beta = betaOrig + this->eta[0] * Xtra;
+        vecSoftThreshold(beta, cutoff, 1);
 
-        phiVal = this->evalPhi(this->a, beta, intercept, phiGradient, phiHessian, true);
+        phiVal = lossDual(candA, *this->y, true) +
+            (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+
+        if (this->intercept) {
+            intercept = interceptOrig + this->eta[1] * (this->useWeights ?
+                    accu(this->sqrtWeights % candA) :
+                    accu(candA)
+                );
+
+            phiVal += (0.5 / this->eta[1]) * intercept * intercept;
+        }
+
+        this->gradPhi(candA, beta, intercept, phiGradient, phiHessian);
+//        phiVal = this->evalPhi(candA, beta, intercept, phiGradient, phiHessian, true);
 
         /*
          * Check for max. iterations
@@ -454,6 +472,7 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
 
         stepDir = solve(phiHessian, phiGradient, solve_opts::fast + solve_opts::no_approx);
         decr = dot(stepDir, phiGradient);
+        XtrStepDir = (*this->Xtr) * stepDir;
 
         normGradient = squaredL2Norm(phiGradient);
 
@@ -490,24 +509,72 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
          */
         lineSearchIter = 0;
         stepSize = 1;
+        stepSizePrev = stepSize;
+        candA -= stepDir;
+        Xtra -= XtrStepDir;
+
         while (++lineSearchIter <= LINESEARCH_MAX_STEP) {
-            candidateSolution = this->a - stepSize * stepDir;
-            beta = betaOrig;
-            intercept = interceptOrig;
-            phiValStep = this->evalPhi(candidateSolution, beta, intercept, phiGradient,
-                                       phiHessian, false);
+            beta = betaOrig + this->eta[0] * Xtra;
+            vecSoftThreshold(beta, cutoff, 1);
+
+            phiValStep = lossDual(candA, *this->y, true) +
+                (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+
+            if (this->intercept) {
+                intercept = interceptOrig + this->eta[1] * (this->useWeights ?
+                        accu(this->sqrtWeights % candA) :
+                        accu(candA)
+                    );
+
+                phiValStep += (0.5 / this->eta[1]) * intercept * intercept;
+            }
 
             if (phiValStep < phiVal - LINESEARCH_STEP_CONDITION * stepSize * decr) {
                 break;
             }
 
+            stepSizePrev = stepSize;
             stepSize *= LINESEARCH_STEPSIZE_MULTIPLIER;
+            candA -= (stepSize - stepSizePrev) * stepDir;
+            Xtra -= (stepSize - stepSizePrev) * XtrStepDir;
         }
-
-        this->a = candidateSolution;
     }
 
+    this->a = candA;
+    beta *= multFact;
+
     return (iter <= this->maxIt);
+}
+
+inline void ENDal::gradPhi(const arma::vec &a, const arma::vec& beta, const double intercept, arma::vec &grad, arma::mat &hess)
+{
+    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
+    const uvec keep = find(beta);
+    grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
+    if (this->useHessBuffer) {
+        hess = this->eta[0] * multFact * this->getHessBuff(keep);
+    } else {
+        hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
+    }
+
+    hess.diag() += 1;
+
+    switch (this->intercept + 2 * this->useWeights)
+    {
+    case 1:
+        /* We have an intercept but no weights */
+        grad += intercept;
+        hess += this->eta[1];
+        break;
+    case 3:
+        /* We have an intercept and weights */
+        grad += intercept * this->sqrtWeights;
+        hess += this->eta[1] * this->sqrtWeightsOuter;
+        break;
+    default:
+        /* we have no intercept */
+        break;
+    }
 }
 
 inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& intercept,
@@ -550,7 +617,7 @@ inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& interc
         case 3:
             /* We have an intercept and weights */
             grad += intercept * this->sqrtWeights;
-            hess += this->eta[1] * this->sqrtWeights * this->sqrtWeights.t();
+            hess += this->eta[1] * this->sqrtWeightsOuter;
             break;
         default:
             /* we have no intercept */
@@ -562,6 +629,7 @@ inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& interc
 
     return phiVal;
 }
+
 
 const arma::mat& ENDal::getHessBuff(const uvec& keep)
 {

@@ -69,7 +69,9 @@ private:
 
     double evalPhi(const arma::vec& a, arma::vec& beta, double& intercept, arma::vec &grad, arma::mat& hess, bool evalGrad);
 
-    void gradPhi(const arma::vec &a, const arma::vec& beta, const double intercept, arma::vec &grad, arma::mat &hess);
+    void evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad);
+
+    void evalPhiHess(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::mat &hess);
 
     const arma::mat& getHessBuff(const arma::uvec& keep);
     arma::uvec hessBuffKeep;

@@ -43,10 +43,16 @@ using namespace arma;
 
 /**
  * (Vectorized) soft threshold functions, computing
- * mult * sign(z) * max(0, |z| - gamma)
+ * sign(z) * max(0, |z| - gamma)
  */
-static inline double softThreshold(const double z, const double gamma, const double mult);
-static inline void vecSoftThreshold(vec& z, const double gamma, const double mult);
+static inline double softThreshold(const double z, const double gamma);
+static inline void vecSoftThreshold(vec& z, const double gamma);
+
+/**
+ * Optimized soft threshold function to compute
+ * sign(z1 + c * z2) * max(0, |z1 + c * z2| - gamma)
+ */
+static inline void vecSoftThresholdInplace(vec& zsoft, const vec& z1, const double c, const vec&z2, const double gamma);
 
 static inline double squaredL2Norm(const vec& x);
 
@@ -364,7 +370,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
         tmpInnerProd = (*this->Xtr) * dualVec;
 
         if (this->alpha < 1) {
-            vecSoftThreshold(tmpInnerProd, la, 1);
+            vecSoftThreshold(tmpInnerProd, la);
             dualFunVal = lossDual(dualVec, *this->y, true) + 0.5 * squaredL2Norm(tmpInnerProd) * updateDenomMult;
         } else {
             dualVec *= fmin(nLambda / max(abs(tmpInnerProd)), 1);
@@ -445,8 +451,7 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
     mat phiHessian;
 
     while (1) {
-        beta = betaOrig + this->eta[0] * Xtra;
-        vecSoftThreshold(beta, cutoff, 1);
+        vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
 
         phiVal = lossDual(candA, *this->y, true) +
             (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
@@ -460,8 +465,7 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
             phiVal += (0.5 / this->eta[1]) * intercept * intercept;
         }
 
-        this->gradPhi(candA, beta, intercept, phiGradient, phiHessian);
-//        phiVal = this->evalPhi(candA, beta, intercept, phiGradient, phiHessian, true);
+        this->evalPhiGrad(candA, beta, intercept, multFact, phiGradient);
 
         /*
          * Check for max. iterations
@@ -469,10 +473,6 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
         if (++iter > this->maxIt) {
             break;
         }
-
-        stepDir = solve(phiHessian, phiGradient, solve_opts::fast + solve_opts::no_approx);
-        decr = dot(stepDir, phiGradient);
-        XtrStepDir = (*this->Xtr) * stepDir;
 
         normGradient = squaredL2Norm(phiGradient);
 
@@ -492,7 +492,6 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
             " fval=" << phiVal <<
             "; norm(gg)=" << sqrt(normGradient) <<
             "; thresh=" << sqrt(threshold) <<
-            "; decr=" << decr <<
             "; step=" << stepSize <<
             std::endl;
 #endif
@@ -503,6 +502,14 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
         if ((iter > 1) && (normGradient < threshold)) {
             break;
         }
+        
+        /*
+         * Gradient is not small enough -- continue Newton steps
+         */
+        this->evalPhiHess(candA, beta, intercept, multFact, phiHessian);
+        stepDir = solve(phiHessian, phiGradient, solve_opts::fast + solve_opts::no_approx);
+        decr = dot(stepDir, phiGradient);
+        XtrStepDir = (*this->Xtr) * stepDir;
 
         /*
          * Backtracking line search for step size to update `a`
@@ -514,8 +521,7 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
         Xtra -= XtrStepDir;
 
         while (++lineSearchIter <= LINESEARCH_MAX_STEP) {
-            beta = betaOrig + this->eta[0] * Xtra;
-            vecSoftThreshold(beta, cutoff, 1);
+            vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
 
             phiValStep = lossDual(candA, *this->y, true) +
                 (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
@@ -546,11 +552,29 @@ inline bool ENDal::minimizePhi(vec& beta, double& intercept)
     return (iter <= this->maxIt);
 }
 
-inline void ENDal::gradPhi(const arma::vec &a, const arma::vec& beta, const double intercept, arma::vec &grad, arma::mat &hess)
+inline void ENDal::evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad)
 {
-    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
-    const uvec keep = find(beta);
     grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
+
+    switch (this->intercept + 2 * this->useWeights)
+    {
+    case 1:
+        /* We have an intercept but no weights */
+        grad += intercept;
+        break;
+    case 3:
+        /* We have an intercept and weights */
+        grad += intercept * this->sqrtWeights;
+        break;
+    default:
+        /* we have no intercept */
+        break;
+    }
+}
+
+inline void ENDal::evalPhiHess(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::mat &hess)
+{
+    const uvec keep = find(beta);
     if (this->useHessBuffer) {
         hess = this->eta[0] * multFact * this->getHessBuff(keep);
     } else {
@@ -563,12 +587,10 @@ inline void ENDal::gradPhi(const arma::vec &a, const arma::vec& beta, const doub
     {
     case 1:
         /* We have an intercept but no weights */
-        grad += intercept;
         hess += this->eta[1];
         break;
     case 3:
         /* We have an intercept and weights */
-        grad += intercept * this->sqrtWeights;
         hess += this->eta[1] * this->sqrtWeightsOuter;
         break;
     default:
@@ -588,7 +610,7 @@ inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& interc
         intercept += this->eta[1] * (this->useWeights ? accu(this->sqrtWeights % a) : accu(a));
     }
 
-    vecSoftThreshold(beta, cutoff, 1);
+    vecSoftThreshold(beta, cutoff);
 
     const double phiMoreauEnv = 0.5 * multFact * squaredL2Norm(beta);
     const double interceptMorauEnv = (this->intercept ? 0.5 * intercept * intercept : 0 );
@@ -641,20 +663,31 @@ const arma::mat& ENDal::getHessBuff(const uvec& keep)
 }
 
 
-static inline double softThreshold(const double z, const double gamma, const double mult)
+static inline double softThreshold(const double z, const double gamma)
 {
     if (fabs(z) <= gamma) {
         return 0.;
     } else if (z < 0) {
-        return mult * (z + gamma);
+        return (z + gamma);
     }
-    return mult * (z - gamma);
+    return (z - gamma);
 }
 
-static inline void vecSoftThreshold(vec& z, const double gamma, const double mult)
+static inline void vecSoftThreshold(vec& z, const double gamma)
 {
     for (vec::iterator elIterator = z.begin(); elIterator != z.end(); ++elIterator) {
-        (*elIterator) = softThreshold(*elIterator, gamma, mult);
+        (*elIterator) = softThreshold(*elIterator, gamma);
+    }
+}
+
+static inline void vecSoftThresholdInplace(vec& zsoft, const vec& z1, const double c, const vec&z2, const double gamma)
+{
+    zsoft.set_size(z1.n_elem);
+    vec::const_iterator readIter1 = z1.begin();
+    vec::const_iterator readIter2 = z2.begin();
+    vec::iterator writeIter = zsoft.begin();
+    for (; writeIter != zsoft.end(); ++writeIter, ++readIter1, ++readIter2) {
+        (*writeIter) = softThreshold(*readIter1 + c * (*readIter2), gamma);
     }
 }
 

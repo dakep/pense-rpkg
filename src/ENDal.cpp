@@ -373,7 +373,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
             vecSoftThreshold(tmpInnerProd, la);
             dualFunVal = lossDual(dualVec, *this->y, true) + 0.5 * squaredL2Norm(tmpInnerProd) * updateDenomMult;
         } else {
-            dualVec *= fmin(nLambda / max(abs(tmpInnerProd)), 1);
+            dualVec *= fmin(this->nLambda / max(abs(tmpInnerProd)), 1);
             dualFunVal = lossDual(dualVec, *this->y, true);
         }
 

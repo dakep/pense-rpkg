@@ -72,8 +72,6 @@ private:
 
     void evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad);
 
-    void evalPhiHess(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::mat &hess);
-
     int getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact);
 
     const arma::mat& getHessBuff(const arma::uvec& keep);

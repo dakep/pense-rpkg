@@ -25,6 +25,12 @@
 class ENDal : public ElasticNet
 {
 public:
+	enum Preconditioner {
+		NONE = 0,
+		DIAG,
+		APPROX
+	};
+
 	ENDal(const bool intercept);
 	ENDal(const bool intercept, const Options& options);
 	~ENDal();
@@ -43,7 +49,7 @@ private:
     double etaStart;
     double etaStartNumerator;
     double etaMultiplier;
-    bool useHessBuffer;
+    Preconditioner precondType;
 
     double lambda;
     double alpha;
@@ -54,7 +60,6 @@ private:
     int bufferSizeNobs;
     int bufferSizeNvar;
 
-    arma::vec a;
     arma::vec* y;
     arma::mat* Xtr;
     arma::vec sqrtWeights;
@@ -65,17 +70,16 @@ private:
 
     double fullObjectiveFun(const double intercept, const arma::vec& beta);
 
-    bool minimizePhi(arma::vec& beta, double& intercept);
-
-    double evalPhi(const arma::vec& a, arma::vec& beta, double& intercept, arma::vec &grad, arma::mat& hess, bool evalGrad);
-
     void evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad);
 
     void evalPhiHess(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::mat &hess);
 
+    int getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact);
+
     const arma::mat& getHessBuff(const arma::uvec& keep);
     arma::uvec hessBuffKeep;
     arma::mat hessBuff;
+    arma::mat precond;
 };
 
 

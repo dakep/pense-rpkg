@@ -195,13 +195,18 @@ en_options_dal <- function (
     eta_mult = 2,
     eta_start_numerator = 1e-2,
     eta_start,
-    use_buffer = TRUE
+    preconditioner = c("none", "diagonal", "approx")
 ) {
     eta_start <- if (!missing(eta_start)) {
         .check_arg(eta_start, "numeric", range = 0)
     } else {
         -1
     }
+
+    preconditioner <- match.arg(preconditioner)
+    preconditioner <- -1L + as.integer(
+        pmatch(preconditioner, c("none", "diagonal", "approx"))
+    )
 
     return(list(
         algorithm = .enalgo2IntEnalgo("dal"),
@@ -211,7 +216,7 @@ en_options_dal <- function (
         etaStartNumerator = .check_arg(eta_start_numerator, "numeric", range = 0),
         etaStart = eta_start,
         eps = .check_arg(eps, "numeric", range = 0),
-        useBuffer = .check_arg(use_buffer, "logical")
+        preconditioner = .check_arg(preconditioner, "integer")
     ))
 }
 

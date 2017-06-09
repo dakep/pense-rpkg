@@ -23,7 +23,7 @@ static const bool   DEFAULT_OPT_WARM_START = true;
 static const double DEFAULT_OPT_ETA_START = -1;
 static const double DEFAULT_OPT_ETA_START_NUMERATOR = 0.01;
 static const double DEFAULT_OPT_ETA_MULTIPLIER = 2;
-static const bool   DEFAULT_OPT_USE_BUFFER = true;
+static const ENDal::Preconditioner DEFAULT_OPT_PRECONDITIONER = ENDal::NONE;
 
 
 /**
@@ -33,7 +33,9 @@ static const bool   DEFAULT_OPT_USE_BUFFER = true;
  */
 static const double LINESEARCH_STEPSIZE_MULTIPLIER = 0.8;  // 0 < x < 1
 static const double LINESEARCH_STEP_CONDITION = 0.3;      // 0 < x < 0.5
-static const int LINESEARCH_MAX_STEP = 20;
+static const int LINESEARCH_MAX_STEP = 50;
+static const int SOLVE_PCG_MAXIT = 200;
+static const int SOLVE_PCG_MAXIT_UPDATE = 50;
 
 using namespace arma;
 
@@ -53,6 +55,9 @@ static inline void vecSoftThreshold(vec& z, const double gamma);
  * sign(z1 + c * z2) * max(0, |z1 + c * z2| - gamma)
  */
 static inline void vecSoftThresholdInplace(vec& zsoft, const vec& z1, const double c, const vec&z2, const double gamma);
+
+static int solve_pcg_diag(const mat &A, vec &x, const vec &b, const double eps);
+static int solve_pcg(const mat &A, vec &x, const vec &b, const mat &precond, const double eps);
 
 static inline double squaredL2Norm(const vec& x);
 
@@ -80,7 +85,7 @@ ENDal::ENDal(const bool intercept) :
             etaStart(DEFAULT_OPT_ETA_START),
             etaStartNumerator(DEFAULT_OPT_ETA_START_NUMERATOR),
             etaMultiplier(DEFAULT_OPT_ETA_MULTIPLIER),
-            useHessBuffer(DEFAULT_OPT_USE_BUFFER),
+            precondType(DEFAULT_OPT_PRECONDITIONER),
             bufferSizeNobs(0), bufferSizeNvar(0),
             y(NULL), Xtr(NULL),
             useWeights(false)
@@ -96,7 +101,7 @@ ENDal::ENDal(const bool intercept, const Options& options) :
             etaStart(DEFAULT_OPT_ETA_START),
             etaStartNumerator(DEFAULT_OPT_ETA_START_NUMERATOR),
             etaMultiplier(DEFAULT_OPT_ETA_MULTIPLIER),
-            useHessBuffer(DEFAULT_OPT_USE_BUFFER),
+            precondType(DEFAULT_OPT_PRECONDITIONER),
             bufferSizeNobs(0), bufferSizeNvar(0),
             y(NULL), Xtr(NULL),
             useWeights(false)
@@ -123,7 +128,7 @@ void ENDal::setOptions(const Options& options)
     this->etaStart = options.get("etaStart", this->etaStart);
     this->etaStartNumerator = options.get("etaStartNumerator", this->etaStartNumerator);
     this->etaMultiplier = options.get("etaMultiplier", this->etaMultiplier);
-    this->useHessBuffer = options.get("useBuffer", this->useHessBuffer);
+    this->precondType = options.get("preconditioner", this->precondType);
 }
 
 void ENDal::setLambdas(const double lambda1, const double lambda2)
@@ -188,16 +193,11 @@ void ENDal::setData(const Data& data)
     }
 
     if (data.numObs() != this->bufferSizeNobs) {
-        this->a.resize(data.numObs());
-        this->a = -(*this->y);
         this->bufferSizeNobs = data.numObs();
     }
 
-
-    if (this->useHessBuffer) {
-        this->hessBuffKeep.reset();
-        this->hessBuff.zeros(this->bufferSizeNobs, this->bufferSizeNobs);
-    }
+    this->hessBuffKeep.reset();
+    this->hessBuff.zeros(this->bufferSizeNobs, this->bufferSizeNobs);
 }
 
 void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids,
@@ -301,6 +301,26 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
     double relativeDualityGap;
     double aL1, aL1Prev;
 
+    vec a;
+
+    /* Variables for inner minimization problem */
+    vec stepDir(nobs, fill::zeros);
+    vec XtrStepDir;
+    vec phiGradient;
+    vec Xtra;
+    
+    int innerIter = 0, lineSearchIter = 0;
+    int pcgSteps = 0;
+    double stepSize, stepSizePrev;
+    double phiVal, phiValStep;
+    double decr;
+    double threshold;
+    double normGradient;
+    double normDiffInt;
+
+    /*
+     * Initialize variables
+     */
     if (this->etaStart > 0) {
         this->eta[0] = this->etaStart;
     } else {
@@ -312,45 +332,61 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
 
     this->eta[1] = this->eta[0];
 
-    if (this->intercept) {
-
-    } else {
+    if (!this->intercept) {
         intercept = 0;
     }
 
     if (this->warmStart) {
-        this->a = (*this->y) - this->Xtr->t() * beta;
-        if (this->intercept) {
-            if (this->useWeights) {
-                intercept = mean(this->sqrtWeights % this->a);
-                this->a -= this->sqrtWeights * intercept;
-            } else {
-                intercept = mean(this->a);
-                this->a -= intercept;
-            }
-        } else {
+        a = (*this->y) - this->Xtr->t() * beta;
+
+        switch (this->intercept + 2 * this->useWeights)
+        {
+        case 1:
+            /* We have an intercept but no weights */
+            intercept = mean(a);
+            a -= intercept;
+            break;
+        case 3:
+            /* We have an intercept and weights */
+            intercept = mean(this->sqrtWeights % a);
+            a -= this->sqrtWeights * intercept;
+            break;
+        default:
+            /* we have no intercept */
             intercept = 0;
+            break;
         }
     } else {
-        if (this->intercept) {
-            if (this->useWeights) {
-                intercept = mean(this->sqrtWeights % *this->y);
-                this->a = (*this->y) - this->sqrtWeights * intercept;
-            } else {
-                intercept = mean(*this->y);
-                this->a = (*this->y) - intercept;
-            }
-        } else {
-            this->a = *this->y;
-        }
         beta.zeros();
 
+        switch (this->intercept + 2 * this->useWeights)
+        {
+        case 1:
+            /* We have an intercept but no weights */
+            intercept = mean(*this->y);
+            a = (*this->y) - intercept;
+            break;
+        case 3:
+            /* We have an intercept and weights */
+            intercept = mean(this->sqrtWeights % *this->y);
+            a = (*this->y) - this->sqrtWeights * intercept;
+            break;
+        default:
+            /* we have no intercept */
+            a = *this->y;
+            break;
+        }
     }
 
+    /*
+     * Outer minimization
+     */
     iter = 0;
     dualFunValPrev = dualFunVal = 0;
     primalFunVal = 0;
     aL1 = aL1Prev = 0;
+
+    Xtra = (*this->Xtr) * a;
 
     while (1) {
         /*
@@ -359,12 +395,12 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
         dualFunValPrev = dualFunVal;
         if (this->intercept) {
             if (this->useWeights) {
-                dualVec = this->a - this->sqrtWeights * mean(this->sqrtWeights % this->a);
+                dualVec = a - this->sqrtWeights * mean(this->sqrtWeights % a);
             } else {
-                dualVec = this->a - mean(this->a);
+                dualVec = a - mean(a);
             }
         } else {
-            dualVec = this->a;
+            dualVec = a;
         }
 
         tmpInnerProd = (*this->Xtr) * dualVec;
@@ -405,15 +441,124 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
             break;
         }
 
-        /* Minimize phi --> updates `a` and `beta` & `intercept` */
-        this->minimizePhi(beta, intercept);
+        /*========================================================================================*/
+        /* Minimize phi --> updates `a` and `beta` & `intercept`                                  */
+        /*========================================================================================*/
+        const double cutoff = this->nLambda * this->eta[0] * this->alpha;
+        const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
+        const vec betaOrig(beta);
+        const double interceptOrig = intercept;
+
+        innerIter = 0;
+
+        while (1) {
+            stepSize = 1;
+            vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
+
+            phiVal = lossDual(a, *this->y, true) +
+                (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+
+            if (this->intercept) {
+                intercept = interceptOrig + this->eta[1] * (this->useWeights ?
+                        accu(this->sqrtWeights % a) :
+                        accu(a)
+                    );
+
+                phiVal += (0.5 / this->eta[1]) * intercept * intercept;
+            }
+
+            this->evalPhiGrad(a, beta, intercept, multFact, phiGradient);
+
+            /*
+             * Check for max. iterations
+             */
+            if (++innerIter > this->maxIt) {
+                break;
+            }
+
+            normGradient = squaredL2Norm(phiGradient);
+
+            threshold = (1 / this->eta[0]) * squaredL2Norm(betaOrig - beta);
+            if (this->intercept) {
+                normDiffInt = (interceptOrig - intercept);
+                threshold += (1 / this->eta[1]) * normDiffInt * normDiffInt;
+            }
+
+            /* It is not necessary to go far below the actual precision */
+            if (threshold < this->eps) {
+                threshold = 0.5 * this->eps;
+            }
+
+#ifdef DEBUG
+            Rcpp::Rcout << "[" << innerIter << "]" <<
+                " fval=" << phiVal <<
+                "; norm(gg)=" << sqrt(normGradient) <<
+                "; thresh=" << sqrt(threshold) <<
+                "; step=" << stepSize <<
+                "; #pcg=" << pcgSteps <<
+                std::endl;
+#endif
+
+            /*
+             * Check for convergence to desired tolerance
+             */
+            if ((innerIter > 1) && (normGradient < threshold)) {
+                break;
+            }
+            
+            /*
+             * Gradient is not small enough -- continue Newton steps
+             */
+            pcgSteps = this->getPhiStepDir(stepDir, phiGradient, a, beta, intercept, multFact);
+            decr = dot(stepDir, phiGradient);
+            XtrStepDir = (*this->Xtr) * stepDir;
+
+            /*
+             * Backtracking line search for step size to update `a`
+             */
+            stepSizePrev = stepSize;
+            a -= stepDir;
+            Xtra -= XtrStepDir;
+            lineSearchIter = 0;
+
+            while (++lineSearchIter <= LINESEARCH_MAX_STEP) {
+                vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
+
+                phiValStep = lossDual(a, *this->y, true) +
+                    (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+
+                if (this->intercept) {
+                    intercept = interceptOrig + this->eta[1] * (this->useWeights ?
+                            accu(this->sqrtWeights % a) :
+                            accu(a)
+                        );
+
+                    phiValStep += (0.5 / this->eta[1]) * intercept * intercept;
+                }
+
+                if (phiValStep < phiVal - LINESEARCH_STEP_CONDITION * stepSize * decr) {
+                    break;
+                }
+
+                stepSizePrev = stepSize;
+                stepSize *= LINESEARCH_STEPSIZE_MULTIPLIER;
+                a -= (stepSize - stepSizePrev) * stepDir;
+                Xtra -= (stepSize - stepSizePrev) * XtrStepDir;
+            }
+        }
+
+        beta *= multFact;
+        
+        /*========================================================================================*/
+        /* END minimize phi                                                                       */
+        /*========================================================================================*/
 
         /* Update `eta` */
         this->eta[0] *= this->etaMultiplier;
 
         /* Update `eta (intercept)` */
         if (this->intercept) {
-            aL1 = (this->useWeights ? accu(this->sqrtWeights % this->a) : accu(this->a));
+            aL1 = (this->useWeights ? accu(this->sqrtWeights % a) : accu(a));
             if ((iter > 1) && (aL1 > this->eps) && (aL1 > 0.5 * aL1Prev)) {
                 this->eta[1] *= 10 * this->etaMultiplier;
             } else {
@@ -430,127 +575,127 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
 }
 
 
-inline bool ENDal::minimizePhi(vec& beta, double& intercept)
-{
-    const double cutoff = this->nLambda * this->eta[0] * this->alpha;
-    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
-    const vec betaOrig(beta);
-    const double interceptOrig = intercept;
-    int iter = 0, lineSearchIter = 0;
-    double stepSize = 1, stepSizePrev;
-    double phiVal, phiValStep;
-    double decr;
-    double threshold;
-    double normGradient;
-    double normDiffInt;
-    vec candA(this->a);
-    vec stepDir;
-    vec XtrStepDir;
-    vec Xtra = (*this->Xtr) * this->a;
-    vec phiGradient;
-    mat phiHessian;
-
-    while (1) {
-        vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
-
-        phiVal = lossDual(candA, *this->y, true) +
-            (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
-
-        if (this->intercept) {
-            intercept = interceptOrig + this->eta[1] * (this->useWeights ?
-                    accu(this->sqrtWeights % candA) :
-                    accu(candA)
-                );
-
-            phiVal += (0.5 / this->eta[1]) * intercept * intercept;
-        }
-
-        this->evalPhiGrad(candA, beta, intercept, multFact, phiGradient);
-
-        /*
-         * Check for max. iterations
-         */
-        if (++iter > this->maxIt) {
-            break;
-        }
-
-        normGradient = squaredL2Norm(phiGradient);
-
-        threshold = (1 / this->eta[0]) * squaredL2Norm(betaOrig - beta);
-        if (this->intercept) {
-            normDiffInt = (interceptOrig - intercept);
-            threshold += (1 / this->eta[1]) * normDiffInt * normDiffInt;
-        }
-
-        /* It is not necessary to go far below the actual precision */
-        if (threshold < this->eps) {
-            threshold = 0.5 * this->eps;
-        }
-
-#ifdef DEBUG
-        Rcpp::Rcout << "[" << iter << "]" <<
-            " fval=" << phiVal <<
-            "; norm(gg)=" << sqrt(normGradient) <<
-            "; thresh=" << sqrt(threshold) <<
-            "; step=" << stepSize <<
-            std::endl;
-#endif
-
-        /*
-         * Check for convergence to desired tolerance
-         */
-        if ((iter > 1) && (normGradient < threshold)) {
-            break;
-        }
-        
-        /*
-         * Gradient is not small enough -- continue Newton steps
-         */
-        this->evalPhiHess(candA, beta, intercept, multFact, phiHessian);
-        stepDir = solve(phiHessian, phiGradient, solve_opts::fast + solve_opts::no_approx);
-        decr = dot(stepDir, phiGradient);
-        XtrStepDir = (*this->Xtr) * stepDir;
-
-        /*
-         * Backtracking line search for step size to update `a`
-         */
-        lineSearchIter = 0;
-        stepSize = 1;
-        stepSizePrev = stepSize;
-        candA -= stepDir;
-        Xtra -= XtrStepDir;
-
-        while (++lineSearchIter <= LINESEARCH_MAX_STEP) {
-            vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
-
-            phiValStep = lossDual(candA, *this->y, true) +
-                (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
-
-            if (this->intercept) {
-                intercept = interceptOrig + this->eta[1] * (this->useWeights ?
-                        accu(this->sqrtWeights % candA) :
-                        accu(candA)
-                    );
-
-                phiValStep += (0.5 / this->eta[1]) * intercept * intercept;
-            }
-
-            if (phiValStep < phiVal - LINESEARCH_STEP_CONDITION * stepSize * decr) {
-                break;
-            }
-
-            stepSizePrev = stepSize;
-            stepSize *= LINESEARCH_STEPSIZE_MULTIPLIER;
-            candA -= (stepSize - stepSizePrev) * stepDir;
-            Xtra -= (stepSize - stepSizePrev) * XtrStepDir;
-        }
-    }
-
-    this->a = candA;
-    beta *= multFact;
-
-    return (iter <= this->maxIt);
-}
+//inline bool ENDal::minimizePhi(vec& beta, double& intercept)
+//{
+//    const double cutoff = this->nLambda * this->eta[0] * this->alpha;
+//    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
+//    const vec betaOrig(beta);
+//    const double interceptOrig = intercept;
+//    int innerIter = 0, lineSearchIter = 0;
+//    double stepSize = 1, stepSizePrev;
+//    double phiVal, phiValStep;
+//    double decr;
+//    double threshold;
+//    double normGradient;
+//    double normDiffInt;
+//    vec candA(this->a);
+//    vec stepDir;
+//    vec XtrStepDir;
+//    vec Xtra = (*this->Xtr) * this->a;
+//    vec phiGradient;
+//    mat phiHessian;
+//
+//    while (1) {
+//        vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
+//
+//        phiVal = lossDual(candA, *this->y, true) +
+//            (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+//
+//        if (this->intercept) {
+//            intercept = interceptOrig + this->eta[1] * (this->useWeights ?
+//                    accu(this->sqrtWeights % candA) :
+//                    accu(candA)
+//                );
+//
+//            phiVal += (0.5 / this->eta[1]) * intercept * intercept;
+//        }
+//
+//        this->evalPhiGrad(candA, beta, intercept, multFact, phiGradient);
+//
+//        /*
+//         * Check for max. iterations
+//         */
+//        if (++innerIter > this->maxIt) {
+//            break;
+//        }
+//
+//        normGradient = squaredL2Norm(phiGradient);
+//
+//        threshold = (1 / this->eta[0]) * squaredL2Norm(betaOrig - beta);
+//        if (this->intercept) {
+//            normDiffInt = (interceptOrig - intercept);
+//            threshold += (1 / this->eta[1]) * normDiffInt * normDiffInt;
+//        }
+//
+//        /* It is not necessary to go far below the actual precision */
+//        if (threshold < this->eps) {
+//            threshold = 0.5 * this->eps;
+//        }
+//
+//#ifdef DEBUG
+//        Rcpp::Rcout << "[" << innerIter << "]" <<
+//            " fval=" << phiVal <<
+//            "; norm(gg)=" << sqrt(normGradient) <<
+//            "; thresh=" << sqrt(threshold) <<
+//            "; step=" << stepSize <<
+//            std::endl;
+//#endif
+//
+//        /*
+//         * Check for convergence to desired tolerance
+//         */
+//        if ((innerIter > 1) && (normGradient < threshold)) {
+//            break;
+//        }
+//        
+//        /*
+//         * Gradient is not small enough -- continue Newton steps
+//         */
+//        this->evalPhiHess(candA, beta, intercept, multFact, phiHessian);
+//        stepDir = solve(phiHessian, phiGradient, solve_opts::fast + solve_opts::no_approx);
+//        decr = dot(stepDir, phiGradient);
+//        XtrStepDir = (*this->Xtr) * stepDir;
+//
+//        /*
+//         * Backtracking line search for step size to update `a`
+//         */
+//        lineSearchIter = 0;
+//        stepSize = 1;
+//        stepSizePrev = stepSize;
+//        candA -= stepDir;
+//        Xtra -= XtrStepDir;
+//
+//        while (++lineSearchIter <= LINESEARCH_MAX_STEP) {
+//            vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
+//
+//            phiValStep = lossDual(candA, *this->y, true) +
+//                (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+//
+//            if (this->intercept) {
+//                intercept = interceptOrig + this->eta[1] * (this->useWeights ?
+//                        accu(this->sqrtWeights % candA) :
+//                        accu(candA)
+//                    );
+//
+//                phiValStep += (0.5 / this->eta[1]) * intercept * intercept;
+//            }
+//
+//            if (phiValStep < phiVal - LINESEARCH_STEP_CONDITION * stepSize * decr) {
+//                break;
+//            }
+//
+//            stepSizePrev = stepSize;
+//            stepSize *= LINESEARCH_STEPSIZE_MULTIPLIER;
+//            candA -= (stepSize - stepSizePrev) * stepDir;
+//            Xtra -= (stepSize - stepSizePrev) * XtrStepDir;
+//        }
+//    }
+//
+//    this->a = candA;
+//    beta *= multFact;
+//
+//    return (innerIter <= this->maxIt);
+//}
 
 inline void ENDal::evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad)
 {
@@ -575,11 +720,7 @@ inline void ENDal::evalPhiGrad(const arma::vec &a, const arma::vec& beta, const 
 inline void ENDal::evalPhiHess(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::mat &hess)
 {
     const uvec keep = find(beta);
-    if (this->useHessBuffer) {
-        hess = this->eta[0] * multFact * this->getHessBuff(keep);
-    } else {
-        hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
-    }
+    hess = this->eta[0] * multFact * this->getHessBuff(keep);
 
     hess.diag() += 1;
 
@@ -599,59 +740,126 @@ inline void ENDal::evalPhiHess(const arma::vec &a, const arma::vec& beta, const 
     }
 }
 
-inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& intercept,
-                             arma::vec &grad, arma::mat& hess, bool evalGrad)
+inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact)
 {
-    const double cutoff = this->nLambda * this->eta[0] * this->alpha;
-    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
-    beta += this->eta[0] * (*this->Xtr) * a;
+    uvec active = find(beta);
+    mat hess;
 
-    if (this->intercept) {
-        intercept += this->eta[1] * (this->useWeights ? accu(this->sqrtWeights % a) : accu(a));
-    }
-
-    vecSoftThreshold(beta, cutoff);
-
-    const double phiMoreauEnv = 0.5 * multFact * squaredL2Norm(beta);
-    const double interceptMorauEnv = (this->intercept ? 0.5 * intercept * intercept : 0 );
-
-    const double phiVal = lossDual(a, *this->y, true) + (1 / this->eta[0]) * phiMoreauEnv +
-        (1 / this->eta[1]) * interceptMorauEnv;
-
-    if (evalGrad) {
-        const uvec keep = find(beta);
-        grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
-        if (this->useHessBuffer) {
-            hess = this->eta[0] * multFact * this->getHessBuff(keep);
-        } else {
-            hess = this->eta[0] * multFact * this->Xtr->rows(keep).t() * this->Xtr->rows(keep);
+    if (active.n_elem == 0) {
+        /* all beta are 0, so the solution can be easily computed */
+        switch (this->intercept + 2 * this->useWeights)
+        {
+        case 1:
+            /* We have an intercept but no weights */
+            stepDir = grad / (this->eta[1] + 1);
+            return 0;
+            break;
+        case 3:
+            /* We have an intercept and weights */
+            hess = this->eta[1] * this->sqrtWeightsOuter;
+            hess.diag() += 1;
+            break;
+        default:
+            /* we have no intercept */
+            stepDir = grad;
+            return 0;
+            break;
         }
-
+    } else {
+        hess = this->eta[0] * multFact * this->getHessBuff(active);
         hess.diag() += 1;
 
         switch (this->intercept + 2 * this->useWeights)
         {
         case 1:
             /* We have an intercept but no weights */
-            grad += intercept;
             hess += this->eta[1];
             break;
         case 3:
             /* We have an intercept and weights */
-            grad += intercept * this->sqrtWeights;
             hess += this->eta[1] * this->sqrtWeightsOuter;
             break;
         default:
             /* we have no intercept */
             break;
         }
+
     }
 
-    beta *= multFact;
+    int iters = 0;
+    switch (this->precondType)
+    {
+    case APPROX:
+        if (this->precond.n_elem == 0) {
+#ifdef DEBUG
+            Rcpp::Rcout << "=================== Re-compute preconditioner.... ================" << std::endl;
+#endif
+            this->precond = inv_sympd(hess);
+            stepDir = this->precond * grad;
+            return 0;
+        }
 
-    return phiVal;
+        iters = solve_pcg(hess, stepDir, grad, this->precond, this->eps);
+        if (iters > SOLVE_PCG_MAXIT_UPDATE) {
+            this->precond.reset();
+        }
+        return iters;
+    case DIAG:
+        return solve_pcg_diag(hess, stepDir, grad, this->eps);
+    default:
+    case NONE:
+        return 1 - solve(stepDir, hess, grad, solve_opts::fast + solve_opts::no_approx);
+    }
 }
 
+//inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& intercept,
+//                             arma::vec &grad, arma::mat& hess, bool evalGrad)
+//{
+//    const double cutoff = this->nLambda * this->eta[0] * this->alpha;
+//    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
+//    beta += this->eta[0] * (*this->Xtr) * a;
+//
+//    if (this->intercept) {
+//        intercept += this->eta[1] * (this->useWeights ? accu(this->sqrtWeights % a) : accu(a));
+//    }
+//
+//    vecSoftThreshold(beta, cutoff);
+//
+//    const double phiMoreauEnv = 0.5 * multFact * squaredL2Norm(beta);
+//    const double interceptMorauEnv = (this->intercept ? 0.5 * intercept * intercept : 0 );
+//
+//    const double phiVal = lossDual(a, *this->y, true) + (1 / this->eta[0]) * phiMoreauEnv +
+//        (1 / this->eta[1]) * interceptMorauEnv;
+//
+//    if (evalGrad) {
+//        const uvec keep = find(beta);
+//        grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
+//        hess = this->eta[0] * multFact * this->getHessBuff(keep);
+//
+//        hess.diag() += 1;
+//
+//        switch (this->intercept + 2 * this->useWeights)
+//        {
+//        case 1:
+//            /* We have an intercept but no weights */
+//            grad += intercept;
+//            hess += this->eta[1];
+//            break;
+//        case 3:
+//            /* We have an intercept and weights */
+//            grad += intercept * this->sqrtWeights;
+//            hess += this->eta[1] * this->sqrtWeightsOuter;
+//            break;
+//        default:
+//            /* we have no intercept */
+//            break;
+//        }
+//    }
+//
+//    beta *= multFact;
+//
+//    return phiVal;
+//}
 
 const arma::mat& ENDal::getHessBuff(const uvec& keep)
 {
@@ -705,3 +913,142 @@ static inline double squaredL2Norm(const vec& x)
     double tmp = norm(x, 2);
     return tmp * tmp;
 }
+
+
+/*****************************************************************
+ * Iterative routine -- CG
+ *
+ * CG solves the symmetric positive definite linear
+ * system Ax=b using the Preconditioned Conjugate Gradient method.
+ * The (reciprocal) diagonal of A is used as the preconditioner.
+ *
+ * CG follows the algorithm described on p. 15 in the
+ * SIAM Templates book.
+ *
+ * Upon successful return, output arguments have the following values:
+ *
+ *        x  --  approximate solution to Ax = b
+ *
+ * original source code from http://math.nist.gov/iml++/cg.h.txt
+ * as well as from the Eigen C++ template library for linear algebra.
+ * Copyright (C) 2011-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla
+ * Public License v. 2.0. If a copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ ****************************************************************/
+static int solve_pcg_diag(const mat &A, vec &x, const vec &b, const double eps)
+{
+    int iter = 0;
+    double alpha, beta;
+    double normb = norm(b);
+    vec r = b - A * x;
+
+    if (normb == 0.0) {
+        normb = 1;
+    }
+
+    const double thresh = eps * normb;
+
+    if (norm(r) <= thresh) {
+        return iter;
+    }
+
+    vec z(A.n_cols);
+    vec tmp(A.n_cols);
+    vec p = r / A.diag();
+    double absOld, absNew = dot(r, p);
+
+    do {
+        tmp = A * p;
+        alpha = absNew / dot(p, tmp);
+
+        x += alpha * p;
+        r -= alpha * tmp;
+
+        if (norm(r) <= thresh) {
+            return iter;
+        }
+
+        z = r / A.diag();
+
+        absOld = absNew;
+        absNew = dot(r, z);
+
+        beta = absNew / absOld;
+        p = z + beta * p;
+    } while (++iter <= SOLVE_PCG_MAXIT);
+
+    return -1;
+}
+
+
+/*****************************************************************
+ * Iterative routine -- CG
+ *
+ * CG solves the symmetric positive definite linear
+ * system Ax=b using the Preconditioned Conjugate Gradient method.
+ * The matrix T is used as the preconditioner.
+ *
+ * CG follows the algorithm described on p. 15 in the
+ * SIAM Templates book.
+ *
+ * Upon successful return, output arguments have the following values:
+ *
+ *        x  --  approximate solution to Ax = b
+ *
+ * original source code from http://math.nist.gov/iml++/cg.h.txt
+ * as well as from the Eigen C++ template library for linear algebra.
+ * Copyright (C) 2011-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla
+ * Public License v. 2.0. If a copy of the MPL was not distributed
+ * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ ****************************************************************/
+static int solve_pcg(const mat &A, vec &x, const vec &b, const mat &precond, const double eps)
+{
+    int iter = 0;
+    double alpha, beta;
+    double normb = norm(b);
+    vec r = b - A * x;
+
+    if (normb == 0.0) {
+        normb = 1;
+    }
+
+    const double thresh = eps * normb;
+
+    if (norm(r) <= thresh) {
+        return iter;
+    }
+
+    vec z(A.n_cols);
+    vec tmp(A.n_cols);
+    vec p = precond * r;
+    double absOld, absNew = dot(r, p);
+
+    do {
+        tmp = A * p;
+        alpha = absNew / dot(p, tmp);
+
+        x += alpha * p;
+        r -= alpha * tmp;
+
+        if (norm(r) <= thresh) {
+            return iter;
+        }
+
+        z = precond * r;
+
+        absOld = absNew;
+        absNew = dot(r, z);
+
+        beta = absNew / absOld;
+        p = z + beta * p;
+    } while (++iter <= SOLVE_PCG_MAXIT);
+
+    return -1;
+}
+
+
+

@@ -14,6 +14,8 @@
 
 #include "ENDal.hpp"
 
+using namespace arma;
+
 /**
  * Default argument values
  */
@@ -37,7 +39,9 @@ static const int LINESEARCH_MAX_STEP = 50;
 static const int SOLVE_PCG_MAXIT = 200;
 static const int SOLVE_PCG_MAXIT_UPDATE = 50;
 
-using namespace arma;
+static const uword VEC_SOFTTHRESH_SMALL_SPARSE = 50;
+static const double VEC_SOFTTHRESH_SPARSE = 0.1;
+
 
 /**
  * Static inline functions only used in this compile unit
@@ -53,13 +57,18 @@ static inline void vecSoftThreshold(vec& z, const double gamma);
 /**
  * Optimized soft threshold function to compute
  * sign(z1 + c * z2) * max(0, |z1 + c * z2| - gamma)
+ * where z1 is a sparse vector
  */
-static inline void vecSoftThresholdInplace(vec& zsoft, const vec& z1, const double c, const vec&z2, const double gamma);
+static inline void vecSoftThresholdInplace(sp_vec& zsoft, const sp_vec& z1, const double c, const vec&z2, const double gamma);
+static inline void vecSoftThresholdInplaceSmallSparse(sp_vec& zsoft, const sp_vec& sp_z1, const double c, const vec& z2, const double gamma);
+static inline void vecSoftThresholdInplaceLargeSparse(sp_vec& zsoft, const sp_vec& sp_z1, const double c, const vec& z2, const double gamma);
+static inline void vecSoftThresholdInplaceNonSparse(sp_vec& zsoft, const sp_vec& sp_z1, const double c, const vec& z2, const double gamma);
 
 static int solve_pcg_diag(const mat &A, vec &x, const vec &b, const double eps);
 static int solve_pcg(const mat &A, vec &x, const vec &b, const mat &precond, const double eps);
 
 static inline double squaredL2Norm(const vec& x);
+static inline double spSquaredL2Norm(const sp_vec& x);
 
 /**
  * Dual of the squared loss function 1/(2) * ||a - y||_2^2
@@ -146,10 +155,10 @@ void ENDal::setAlphaLambda(const double alpha, const double lambda)
     this->lambda = lambda;
 }
 
-inline double ENDal::fullObjectiveFun(const double intercept, const arma::vec& beta)
+inline double ENDal::fullObjectiveFun(const double intercept, const arma::sp_vec& beta)
 {
     double objf = this->nLambda * (
-        0.5 * (1 - this->alpha) * squaredL2Norm(beta) +
+        0.5 * (1 - this->alpha) * spSquaredL2Norm(beta) +
         this->alpha * norm(beta, 1)
     );
 
@@ -207,7 +216,12 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
     mat *const origXtr = this->Xtr;
     double *intercept = coefs;
     vec residuals(resids, this->bufferSizeNobs, false, true);
-    vec beta(coefs + 1, this->bufferSizeNvar - 1, false, true);
+    vec betaReturnDense(coefs + 1, this->bufferSizeNvar - 1, false, true);
+    sp_vec beta(betaReturnDense.n_elem);
+
+    if (this->warmStart) {
+        beta = sp_vec(betaReturnDense);
+    }
 
     /* First check the data if something has to be done at all */
     if (this->bufferSizeNvar == 0) {
@@ -242,6 +256,9 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
         residuals = (*origY) - origXtr->t() * beta;
     }
 
+    /* update returned beta */
+    betaReturnDense = vec(beta);
+
     this->y = origY;
     this->Xtr = origXtr;
     this->useWeights = false;
@@ -251,7 +268,12 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
 {
     double *intercept = coefs;
     vec residuals(resids, this->bufferSizeNobs, false, true);
-    vec beta(coefs + 1, this->bufferSizeNvar - 1, false, true);
+    vec betaReturnDense(coefs + 1, this->bufferSizeNvar - 1, false, true);
+    sp_vec beta(betaReturnDense.n_elem);
+
+    if (this->warmStart) {
+        beta = sp_vec(betaReturnDense);
+    }
 
     /* First check the data if something has to be done at all */
     if (this->bufferSizeNvar == 0) {
@@ -283,9 +305,12 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
     } else {
         residuals = (*this->y) - this->Xtr->t() * beta;
     }
+
+    /* update returned beta */
+    betaReturnDense = vec(beta);
 }
 
-inline void ENDal::dal(double& intercept, arma::vec& beta)
+inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
 {
     const int nobs = this->y->n_elem;
     this->nLambda = nobs * this->lambda;
@@ -446,7 +471,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
         /*========================================================================================*/
         const double cutoff = this->nLambda * this->eta[0] * this->alpha;
         const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
-        const vec betaOrig(beta);
+        const sp_vec betaOrig(beta);
         const double interceptOrig = intercept;
 
         innerIter = 0;
@@ -456,7 +481,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
             vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
 
             phiVal = lossDual(a, *this->y, true) +
-                (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+                (0.5 / this->eta[0]) * multFact * spSquaredL2Norm(beta);
 
             if (this->intercept) {
                 intercept = interceptOrig + this->eta[1] * (this->useWeights ?
@@ -478,7 +503,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
 
             normGradient = squaredL2Norm(phiGradient);
 
-            threshold = (1 / this->eta[0]) * squaredL2Norm(betaOrig - beta);
+            threshold = (1 / this->eta[0]) * spSquaredL2Norm(betaOrig - beta);
             if (this->intercept) {
                 normDiffInt = (interceptOrig - intercept);
                 threshold += (1 / this->eta[1]) * normDiffInt * normDiffInt;
@@ -525,7 +550,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
                 vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
 
                 phiValStep = lossDual(a, *this->y, true) +
-                    (0.5 / this->eta[0]) * multFact * squaredL2Norm(beta);
+                    (0.5 / this->eta[0]) * multFact * spSquaredL2Norm(beta);
 
                 if (this->intercept) {
                     intercept = interceptOrig + this->eta[1] * (this->useWeights ?
@@ -575,7 +600,7 @@ inline void ENDal::dal(double& intercept, arma::vec& beta)
 }
 
 
-inline void ENDal::evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad)
+inline void ENDal::evalPhiGrad(const arma::vec &a, const arma::sp_vec& beta, const double intercept, const double multFact, arma::vec &grad)
 {
     grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
 
@@ -596,12 +621,19 @@ inline void ENDal::evalPhiGrad(const arma::vec &a, const arma::vec& beta, const 
 }
 
 
-inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact)
+inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::sp_vec& beta, const double intercept, const double multFact)
 {
-    uvec active = find(beta);
+    /* sp_vec does not have an overload for the find method, so it has to be done by hand */
+    // uvec active = find(beta);
+    uvec active(beta.n_nonzero);
     mat hess;
 
-    if (active.n_elem == 0) {
+    sp_vec::const_iterator indexIt = beta.begin();
+    for (uword i = 0; indexIt != beta.end(); ++indexIt, ++i) {
+        active[i] = indexIt.row();
+    }
+
+    if (beta.n_nonzero == 0) {
         /* all beta are 0, so the solution can be easily computed */
         switch (this->intercept + 2 * this->useWeights)
         {
@@ -642,6 +674,13 @@ inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const
 
     }
 
+#ifdef DEBUG
+    active.t().raw_print(Rcpp::Rcout, "active coefficients:");
+    Rcpp::Rcout << "frobenius norm(hess)=" << norm(hess, "fro") <<
+        "; L2 norm(beta)=" << norm(beta) <<
+    std::endl;
+#endif
+
     int iters = 0;
     switch (this->precondType)
     {
@@ -667,55 +706,6 @@ inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const
         return 1 - solve(stepDir, hess, grad, solve_opts::fast + solve_opts::no_approx);
     }
 }
-
-//inline double ENDal::evalPhi(const arma::vec& a, arma::vec& beta, double& intercept,
-//                             arma::vec &grad, arma::mat& hess, bool evalGrad)
-//{
-//    const double cutoff = this->nLambda * this->eta[0] * this->alpha;
-//    const double multFact = 1 / (1 + this->nLambda * this->eta[0] * (1 - this->alpha));
-//    beta += this->eta[0] * (*this->Xtr) * a;
-//
-//    if (this->intercept) {
-//        intercept += this->eta[1] * (this->useWeights ? accu(this->sqrtWeights % a) : accu(a));
-//    }
-//
-//    vecSoftThreshold(beta, cutoff);
-//
-//    const double phiMoreauEnv = 0.5 * multFact * squaredL2Norm(beta);
-//    const double interceptMorauEnv = (this->intercept ? 0.5 * intercept * intercept : 0 );
-//
-//    const double phiVal = lossDual(a, *this->y, true) + (1 / this->eta[0]) * phiMoreauEnv +
-//        (1 / this->eta[1]) * interceptMorauEnv;
-//
-//    if (evalGrad) {
-//        const uvec keep = find(beta);
-//        grad = a - (*this->y) + multFact * this->Xtr->t() * beta;
-//        hess = this->eta[0] * multFact * this->getHessBuff(keep);
-//
-//        hess.diag() += 1;
-//
-//        switch (this->intercept + 2 * this->useWeights)
-//        {
-//        case 1:
-//            /* We have an intercept but no weights */
-//            grad += intercept;
-//            hess += this->eta[1];
-//            break;
-//        case 3:
-//            /* We have an intercept and weights */
-//            grad += intercept * this->sqrtWeights;
-//            hess += this->eta[1] * this->sqrtWeightsOuter;
-//            break;
-//        default:
-//            /* we have no intercept */
-//            break;
-//        }
-//    }
-//
-//    beta *= multFact;
-//
-//    return phiVal;
-//}
 
 const arma::mat& ENDal::getHessBuff(const uvec& keep)
 {
@@ -744,17 +734,6 @@ static inline void vecSoftThreshold(vec& z, const double gamma)
     }
 }
 
-static inline void vecSoftThresholdInplace(vec& zsoft, const vec& z1, const double c, const vec&z2, const double gamma)
-{
-    zsoft.set_size(z1.n_elem);
-    vec::const_iterator readIter1 = z1.begin();
-    vec::const_iterator readIter2 = z2.begin();
-    vec::iterator writeIter = zsoft.begin();
-    for (; writeIter != zsoft.end(); ++writeIter, ++readIter1, ++readIter2) {
-        (*writeIter) = softThreshold(*readIter1 + c * (*readIter2), gamma);
-    }
-}
-
 static inline double lossDual(const vec& a, const vec& y, const bool aNeg)
 {
     if (aNeg) {
@@ -765,6 +744,11 @@ static inline double lossDual(const vec& a, const vec& y, const bool aNeg)
 }
 
 static inline double squaredL2Norm(const vec& x)
+{
+    double tmp = norm(x, 2);
+    return tmp * tmp;
+}
+static inline double spSquaredL2Norm(const sp_vec& x)
 {
     double tmp = norm(x, 2);
     return tmp * tmp;
@@ -907,4 +891,125 @@ static int solve_pcg(const mat &A, vec &x, const vec &b, const mat &precond, con
 }
 
 
+/**
+ * Soft-thresholding functions for sparse vectors
+ */
+static inline void vecSoftThresholdInplace(sp_vec& zsoft, const sp_vec& sp_z1, const double c, const vec& z2, const double gamma)
+{
+    if (sp_z1.n_nonzero < VEC_SOFTTHRESH_SMALL_SPARSE) {
+        /* This branch is better for small sparse vectors */
+        vecSoftThresholdInplaceSmallSparse(zsoft, sp_z1, c, z2, gamma);
+    } else if (sp_z1.n_nonzero < VEC_SOFTTHRESH_SPARSE * sp_z1.n_elem) {
+        /* This branch is better for large sparse vectors */
+        vecSoftThresholdInplaceLargeSparse(zsoft, sp_z1, c, z2, gamma);
+    } else {
+        /* This branch is better for not-so-sparse vectors */
+        vecSoftThresholdInplaceNonSparse(zsoft, sp_z1, c, z2, gamma);
+    }
+}
 
+
+static inline void vecSoftThresholdInplaceNonSparse(sp_vec& zsoft, const sp_vec& sp_z1, const double c, const vec& z2, const double gamma)
+{
+    const vec z1 = vec(sp_z1);
+    vec zsoft_tmp(z1.n_elem);
+    vec::const_iterator readIter1 = z1.begin();
+    vec::const_iterator readIter2 = z2.begin();
+    vec::iterator writeIter = zsoft_tmp.begin();
+
+    for (; writeIter != zsoft_tmp.end(); ++writeIter, ++readIter1, ++readIter2) {
+        (*writeIter) = *readIter1 + c * (*readIter2);
+        if ((*writeIter) > gamma) {
+            (*writeIter) -= gamma;
+        } else if ((*writeIter) < -gamma) {
+            (*writeIter) += gamma;
+        } else {
+            (*writeIter) = 0;
+        }
+    }
+    zsoft = sp_vec(zsoft_tmp);
+}
+
+static inline void vecSoftThresholdInplaceSmallSparse(sp_vec& zsoft, const sp_vec& z1, const double c, const vec&z2, const double gamma)
+{
+    double tmp;
+    uword i = 0, upper_bound = 0;
+    zsoft.zeros(size(z1));
+
+    sp_vec::const_iterator z1Iter = z1.begin();
+    vec::const_iterator z2Iter = z2.begin();
+
+    do {
+        upper_bound = (z1Iter == z1.end() ? z1.n_elem : z1Iter.row());
+        while (i < upper_bound) {
+            tmp = c * (*z2Iter);
+            if (tmp > gamma) {
+                zsoft[i] = tmp - gamma;
+            } else if (tmp < -gamma) {
+                zsoft[i] = tmp + gamma;
+            }
+            ++z2Iter;
+            ++i;
+        }
+
+        if (i < z1.n_elem) {
+            tmp = (*z1Iter) + c * (*z2Iter);
+            if (tmp > gamma) {
+                zsoft[i] = tmp - gamma;
+            } else if (tmp < -gamma) {
+                zsoft[i] = tmp + gamma;
+            }
+
+            ++z1Iter;
+            ++z2Iter;
+        }
+    } while (++i < z1.n_elem);
+}
+
+static inline void vecSoftThresholdInplaceLargeSparse(sp_vec& zsoft, const sp_vec& z1, const double c, const vec&z2, const double gamma)
+{
+    double tmp;
+    vector<uword> ind;
+    vector<double> val;
+    uword i = 0;
+    uword upper_bound = 0;
+
+    ind.reserve(min(z1.n_elem, (uword) 1.4 * z1.n_nonzero));
+    val.reserve(ind.capacity());
+
+    sp_vec::const_iterator z1Iter = z1.begin();
+    vec::const_iterator z2Iter = z2.begin();
+
+    do {
+        upper_bound = (z1Iter == z1.end() ? z1.n_elem : z1Iter.row());
+        while (i < upper_bound) {
+            tmp = c * (*z2Iter);
+            if (tmp > gamma) {
+                ind.push_back(i);
+                val.push_back(tmp - gamma);
+            } else if (tmp < -gamma) {
+                ind.push_back(i);
+                val.push_back(tmp + gamma);
+            }
+            ++z2Iter;
+            ++i;
+        }
+
+        if (i < z1.n_elem) {
+            tmp = (*z1Iter) + c * (*z2Iter);
+            if (tmp > gamma) {
+                ind.push_back(i);
+                val.push_back(tmp - gamma);
+            } else if (tmp < -gamma) {
+                ind.push_back(i);
+                val.push_back(tmp + gamma);
+            }
+        }
+        ++z1Iter;
+        ++z2Iter;
+    } while (++i < z1.n_elem);
+
+    umat indmat(2, (uword) ind.size(), fill::zeros);
+    indmat.row(0) = Row<uword>(ind);
+    zsoft = sp_mat(indmat, vec(val), z1.n_elem, 1, false, false).col(0);
+}

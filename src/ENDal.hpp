@@ -66,13 +66,13 @@ private:
     arma::mat sqrtWeightsOuter;
     bool useWeights;
 
-    void dal(double& intercept, arma::vec& beta);
+    void dal(double& intercept, arma::sp_vec& beta);
 
-    double fullObjectiveFun(const double intercept, const arma::vec& beta);
+    double fullObjectiveFun(const double intercept, const arma::sp_vec& beta);
 
-    void evalPhiGrad(const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact, arma::vec &grad);
+    void evalPhiGrad(const arma::vec &a, const arma::sp_vec& beta, const double intercept, const double multFact, arma::vec &grad);
 
-    int getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::vec& beta, const double intercept, const double multFact);
+    int getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const arma::vec &a, const arma::sp_vec& beta, const double intercept, const double multFact);
 
     const arma::mat& getHessBuff(const arma::uvec& keep);
     arma::uvec hessBuffKeep;

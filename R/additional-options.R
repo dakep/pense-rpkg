@@ -195,7 +195,7 @@ en_options_dal <- function (
     eta_mult = 2,
     eta_start_numerator = 1e-2,
     eta_start,
-    preconditioner = c("none", "diagonal", "approx")
+    preconditioner = c("approx", "none", "diagonal")
 ) {
     eta_start <- if (!missing(eta_start)) {
         .check_arg(eta_start, "numeric", range = 0)

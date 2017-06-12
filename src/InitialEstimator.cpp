@@ -40,6 +40,9 @@ static const double DEFAULT_OPT_MSCALE_CC = 1.5432;
 static const int DEFAULT_OPT_MSCALE_MAXIT = 100;
 static const double DEFAULT_OPT_MSCALE_EPS = 1e-9;
 
+
+static const Options WARM_START_OPTION = Options::createSimple("warmStart", true);
+
 /**
  * BLAS constants definitions
  */
@@ -442,9 +445,7 @@ ENPY::ENPY(const Data& originalData, const double alpha, const double lambda, co
            dataToUse(residualFilteredData)
 {
     /* Force using warm starts */
-    Options overrideWarm;
-    overrideWarm.set("warmStart", true);
-    this->en.setOptions(overrideWarm);
+    this->en.setOptions(WARM_START_OPTION);
 
     /* Resize the residuals memory allocated by base class */
     delete[] this->residuals;
@@ -647,10 +648,7 @@ ENPY_Exact::ENPY_Exact(const Data& originalData, const double alpha, const doubl
            dataToUse(residualFilteredData)
 {
     /* Force using warm starts */
-    Options overrideWarm;
-    overrideWarm.set("warmStart", true);
-    this->en.setOptions(overrideWarm);
-
+    this->en.setOptions(WARM_START_OPTION);
     this->en.setAlphaLambda(this->alpha, this->lambdaLS);
 }
 

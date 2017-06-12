@@ -182,8 +182,8 @@ inline double ENDal::fullObjectiveFun(const double intercept, const arma::sp_vec
 void ENDal::setData(const Data& data)
 {
     /*
-     * @TODO Don't copy the data here. Only if necessary
-     * sth along the lines
+     * @TODO Don't copy the data here. Only if necessary!
+     * sth. along the lines
      * this->Xtr = new mat(const_cast<double *>(data.getXtrConst()), data.numVar(), data.numObs());
      * this->y = new mat(const_cast<double *>(data.getYConst()), data.numObs());
      */
@@ -201,9 +201,11 @@ void ENDal::setData(const Data& data)
 
     /* Initialize new data */
     if (data.numObs() > 0 || data.numVar() > 0) {
-        this->y = new vec(data.getYConst(), data.numObs());
-        this->Xtr = new mat(data.getXtrConst(), data.numVar(), data.numObs());
+        this->y = new vec(const_cast<double *>(data.getYConst()), data.numObs(), false, false);
+        this->Xtr = new mat(const_cast<double *>(data.getXtrConst()), data.numVar(), data.numObs(),
+                            false, false);
         if (data.numVar() > 0) {
+            /* This actually will bind the data to a new memory anyways */
             this->Xtr->shed_row(0); // The intercept is handled differently!
         }
     } else {
@@ -263,7 +265,7 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
     this->Xtr = &weightedXtr;
 
     this->hessBuffKeep.reset();
-    this->hessBuff.zeros(this->bufferSizeNobs, this->bufferSizeNobs);
+    this->hessBuff.zeros();
 
     /*
      * Theoretically, we would also need to reset the preconditioner.

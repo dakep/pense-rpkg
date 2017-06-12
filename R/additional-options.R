@@ -112,6 +112,7 @@ pense_options <- function (
     eps = 1e-6,
     mscale_eps = 1e-8,
     mscale_maxit = 200,
+    verbosity = 0,
     cc
 ) {
     if (missing(cc)) {
@@ -125,7 +126,9 @@ pense_options <- function (
         eps = .check_arg(eps, "numeric", range = 0),
         cc = .check_arg(cc, "numeric", range = 0),
         mscaleEps = .check_arg(mscale_eps, "numeric", range = 0),
-        mscaleMaxit = .check_arg(mscale_maxit, "integer", range = 0)
+        mscaleMaxit = .check_arg(mscale_maxit, "integer", range = 0),
+        verbosity = .check_arg(verbosity, "integer", range = 0,
+                         range_test_lower = ">=")
     ))
 }
 
@@ -195,7 +198,8 @@ en_options_dal <- function (
     eta_mult = 2,
     eta_start_numerator = 1e-2,
     eta_start,
-    preconditioner = c("approx", "none", "diagonal")
+    preconditioner = c("approx", "none", "diagonal"),
+    verbosity = 0
 ) {
     eta_start <- if (!missing(eta_start)) {
         .check_arg(eta_start, "numeric", range = 0)
@@ -216,7 +220,13 @@ en_options_dal <- function (
         etaStartNumerator = .check_arg(eta_start_numerator, "numeric", range = 0),
         etaStart = eta_start,
         eps = .check_arg(eps, "numeric", range = 0),
-        preconditioner = .check_arg(preconditioner, "integer")
+        preconditioner = .check_arg(preconditioner, "integer"),
+        verbosity = .check_arg(
+            verbosity,
+            "integer",
+            range = 0,
+            range_test_lower = ">="
+        )
     ))
 }
 

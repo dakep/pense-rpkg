@@ -43,6 +43,7 @@ public:
     void computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT residuals, const double *RESTRICT weights);
 
 private:
+    int verbosity;
     int maxIt;
     double eps;
     bool warmStart;

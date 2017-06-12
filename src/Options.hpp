@@ -42,6 +42,14 @@ public:
     Options()
     {}
 
+    template<typename T>
+    static Options createSimple(const std::string& name, const T& value)
+    {
+        Options tmp;
+        tmp.set(name, value);
+        return tmp;
+    }
+
     ~Options()
     {
         map_type::iterator it = this->optMap.begin();

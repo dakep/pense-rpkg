@@ -351,13 +351,13 @@ int PSC_EN::computePSC() {
     int accuStatus = 0;
 
     memset(M, 0, nobs * nobs * sizeof(double));
+    memset(coefs, 0, nvar * sizeof(double));
 
     this->data.setNumObs(nobs - 1);
 
     residualsOmitted = this->residMat;
     iterX = this->data.getXtr();
     iterY = this->data.getY();
-    this->en.setData(this->data);
 
     for (i = 0; i < nobs - 1; ++i, residualsOmitted += nobs, ++iterY) {
         /* Swap i-th column with last column */
@@ -370,8 +370,7 @@ int PSC_EN::computePSC() {
         *iterY = (*lastResponse);
         *lastResponse = *swapbuffer;
 
-
-        /* Do we need to adjust lambda here?? */
+        this->en.setData(this->data);
         this->en.computeCoefs(coefs, residualsOmitted);
         accuStatus += this->en.getStatus();
 

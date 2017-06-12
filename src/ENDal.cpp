@@ -19,6 +19,7 @@ using namespace arma;
 /**
  * Default argument values
  */
+static const int    DEFAULT_OPT_VERBOSITY = 0;
 static const int    DEFAULT_OPT_MAXIT = 100;
 static const double DEFAULT_OPT_EPS = 1e-5;
 static const bool   DEFAULT_OPT_WARM_START = true;
@@ -36,7 +37,7 @@ static const ENDal::Preconditioner DEFAULT_OPT_PRECONDITIONER = ENDal::NONE;
 static const double LINESEARCH_STEPSIZE_MULTIPLIER = 0.8;  // 0 < x < 1
 static const double LINESEARCH_STEP_CONDITION = 0.3;      // 0 < x < 0.5
 static const int LINESEARCH_MAX_STEP = 50;
-static const int SOLVE_PCG_MAXIT = 200;
+static const int SOLVE_PCG_MAXIT = 100;
 static const int SOLVE_PCG_MAXIT_UPDATE = 50;
 
 static const uword VEC_SOFTTHRESH_SMALL_SPARSE = 50;
@@ -88,6 +89,7 @@ static inline double lossDual(const vec& a, const vec& y, const bool aNeg);
 
 ENDal::ENDal(const bool intercept) :
 			ElasticNet(intercept),
+            verbosity(DEFAULT_OPT_VERBOSITY),
             maxIt(DEFAULT_OPT_MAXIT),
             eps(DEFAULT_OPT_EPS),
             warmStart(DEFAULT_OPT_WARM_START),
@@ -104,6 +106,7 @@ ENDal::ENDal(const bool intercept) :
 
 ENDal::ENDal(const bool intercept, const Options& options) :
 			ElasticNet(intercept),
+            verbosity(DEFAULT_OPT_VERBOSITY),
             maxIt(DEFAULT_OPT_MAXIT),
             eps(DEFAULT_OPT_EPS),
             warmStart(DEFAULT_OPT_WARM_START),
@@ -131,6 +134,7 @@ ENDal::~ENDal()
 
 void ENDal::setOptions(const Options& options)
 {
+    this->verbosity = options.get("verbosity", this->verbosity);
     this->maxIt = options.get("maxit", this->maxIt);
     this->eps = options.get("eps", this->eps);
     this->warmStart = options.get("warmStart", this->warmStart);
@@ -177,6 +181,12 @@ inline double ENDal::fullObjectiveFun(const double intercept, const arma::sp_vec
 
 void ENDal::setData(const Data& data)
 {
+    /*
+     * @TODO Don't copy the data here. Only if necessary
+     * sth along the lines
+     * this->Xtr = new mat(const_cast<double *>(data.getXtrConst()), data.numVar(), data.numObs());
+     * this->y = new mat(const_cast<double *>(data.getYConst()), data.numObs());
+     */
     /* Remove previous data */
     if (this->y) {
         delete this->y;
@@ -203,6 +213,7 @@ void ENDal::setData(const Data& data)
 
     if (data.numObs() != this->bufferSizeNobs) {
         this->bufferSizeNobs = data.numObs();
+        this->precond.reset();
     }
 
     this->hessBuffKeep.reset();
@@ -250,6 +261,8 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
 
     this->y = &weightedY;
     this->Xtr = &weightedXtr;
+
+    this->precond.reset();
 
     this->dal(*intercept, beta);
 
@@ -452,13 +465,15 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
         relativeDualityGap = (primalFunVal + dualFunVal) / primalFunVal;
 
 #ifdef DEBUG
-        Rcpp::Rcout << "[[" << iter << "]]" <<
-            " fval=" << primalFunVal <<
-            "; dval=" << dualFunVal <<
-            "; rdg=" << relativeDualityGap <<
-            "; eta=" << this->eta[0] <<
-            "; eta(int)=" << this->eta[1] <<
+        if (this->verbosity > 0) {
+            Rcpp::Rcout << "[[" << iter << "]]" <<
+                " fval=" << primalFunVal <<
+                "; dval=" << dualFunVal <<
+                "; rdg=" << relativeDualityGap <<
+                "; eta=" << this->eta[0] <<
+                "; eta(int)=" << this->eta[1] <<
             std::endl;
+        }
 #endif
 
         if (relativeDualityGap < this->eps) {
@@ -521,13 +536,15 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
             }
 
 #ifdef DEBUG
-            Rcpp::Rcout << "[" << innerIter << "]" <<
-                " fval=" << phiVal <<
-                "; norm(gg)=" << sqrt(normGradient) <<
-                "; thresh=" << sqrt(threshold) <<
-                "; step=" << stepSize <<
-                "; #pcg=" << pcgSteps <<
+            if (this->verbosity > 1) {
+                Rcpp::Rcout << "[" << innerIter << "]" <<
+                    " fval=" << phiVal <<
+                    "; norm(gg)=" << sqrt(normGradient) <<
+                    "; thresh=" << sqrt(threshold) <<
+                    "; step=" << stepSize <<
+                    "; #pcg=" << pcgSteps <<
                 std::endl;
+            }
 #endif
 
             /*
@@ -681,10 +698,12 @@ inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const
     }
 
 #ifdef DEBUG
-    active.t().raw_print(Rcpp::Rcout, "active coefficients:");
-    Rcpp::Rcout << "frobenius norm(hess)=" << norm(hess, "fro") <<
-        "; L2 norm(beta)=" << norm(beta) <<
-    std::endl;
+    if (this->verbosity > 2) {
+        active.t().raw_print(Rcpp::Rcout, "active coefficients:");
+        Rcpp::Rcout << "frobenius norm(hess)=" << norm(hess, "fro") <<
+            "; L2 norm(beta)=" << norm(beta) <<
+        std::endl;
+    }
 #endif
 
     int iters = 0;
@@ -693,7 +712,9 @@ inline int ENDal::getPhiStepDir(arma::vec &stepDir, const arma::vec &grad, const
     case APPROX:
         if (this->precond.n_elem == 0) {
 #ifdef DEBUG
+        if (this->verbosity > 1) {
             Rcpp::Rcout << "=================== Re-compute preconditioner.... ================" << std::endl;
+        }
 #endif
             this->precond = inv_sympd(hess);
             stepDir = this->precond * grad;
@@ -825,7 +846,7 @@ static int solve_pcg_diag(const mat &A, vec &x, const vec &b, const double eps)
         p = z + beta * p;
     } while (++iter <= SOLVE_PCG_MAXIT);
 
-    return -1;
+    return iter;
 }
 
 
@@ -893,7 +914,7 @@ static int solve_pcg(const mat &A, vec &x, const vec &b, const mat &precond, con
         p = z + beta * p;
     } while (++iter <= SOLVE_PCG_MAXIT);
 
-    return -1;
+    return iter;
 }
 
 

@@ -37,6 +37,7 @@ protected:
     double* weights;
 
 private:
+    const int verbosity;
     const int maxIt;
     const double eps;
     const double lambda;

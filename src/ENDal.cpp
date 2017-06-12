@@ -36,7 +36,7 @@ static const ENDal::Preconditioner DEFAULT_OPT_PRECONDITIONER = ENDal::NONE;
  */
 static const double LINESEARCH_STEPSIZE_MULTIPLIER = 0.8;  // 0 < x < 1
 static const double LINESEARCH_STEP_CONDITION = 0.3;      // 0 < x < 0.5
-static const int LINESEARCH_MAX_STEP = 50;
+static const int LINESEARCH_MAX_STEP = 100;
 static const int SOLVE_PCG_MAXIT = 100;
 static const int SOLVE_PCG_MAXIT_UPDATE = 50;
 
@@ -262,7 +262,14 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
     this->y = &weightedY;
     this->Xtr = &weightedXtr;
 
-    this->precond.reset();
+    this->hessBuffKeep.reset();
+    this->hessBuff.zeros(this->bufferSizeNobs, this->bufferSizeNobs);
+
+    /*
+     * Theoretically, we would also need to reset the preconditioner.
+     * However, if the data does not change than the old one might still
+     * be useful
+     */
 
     this->dal(*intercept, beta);
 
@@ -496,9 +503,9 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
         const double interceptOrig = intercept;
 
         innerIter = 0;
+        stepSize = -1;
 
         while (1) {
-            stepSize = 1;
             vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
 
             phiVal = lossDual(a, *this->y, true) +
@@ -564,7 +571,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
             /*
              * Backtracking line search for step size to update `a`
              */
-            stepSizePrev = stepSize;
+            stepSizePrev = stepSize = 1;
             a -= stepDir;
             Xtra -= XtrStepDir;
             lineSearchIter = 0;

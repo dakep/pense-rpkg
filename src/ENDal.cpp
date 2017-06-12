@@ -223,6 +223,9 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
         beta = sp_vec(betaReturnDense);
     }
 
+    this->status = 0;
+    this->statusMessage = "";
+
     /* First check the data if something has to be done at all */
     if (this->bufferSizeNvar == 0) {
         if (this->bufferSizeNobs > 0) {
@@ -274,6 +277,9 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
     if (this->warmStart) {
         beta = sp_vec(betaReturnDense);
     }
+
+    this->status = 0;
+    this->statusMessage = "";
 
     /* First check the data if something has to be done at all */
     if (this->bufferSizeNvar == 0) {
@@ -503,7 +509,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
 
             normGradient = squaredL2Norm(phiGradient);
 
-            threshold = (1 / this->eta[0]) * spSquaredL2Norm(betaOrig - beta);
+            threshold = (1 / this->eta[0]) * spSquaredL2Norm(betaOrig - multFact * beta);
             if (this->intercept) {
                 normDiffInt = (interceptOrig - intercept);
                 threshold += (1 / this->eta[1]) * normDiffInt * normDiffInt;

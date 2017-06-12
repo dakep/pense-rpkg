@@ -21,7 +21,8 @@ static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
     data(data),
     maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
-    eps(opts.get("eps", DEFAULT_OPT_EPS) * opts.get("eps", DEFAULT_OPT_EPS))
+    eps(opts.get("eps", DEFAULT_OPT_EPS) * opts.get("eps", DEFAULT_OPT_EPS)),
+    lambda(lambda)
 {
     Options overrideWarm;
     overrideWarm.set("warmStart", true);
@@ -66,7 +67,10 @@ void IRWEN::compute(double *RESTRICT currentCoef, double *RESTRICT residuals)
         en->computeCoefsWeighted(currentCoef, residuals, this->weights);
 
         if (en->getStatus() > 0) {
-            Rcpp::warning("Weighted elastic net had non-successful status:");
+            std::ostringstream stringStream;
+            stringStream << "Weighted elastic net had non-successful status for lambda=" <<
+                this->lambda << ": " << en->getStatusMessage();
+            Rcpp::warning(stringStream.str());
         }
 
         /*

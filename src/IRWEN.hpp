@@ -39,6 +39,7 @@ protected:
 private:
     const int maxIt;
     const double eps;
+    const double lambda;
 
     ElasticNet* en;
 

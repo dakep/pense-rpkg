@@ -225,38 +225,59 @@ void ENDal::setData(const Data& data)
 void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids,
                                  const double *RESTRICT weights)
 {
-    vec *const origY = this->y;
-    mat *const origXtr = this->Xtr;
-    double *intercept = coefs;
+    const vec weightsVec(const_cast<double *>(weights), this->bufferSizeNobs, false, true);
     vec residuals(resids, this->bufferSizeNobs, false, true);
-    vec betaReturnDense(coefs + 1, this->bufferSizeNvar - 1, false, true);
-    sp_vec beta(betaReturnDense.n_elem);
+    vec coefsRetDense(coefs, this->bufferSizeNvar, false, true);
+    sp_vec coefsSparse(coefsRetDense.n_elem);
 
     if (this->warmStart) {
-        beta = sp_vec(betaReturnDense);
+        coefsSparse = sp_vec(coefsRetDense);
     }
 
-    this->status = 0;
-    this->statusMessage = "";
+    this->computeCoefsWeighted(coefsSparse, residuals, weightsVec);
 
+    /* update returned beta */
+    coefsRetDense = vec(coefsSparse);
+}
+
+void ENDal::computeCoefsWeighted(arma::sp_vec& coefs, arma::vec& residuals, const arma::vec& weights)
+{
     /* First check the data if something has to be done at all */
-    if (this->bufferSizeNvar == 0) {
+    if (coefs.n_elem == 0) {
         if (this->bufferSizeNobs > 0) {
             residuals = *(this->y);
         }
         return;
     }
 
-    this->sqrtWeights = sqrt(vec(weights, this->bufferSizeNobs));
-    this->sqrtWeightsOuter = this->sqrtWeights * this->sqrtWeights.t();
-    this->useWeights = true;
+    if (this->bufferSizeNobs > 0) {
+        this->sqrtWeights = sqrt(weights);
+    }
 
-    if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
-        *intercept = ((this->bufferSizeNobs > 0) ? mean(this->sqrtWeights % *this->y) : 0);
-        beta.zeros();
-        residuals = (*this->y) - (*intercept);
+    if (coefs.n_elem == 1 || this->bufferSizeNobs == 0) {
+        coefs.zeros();
+        if (this->bufferSizeNobs > 0) {
+            coefs[0] = mean(this->sqrtWeights % *this->y);
+        }
+        residuals = (*this->y) - coefs[0];
         return;
     }
+
+    /* We have at least an intercept plus one real predictor... */
+    double intercept = coefs[0];
+    vec *const origY = this->y;
+    mat *const origXtr = this->Xtr;
+    sp_vec beta(coefs.tail_rows(coefs.n_elem - 1));
+
+    if (!this->warmStart) {
+        beta.zeros();
+    }
+
+    this->status = 0;
+    this->statusMessage = "";
+
+    this->sqrtWeightsOuter = this->sqrtWeights * this->sqrtWeights.t();
+    this->useWeights = true;
 
     vec weightedY = (*this->y) % this->sqrtWeights;
     mat weightedXtr = (*this->Xtr).each_row() % this->sqrtWeights.t();
@@ -273,55 +294,74 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
      * be useful
      */
 
-    this->dal(*intercept, beta);
+    this->dal(intercept, beta);
 
     if (this->intercept) {
-        residuals = (*origY) - (*intercept) - origXtr->t() * beta;
+        residuals = (*origY) - (intercept) - origXtr->t() * beta;
     } else {
         residuals = (*origY) - origXtr->t() * beta;
     }
 
-    /* update returned beta */
-    betaReturnDense = vec(beta);
-
+    /* restore original data */
     this->y = origY;
     this->Xtr = origXtr;
     this->useWeights = false;
+
+    /* update returned beta */
+    coefs[0] = intercept;
+    coefs.tail_rows(coefs.n_elem - 1) = beta;
 }
 
 void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
 {
-    double *intercept = coefs;
     vec residuals(resids, this->bufferSizeNobs, false, true);
-    vec betaReturnDense(coefs + 1, this->bufferSizeNvar - 1, false, true);
-    sp_vec beta(betaReturnDense.n_elem);
+    vec coefsRetDense(coefs, this->bufferSizeNvar, false, true);
+    sp_vec coefsSparse(coefsRetDense.n_elem);
 
     if (this->warmStart) {
-        beta = sp_vec(betaReturnDense);
+        coefsSparse = sp_vec(coefsRetDense);
+    }
+
+    this->computeCoefs(coefsSparse, residuals);
+
+    /* update returned beta */
+    coefsRetDense = vec(coefsSparse);
+}
+
+void ENDal::computeCoefs(arma::sp_vec& coefs, arma::vec& residuals)
+{
+    /* First check the data if something has to be done at all */
+    if (coefs.n_elem == 0) {
+        if (this->bufferSizeNobs > 0) {
+            residuals = *(this->y);
+        }
+        return;
+    } else if (coefs.n_elem == 1 || this->bufferSizeNobs == 0) {
+        coefs.zeros();
+        if (this->bufferSizeNobs > 0) {
+            coefs[0] = mean(*this->y);
+        }
+        residuals = (*this->y) - coefs[0];
+        return;
+    }
+
+    /* We have at least an intercept plus one real predictor... */
+    double intercept = coefs[0];
+    sp_vec beta(coefs.tail_rows(coefs.n_elem - 1));
+
+    if (!this->warmStart) {
+        beta.zeros();
     }
 
     this->status = 0;
     this->statusMessage = "";
 
-    /* First check the data if something has to be done at all */
-    if (this->bufferSizeNvar == 0) {
-        if (this->bufferSizeNobs > 0) {
-            residuals = *(this->y);
-        }
-        return;
-    } else if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
-        *intercept = ((this->bufferSizeNobs > 0) ? mean(*this->y) : 0);
-        beta.zeros();
-        residuals = (*this->y) - (*intercept);
-        return;
-    }
-
     this->useWeights = false;
 
-    this->dal(*intercept, beta);
+    this->dal(intercept, beta);
 
     if (this->intercept) {
-        residuals = (*this->y) - (*intercept) - this->Xtr->t() * beta;
+        residuals = (*this->y) - (intercept) - this->Xtr->t() * beta;
     } else {
         residuals = (*this->y) - this->Xtr->t() * beta;
     }
@@ -329,13 +369,14 @@ void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
 
     /* Update residuals */
     if (this->intercept) {
-        residuals = (*this->y) - (*intercept) - this->Xtr->t() * beta;
+        residuals = (*this->y) - (intercept) - this->Xtr->t() * beta;
     } else {
         residuals = (*this->y) - this->Xtr->t() * beta;
     }
 
     /* update returned beta */
-    betaReturnDense = vec(beta);
+    coefs[0] = intercept;
+    coefs.tail_rows(coefs.n_elem - 1) = beta;
 }
 
 inline void ENDal::dal(double& intercept, arma::sp_vec& beta)

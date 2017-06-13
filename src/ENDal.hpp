@@ -40,7 +40,9 @@ public:
 	void setLambdas(const double lambda1, const double lambda2);
 	void setAlphaLambda(const double alpha, const double lambda);
     void computeCoefs(double *RESTRICT coefs, double *RESTRICT residuals);
+    void computeCoefs(arma::sp_vec& coefs, arma::vec& residuals);
     void computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT residuals, const double *RESTRICT weights);
+    void computeCoefsWeighted(arma::sp_vec& coefs, arma::vec& residuals, const arma::vec& weights);
 
 private:
     int verbosity;

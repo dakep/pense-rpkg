@@ -153,17 +153,18 @@ mstep_options <- function (
     ))
 }
 
-#' Additional Options for the Augmented LARS Algorithm
+#' Additional Options for the EN Algorithms
 #'
-#' Specify additional options for the augmented LARS algorithm to solve
-#' the EN problem.
+#' Specify additional options for the augmented LARS and the DAL algorithm
+#' to solve the EN problem.
 #'
 #' @param use_gram should the Gram matrix be pre-computed.
-#' @param eps numeric tolerance.
+#' @param eps numeric tolerance for convergence.
 #' @return a checked options list.
 #' @export
 #' @family specifying additional options
 #' @rdname en_options
+#' @aliases en_options
 en_options_aug_lars <- function (
     use_gram = c("auto", "yes", "no"),
     eps = 1e-12
@@ -180,11 +181,7 @@ en_options_aug_lars <- function (
 
 #' Additional Options for the DAL Algorithm
 #'
-#' Specify additional options for the Dual Augmented Lagrangian algorithm to
-#' solve the EN problem.
-#'
 #' @param maxit maximum number of iterations allowed.
-#' @param eps numeric tolerance for convergence.
 #' @param eta_mult multiplier to increase eta at each iteration.
 #' @param eta_start the start value for eta.
 #' @param eta_start_numerator if \code{eta_start} is missing, it is defined
@@ -193,9 +190,7 @@ en_options_aug_lars <- function (
 #'      a standard solver will be used, otherwise the faster preconditioned
 #'      conjugate gradient is used.
 #' @param verbosity verbosity of the algorithm.
-#' @return a checked options list.
 #' @export
-#' @family specifying additional options
 #' @rdname en_options
 en_options_dal <- function (
     maxit = 100,

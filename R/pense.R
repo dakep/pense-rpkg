@@ -51,7 +51,7 @@
 #' @param options additional options for the PENSE algorithm.
 #'      See \code{\link{pense_options}} for details.
 #' @param en_options additional options for the EN algorithm.
-#'      See \code{\link{en_options}} for details.
+#'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
 #' @param initest_options additional options for computing the initial
 #'      estimator. Ignored if \code{initial = "warm0"}.
 #'      See \code{\link{initest_options}} for details.
@@ -78,7 +78,7 @@ pense <- function(X, y,
                   alpha = 0.5,
                   nlambda = 100, lambda = NULL, lambda_min_ratio = NULL,
                   standardize = TRUE,
-                  initial = c("warm", "warm0", "cold"),
+                  initial = c("warm0", "warm", "cold"),
                   warm_reset = 10,
                   cv_k = 5, cv_objective,
                   ncores = getOption("mc.cores", 1L), cl = NULL,

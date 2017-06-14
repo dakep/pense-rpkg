@@ -47,10 +47,47 @@ Compute the elastic net regression coefficients
 }
 \details{
 This solves the minimization problem
-\deqn{\frac{1}{2 N} RSS + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
-     (1/2N) RSS + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+\deqn{\frac{1}{2 N} RSS + \lambda \left(
+        \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
+ \right)}{
+     (1/2N) RSS + \lambda * (
+         (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
+ )}
 
 If weights are supplied, the minimization problem becomes
-\deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
-     (1/2N) sum(w * (y - r^2) + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+\deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left(
+        \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
+  \right)}{
+     (1/2N) \sum(w * (y - r^2) + \lambda * (
+         (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
+  )}
+}
+\section{Algorithms}{
+
+Currently this function can compute the elastic net estimator using either
+augmented LARS or the Dual Augmented Lagrangian (DAL) algorithm
+(Tomioka 2011).
+Augmented LARS performs LASSO via the LARS algorithm (or OLS if
+\code{alpha = 0}) on the data matrix augmented with the L2 penalty term.
+The time complexity of this algorithm increases fast with an increasing
+number of predictors. The algorithm currently can not leverage a previous or
+an approximate solution to speed up computations. However, it is always
+guaranteed to find the solution.
+
+DAL is an iterative algorithm directly minimizing the Elastic Net objective.
+The algorithm can take an approximate solution to the problem to speed
+up convergence. In the case of very small lambda values and a bad starting
+point, DAL may not converge to the solution and hence give wrong
+results. This would be indicated in the returned status code. Time complexity
+of this algorithm is dominated by the number of observations.
+
+DAL is much faster for a small number of observations (< 200) and a large
+number of predictors, especially if an approximate solution is available.
+}
+
+\references{
+Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
+    \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
+    for Sparse Learning}. Journal of Machine Learning Research,
+    12(May):1537-1586, 2011.
 }

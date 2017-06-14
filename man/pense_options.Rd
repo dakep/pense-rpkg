@@ -17,6 +17,8 @@ pense_options(delta = 0.5, maxit = 1000, eps = 1e-06,
 \item{mscale_eps, mscale_maxit}{maximum number of iterations and numeric
 tolerance for the M-scale.}
 
+\item{verbosity}{verbosity of the algorithm.}
+
 \item{cc}{tuning constant for the S-estimator. Default is to chosen based
 on the breakdown point \code{delta}. Should never have to be changed.}
 }

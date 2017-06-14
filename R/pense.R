@@ -1,69 +1,90 @@
 #' Penalized Elasitc Net S-estimators for Regression
 #'
 #' @section Parallelization:
-#' With the parameter \code{ncores}, the number of available processor cores can be set.
-#' The grid of lambda values is split into \code{ncores} (almost) equally sized chunks.
-#' On each core, the cold initial estimate is computed for the lower endpoint of the
-#' lambda sequence. The fully iterated PENSE estimate is then used as warm-start
-#' for the next lambda value and so on. Therefore, if \code{ncores = 1}, only one
-#' cold initial estimate is computed and all subsequent values of lambda take the
-#' previous estimate as warm-start. Similarly, if \code{ncores = nlambda}, a
-#' cold initial estimate is computed for every lambda on the grid and no warm-starts
-#' are necessary.
+#' With the parameter \code{ncores}, the number of available processor cores
+#' can be set. The grid of lambda values is split into \code{ncores} (almost)
+#' equally sized chunks. On each core, the cold initial estimate is computed
+#' for the lower endpoint of the lambda sequence. The fully iterated PENSE
+#' estimate is then used as warm-start for the next lambda value and so on.
+#' Therefore, if \code{ncores = 1}, only one cold initial estimate is computed
+#' and all subsequent values of lambda take the previous estimate as
+#' warm-start. Similarly, if \code{ncores = nlambda}, a cold initial estimate
+#' is computed for every lambda on the grid and no warm-starts are necessary.
 #'
-#' @param X the design matrix
-#'
-#' @param y the response vector.
-#' @param alpha the elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
-#'      \code{alpha = 1} is the lasso penatly, and \code{alpha = 0} the ridge penalty.
+#' @param X design matrix with predictors.
+#' @param y response vector.
+#' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
+#'      \code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+#'      penalty.
 #' @param nlambda if \code{lambda} is not given or \code{NULL} (default),
 #'      a grid of \code{nlambda} lambda values is generated based on the data.
-#' @param lambda a single value or a grid of values for the regularization parameter lambda.
-#'      Assumed to be on the same scale as the data and adjusted for S-estimation.
-#'      Defaults to \code{NULL}, which means a grid of lambda values is automatically
-#'      generated (see parameter \code{nlambda}).
-#'      If given and \code{standardize = TRUE}, the lambda values will be adjusted
-#'      accordingly.
-#' @param lambda.min.ratio If the grid should be chosen automatically, the ratio of the
-#'      smallest lambda to the (computed) largest lambda.
+#' @param lambda a single value or a grid of values for the regularization
+#'      parameter lambda.
+#'      Assumed to be on the same scale as the data and adjusted for
+#'      S-estimation. Defaults to \code{NULL}, which means a grid of lambda
+#'      values is automatically generated (see parameter \code{nlambda}).
+#'      If given and \code{standardize = TRUE}, the lambda values will be
+#'      adjusted accordingly.
+#' @param lambda_min_ratio If the grid should be chosen automatically, the
+#'      ratio of the smallest lambda to the (computed) largest lambda.
 #' @param standardize should the data be standardized robustly? Estimates
 #'      are returned on the original scale. Defaults to \code{TRUE}.
-#' @param cv.k number of cross-validation segements to use to choose the optimal
-#'      lambda from the grid. If only a single value of lambda is given, cross-validation
-#'      can still done to estimate the prediction performance at this particular lambda.
+#' @param cv_k number of cross-validation segements to use to choose the optimal
+#'      lambda from the grid. If only a single value of lambda is given,
+#'      cross-validation can still done to estimate the prediction performance
+#'      at this particular lambda.
+#' @param cv_objective a function (name) to compute the CV performance.
+#'      By default, the robust tau-scale is used.
 #' @param initial how to initialize the estimator at a new lambda in the grid.
 #'      The default, \code{"warm"}, computes a cold initial estimator at several
-#'      lambda values and uses the PENSE coefficient to warm-start the estimator at
-#'      the next larger lambda value. A variant, \code{"warm0"}, will initialze
-#'      PENSE at the largest lambda value with an all-0 coefficient vector and
-#'      use the PENSE result for the next smaller lambda value. \code{"cold"}
-#'      computes the full initial estimator at every lambda value.
-#' @param warm.reset if \code{initial = "warm"}, how often should the warm-start
+#'      lambda values and uses the PENSE coefficient to warm-start the
+#'      estimator at the next larger lambda value. A variant, \code{"warm0"},
+#'      will initialze PENSE at the largest lambda value with an all-0
+#'      coefficient vector and use the PENSE result for the next smaller
+#'      lambda value. \code{"cold"} computes the full initial estimator at
+#'      every lambda value.
+#' @param warm_reset if \code{initial = "warm"}, how often should the warm-start
 #'      be reset to a cold initial estimate?
-#' @param ncores,cl the number of processor cores or an actual parallel cluster to use to
-#'      estimate the optimal value of lambda. See details for more information.
-#' @param control a list of control parameters as returned by \code{\link{pense.control}}.
+#' @param ncores,cl the number of processor cores or an actual parallel cluster
+#'      to use to estimate the optimal value of lambda. See details for more
+#'      information.
+#' @param options additional options for the PENSE algorithm.
+#'      See \code{\link{pense_options}} for details.
+#' @param en_options additional options for the EN algorithm.
+#'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
+#' @param initest_options additional options for computing the initial
+#'      estimator. Ignored if \code{initial = "warm0"}.
+#'      See \code{\link{initest_options}} for details.
 #'
 #' @return An object of class \code{"pense"} with elements
 #' \item{call}{the call that produced this object.}
-#' \item{lambda.opt}{the optimal value of the regularization parameter according to CV.}
-#' \item{coefficients}{the vector of coefficients for the optimal lambda \code{lambda.opt}.}
-#' \item{residuals}{the residuals, that is response minus fitted values for \code{lambda.opt}.}
-#' \item{scale}{the estimated scale for \code{lambda.opt}.}
-#' \item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
-#'                    tau-scale estimated via CV in the second column.}
-#' \item{alpha,standardize,control}{the given arguments.}
-#' \item{standardize}{}
+#' \item{lambda_opt}{the optimal value of the regularization parameter
+#'      according to CV.}
+#' \item{coefficients}{the vector of coefficients for the optimal lambda
+#'      \code{lambda_opt}.}
+#' \item{residuals}{the residuals, that is response minus fitted values for
+#'      \code{lambda_opt}.}
+#' \item{scale}{the estimated scale for \code{lambda_opt}.}
+#' \item{lambda_grid}{a matrix with values of lambda in the first
+#'      column, the \code{cv_objective} as second column and serveral
+#'      statistics of the solution in the following columns.}
+#' \item{alpha,standardize,pense_options,en_options,initest_options}{
+#'      the given arguments.}
 #' @export
 #'
 #' @importFrom stats mad median
-pense <- function(X, y, alpha = 0.5,
-                  nlambda = 100, lambda = NULL, lambda.min.ratio = NULL,
+#' @importFrom robustbase scaleTau2
+pense <- function(X, y,
+                  alpha = 0.5,
+                  nlambda = 100, lambda = NULL, lambda_min_ratio = NULL,
                   standardize = TRUE,
-                  cv.k = 5, warm.reset = 10,
-                  initial = c("warm", "warm0", "cold"),
-                  ncores = getOption("mc.cores", 2L), cl = NULL,
-                  control = pense.control()) {
+                  initial = c("warm0", "warm", "cold"),
+                  warm_reset = 10,
+                  cv_k = 5, cv_objective,
+                  ncores = getOption("mc.cores", 1L), cl = NULL,
+                  options = pense_options(),
+                  init_options = initest_options(),
+                  en_options = en_options_aug_lars()) {
     ##
     ## First all arguments are being sanity-checked
     ##
@@ -97,38 +118,20 @@ pense <- function(X, y, alpha = 0.5,
         stop("`y` must not contain infinite, NA or NaN values")
     }
 
-    if (length(alpha) != 1L || !is.numeric(alpha) || is.na(alpha) || alpha < 0 || alpha > 1) {
-        stop("`alpha` must be single number in the range [0, 1]")
-    }
+    alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
+                        range_test_lower = ">=", range_test_upper = "<=")
 
-    if (alpha == 0) {
-        alpha <- 1e-4
-    }
-
-    if (length(standardize) != 1L || !is.logical(standardize) || anyNA(standardize)) {
-        warning("`standardize` must be a single logical value. Using default (TRUE).")
-        standardize <- TRUE
-    }
-
-    if (length(cv.k) != 1L || !is.numeric(cv.k) || anyNA(cv.k) || any(cv.k < 0)) {
-        warning("`cv.k` must be a single numeric value >= 2. Using default (5).")
-        cv.k <- 5L
-    }
-    cv.k <- as.integer(cv.k)
+    standardize <- .check_arg(standardize, "logical")
+    cv_k <- .check_arg(cv_k, "integer", range = 0)
 
     initial <- match.arg(initial)
 
-    warm.reset <- if (isTRUE(initial == "warm")) {
-        if (is.null(warm.reset)) {
-            warm.reset <- nlambda
+    warm_reset <- if (isTRUE(initial == "warm")) {
+        if (is.null(warm_reset)) {
+            warm_reset <- nlambda
         }
 
-        if (length(warm.reset) != 1L || !is.numeric(warm.reset) || anyNA(warm.reset) ||
-            any(warm.reset < 1)) {
-            stop("`warm.reset` must be a single numeric value greater than 0.")
-        }
-
-        as.integer(warm.reset)
+        .check_arg(warm_reset, "integer", range = 0)
     } else if (isTRUE(initial == "cold")) {
         Inf
     } else {
@@ -136,59 +139,56 @@ pense <- function(X, y, alpha = 0.5,
     }
 
     if (!is.null(lambda)) {
-        if (!is.numeric(lambda) || !is.null(dim(lambda)) || anyNA(lambda) || any(lambda < 0)) {
-            stop("Supplied `lambda` must be a numeric vector of non-negative values ",
-                 "without NAs")
-        }
+        lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
         nlambda <- length(lambda)
-    } else if (length(nlambda) != 1L || !is.numeric(nlambda) || anyNA(nlambda) ||
-               any(nlambda < 1)) {
-        stop("`nlambda` must be a single positive numeric value.")
+    } else {
+        nlambda <- .check_arg(nlambda, "integer", range = 0)
+    }
+    warm_reset <- min(nlambda, warm_reset)
+
+    if (is.null(lambda) && !is.null(lambda_min_ratio)) {
+        lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
+                                       range = c(0, 1))
     }
 
-    nlambda <- as.integer(nlambda)
-    warm.reset <- min(nlambda, warm.reset)
-
-    if (is.null(lambda) && !is.null(lambda.min.ratio) &&
-        (length(lambda.min.ratio) != 1L || !is.numeric(lambda.min.ratio) ||
-         anyNA(lambda.min.ratio) || any(lambda.min.ratio <= 0))) {
-        stop("`lambda.min.ratio` must be a single positive numeric value.")
+    ##
+    ## Sanity checks for some arguments. Some combinations are known to
+    ## be performing poorly.
+    ##
+    if (initial != "warm0" && alpha < 1 && init_options$pscMethod == "rr" &&
+        en_options$algorithm == 1L) {
+        message("Approximation of PSCs does not work well with the DAL ",
+                "algorithm for EN due to the large number of observations ",
+                "in the augmented data matrix. ",
+                'Consider using `psc_method = "exact"` or use the augmented ',
+                "LARS algorithm for EN.")
     }
 
-    control <- .check.pense.control(control)
+    if (en_options$algorithm == 1L && dX[1L] > 500L && dX[2L] < 1000L) {
+        message("The DAL algorithm for elastic net scales with the number of ",
+                "observations. Given the number of variables, augmented LARS ",
+                "might be the faster option.")
+    }
 
     ## store the call
     call <- match.call()
     call[[1L]] <- as.name("pense")
 
-    ## Automatically select the PSC method
-    if (control$init.psc.method == "auto") {
-        ntrain <- ifelse(cv.k > 1,
-                         dX[1L] - dX[1L] %/% cv.k - as.integer((dX[1L] %% cv.k) > 0),
-                         dX[1L])
-
-        if (dX[2L] >= ntrain) {
-            control$init.psc.method <- "Mn"
-        } else {
-            control$init.psc.method <- "rr"
-        }
-    }
-
-    scale.x <- 1
+    scale_x <- 1
     mux <- 0
     muy <- 0
 
     ## Standardize data -- only needed to compute the grid of lambda values
-    if (standardize == TRUE) {
-        scale.x <- apply(X, 2, mad)
+    if (isTRUE(standardize)) {
+        scale_x <- apply(X, 2, mad)
         mux <- apply(X, 2, median)
         muy <- median(y)
 
-        Xs <- scale(X, center = mux, scale = scale.x)
+        Xs <- scale(X, center = mux, scale = scale_x)
         yc <- y - muy
 
         if (!is.null(lambda)) {
-            lambda <- lambda / max(scale.x)
+            lambda <- lambda / max(scale_x)
         }
     } else {
         Xs <- X
@@ -197,32 +197,34 @@ pense <- function(X, y, alpha = 0.5,
 
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
-        lambda <- lambda.grid(Xs, yc, alpha, nlambda, control, standardize = FALSE,
-                              lambda.min.ratio = lambda.min.ratio)
+        lambda <- build_lambda_grid(
+            Xs,
+            yc,
+            alpha,
+            nlambda,
+            standardize = FALSE,
+            lambda_min_ratio = lambda_min_ratio
+        )
     }
 
     ## Reverse the order if we use a warm-0 start
     lambda <- sort(lambda, decreasing = isTRUE(initial == "warm0"))
 
-    ## CV function (needs X, y, and scale.x available in the environment)
-    penseJobCV <- function(job, alpha, standardize, control, start.0) {
+    ## CV function (needs X, y, and scale_x available in the environment)
+    pense_job_cv <- function(job, ...) {
         if (length(job$segment) == 0L) {
-            X.train <- X
-            y.train <- y
+            X_train <- X
+            y_train <- y
         } else {
-            X.train <- X[-job$segment, , drop = FALSE]
-            y.train <- y[-job$segment]
+            X_train <- X[-job$segment, , drop = FALSE]
+            y_train <- y[-job$segment]
 
         }
-
-        est.all <- pense.coldwarm(
-            X = X.train,
-            y = y.train,
-            alpha = alpha,
-            lambda.grid = job$lambda,
-            standardize = standardize,
-            start.0 = start.0,
-            control = control
+        est.all <- pense_coldwarm(
+            X = X_train,
+            y = y_train,
+            lambda_grid = job$lambda,
+            ...
         )
 
         residuals <- NULL
@@ -232,49 +234,58 @@ pense <- function(X, y, alpha = 0.5,
                 est$resid
             }, FUN.VALUE = y, USE.NAMES = FALSE)
         } else {
-            X.test <- X[job$segment, , drop = FALSE]
-            y.test <- y[job$segment]
+            X_test <- X[job$segment, , drop = FALSE]
+            y_test <- y[job$segment]
             residuals <- vapply(est.all, function(est) {
-                y.test - est$intercept - X.test %*% est$beta
+                y_test - est$intercept - X_test %*% est$beta
             }, FUN.VALUE = numeric(length(job$segment)), USE.NAMES = FALSE)
         }
 
-        sol.stats <- vapply(est.all, function (est) {
+        sol_stats <- vapply(est.all, function (est) {
             c(
                 objF = est$objF,
                 scale = est$scale,
-                beta.L1 = sum(abs(est$beta / scale.x)),
-                beta.L2 = sqrt(sum((est$beta / scale.x)^2))
+                beta_L1 = sum(abs(est$beta / scale_x)),
+                beta_L2 = sqrt(sum((est$beta / scale_x)^2))
             )
         }, FUN.VALUE = numeric(4L), USE.NAMES = TRUE)
 
         return(list(
             residuals = residuals,
-            sol.stats = sol.stats
+            sol_stats = sol_stats
         ))
     }
 
     ## Perform CV (if we have more than a single lambda value)
     if(nlambda > 1L) {
+        cv_objective_fun <- if (missing(cv_objective)) {
+            scaleTau2
+        } else {
+            match.fun(cv_objective)
+        }
+
         # Create CV segments
-        cv.segments <- if (cv.k > 1L) {
-            split(seq_len(dX[1L]), sample(rep_len(seq_len(cv.k), dX[1L])))
+        cv_segments <- if (cv_k > 1L) {
+            split(seq_len(dX[1L]), sample(rep_len(seq_len(cv_k), dX[1L])))
         } else {
             list(integer(0L))
         }
 
         # Define CV jobs (i.e., all combinations of CV splits and warm resets)
-        subgrid.lengths <- nlambda %/% warm.reset
-        overlength <- nlambda %% warm.reset
-        subgrid.lengths <- c(rep.int(subgrid.lengths, warm.reset - overlength),
-                             rep.int(subgrid.lengths + 1L, overlength))
+        subgrid_lengths <- nlambda %/% warm_reset
+        overlength <- nlambda %% warm_reset
+        subgrid_lengths <- c(rep.int(subgrid_lengths, warm_reset - overlength),
+                             rep.int(subgrid_lengths + 1L, overlength))
 
-        lambda.subgrids <- split(lambda, rep.int(seq_len(warm.reset), subgrid.lengths))
+        lambda_subgrids <- split(lambda,
+                                 rep.int(seq_len(warm_reset), subgrid_lengths))
 
-        jobgrid <- lapply(cv.segments, function(cvs) {
-            lapply(lambda.subgrids, function(lvs) {
-                list(segment = cvs,
-                     lambda = lvs)
+        jobgrid <- lapply(cv_segments, function(cvs) {
+            lapply(lambda_subgrids, function(lvs) {
+                list(
+                    segment = cvs,
+                    lambda = lvs
+                )
             })
         })
 
@@ -284,7 +295,7 @@ pense <- function(X, y, alpha = 0.5,
         cluster <- setupCluster(
             ncores,
             cl,
-            export = c("X", "y", "scale.x"),
+            export = c("X", "y", "scale_x"),
             eval = {
                 library(pense)
             }
@@ -292,79 +303,85 @@ pense <- function(X, y, alpha = 0.5,
 
         # Run all jobs (combination of all CV segments and all lambda-grids)
         tryCatch({
-            cv.results <- cluster$lapply(
+            cv_results <- cluster$lapply(
                 jobgrid,
-                penseJobCV,
+                pense_job_cv,
                 alpha = alpha,
                 standardize = standardize,
-                control = control,
-                start.0 = isTRUE(initial == "warm0")
+                start_0 = isTRUE(initial == "warm0"),
+                pense_options = options,
+                initest_options = init_options,
+                en_options = en_options
             )
 
-            cv.results <- split(cv.results, rep.int(seq_len(warm.reset), cv.k))
+            cv_results <- split(cv_results, rep.int(seq_len(warm_reset), cv_k))
         },
         finally = {
             cluster$stopCluster()
         })
 
         # Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
-        cv.performance <- unlist(lapply(cv.results, function(cv.res) {
-            pred.resids <- do.call(rbind, lapply(cv.res, "[[", "residuals"))
-            apply(pred.resids, 2, control$cv.objective)
+        cv_performance <- unlist(lapply(cv_results, function(cv_res) {
+            pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
+            apply(pred_resids, 2, cv_objective_fun)
         }), use.names = FALSE)
 
-        cv.stats <- do.call(rbind, lapply(cv.results, function (cv.res) {
-            sol.stats <- unlist(lapply(cv.res, "[[", "sol.stats"))
-            sol.stats <- array(
-                sol.stats,
-                dim = c(4L, length(sol.stats) %/% (cv.k * 4L), cv.k),
+        cv_stats <- do.call(rbind, lapply(cv_results, function (cv_res) {
+            sol_stats <- unlist(lapply(cv_res, "[[", "sol_stats"))
+            sol_stats <- array(
+                sol_stats,
+                dim = c(4L, length(sol_stats) %/% (cv_k * 4L), cv_k),
                 dimnames = list(
-                    c("obj.fun", "s.scale", "beta.L1", "beta.L2"),
+                    c("obj_fun", "s_scale", "beta_L1", "beta_L2"),
                     NULL,
                     NULL
                 )
             )
-            apply(sol.stats, 1L, rowMeans, na.rm = TRUE)
+            apply(sol_stats, 1L, rowMeans, na.rm = TRUE)
         }))
 
-        lambda.grid <- data.frame(
-            lambda = lambda * max(scale.x),
-            cv.performance = cv.performance,
-            cv.stats
+        lambda_grid <- data.frame(
+            lambda = lambda * max(scale_x),
+            cv_performance = cv_performance,
+            cv_stats
         )
-        lambda.opt <- lambda[which.min(cv.performance)]
+        lambda_opt <- lambda[which.min(cv_performance)]
     } else {
-        lambda.grid <- NULL
-        lambda.opt <- lambda[1L]
+        lambda_grid <- NULL
+        lambda_opt <- lambda[1L]
     }
 
     ## Fit PENSE with optimal lambda using a cold start
-    opt.est <- pense.coldwarm(
+    opt_est <- pense_coldwarm(
         X = Xs,
         y = yc,
         alpha = alpha,
-        lambda.grid = lambda.opt,
+        lambda_grid = lambda_opt,
         standardize = FALSE,
-        start.0 = isTRUE(initial == "warm0"),
-        control = control
+        start_0 = isTRUE(initial == "warm0"),
+        pense_options = options,
+        initest_options = init_options,
+        en_options = en_options
     )[[1L]]
 
     ## Un-standardize the coefficients
-    if (standardize == TRUE) {
-        opt.est$beta <- opt.est$beta / scale.x
-        opt.est$intercept <- opt.est$intercept + muy - drop(opt.est$beta %*% mux)
+    if (isTRUE(standardize)) {
+        opt_est$beta <- opt_est$beta / scale_x
+        opt_est$intercept <- opt_est$intercept + muy - drop(opt_est$beta %*% mux)
     }
 
     return(structure(list(
-        residuals = opt.est$resid,
-        coefficients = nameCoefVec(c(opt.est$intercept, opt.est$beta), X),
-        objective = opt.est$objF,
-        lambda.opt = lambda.opt * max(scale.x),
-        lambda.grid = lambda.grid,
-        scale = opt.est$scale,
+        residuals = opt_est$resid,
+        coefficients = nameCoefVec(c(opt_est$intercept, opt_est$beta), X),
+        objective = opt_est$objF,
+        lambda_opt = lambda_opt * max(scale_x),
+        lambda_grid = lambda_grid,
+        scale = opt_est$scale,
         alpha = alpha,
         standardize = standardize,
-        control = control,
+        pense_options = options,
+        initest_options = init_options,
+        en_options = en_options,
         call = call
     ), class = "pense"))
 }

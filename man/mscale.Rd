@@ -4,26 +4,26 @@
 \alias{mscale}
 \title{Robust M-estimate of Scale}
 \usage{
-mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc, eps = 1e-08,
-  max.it = 200)
+mscale(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc, eps = 1e-08,
+  maxit = 200)
 }
 \arguments{
-\item{x}{A numeric vector.}
+\item{x}{numeric vector of observations.}
 
-\item{b}{The value of the M-estimation equation.}
+\item{b}{target value of the M-estimation equation.}
 
-\item{rho}{The rho function to use in the M-estimation equation.}
+\item{rho}{rho function to use in the M-estimation equation.}
 
-\item{cc}{Non-negative constant for the chosen rho function. If missing, it will be
-chosen such that the expected value of the rho function under the normal model
-is equal to \code{b}.}
+\item{cc}{non-negative constant for the chosen rho function. If missing,
+it will be chosen such that the expected value of the rho function
+under the normal model is equal to \code{b}.}
 
-\item{eps}{Threshold for convergence}
+\item{eps}{threshold for convergence.}
 
-\item{max.it}{The maximum number of iterations}
+\item{maxit}{maximum number of iterations.}
 }
 \value{
-Numeric vector of length one
+the M-scale as a numeric vector of length one.
 }
 \description{
 Compute the M-estimate of scale with MAD as initial estimate.
@@ -31,6 +31,8 @@ Compute the M-estimate of scale with MAD as initial estimate.
 \details{
 This solves the M-estimation equation given by
 \deqn{\sum_{i=1}^n \rho( x_i / s_n; cc ) = n b}
-
+}
+\note{
 \code{NA} values in \code{x} are removed before calculating the
+     M-scale.
 }

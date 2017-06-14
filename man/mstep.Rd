@@ -2,19 +2,19 @@
 % Please edit documentation in R/mstep.R
 \name{mstep}
 \alias{mstep}
-\title{Perform an M-step on the PENSE result}
+\title{Perform an M-step after the EN S-Estimator}
 \usage{
-mstep(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
+mstep(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
   ncores = getOption("mc.cores", 1L), cl = NULL)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
 
-\item{complete.grid}{should the optimal lambda be chosen from a grid of values
-or approximate it from the optimal lambda}
+\item{complete_grid}{should the optimal lambda be chosen from a grid of
+values or approximate it from the optimal lambda?}
 
-\item{cv.k}{perform k-fold CV to choose optimal lambda (only used if
-\code{complete.grid = FALSE}).}
+\item{cv_k}{perform k-fold CV to choose optimal lambda (only used if
+\code{complete_grid = TRUE}).}
 
 \item{nlambda}{the number of lambda values to try.}
 

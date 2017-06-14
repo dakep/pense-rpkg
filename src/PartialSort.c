@@ -60,26 +60,6 @@ double getQuantile(const double *values, const int length, const double quantile
     free(valuescpy);
 
     return retVal;
-
-    /*
-     * The following unused code does not
-     */
-    /*
-    double retVal;
-    int quantIndex = (int) ceil(length * quantile);
-    double *restrict valuescpy = (double*) malloc((length + 1) * sizeof(double));
-
-    memcpy(valuescpy, values, length * sizeof(double));
-
-    valuescpy[length] = compare(DBL_MAX, 0.0);
-
-    partialQsort(valuescpy, 0, quantIndex + 2, length - 1, compare);
-
-    retVal = valuescpy[quantIndex];
-    free(valuescpy);
-
-    return retVal;
-    */
 }
 
 /**

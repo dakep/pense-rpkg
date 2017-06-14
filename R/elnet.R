@@ -3,39 +3,76 @@
 #' Compute the elastic net regression coefficients
 #'
 #' This solves the minimization problem
-#' \deqn{\frac{1}{2 N} RSS + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
-#'      (1/2N) RSS + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+#' \deqn{\frac{1}{2 N} RSS + \lambda \left(
+#'         \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
+#'  \right)}{
+#'      (1/2N) RSS + \lambda * (
+#'          (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
+#'  )}
 #'
 #' If weights are supplied, the minimization problem becomes
-#' \deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
-#'      (1/2N) sum(w * (y - r^2) + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+#' \deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left(
+#'         \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
+#'   \right)}{
+#'      (1/2N) \sum(w * (y - r^2)) + \lambda * (
+#'          (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
+#'   )}
 #'
+#' @section Algorithms:
+#' Currently this function can compute the elastic net estimator using either
+#' augmented LARS or the Dual Augmented Lagrangian (DAL) algorithm
+#' (Tomioka 2011).
+#' Augmented LARS performs LASSO via the LARS algorithm (or OLS if
+#' \code{alpha = 0}) on the data matrix augmented with the L2 penalty term.
+#' The time complexity of this algorithm increases fast with an increasing
+#' number of predictors. The algorithm currently can not leverage a previous or
+#' an approximate solution to speed up computations. However, it is always
+#' guaranteed to find the solution.
 #'
-#' @param X The data matrix X
-#' @param y The response vector
-#' @param alpha,lambda The values for the parameters controlling the penalization
-#' @param weights an optional vector of weights to be used in the fitting process. Should be
-#'                \code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
-#'                \code{weights} See also 'Details'.
-#' @param maxit The maximum number of iterations
-#' @param eps The relative tolerance for convergence for gradient-descent (default 1e-8) or
-#'      the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps})
-#' @param centering Should the rows be centered first
-#' @param addLeading1s Should a leading column of 1's be appended? If \code{FALSE}, this has
-#'      to be done before calling this function.
-#' @param en.algorithm algorithm to use to compute the elastic net solution.
+#' DAL is an iterative algorithm directly minimizing the Elastic Net objective.
+#' The algorithm can take an approximate solution to the problem to speed
+#' up convergence. In the case of very small lambda values and a bad starting
+#' point, DAL may not converge to the solution and hence give wrong
+#' results. This would be indicated in the returned status code. Time complexity
+#' of this algorithm is dominated by the number of observations.
 #'
-#' @return \item{coefficients}{The regression coefficients}
-#'         \item{residuals}{The residuals}
-#'         \item{converged}{Did the algorithm converge?}
+#' DAL is much faster for a small number of observations (< 200) and a large
+#' number of predictors, especially if an approximate solution is available.
 #'
-#' @useDynLib pense C_elnet
+#' @param X data matrix with predictors
+#' @param y response vector
+#' @param alpha,lambda values for the parameters controlling the penalization
+#' @param weights an optional vector of weights to be used in the fitting
+#'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
+#'      weighted EN is used with weights \code{weights}. See also 'Details'.
+#' @param Xtest data matrix with predictors used for prediction. This is useful
+#'      for testing the prediciton performance on an independent test set.
+#' @param options additional options for the EN algorithm. See
+#'      \code{\link{en_options}} for details.
+#' @param intercept should an intercept be estimated?
+#' @param addLeading1s should a leading column of 1's be appended?
+#'      If \code{FALSE}, this has to be done before calling this function.
+#'
+#' @return
+#'  \item{lambda}{vector of lambda values.}
+#'  \item{status}{integer specifying the exit status of the EN algorithm.}
+#'  \item{message}{explenation of the exit status.}
+#'  \item{coefficients}{matrix of regression coefficients. Each
+#'      column corresponds to the estimate for the lambda value at the same
+#'      index.}
+#'  \item{residuals}{matrix of residuals. Each column corresponds to the
+#'      residuals for the lambda value at the same index.}
+#'  \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
+#'      column corresponds to the predictions for the lambda value at the
+#'      same index.}
 #' @export
-elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
-                  addLeading1s = TRUE, en.algorithm = c("augmented-lars",
-                                                        "coordinate-descent",
-                                                        "augmented-lars-gram",
-                                                        "augmented-lars-nogram")) {
+#' @references Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
+#'     \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
+#'     for Sparse Learning}. Journal of Machine Learning Research,
+#'     12(May):1537-1586, 2011.
+elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
+                  addLeading1s = TRUE, options = en_options_aug_lars(),
+                  Xtest) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -43,13 +80,27 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
     yl <- length(y)
 
     weighted <- FALSE
+    have_test_set <- FALSE
 
     if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
         stop("`yl` must be a numeric vector")
     }
 
     if (is.null(dX) || length(dX) != 2L || !is.numeric(X) || dX[1L] != yl) {
-        stop("`X` must be a numeric matrix with the same number of observations as `y`")
+        stop("`X` must be a numeric matrix with the same number of ",
+             "observations as `y`")
+    }
+
+    if (!missing(Xtest) && !is.null(Xtest)) {
+        dXtest <- dim(Xtest)
+        if (is.null(dXtest) || length(dXtest) != 2L || !is.numeric(Xtest) ||
+            dXtest[2L] != dX[2L]) {
+            stop("`Xtest` must be a numeric matrix with the same number of ",
+                 "predictors as `X`")
+        }
+        have_test_set <- TRUE
+    } else {
+        Xtest <- NULL
     }
 
     if (missing(weights)) {
@@ -59,150 +110,411 @@ elnet <- function(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = 
     if (!is.null(weights)) {
         weighted <- TRUE
         weights <- drop(weights)
-
-        if (length(weights) != dX[1L] || !is.null(dim(weights))) {
-            stop("If `weights` are supplied, they must be a numeric vector the same length as `y`")
-        }
+        weights <- .check_arg(weights, "numeric", range = 0, length = yl,
+                              range_test_lower = ">=")
     }
 
     if (anyNA(X) || anyNA(y) || anyNA(weights)) {
         stop("Missing values are not supported")
     }
 
+    intercept <- isTRUE(intercept)
 
-    if (length(alpha) != 1L || !is.numeric(alpha) || is.na(alpha) || alpha < 0 || alpha > 1) {
-        stop("`alpha` must be single number in the range [0, 1]")
+    alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
+                        range_test_lower = ">=", range_test_upper = "<=")
+    lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
+    lambda <- sort(lambda, decreasing = TRUE)
+
+    ret_struct <- structure(list(
+        status = 0L,
+        message = "no observations",
+        coefficients = matrix(
+            NA_real_,
+            nrow = dX[2L] + intercept,
+            ncol = length(lambda)
+        ),
+        residuals = matrix(
+            NA_real_,
+            nrow = 0L,
+            ncol = length(lambda)
+        ),
+        lambda = lambda,
+        predictions = NULL
+    ), class = "elnetfit")
+
+    # Check the size of X and y
+    if (identical(dX[1L], 0L)) {
+        # no observations
+        return(ret_struct)
+    } else if (identical(dX[2L], 0L)) {
+        # no predictors given
+        if (intercept) {
+            my <- ifelse(weighted, weighted.mean(y, weights), mean(y))
+
+            ret_struct$coefficients <- matrix(
+                my,
+                nrow = 1L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y - my,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+            if (have_test_set) {
+                ret_struct$predictions <- matrix(
+                    my,
+                    nrow = dXtest[1L],
+                    ncol = length(lambda)
+                )
+            }
+        } else {
+            ret_struct$coefficients <- matrix(
+                NA_real_,
+                nrow = 0L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+        }
+        return(ret_struct)
     }
 
-    if (length(lambda) != 1L || !is.numeric(lambda) || is.na(lambda) || lambda < 0) {
-        stop("`lambda` must be single number >= 0")
-    }
-
-    if (length(maxit) != 1L || !is.numeric(maxit) || is.na(maxit) || maxit <= 1) {
-        stop("`maxit` must be single integer > 1")
-    }
-
-    en.algorithm <- match.arg(en.algorithm)
-
-    if (missing(eps)) {
-        eps <- switch(en.algorithm, `coordinate-descent` = 1e-8, .Machine$double.eps)
-    }
-
-    if (length(eps) != 1L || !is.numeric(eps) || is.na(eps) || eps <= 0) {
-        stop("`eps` must be single number > 0")
-    }
-
-    if (length(centering) != 1L || !is.logical(centering) || is.na(centering)) {
-        warning("`centering` must be single logical value. Using TRUE as default.")
-    }
-
-    if (weighted) {
-        elnetres <- .elnet.wfit(X, y, weights, alpha, lambda, maxit, eps, centering, addLeading1s,
-                                warmCoef = NULL, en.algorithm = en.algorithm)
+    elnetres <- if (weighted) {
+        .elnet.wfit(
+            X = X,
+            y = y,
+            weights = weights,
+            alpha = alpha,
+            lambda = lambda,
+            intercept = intercept,
+            addLeading1s = addLeading1s,
+            options = options,
+            Xtest = Xtest
+        )
     } else {
-        elnetres <- .elnet.fit(X, y, alpha, lambda, maxit, eps, centering, addLeading1s,
-                               warmCoef = NULL, en.algorithm = en.algorithm)
+        .elnet.fit(
+            X = X,
+            y = y,
+            alpha = alpha,
+            lambda = lambda,
+            intercept = intercept,
+            addLeading1s = addLeading1s,
+            options = options,
+            Xtest = Xtest
+        )
     }
 
-    return(elnetres)
+    for (ri in names(elnetres)) {
+        ret_struct[[ri]] <- elnetres[[ri]]
+    }
+
+    return(ret_struct)
+}
+
+#' Cross-validate Elastic Net
+#'
+#' Perform k-fold cross-validation for \code{\link{elnet}}.
+#'
+#' @param X data matrix with predictors
+#' @param y response vector
+#' @param alpha,lambda values for the parameters controlling the penalization
+#' @param weights an optional vector of weights to be used in the fitting
+#'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
+#'      weighted EN is used with weights \code{weights}. See also 'Details'.
+#' @param intercept should an intercept be estimated?
+#' @param cv_k number of cross validation folds.
+#' @param cv_measure function (name) which takes a matrix of residuals and
+#'      returns a performance measure for each column.
+#' @param ncores,cl the number of processor cores or an actual \code{parallel}
+#'      cluster. At most \code{cv_k + 1} nodes will be used.
+#' @param ... additional arguments passed on to \code{\link{elnet}}.
+#'
+#' @return
+#'  \item{lambda}{vector of lambda values.}
+#'  \item{status}{integer specifying the exit status of the EN algorithm.}
+#'  \item{message}{explenation of the exit status.}
+#'  \item{coefficients}{matrix of regression coefficients. Each
+#'      column corresponds to the estimate for the lambda value at the same
+#'      index.}
+#'  \item{residuals}{matrix of residuals. Each column corresponds to the
+#'      residuals for the lambda value at the same index.}
+#'  \item{cvres}{data frame with lambda, average cross-validated performance
+#'      and the estimated standard deviation.}
+#'
+#' @export
+elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
+                     cv_measure, ncores = getOption("mc.cores", 1L),
+                     cl = NULL, ...) {
+    y <- drop(y)
+
+    dX <- dim(X)
+    dY <- dim(y)
+    yl <- length(y)
+
+    if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
+        stop("`yl` must be a numeric vector")
+    }
+
+    if (is.null(dX) || length(dX) != 2L || !is.numeric(X) || dX[1L] != yl) {
+        stop("`X` must be a numeric matrix with the same number of ",
+             "observations as `y`")
+    }
+
+    if (anyNA(X) || anyNA(y)) {
+        stop("Missing values are not supported")
+    }
+
+    intercept <- isTRUE(intercept)
+
+    if (missing(weights)) {
+        weights <- NULL
+    }
+
+    alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
+                        range_test_lower = ">=", range_test_upper = "<=")
+    lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
+    lambda <- sort(lambda, decreasing = TRUE)
+
+    ret_struct <- structure(list(
+        status = 0L,
+        message = "no observations",
+        coefficients = matrix(
+            NA_real_,
+            nrow = dX[2L] + intercept,
+            ncol = length(lambda)
+        ),
+        residuals = matrix(
+            NA_real_,
+            nrow = 0L,
+            ncol = length(lambda)
+        ),
+        lambda = lambda,
+        cvres = data.frame(lambda = lambda, avg = NA_real_, sd = NA_real_),
+        lambda_opt = NA_real_
+    ), class = c("cv_elnetfit", "elnetfit"))
+
+    # Check the size of X and y
+    if (identical(dX[1L], 0L)) {
+        # no observations
+        return(ret_struct)
+    } else if (identical(dX[2L], 0L)) {
+        # no predictors given
+        if (intercept) {
+            my <- ifelse(weighted, weighted.mean(y, weights), mean(y))
+
+            ret_struct$coefficients <- matrix(
+                my,
+                nrow = 1L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y - my,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+        } else {
+            ret_struct$coefficients <- matrix(
+                NA_real_,
+                nrow = 0L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+        }
+        return(ret_struct)
+    }
+
+    # Define CV segments randomly
+    cv_k <- .check_arg(cv_k, "integer", range = c(1, yl))
+    cv_segments <- c(
+        list(full = integer(0L)),
+        split(seq_along(y), sample(rep_len(seq_len(cv_k), yl)))
+    )
+
+    if (missing(cv_measure)) {
+        cv_measure <- function(resids) {
+            sqrt(colMeans(resids^2))
+        }
+    } else {
+        cv_measure <- match.fun(cv_measure)
+    }
+
+    ## Worker CV function.
+    ## Requires the following variables in the environment:
+    ## X, y, weights, cv_measure
+    elnet_job_cv <- function(cv_ind, alpha, lambda, intercept, ...) {
+        if (length(cv_ind) > 0L) {
+            X_test <- X[cv_ind, , drop = FALSE]
+            y_test <- y[cv_ind]
+            X_train <- X[-cv_ind, , drop = FALSE]
+            y_train <- y[-cv_ind]
+            weights_train <- weights[-cv_ind]
+        } else {
+            X_test <- NULL
+            y_test <- NULL
+            X_train <- X
+            y_train <- y
+            weights_train <- weights
+        }
+
+        cv_fold_res <- elnet(
+            X_train,
+            y_train,
+            alpha,
+            lambda,
+            weights = weights_train,
+            intercept = intercept,
+            Xtest = X_test,
+            ...
+        )
+
+        if (length(cv_ind) > 0L) {
+            # Only return the performance measures
+            return(cv_measure(y_test - cv_fold_res$predictions))
+        } else {
+            # Return the full EN result
+            return(cv_fold_res)
+        }
+    }
+
+    # Setup cluster
+    cluster <- setupCluster(
+        ncores,
+        cl,
+        export = c("X", "y", "weights", "cv_measure"),
+        eval = {
+            library(pense)
+        }
+    )
+
+    # Run all jobs (combination of all CV segments and all lambda-grids)
+    tryCatch({
+        cv_results <- cluster$lapply(
+            cv_segments,
+            elnet_job_cv,
+            alpha = alpha,
+            lambda = lambda,
+            intercept,
+            ...
+        )
+    },
+    finally = {
+        cluster$stopCluster()
+    })
+
+    # Merge the full result into the return structure
+    for (ri in names(cv_results$full)) {
+        ret_struct[[ri]] <- cv_results$full[[ri]]
+    }
+
+    # Add the CV results
+    cv_results_mat <- matrix(
+        unlist(cv_results[-1L]),
+        ncol = cv_k
+    )
+
+    ret_struct$cvres <- data.frame(
+        lambda = lambda,
+        cvavg = rowMeans(cv_results_mat),
+        cvsd = apply(cv_results_mat, 1, sd)
+    )
+
+    ret_struct$lambda_opt <- with(ret_struct$cvres, lambda[which.min(cvavg)])
+    return(ret_struct)
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib pense C_augtrans C_elnet
-.elnet.fit <- function(X, y, alpha, lambda, maxit, eps, centering = TRUE, addLeading1s = TRUE,
-                       warmCoef = NULL, en.algorithm) {
+.elnet.fit <- function(X, y, alpha, lambda, intercept = TRUE,
+                       addLeading1s = TRUE, options = en_options_aug_lars(),
+                       warm_coefs, Xtest = NULL) {
     y <- drop(y)
     dX <- dim(X)
 
     ## Add leading column of 1's
-    if (!identical(addLeading1s, FALSE)) {
-        Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    Xtr <- if (!identical(addLeading1s, FALSE)) {
+        .Call(C_augtrans, X)
     } else {
-        Xtr <- t(X)
+        t(X)
     }
 
-    warm <- 0L
-
-    if (!is.null(warmCoef)) {
-        warm <- 1L
+    if (missing(warm_coefs)) {
+        warm_coefs <- numeric(dX[2L])
+        options$warmStart <- FALSE
+    } else {
+        options$warmStart <- TRUE
     }
 
-    alpha <- as.numeric(alpha)
-    lambda <- as.numeric(lambda)
-    maxit <- as.integer(maxit)
-    centering <- 1L - as.integer(identical(centering, FALSE))
-    en.algorithm <- .enalgo2IntEnalgo(en.algorithm)
+    elnetres <- .Call(
+        C_elnet,
+        Xtr,
+        y,
+        warm_coefs,
+        alpha,
+        lambda,
+        intercept,
+        options,
+        Xtest
+    )
 
-    elnetres <- .Call(C_elnet, Xtr, y,
-                      warmCoef,
-                      dX[1L], nrow(Xtr),
-                      alpha,
-                      lambda,
-                      maxit,
-                      eps,
-                      centering,
-                      warm,
-                      en.algorithm)
-
-    if (!identical(elnetres[[1L]], TRUE)) {
-        warning("Elastic Net algorithm did not converge.")
+    if (!identical(elnetres[[1L]], 0L)) {
+        warning("Elastic Net algorithm had non-zero return status.")
     }
 
-    names(elnetres) <- c("converged", "coefficients", "residuals")
+    names(elnetres) <- c("status", "message", "coefficients", "residuals",
+                         "predictions")
 
     return(elnetres)
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib pense C_augtrans C_elnet_weighted
-.elnet.wfit <- function(X, y, weights, alpha, lambda, maxit, eps, centering = TRUE,
-                        addLeading1s = TRUE, warmCoef = NULL, en.algorithm) {
+.elnet.wfit <- function(X, y, weights, alpha, lambda, intercept = TRUE,
+                        addLeading1s = TRUE, options = en_options_aug_lars(),
+                        warm_coefs, Xtest = NULL) {
     y <- drop(y)
     dX <- dim(X)
 
     ## Add leading column of 1's
-    if (!identical(addLeading1s, FALSE)) {
-        Xtr <- .Call(C_augtrans, X, dX[1L], dX[2L])
+    Xtr <- if (!identical(addLeading1s, FALSE)) {
+        .Call(C_augtrans, X)
     } else {
-        Xtr <- t(X)
+        t(X)
     }
 
-    warm <- 0L
-
-    if (!is.null(warmCoef)) {
-        warm <- 1L
+    if (missing(warm_coefs)) {
+        warm_coefs <- numeric(dX[2L])
+        options$warmStart <- FALSE
+    } else {
+        options$warmStart <- TRUE
     }
 
-    if (en.algorithm == "coordinate-descent") {
-        en.algorithm <- "augmented-lars"
-        warning("Weighted EN is not implemented for coordinate descent. ",
-                "Using augmented lars instead.")
+    elnetres <- .Call(
+        C_elnet_weighted,
+        Xtr,
+        y,
+        weights,
+        warm_coefs,
+        alpha,
+        lambda,
+        intercept,
+        options,
+        Xtest
+    )
+
+    if (!identical(elnetres[[1L]], 0L)) {
+        warning("Elastic Net algorithm had non-zero return status.")
     }
 
-    weights <- as.numeric(weights)
-    alpha <- as.numeric(alpha)
-    lambda <- as.numeric(lambda)
-    maxit <- as.integer(maxit)
-    centering <- 1L - as.integer(identical(centering, FALSE))
-    en.algorithm <- .enalgo2IntEnalgo(en.algorithm)
-
-    elnetres <- .Call(C_elnet_weighted, Xtr, y,
-                      weights,
-                      warmCoef,
-                      dX[1L], nrow(Xtr),
-                      alpha,
-                      lambda,
-                      maxit,
-                      eps,
-                      centering,
-                      warm,
-                      en.algorithm)
-
-    if (!identical(elnetres[[1L]], TRUE)) {
-        warning("Weighted Elastic Net algorithm did not converge.")
-    }
-
-    names(elnetres) <- c("converged", "coefficients", "residuals")
+    names(elnetres) <- c("status", "message", "coefficients", "residuals",
+                         "predictions")
 
     return(elnetres)
 }

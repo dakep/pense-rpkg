@@ -1,4 +1,4 @@
-test_that("pen.s.reg", {
+test_that("pen_s_reg", {
     ##
     ## Test case 1
     ##
@@ -8,23 +8,32 @@ test_that("pen.s.reg", {
     X <- matrix(rnorm(n * p), ncol = p)
     y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
-
     lambda <- 0.01
-    cc <- 1.5
     init.scale <- 1.1
     init.coef <- numeric(p + 1)
-    ctrl <- pense.control()
 
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -34,13 +43,25 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -58,7 +79,6 @@ test_that("pen.s.reg", {
 
 
     lambda <- 0.01
-    cc <- 1.5
     init.scale <- 1.1
     init.coef <- rep.int(10, p + 1L)
     ctrl <- pense.control()
@@ -66,13 +86,25 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -82,13 +114,25 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -114,13 +158,25 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -130,13 +186,25 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -163,16 +231,28 @@ test_that("pen.s.reg", {
     alpha <- 1
 
     expect_warning(
-        pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                    init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                    control = ctrl),
+        pense:::pen_s_reg_rimpl(
+            X,
+            y,
+            alpha = alpha,
+            lambda = lambda,
+            init_coef = init.coef,
+            options = pense_options(),
+            en_options = en_options_aug_lars()
+        ),
         regexp = 'did not converge'
     )
 
     expect_warning(
-        pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                      init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                      control = ctrl),
+        pense:::pen_s_reg(
+            X,
+            y,
+            alpha = alpha,
+            lambda = lambda,
+            init_coef = init.coef,
+            options = pense_options(),
+            en_options = en_options_aug_lars()
+        ),
         regexp = 'did not converge'
     )
 
@@ -197,13 +277,25 @@ test_that("pen.s.reg", {
     ## LASSO penalty
     alpha <- 1
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)
@@ -213,13 +305,25 @@ test_that("pen.s.reg", {
     ## EN penalty
     alpha <- 0.5
 
-    pr.r <- pense:::pen.s.reg.rimpl(X, y, alpha = alpha, lambda = lambda,
-                                        init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                        control = ctrl)
+    pr.r <- pense:::pen_s_reg_rimpl(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
-    pr.c <- pense:::pen.s.reg(X, y, alpha = alpha, lambda = lambda,
-                                  init.coef = init.coef, maxit = ctrl$pense.maxit,
-                                  control = ctrl)
+    pr.c <- pense:::pen_s_reg(
+        X,
+        y,
+        alpha = alpha,
+        lambda = lambda,
+        init_coef = init.coef,
+        options = pense_options(),
+        en_options = en_options_aug_lars()
+    )
 
     expect_equal(pr.c$intercept, pr.r$intercept)
     expect_equal(pr.c$beta, pr.r$beta)

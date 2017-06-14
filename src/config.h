@@ -47,8 +47,21 @@
 #endif
 
 
-#define NUMERIC_EPS 1e-16
+#define NUMERIC_EPS 1e-32
 #define LAPACK_EV_MIN 1e-12
+
+typedef enum RhoFunctionNameTag {
+    BISQUARE = 0,
+    HUBER = 1,
+    GAUSS_WEIGHT = 2
+} RhoFunctionName;
+
+
+typedef enum ENAlgorithmTag {
+    AUGMENTED_LARS = 0,
+    DAL
+} ENAlgorithm;
+
 
 #endif
 

@@ -348,9 +348,10 @@ int PSC_EN::computePSC() {
     double *RESTRICT lastResponse = this->data.getY() + (nobs - 1);
     double *RESTRICT M = this->Z;
     int nevalues = 0;
-    bool converged = true;
+    int accuStatus = 0;
 
     memset(M, 0, nobs * nobs * sizeof(double));
+    memset(coefs, 0, nvar * sizeof(double));
 
     this->data.setNumObs(nobs - 1);
 
@@ -369,9 +370,9 @@ int PSC_EN::computePSC() {
         *iterY = (*lastResponse);
         *lastResponse = *swapbuffer;
 
-
-        /* Do we need to adjust lambda here?? */
-        converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted);
+        this->en.setData(this->data);
+        this->en.computeCoefs(coefs, residualsOmitted);
+        accuStatus += this->en.getStatus();
 
         for (j = 0; j < i; ++j) {
             /* this actually calculates -r_i, but that's okay */
@@ -419,7 +420,8 @@ int PSC_EN::computePSC() {
      * For the last observation, we don't need to swap anything
      */
     /* Do we need to adjust lambda here?? */
-    converged = converged && this->en.computeCoefs(this->data, coefs, residualsOmitted);
+    this->en.computeCoefs(coefs, residualsOmitted);
+    accuStatus += this->en.getStatus();
 
     for (j = 0; j < nobs - 1; ++j) {
         /* this actually calculates -r_i, but that's okay */
@@ -438,7 +440,6 @@ int PSC_EN::computePSC() {
     /* Reset the number of observations for data */
     this->data.setNumObs(nobs);
 
-
     nevalues = this->doEigenDecomposition(BLAS_UPLO_UPPER, M, nobs);
 
     if (nevalues > 0) {
@@ -447,8 +448,8 @@ int PSC_EN::computePSC() {
                    BLAS_0F, this->Z, nobs);
     }
 
-    if (!converged) {
-        Rcpp::warning("Elastic net did not converge. PSCs may not be reliable!");
+    if (accuStatus > 0) {
+        Rcpp::warning("Elastic net had non-successful status codes. PSCs may not be reliable!");
     }
 
     return nevalues;

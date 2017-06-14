@@ -4,47 +4,90 @@
 \alias{elnet}
 \title{Elastic Net Regression}
 \usage{
-elnet(X, y, alpha, lambda, weights, maxit = 10000, eps, centering = TRUE,
-  addLeading1s = TRUE, en.algorithm = c("augmented-lars",
-  "coordinate-descent", "augmented-lars-gram", "augmented-lars-nogram"))
+elnet(X, y, alpha, lambda, weights, intercept = TRUE, addLeading1s = TRUE,
+  options = en_options_aug_lars(), Xtest)
 }
 \arguments{
-\item{X}{The data matrix X}
+\item{X}{data matrix with predictors}
 
-\item{y}{The response vector}
+\item{y}{response vector}
 
-\item{alpha, lambda}{The values for the parameters controlling the penalization}
+\item{alpha, lambda}{values for the parameters controlling the penalization}
 
-\item{weights}{an optional vector of weights to be used in the fitting process. Should be
-\code{NULL} or a numeric vector. If non-NULL, weighted EN is used with weights
-\code{weights} See also 'Details'.}
+\item{weights}{an optional vector of weights to be used in the fitting
+process. Should be \code{NULL} or a numeric vector. If non-NULL,
+weighted EN is used with weights \code{weights}. See also 'Details'.}
 
-\item{maxit}{The maximum number of iterations}
+\item{intercept}{should an intercept be estimated?}
 
-\item{eps}{The relative tolerance for convergence for gradient-descent (default 1e-8) or
-the threshold for treating numbers as 0 in LARS (default \code{.Machine$double.eps})}
+\item{addLeading1s}{should a leading column of 1's be appended?
+If \code{FALSE}, this has to be done before calling this function.}
 
-\item{centering}{Should the rows be centered first}
+\item{options}{additional options for the EN algorithm. See
+\code{\link{en_options}} for details.}
 
-\item{addLeading1s}{Should a leading column of 1's be appended? If \code{FALSE}, this has
-to be done before calling this function.}
-
-\item{en.algorithm}{algorithm to use to compute the elastic net solution.}
+\item{Xtest}{data matrix with predictors used for prediction. This is useful
+for testing the prediciton performance on an independent test set.}
 }
 \value{
-\item{coefficients}{The regression coefficients}
-        \item{residuals}{The residuals}
-        \item{converged}{Did the algorithm converge?}
+\item{lambda}{vector of lambda values.}
+ \item{status}{integer specifying the exit status of the EN algorithm.}
+ \item{message}{explenation of the exit status.}
+ \item{coefficients}{matrix of regression coefficients. Each
+     column corresponds to the estimate for the lambda value at the same
+     index.}
+ \item{residuals}{matrix of residuals. Each column corresponds to the
+     residuals for the lambda value at the same index.}
+ \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
+     column corresponds to the predictions for the lambda value at the
+     same index.}
 }
 \description{
 Compute the elastic net regression coefficients
 }
 \details{
 This solves the minimization problem
-\deqn{\frac{1}{2 N} RSS + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
-     (1/2N) RSS + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+\deqn{\frac{1}{2 N} RSS + \lambda \left(
+        \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
+ \right)}{
+     (1/2N) RSS + \lambda * (
+         (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
+ )}
 
 If weights are supplied, the minimization problem becomes
-\deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left( \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1 \right)}{
-     (1/2N) sum(w * (y - r^2) + \lambda * ( (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta) )}
+\deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left(
+        \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
+  \right)}{
+     (1/2N) \sum(w * (y - r^2) + \lambda * (
+         (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
+  )}
+}
+\section{Algorithms}{
+
+Currently this function can compute the elastic net estimator using either
+augmented LARS or the Dual Augmented Lagrangian (DAL) algorithm
+(Tomioka 2011).
+Augmented LARS performs LASSO via the LARS algorithm (or OLS if
+\code{alpha = 0}) on the data matrix augmented with the L2 penalty term.
+The time complexity of this algorithm increases fast with an increasing
+number of predictors. The algorithm currently can not leverage a previous or
+an approximate solution to speed up computations. However, it is always
+guaranteed to find the solution.
+
+DAL is an iterative algorithm directly minimizing the Elastic Net objective.
+The algorithm can take an approximate solution to the problem to speed
+up convergence. In the case of very small lambda values and a bad starting
+point, DAL may not converge to the solution and hence give wrong
+results. This would be indicated in the returned status code. Time complexity
+of this algorithm is dominated by the number of observations.
+
+DAL is much faster for a small number of observations (< 200) and a large
+number of predictors, especially if an approximate solution is available.
+}
+
+\references{
+Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
+    \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
+    for Sparse Learning}. Journal of Machine Learning Research,
+    12(May):1537-1586, 2011.
 }

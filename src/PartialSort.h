@@ -15,7 +15,6 @@ extern "C" {
 
 typedef double (*CompareFunction)(const double, const double);
 
-
 double getQuantile(const double * values, const int length, const double quantile,
                    CompareFunction compare);
 

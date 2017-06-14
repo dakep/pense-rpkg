@@ -18,10 +18,16 @@ coef.pense <- function(object, lambda, ...) {
     X <- data.matrix(eval(object$call$X))
     y <- drop(eval(object$call$y))
 
-    estimate <- pense.coldwarm(X, y, lambda.grid = lambda,
-                               alpha = object$alpha,
-                               standardize = object$standardize,
-                               control = object$control)
+    estimate <- pense_coldwarm(
+        X,
+        y,
+        lambda_grid = lambda,
+        alpha = object$alpha,
+        standardize = object$standardize,
+        pense_options = object$pense_options,
+        initest_options = object$initest_options,
+        en_options = object$en_options
+    )
 
     return(nameCoefVec(c(estimate[[1L]]$intercept, estimate[[1L]]$beta), X))
 }

@@ -27,6 +27,9 @@ RcppExport SEXP C_augtrans(SEXP X);
  * Solve following minimzation problem:
  * (1 / (2*N)) * L2(y - beta0 - X . beta)^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
  *
+ * It is the caller's responsibility to ensure that at least one predictor is present
+ * in Xtr. The function will NOT check the arguments and will crash if Xtr does not
+ * contain enough values.
  *
  * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
  * @param y           numeric The numeric y vector (size `nobs`)
@@ -51,6 +54,9 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
  * Solve following minimzation problem:
  * (1 / (2*N)) * L2(weights (y - beta0 - X . beta))^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
  *
+ * It is the caller's responsibility to ensure that at least one predictor is present
+ * in Xtr. The function will NOT check the arguments and will crash if Xtr does not
+ * contain enough values.
  *
  * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
  * @param y           numeric The numeric y vector (size `nobs`)

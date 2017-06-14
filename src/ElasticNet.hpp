@@ -107,7 +107,7 @@ public:
      * @returns TRUE if the algorithm converged, FALSE otherwise
      */
     virtual void computeCoefs(double *RESTRICT coefs, double *RESTRICT residuals) = 0;
-    virtual void computeCoefs(arma::sp_vec& coefs, arma::vec& residuals) = 0;
+    virtual void computeCoefs(double& intercept, arma::sp_vec& beta, arma::vec& residuals) = 0;
 
     /**
      * Solve the weighted EN problem
@@ -129,7 +129,8 @@ public:
      */
     virtual void computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT residuals,
 									  const double *RESTRICT weights) = 0;
-    virtual void computeCoefsWeighted(arma::sp_vec& coefs, arma::vec& residuals, const arma::vec& weights) = 0;
+    virtual void computeCoefsWeighted(double& intercept, arma::sp_vec& coefs, arma::vec& residuals,
+                                      const arma::vec& weights) = 0;
 
 protected:
     const bool intercept;

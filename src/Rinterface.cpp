@@ -60,28 +60,56 @@ RcppExport SEXP C_augtrans(SEXP RX)
 RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                         SEXP Rlambda, SEXP Rintercept, SEXP Roptions)
 {
+    int nlambda = Rf_length(Rlambda);
     int nobs, nvar;
     getMatDims(RXtr, &nvar, &nobs);
 
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-    const Options opts = listToOptions(Roptions);
-    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    Options opts = listToOptions(Roptions);
     SEXP result = R_NilValue;
-    SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    SEXP retResid = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    SEXP retCoefs = PROTECT(Rf_allocMatrix(REALSXP, data.numVar(), nlambda));
+    SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
     SEXP status = PROTECT(Rf_allocVector(INTSXP, 1));
     SEXP statusMessage = PROTECT(Rf_allocVector(STRSXP, 1));
-    double *retCoefPtr = REAL(retCoef);
+    arma::sp_vec currentBeta(nvar - 1);
+    double* currentResidualsPtr = REAL(retResids);
+    double* currentCoefsPtr = REAL(retCoefs);
+    const double *currentLambda = REAL(Rlambda);
+    const double alpha = *REAL(Ralpha);
 
     BEGIN_RCPP
 
+    memset(currentCoefsPtr, 0, nvar * nlambda * sizeof(double));
+
     if (opts.get("warmStart", true)) {
-        memcpy(retCoefPtr, REAL(Rcoefs), data.numVar() * sizeof(double));
+        *currentCoefsPtr = *REAL(Rcoefs);
+        currentBeta = arma::sp_vec(arma::vec(REAL(Rcoefs), nvar, false, true));
     }
 
-    en->setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
+    /*
+     * We can always use a warm start, since the currentCoefs would be 0 anyways if it wasn't
+     * specified otherwise.
+     */
+    opts.set("warmStart", true);
+
+    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    arma::sp_vec::const_iterator ccIt;
     en->setData(data);
-    en->computeCoefs(retCoefPtr, REAL(retResid));
+
+    for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, currentCoefsPtr += nvar, ++currentLambda) {
+        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        en->setAlphaLambda(alpha, *currentLambda);
+
+        en->computeCoefs(*currentCoefsPtr, currentBeta, residuals);
+        /* Copy active coefficient values to return object */
+        for(ccIt = currentBeta.begin(); ccIt != currentBeta.end(); ++ccIt) {
+            currentCoefsPtr[ccIt.row() + 1] = *ccIt;
+        }
+
+        if (en->getStatus() != 0) {
+            break;
+        }
+    }
     *INTEGER(status) = en->getStatus();
     statusMessage = Rcpp::wrap(en->getStatusMessage());
 
@@ -89,8 +117,8 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 
     SET_VECTOR_ELT(result, 0, status);
     SET_VECTOR_ELT(result, 1, statusMessage);
-    SET_VECTOR_ELT(result, 2, retCoef);
-    SET_VECTOR_ELT(result, 3, retResid);
+    SET_VECTOR_ELT(result, 2, retCoefs);
+    SET_VECTOR_ELT(result, 3, retResids);
 
     delete en;
     UNPROTECT(1);
@@ -110,28 +138,62 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
                                  SEXP Ralpha, SEXP Rlambda, SEXP Rintercept, SEXP Roptions)
 {
+    int nlambda = Rf_length(Rlambda);
     int nobs, nvar;
     getMatDims(RXtr, &nvar, &nobs);
 
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-    const Options opts = listToOptions(Roptions);
-    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    const arma::vec weights(REAL(Rweights), nobs, false, true);
+    Options opts = listToOptions(Roptions);
     SEXP result = R_NilValue;
-    SEXP retCoef = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    SEXP retResid = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    SEXP retCoefs = PROTECT(Rf_allocMatrix(REALSXP, data.numVar(), nlambda));
+    SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
     SEXP status = PROTECT(Rf_allocVector(INTSXP, 1));
     SEXP statusMessage = PROTECT(Rf_allocVector(STRSXP, 1));
-    double *retCoefPtr = REAL(retCoef);
+    arma::sp_vec currentBeta(nvar - 1);
+    double* currentResidualsPtr = REAL(retResids);
+    double* currentCoefsPtr = REAL(retCoefs);
+    const double *currentLambda = REAL(Rlambda);
+    const double alpha = *REAL(Ralpha);
 
     BEGIN_RCPP
 
+    memset(currentCoefsPtr, 0, nvar * nlambda * sizeof(double));
+
     if (opts.get("warmStart", true)) {
-        memcpy(retCoefPtr, REAL(Rcoefs), data.numVar() * sizeof(double));
+        *currentCoefsPtr = *REAL(Rcoefs); // intercept
+        currentBeta = arma::sp_vec(arma::vec(REAL(Rcoefs) + 1, nvar - 1, false, true)); // beta
     }
 
-    en->setAlphaLambda(*REAL(Ralpha), *REAL(Rlambda));
+    /*
+     * We can always use a warm start, since the currentCoefs would be 0 anyways if it wasn't
+     * specified otherwise.
+     */
+    opts.set("warmStart", true);
+
+    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    arma::sp_vec::const_iterator ccIt;
     en->setData(data);
-    en->computeCoefsWeighted(retCoefPtr, REAL(retResid), REAL(Rweights));
+
+    for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, currentCoefsPtr += nvar, ++currentLambda) {
+        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        en->setAlphaLambda(alpha, *currentLambda);
+
+//        if (i > 0) {
+//            memcpy(currentCoefsPtr, currentCoefsPtr - nvar, nvar * sizeof(double));
+//        }
+//        en->computeCoefsWeighted(currentCoefsPtr, currentResidualsPtr, REAL(Rweights));
+
+        en->computeCoefsWeighted(*currentCoefsPtr, currentBeta, residuals, weights);
+        /* Copy active coefficient values to return object */
+        for(ccIt = currentBeta.begin(); ccIt != currentBeta.end(); ++ccIt) {
+            currentCoefsPtr[ccIt.row() + 1] = *ccIt;
+        }
+
+        if (en->getStatus() != 0) {
+            break;
+        }
+    }
     *INTEGER(status) = en->getStatus();
     statusMessage = Rcpp::wrap(en->getStatusMessage());
 
@@ -139,8 +201,8 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
 
     SET_VECTOR_ELT(result, 0, status);
     SET_VECTOR_ELT(result, 1, statusMessage);
-    SET_VECTOR_ELT(result, 2, retCoef);
-    SET_VECTOR_ELT(result, 3, retResid);
+    SET_VECTOR_ELT(result, 2, retCoefs);
+    SET_VECTOR_ELT(result, 3, retResids);
 
     delete en;
     UNPROTECT(1);

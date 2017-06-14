@@ -85,13 +85,12 @@ void ENLars::setAlphaLambda(const double alpha, const double lambda)
     this->setLambdas(lambda * alpha, lambda * (1 - alpha));
 }
 
-
-
-void ENLars::computeCoefsWeighted(arma::sp_vec &coefs, arma::vec &residuals, const arma::vec &weights)
+void ENLars::computeCoefsWeighted(double& intercept, sp_vec &coefs, vec &residuals, const vec &weights)
 {
     const uword trueNobs = this->yOrig.n_elem;
     const uword nvar = this->XtrAug.n_rows;
-    vec sqrtWeights = sqrt(weights);
+    const vec sqrtWeights = sqrt(weights);
+    const double recipSumWeights = 1 / accu(weights);
 
     /*
      * First augment data
@@ -104,44 +103,40 @@ void ENLars::computeCoefsWeighted(arma::sp_vec &coefs, arma::vec &residuals, con
      * If we assume the data is centered already -- we only need to weight the observations
      * Otherwise, we also have make the design orthogonal to (y - beta0)
      */
-    mat origDataCopy = this->XtrAug;
-    mat tmpMat;
-    mat& XtrWeighted = (this->intercept ? tmpMat : this->XtrAug);
-
-    if (this->intercept) {
-        XtrWeighted.set_size(nvar, trueNobs);
-    }
+    const mat XtrAugOrig = this->XtrAug;
 
     this->yAug.head(trueNobs) %= sqrtWeights;
-    XtrWeighted.head_cols(trueNobs).each_row() %= sqrtWeights;
 
     if (this->intercept) {
-        /* We are guarantueed that XtrWeighted has only `trueNobs` columns! */
-        double recipSumWeights = 1 / sum(weights);
-        this->XtrAug.head_cols(trueNobs) = XtrWeighted -
-                    XtrWeighted * sqrtWeights * sqrtWeights.t() * recipSumWeights;
+        mat tmp = this->XtrAug.head_cols(trueNobs).each_row() % sqrtWeights.t();
+        this->XtrAug.head_cols(trueNobs) = tmp -
+                    tmp * sqrtWeights * sqrtWeights.t() * recipSumWeights;
+    } else {
+        this->XtrAug.head_cols(trueNobs).each_row() %= sqrtWeights.t();
     }
+
+    this->XtrAug.row(0).zeros();
 
     /*
      * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
      * We don't have an intercept (due to the orthogonalization)
      */
+    vec coefsDense(coefs.n_elem + 1, fill::zeros);
 
-        vec coefsDense = vec(coefs);
+    /*
+     * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
+     */
+    if (this->lambda1 > 0) {
+        this->augmentedLASSO(coefsDense, residuals, trueNobs, false);
+    } else {
+        this->augmentedOLS(coefsDense, residuals, trueNobs, false);
+    }
 
-        /*
-         * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
-         */
-        if (this->lambda1 > 0) {
-            this->augmentedLASSO(coefsDense, residuals, trueNobs, this->intercept);
-        } else {
-            this->augmentedOLS(coefsDense, residuals, trueNobs, this->intercept);
-        }
-
-        coefs = sp_vec(coefsDense);
+    intercept = coefsDense[0];
+    coefs = sp_vec(coefsDense.tail_rows(nvar - 1));
 
     /* Restore original data */
-    this->XtrAug = origDataCopy;
+    this->XtrAug = XtrAugOrig;
 
     computeResiduals(this->XtrAug.memptr(), this->yOrig.memptr(), trueNobs, nvar,
                      coefsDense.memptr(), residuals.memptr());
@@ -150,8 +145,8 @@ void ENLars::computeCoefsWeighted(arma::sp_vec &coefs, arma::vec &residuals, con
      * Recover intercept if requested
      */
     if (this->intercept) {
-        coefs[0] = accu(weights % residuals) / sum(weights);
-        residuals -= coefs[0];
+        intercept = accu(weights % residuals) * recipSumWeights;
+        residuals -= intercept;
     }
 }
 
@@ -194,9 +189,11 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
 
     if (this->intercept) {
         recipSumWeights = 1 / recipSumWeights;
-        this->XtrAug.cols(0, trueNobs - 1) = XtrWeighted -
+        this->XtrAug.head_cols(trueNobs) = XtrWeighted -
                     XtrWeighted * sqrtWeights * sqrtWeights.t() * recipSumWeights;
     }
+
+    this->XtrAug.row(0).zeros();
 
     /*
      * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
@@ -204,6 +201,8 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
      */
     vec beta(coefs, nvar, false, true);
     vec residuals(resids, trueNobs, false, true);
+
+    beta.zeros();
 
     if (this->lambda1 > 0) {
         this->augmentedLASSO(beta, residuals, trueNobs, false);
@@ -233,11 +232,10 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
     }
 }
 
-void ENLars::computeCoefs(arma::sp_vec& coefs, arma::vec& residuals)
+void ENLars::computeCoefs(double& intercept, sp_vec& coefs, vec& residuals)
 {
     const uword trueNobs = this->yOrig.n_elem;
     const uword nvar = this->XtrAug.n_rows;
-    vec coefsDense;
 
     if (trueNobs == 0 || nvar == 0) {
         coefs.zeros();
@@ -253,7 +251,7 @@ void ENLars::computeCoefs(arma::sp_vec& coefs, arma::vec& residuals)
          */
         this->augmentData();
 
-        coefsDense = vec(coefs);
+        vec coefsDense(coefs.n_elem + 1, fill::zeros);
 
         /*
          * Then perform LASSO on the augmented data (the algorithm is aware of the augmentation)
@@ -264,7 +262,8 @@ void ENLars::computeCoefs(arma::sp_vec& coefs, arma::vec& residuals)
             this->augmentedOLS(coefsDense, residuals, trueNobs, this->intercept);
         }
 
-        coefs = sp_vec(coefsDense);
+        intercept = coefsDense[0];
+        coefs = sp_vec(coefsDense.tail_rows(nvar - 1));
     }
 }
 
@@ -310,13 +309,14 @@ void ENLars::augmentedOLS(vec& coefs, vec& residuals, const uword nobs,
         this->XtrAug.row(0).zeros();
     }
 
-    arma::solve(coefs, this->XtrAug.t(), this->yAug, arma::solve_opts::fast + arma::solve_opts::no_approx);
+    arma::solve(coefs, this->XtrAug.t(), this->yAug,
+                arma::solve_opts::fast + arma::solve_opts::no_approx);
 
     if (!intercept) {
         coefs[0] = 0;
     }
 
-    residuals = this->yAug.rows(0, nobs - 1) - this->XtrAug.cols(0, nobs - 1).t() * coefs;
+    residuals = this->yAug.head_rows(nobs) - this->XtrAug.head_cols(nobs).t() * coefs;
 }
 
 
@@ -335,7 +335,7 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
     uword i, j;
     sword ri;
 
-	double meanY;
+	double meanY = 0;
 
 	uvec inactive(this->XtrAug.n_rows - 1),
          ignores;
@@ -353,14 +353,11 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
      * Center data if requested
      */
 	if(intercept) {
-		this->meanX = mean(this->XtrAug.cols(0, nobs - 1), 1);
+		this->meanX = mean(this->XtrAug.head_cols(nobs), 1);
         this->meanX[0] = 0; // Don't change the intercept-column
-        this->XtrAug.cols(0, nobs - 1).each_col() -= this->meanX;
-		meanY = mean(this->yAug.rows(0, nobs - 1));
-		this->yAug.rows(0, nobs - 1) -= meanY;
-	} else {
-		meanY = 0;		  // just to avoid warning, this is never used
-//		intercept = 0;	  // zero intercept
+        this->XtrAug.head_cols(nobs).each_col() -= this->meanX;
+		meanY = mean(this->yAug.head_rows(nobs));
+		this->yAug.head_rows(nobs) -= meanY;
 	}
 
     /*
@@ -750,7 +747,7 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
     /*
      * Compute residuals and intercept
      */
-    residuals = this->yAug.rows(0, nobs - 1) - this->XtrAug.cols(0, nobs - 1).t() * beta;
+    residuals = this->yAug.head_rows(nobs) - this->XtrAug.head_cols(nobs).t() * beta;
 
     if(intercept) {
         beta(0) = meanY - dot(beta, this->meanX);

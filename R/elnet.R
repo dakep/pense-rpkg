@@ -61,9 +61,40 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
         stop("Missing values are not supported")
     }
 
+    intercept <- isTRUE(intercept)
+
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
-    lambda <- .check_arg(lambda, "numeric", range = 0)
+    lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
+    lambda <- sort(lambda, decreasing = TRUE)
+
+    # Check the size of X and y
+    if (identical(dX[1L], 0L)) {
+        # no observations
+        return(list(
+            status = 0L,
+            message = "no observations",
+            coefficients = matrix(NA_real_, nrow = dX[2L] + intercept,
+                                  ncol = length(lambda)),
+            residuals = matrix(NA_real_, nrow = 0L, ncol = length(lambda))
+        ))
+    } else if (identical(dX[2L], 0L)) {
+        # no predictors given
+        if (intercept) {
+            my <- ifelse(weighted, weighted.mean(y, weights), mean(y))
+            coefs <- matrix(my, nrow = 1L, ncol = length(lambda))
+            resids <- matrix(y - my, nrow = dX[1L], ncol = length(lambda))
+        } else {
+            coefs <- matrix(NA_real_, nrow = 0L, ncol = length(lambda))
+            resids <- matrix(y, nrow = dX[1L], ncol = length(lambda))
+        }
+        return(list(
+            status = 0L,
+            message = "",
+            coefficients = coefs,
+            residuals = resids
+        ))
+    }
 
     elnetres <- if (weighted) {
         .elnet.wfit(

@@ -36,9 +36,9 @@ static const ENDal::Preconditioner DEFAULT_OPT_PRECONDITIONER = ENDal::NONE;
  */
 static const double LINESEARCH_STEPSIZE_MULTIPLIER = 0.8;  // 0 < x < 1
 static const double LINESEARCH_STEP_CONDITION = 0.3;      // 0 < x < 0.5
-static const int LINESEARCH_MAX_STEP = 100;
+static const int LINESEARCH_MAX_STEP = 200;
 static const int SOLVE_PCG_MAXIT = 100;
-static const int SOLVE_PCG_MAXIT_UPDATE = 50;
+static const int SOLVE_PCG_MAXIT_UPDATE = 35;
 
 static const uword VEC_SOFTTHRESH_SMALL_SPARSE = 50;
 static const double VEC_SOFTTHRESH_SPARSE = 0.1;
@@ -225,25 +225,35 @@ void ENDal::setData(const Data& data)
 void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids,
                                  const double *RESTRICT weights)
 {
+    /* First check the data if something has to be done at all */
+    if (this->bufferSizeNvar == 0) {
+        if (this->bufferSizeNobs > 0) {
+            memcpy(resids, this->y->memptr(), this->y->n_elem * sizeof(double));
+        }
+        return;
+    }
+
     const vec weightsVec(const_cast<double *>(weights), this->bufferSizeNobs, false, true);
     vec residuals(resids, this->bufferSizeNobs, false, true);
-    vec coefsRetDense(coefs, this->bufferSizeNvar, false, true);
+    double* intercept = coefs;
+    vec coefsRetDense(coefs + 1, this->bufferSizeNvar - 1, false, true);
     sp_vec coefsSparse(coefsRetDense.n_elem);
 
     if (this->warmStart) {
         coefsSparse = sp_vec(coefsRetDense);
     }
 
-    this->computeCoefsWeighted(coefsSparse, residuals, weightsVec);
+    this->computeCoefsWeighted(*intercept, coefsSparse, residuals, weightsVec);
 
     /* update returned beta */
     coefsRetDense = vec(coefsSparse);
 }
 
-void ENDal::computeCoefsWeighted(arma::sp_vec& coefs, arma::vec& residuals, const arma::vec& weights)
+void ENDal::computeCoefsWeighted(double& intercept, sp_vec& beta, vec& residuals,
+                                 const vec& weights)
 {
     /* First check the data if something has to be done at all */
-    if (coefs.n_elem == 0) {
+    if (this->bufferSizeNvar == 0) {
         if (this->bufferSizeNobs > 0) {
             residuals = *(this->y);
         }
@@ -254,20 +264,18 @@ void ENDal::computeCoefsWeighted(arma::sp_vec& coefs, arma::vec& residuals, cons
         this->sqrtWeights = sqrt(weights);
     }
 
-    if (coefs.n_elem == 1 || this->bufferSizeNobs == 0) {
-        coefs.zeros();
+    if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
+        intercept = 0;
         if (this->bufferSizeNobs > 0) {
-            coefs[0] = mean(this->sqrtWeights % *this->y);
+            intercept = mean(this->sqrtWeights % *this->y);
         }
-        residuals = (*this->y) - coefs[0];
+        residuals = (*this->y) - intercept;
         return;
     }
 
     /* We have at least an intercept plus one real predictor... */
-    double intercept = coefs[0];
     vec *const origY = this->y;
     mat *const origXtr = this->Xtr;
-    sp_vec beta(coefs.tail_rows(coefs.n_elem - 1));
 
     if (!this->warmStart) {
         beta.zeros();
@@ -306,49 +314,50 @@ void ENDal::computeCoefsWeighted(arma::sp_vec& coefs, arma::vec& residuals, cons
     this->y = origY;
     this->Xtr = origXtr;
     this->useWeights = false;
-
-    /* update returned beta */
-    coefs[0] = intercept;
-    coefs.tail_rows(coefs.n_elem - 1) = beta;
 }
 
 void ENDal::computeCoefs(double *RESTRICT coefs, double *RESTRICT resids)
 {
+    /* First check the data if something has to be done at all */
+    if (this->bufferSizeNvar == 0) {
+        if (this->bufferSizeNobs > 0) {
+            memcpy(resids, this->y->memptr(), this->y->n_elem * sizeof(double));
+        }
+        return;
+    }
+
     vec residuals(resids, this->bufferSizeNobs, false, true);
-    vec coefsRetDense(coefs, this->bufferSizeNvar, false, true);
+    double* intercept = coefs;
+    vec coefsRetDense(coefs + 1, this->bufferSizeNvar - 1, false, true);
     sp_vec coefsSparse(coefsRetDense.n_elem);
 
     if (this->warmStart) {
         coefsSparse = sp_vec(coefsRetDense);
     }
 
-    this->computeCoefs(coefsSparse, residuals);
+    this->computeCoefs(*intercept, coefsSparse, residuals);
 
     /* update returned beta */
     coefsRetDense = vec(coefsSparse);
 }
 
-void ENDal::computeCoefs(arma::sp_vec& coefs, arma::vec& residuals)
+void ENDal::computeCoefs(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
 {
     /* First check the data if something has to be done at all */
-    if (coefs.n_elem == 0) {
+    if (this->bufferSizeNvar == 0) {
         if (this->bufferSizeNobs > 0) {
             residuals = *(this->y);
         }
         return;
-    } else if (coefs.n_elem == 1 || this->bufferSizeNobs == 0) {
-        coefs.zeros();
+    } else if (beta.n_elem == 0 || this->bufferSizeNobs == 0) {
         if (this->bufferSizeNobs > 0) {
-            coefs[0] = mean(*this->y);
+            intercept = mean(*this->y);
         }
-        residuals = (*this->y) - coefs[0];
+        residuals = (*this->y) - intercept;
         return;
     }
 
     /* We have at least an intercept plus one real predictor... */
-    double intercept = coefs[0];
-    sp_vec beta(coefs.tail_rows(coefs.n_elem - 1));
-
     if (!this->warmStart) {
         beta.zeros();
     }
@@ -373,10 +382,6 @@ void ENDal::computeCoefs(arma::sp_vec& coefs, arma::vec& residuals)
     } else {
         residuals = (*this->y) - this->Xtr->t() * beta;
     }
-
-    /* update returned beta */
-    coefs[0] = intercept;
-    coefs.tail_rows(coefs.n_elem - 1) = beta;
 }
 
 inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
@@ -526,14 +531,10 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
         }
 #endif
 
-        if (relativeDualityGap < this->eps) {
-            break;
-        }
-
         /*
          * Check for max. iterations
          */
-        if (++iter > this->maxIt) {
+        if ((relativeDualityGap < this->eps) || (++iter > this->maxIt) || this->status != 0) {
             break;
         }
 
@@ -548,7 +549,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
         innerIter = 0;
         stepSize = -1;
 
-        while (1) {
+        while (this->status == 0) {
             vecSoftThresholdInplace(beta, betaOrig, this->eta[0], Xtra, cutoff);
 
             phiVal = lossDual(a, *this->y, true) +
@@ -643,6 +644,11 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
                 a -= (stepSize - stepSizePrev) * stepDir;
                 Xtra -= (stepSize - stepSizePrev) * XtrStepDir;
             }
+
+            if (lineSearchIter > LINESEARCH_MAX_STEP) {
+                this->status = 2;
+                this->statusMessage = "Newton-step did not converge. Gradient is too steep.";
+            }
         }
 
         beta *= multFact;
@@ -668,7 +674,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
 
     if (iter > this->maxIt) {
         this->status = 1;
-        this->statusMessage = "algorithm did not converge";
+        this->statusMessage = "Algorithm did not converge in maxit steps";
     }
 }
 

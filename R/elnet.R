@@ -17,19 +17,31 @@
 #' @param weights an optional vector of weights to be used in the fitting
 #'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
 #'      weighted EN is used with weights \code{weights}. See also 'Details'.
+#' @param Xtest data matrix with predictors used for prediction. This is useful
+#'      for testing the prediciton performance on an independent test set.
 #' @param options additional options for the EN algorithm. See
 #'      \code{\link{en_options}} for details.
 #' @param intercept should an intercept be estimated?
 #' @param addLeading1s should a leading column of 1's be appended?
 #'      If \code{FALSE}, this has to be done before calling this function.
 #'
-#' @return \item{coefficients}{The regression coefficients}
-#'         \item{residuals}{The residuals}
-#'         \item{converged}{Did the algorithm converge?}
+#' @return
+#'  \item{lambda}{vector of lambda values.}
+#'  \item{status}{integer specifying the exit status of the EN algorithm.}
+#'  \item{message}{explenation of the exit status.}
+#'  \item{coefficients}{matrix of regression coefficients. Each
+#'      column corresponds to the estimate for the lambda value at the same
+#'      index.}
+#'  \item{residuals}{matrix of residuals. Each column corresponds to the
+#'      residuals for the lambda value at the same index.}
+#'  \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
+#'      column corresponds to the predictions for the lambda value at the
+#'      same index.}
 #'
 #' @export
 elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
-                  addLeading1s = TRUE, options = en_options_aug_lars()) {
+                  addLeading1s = TRUE, options = en_options_aug_lars(),
+                  Xtest) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -37,13 +49,27 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
     yl <- length(y)
 
     weighted <- FALSE
+    have_test_set <- FALSE
 
     if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
         stop("`yl` must be a numeric vector")
     }
 
     if (is.null(dX) || length(dX) != 2L || !is.numeric(X) || dX[1L] != yl) {
-        stop("`X` must be a numeric matrix with the same number of observations as `y`")
+        stop("`X` must be a numeric matrix with the same number of ",
+             "observations as `y`")
+    }
+
+    if (!missing(Xtest) && !is.null(Xtest)) {
+        dXtest <- dim(Xtest)
+        if (is.null(dXtest) || length(dXtest) != 2L || !is.numeric(Xtest) ||
+            dXtest[2L] != dX[2L]) {
+            stop("`Xtest` must be a numeric matrix with the same number of ",
+                 "predictors as `X`")
+        }
+        have_test_set <- TRUE
+    } else {
+        Xtest <- NULL
     }
 
     if (missing(weights)) {
@@ -68,65 +94,316 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
     lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     lambda <- sort(lambda, decreasing = TRUE)
 
+    ret_struct <- structure(list(
+        status = 0L,
+        message = "no observations",
+        coefficients = matrix(
+            NA_real_,
+            nrow = dX[2L] + intercept,
+            ncol = length(lambda)
+        ),
+        residuals = matrix(
+            NA_real_,
+            nrow = 0L,
+            ncol = length(lambda)
+        ),
+        lambda = lambda,
+        predictions = NULL
+    ), class = "elnetfit")
+
     # Check the size of X and y
     if (identical(dX[1L], 0L)) {
         # no observations
-        return(list(
-            status = 0L,
-            message = "no observations",
-            coefficients = matrix(NA_real_, nrow = dX[2L] + intercept,
-                                  ncol = length(lambda)),
-            residuals = matrix(NA_real_, nrow = 0L, ncol = length(lambda))
-        ))
+        return(ret_struct)
     } else if (identical(dX[2L], 0L)) {
         # no predictors given
         if (intercept) {
             my <- ifelse(weighted, weighted.mean(y, weights), mean(y))
-            coefs <- matrix(my, nrow = 1L, ncol = length(lambda))
-            resids <- matrix(y - my, nrow = dX[1L], ncol = length(lambda))
+
+            ret_struct$coefficients <- matrix(
+                my,
+                nrow = 1L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y - my,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+            if (have_test_set) {
+                ret_struct$predictions <- matrix(
+                    my,
+                    nrow = dXtest[1L],
+                    ncol = length(lambda)
+                )
+            }
         } else {
-            coefs <- matrix(NA_real_, nrow = 0L, ncol = length(lambda))
-            resids <- matrix(y, nrow = dX[1L], ncol = length(lambda))
+            ret_struct$coefficients <- matrix(
+                NA_real_,
+                nrow = 0L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
         }
-        return(list(
-            status = 0L,
-            message = "",
-            coefficients = coefs,
-            residuals = resids
-        ))
+        return(ret_struct)
     }
 
     elnetres <- if (weighted) {
         .elnet.wfit(
-            X,
-            y,
-            weights,
-            alpha,
-            lambda,
-            intercept,
-            addLeading1s,
-            options
+            X = X,
+            y = y,
+            weights = weights,
+            alpha = alpha,
+            lambda = lambda,
+            intercept = intercept,
+            addLeading1s = addLeading1s,
+            options = options,
+            Xtest = Xtest
         )
     } else {
         .elnet.fit(
-            X,
-            y,
-            alpha,
-            lambda,
-            intercept,
-            addLeading1s,
-            options
+            X = X,
+            y = y,
+            alpha = alpha,
+            lambda = lambda,
+            intercept = intercept,
+            addLeading1s = addLeading1s,
+            options = options,
+            Xtest = Xtest
         )
     }
 
-    return(elnetres)
+    for (ri in names(elnetres)) {
+        ret_struct[[ri]] <- elnetres[[ri]]
+    }
+
+    return(ret_struct)
+}
+
+#' Cross-validate Elastic Net
+#'
+#' Perform k-fold cross-validation for \code{\link{elnet}}.
+#'
+#' @param X data matrix with predictors
+#' @param y response vector
+#' @param alpha,lambda values for the parameters controlling the penalization
+#' @param weights an optional vector of weights to be used in the fitting
+#'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
+#'      weighted EN is used with weights \code{weights}. See also 'Details'.
+#' @param intercept should an intercept be estimated?
+#' @param cv_k number of cross validation folds.
+#' @param cv_measure function (name) which takes a matrix of residuals and
+#'      returns a performance measure for each column.
+#' @param ncores,cl the number of processor cores or an actual \code{parallel}
+#'      cluster. At most \code{cv_k + 1} nodes will be used.
+#' @param ... additional arguments passed on to \code{\link{elnet}}.
+#'
+#' @return
+#'  \item{lambda}{vector of lambda values.}
+#'  \item{status}{integer specifying the exit status of the EN algorithm.}
+#'  \item{message}{explenation of the exit status.}
+#'  \item{coefficients}{matrix of regression coefficients. Each
+#'      column corresponds to the estimate for the lambda value at the same
+#'      index.}
+#'  \item{residuals}{matrix of residuals. Each column corresponds to the
+#'      residuals for the lambda value at the same index.}
+#'  \item{cvres}{data frame with lambda, average cross-validated performance
+#'      and the estimated standard deviation.}
+#'
+#' @export
+elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
+                     cv_measure, ncores = getOption("mc.cores", 1L),
+                     cl = NULL, ...) {
+    y <- drop(y)
+
+    dX <- dim(X)
+    dY <- dim(y)
+    yl <- length(y)
+
+    if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
+        stop("`yl` must be a numeric vector")
+    }
+
+    if (is.null(dX) || length(dX) != 2L || !is.numeric(X) || dX[1L] != yl) {
+        stop("`X` must be a numeric matrix with the same number of ",
+             "observations as `y`")
+    }
+
+    if (anyNA(X) || anyNA(y)) {
+        stop("Missing values are not supported")
+    }
+
+    intercept <- isTRUE(intercept)
+
+    if (missing(weights)) {
+        weights <- NULL
+    }
+
+    alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
+                        range_test_lower = ">=", range_test_upper = "<=")
+    lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
+    lambda <- sort(lambda, decreasing = TRUE)
+
+    ret_struct <- structure(list(
+        status = 0L,
+        message = "no observations",
+        coefficients = matrix(
+            NA_real_,
+            nrow = dX[2L] + intercept,
+            ncol = length(lambda)
+        ),
+        residuals = matrix(
+            NA_real_,
+            nrow = 0L,
+            ncol = length(lambda)
+        ),
+        lambda = lambda,
+        cvres = data.frame(lambda = lambda, avg = NA_real_, sd = NA_real_),
+        lambda_opt = NA_real_
+    ), class = c("cv_elnetfit", "elnetfit"))
+
+    # Check the size of X and y
+    if (identical(dX[1L], 0L)) {
+        # no observations
+        return(ret_struct)
+    } else if (identical(dX[2L], 0L)) {
+        # no predictors given
+        if (intercept) {
+            my <- ifelse(weighted, weighted.mean(y, weights), mean(y))
+
+            ret_struct$coefficients <- matrix(
+                my,
+                nrow = 1L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y - my,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+        } else {
+            ret_struct$coefficients <- matrix(
+                NA_real_,
+                nrow = 0L,
+                ncol = length(lambda)
+            )
+            ret_struct$residuals <- matrix(
+                y,
+                nrow = dX[1L],
+                ncol = length(lambda)
+            )
+        }
+        return(ret_struct)
+    }
+
+    # Define CV segments randomly
+    cv_k <- .check_arg(cv_k, "integer", range = c(1, yl))
+    cv_segments <- c(
+        list(full = integer(0L)),
+        split(seq_along(y), sample(rep_len(seq_len(cv_k), yl)))
+    )
+
+    if (missing(cv_measure)) {
+        cv_measure <- function(resids) {
+            sqrt(colMeans(resids^2))
+        }
+    } else {
+        cv_measure <- match.fun(cv_measure)
+    }
+
+    ## Worker CV function.
+    ## Requires the following variables in the environment:
+    ## X, y, weights, cv_measure
+    elnet_job_cv <- function(cv_ind, alpha, lambda, intercept, ...) {
+        if (length(cv_ind) > 0L) {
+            X_test <- X[cv_ind, , drop = FALSE]
+            y_test <- y[cv_ind]
+            X_train <- X[-cv_ind, , drop = FALSE]
+            y_train <- y[-cv_ind]
+            weights_train <- weights[-cv_ind]
+        } else {
+            X_test <- NULL
+            y_test <- NULL
+            X_train <- X
+            y_train <- y
+            weights_train <- weights
+        }
+
+        cv_fold_res <- elnet(
+            X_train,
+            y_train,
+            alpha,
+            lambda,
+            weights = weights_train,
+            intercept = intercept,
+            Xtest = X_test,
+            ...
+        )
+
+        if (length(cv_ind) > 0L) {
+            # Only return the performance measures
+            return(cv_measure(y_test - cv_fold_res$predictions))
+        } else {
+            # Return the full EN result
+            return(cv_fold_res)
+        }
+    }
+
+    # Setup cluster
+    cluster <- setupCluster(
+        ncores,
+        cl,
+        export = c("X", "y", "weights", "cv_measure"),
+        eval = {
+            library(pense)
+        }
+    )
+
+    # Run all jobs (combination of all CV segments and all lambda-grids)
+    tryCatch({
+        cv_results <- cluster$lapply(
+            cv_segments,
+            elnet_job_cv,
+            alpha = alpha,
+            lambda = lambda,
+            intercept,
+            ...
+        )
+    },
+    finally = {
+        cluster$stopCluster()
+    })
+
+    # Merge the full result into the return structure
+    for (ri in names(cv_results$full)) {
+        ret_struct[[ri]] <- cv_results$full[[ri]]
+    }
+
+    # Add the CV results
+    cv_results_mat <- matrix(
+        unlist(cv_results[-1L]),
+        ncol = cv_k
+    )
+
+    ret_struct$cvres <- data.frame(
+        lambda = lambda,
+        cvavg = rowMeans(cv_results_mat),
+        cvsd = apply(cv_results_mat, 1, sd)
+    )
+
+    ret_struct$lambda_opt <- with(ret_struct$cvres, lambda[which.min(cvavg)])
+    return(ret_struct)
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib pense C_augtrans C_elnet
 .elnet.fit <- function(X, y, alpha, lambda, intercept = TRUE,
                        addLeading1s = TRUE, options = en_options_aug_lars(),
-                       warm_coefs) {
+                       warm_coefs, Xtest = NULL) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -152,14 +429,16 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
         alpha,
         lambda,
         intercept,
-        options
+        options,
+        Xtest
     )
 
     if (!identical(elnetres[[1L]], 0L)) {
         warning("Elastic Net algorithm had non-zero return status.")
     }
 
-    names(elnetres) <- c("status", "message", "coefficients", "residuals")
+    names(elnetres) <- c("status", "message", "coefficients", "residuals",
+                         "predictions")
 
     return(elnetres)
 }
@@ -168,7 +447,7 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 #' @useDynLib pense C_augtrans C_elnet_weighted
 .elnet.wfit <- function(X, y, weights, alpha, lambda, intercept = TRUE,
                         addLeading1s = TRUE, options = en_options_aug_lars(),
-                        warm_coefs) {
+                        warm_coefs, Xtest = NULL) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -195,14 +474,16 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
         alpha,
         lambda,
         intercept,
-        options
+        options,
+        Xtest
     )
 
     if (!identical(elnetres[[1L]], 0L)) {
         warning("Elastic Net algorithm had non-zero return status.")
     }
 
-    names(elnetres) <- c("status", "message", "coefficients", "residuals")
+    names(elnetres) <- c("status", "message", "coefficients", "residuals",
+                         "predictions")
 
     return(elnetres)
 }

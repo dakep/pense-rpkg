@@ -103,6 +103,7 @@ initest_options <- function (
 #'      tolerance for the M-scale.
 #' @param cc tuning constant for the S-estimator. Default is to chosen based
 #'      on the breakdown point \code{delta}. Should never have to be changed.
+#' @param verbosity verbosity of the algorithm.
 #' @return a checked options list.
 #' @export
 #' @family specifying additional options
@@ -188,13 +189,17 @@ en_options_aug_lars <- function (
 #' @param eta_start the start value for eta.
 #' @param eta_start_numerator if \code{eta_start} is missing, it is defined
 #'      by \code{eta_start = eta_start_numerator / lambda}.
+#' @param preconditioner preconditioner for the numerical solver. If none,
+#'      a standard solver will be used, otherwise the faster preconditioned
+#'      conjugate gradient is used.
+#' @param verbosity verbosity of the algorithm.
 #' @return a checked options list.
 #' @export
 #' @family specifying additional options
 #' @rdname en_options
 en_options_dal <- function (
     maxit = 100,
-    eps = 1e-6,
+    eps = 1e-8,
     eta_mult = 2,
     eta_start_numerator = 1e-2,
     eta_start,

@@ -151,6 +151,25 @@ pense <- function(X, y,
                                        range = c(0, 1))
     }
 
+    ##
+    ## Sanity checks for some arguments. Some combinations are known to
+    ## be performing poorly.
+    ##
+    if (initial != "warm0" && alpha < 1 && init_options$pscMethod == "rr" &&
+        en_options$algorithm == 1L) {
+        message("Approximation of PSCs does not work well with the DAL ",
+                "algorithm for EN due to the large number of observations ",
+                "in the augmented data matrix. ",
+                'Consider using `psc_method = "exact"` or use the augmented ',
+                "LARS algorithm for EN.")
+    }
+
+    if (en_options$algorithm == 1L && dX[1L] > 500L && dX[2L] < 1000L) {
+        message("The DAL algorithm for elastic net scales with the number of ",
+                "observations. Given the number of variables, augmented LARS ",
+                "might be the faster option.")
+    }
+
     ## store the call
     call <- match.call()
     call[[1L]] <- as.name("pense")

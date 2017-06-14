@@ -43,7 +43,6 @@ test_that("Normal EN with intercept", {
                  tolerance = EQUALITY_THRESHOLD)
     expect_equal(el_res_dal$residuals, el_res_lars$residuals)
 
-    el_res_dal$coefficients[1L] - el_res_lars$coefficients[1L]
     with(el_res_dal, expect_equal(coefficients[1L],
                                   mean(y - x %*% coefficients[-1L])))
     with(el_res_lars, expect_equal(coefficients[1L],
@@ -87,14 +86,21 @@ test_that("Weighted EN with intercept", {
                            options = en_opts_lars)
     expect_equal(el_res_dal_w$coefficients, el_res_lars_w$coefficients,
                  tolerance = EQUALITY_THRESHOLD)
-    expect_equal(el_res_dal_w$residuals, el_res_lars_w$residuals)
+    expect_equal(
+        el_res_dal_w$residuals,
+        el_res_lars_w$residuals,
+        tolerance = EQUALITY_THRESHOLD
+    )
 
-    el_res_dal_w$coefficients[1L] - el_res_lars_w$coefficients[1L]
-    with(el_res_dal_w,
-         expect_equal(coefficients[1L],
-                      weighted.mean(y - x %*% coefficients[-1L], weights)))
-    with(el_res_lars_w,
-         expect_equal(coefficients[1L],
-                      weighted.mean(y - x %*% coefficients[-1L], weights)))
+    with(el_res_dal_w, expect_equal(
+             coefficients[1L],
+             weighted.mean(y - x %*% coefficients[-1L], weights),
+             tolerance = EQUALITY_THRESHOLD
+    ))
+    with(el_res_lars_w, expect_equal(
+        coefficients[1L],
+        weighted.mean(y - x %*% coefficients[-1L], weights),
+        tolerance = EQUALITY_THRESHOLD
+    ))
 })
 

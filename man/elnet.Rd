@@ -5,7 +5,7 @@
 \title{Elastic Net Regression}
 \usage{
 elnet(X, y, alpha, lambda, weights, intercept = TRUE, addLeading1s = TRUE,
-  options = en_options_aug_lars())
+  options = en_options_aug_lars(), Xtest)
 }
 \arguments{
 \item{X}{data matrix with predictors}
@@ -25,11 +25,22 @@ If \code{FALSE}, this has to be done before calling this function.}
 
 \item{options}{additional options for the EN algorithm. See
 \code{\link{en_options}} for details.}
+
+\item{Xtest}{data matrix with predictors used for prediction. This is useful
+for testing the prediciton performance on an independent test set.}
 }
 \value{
-\item{coefficients}{The regression coefficients}
-        \item{residuals}{The residuals}
-        \item{converged}{Did the algorithm converge?}
+\item{lambda}{vector of lambda values.}
+ \item{status}{integer specifying the exit status of the EN algorithm.}
+ \item{message}{explenation of the exit status.}
+ \item{coefficients}{matrix of regression coefficients. Each
+     column corresponds to the estimate for the lambda value at the same
+     index.}
+ \item{residuals}{matrix of residuals. Each column corresponds to the
+     residuals for the lambda value at the same index.}
+ \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
+     column corresponds to the predictions for the lambda value at the
+     same index.}
 }
 \description{
 Compute the elastic net regression coefficients

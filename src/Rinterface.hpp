@@ -40,6 +40,8 @@ RcppExport SEXP C_augtrans(SEXP X);
  * @param intercept   integer Should an intercept be estimated be done (1=yes, 0=no)
  *                            considering only rows with a leading 1.
  * @param options     list    A list with options for the specific EN algorithm
+ * @param Xtest       numeric numeric matrix (size `nvar` x `nobs-test`) WITHOUT intercept column
+ *                            used to generate predictions. Can be NULL.
  *
  * @return List Returns a list with two elements:
  *		item 1: Integer telling if the status of the algorithm
@@ -48,7 +50,8 @@ RcppExport SEXP C_augtrans(SEXP X);
  *      item 4: Numeric vector with the residuals
  */
 RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
-						SEXP lambda, SEXP intercept, SEXP options);
+						SEXP lambda, SEXP intercept, SEXP options,
+                        SEXP Xtest);
 
 /**
  * Solve following minimzation problem:
@@ -68,6 +71,8 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
  * @param intercept   integer Should an intercept be estimated be done (1=yes, 0=no)
  *                            considering only rows with a leading 1.
  * @param enOptions     list    A list with options for the specific EN algorithm
+ * @param Xtest       numeric numeric matrix (size `nvar` x `nobs-test`) WITHOUT intercept column
+ *                            used to generate predictions. Can be NULL.
  *
  * @return List Returns a list with two elements:
  *		item 1: Integer telling if the status of the algorithm
@@ -76,7 +81,8 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
  *      item 4: Numeric vector with the residuals
  */
 RcppExport SEXP C_elnet_weighted(SEXP Xtr, SEXP y, SEXP weights, SEXP coefs,
-								 SEXP alpha, SEXP lambda, SEXP intercept, SEXP enOptions);
+								 SEXP alpha, SEXP lambda, SEXP intercept, SEXP enOptions,
+                                 SEXP Xtest);
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)

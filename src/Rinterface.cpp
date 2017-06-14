@@ -58,7 +58,8 @@ RcppExport SEXP C_augtrans(SEXP RX)
  *
  **************************************************************************************************/
 RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
-                        SEXP Rlambda, SEXP Rintercept, SEXP Roptions)
+                        SEXP Rlambda, SEXP Rintercept, SEXP Roptions,
+                        SEXP RXtest)
 {
     int nlambda = Rf_length(Rlambda);
     int nobs, nvar;
@@ -71,13 +72,22 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
     SEXP status = PROTECT(Rf_allocVector(INTSXP, 1));
     SEXP statusMessage = PROTECT(Rf_allocVector(STRSXP, 1));
+    SEXP retPreds = R_NilValue;
     arma::sp_vec currentBeta(nvar - 1);
     double* currentResidualsPtr = REAL(retResids);
     double* currentCoefsPtr = REAL(retCoefs);
+    double* currentPredsPtr = NULL;
     const double *currentLambda = REAL(Rlambda);
     const double alpha = *REAL(Ralpha);
+    const bool generatePredictions = Rf_isReal(RXtest);
 
     BEGIN_RCPP
+    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+
+    if (generatePredictions) {
+        retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
+        currentPredsPtr = REAL(retPreds);
+    }
 
     memset(currentCoefsPtr, 0, nvar * nlambda * sizeof(double));
 
@@ -109,19 +119,30 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
         if (en->getStatus() != 0) {
             break;
         }
+
+        if (generatePredictions) {
+            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            predAlias = Xtest * currentBeta + (*currentCoefsPtr);
+            currentPredsPtr += Xtest.n_rows;
+        }
     }
     *INTEGER(status) = en->getStatus();
     statusMessage = Rcpp::wrap(en->getStatusMessage());
 
-    result = PROTECT(Rf_allocVector(VECSXP, 4));
+    result = PROTECT(Rf_allocVector(VECSXP, 5));
 
     SET_VECTOR_ELT(result, 0, status);
     SET_VECTOR_ELT(result, 1, statusMessage);
     SET_VECTOR_ELT(result, 2, retCoefs);
     SET_VECTOR_ELT(result, 3, retResids);
+    SET_VECTOR_ELT(result, 4, retPreds);
 
     delete en;
     UNPROTECT(1);
+
+    if (generatePredictions) {
+        UNPROTECT(1);
+    }
 
     VOID_END_RCPP
 
@@ -136,7 +157,8 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
  *
  **************************************************************************************************/
 RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
-                                 SEXP Ralpha, SEXP Rlambda, SEXP Rintercept, SEXP Roptions)
+                                 SEXP Ralpha, SEXP Rlambda, SEXP Rintercept, SEXP Roptions,
+                                 SEXP RXtest)
 {
     int nlambda = Rf_length(Rlambda);
     int nobs, nvar;
@@ -150,13 +172,22 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
     SEXP status = PROTECT(Rf_allocVector(INTSXP, 1));
     SEXP statusMessage = PROTECT(Rf_allocVector(STRSXP, 1));
+    SEXP retPreds = R_NilValue;
     arma::sp_vec currentBeta(nvar - 1);
     double* currentResidualsPtr = REAL(retResids);
     double* currentCoefsPtr = REAL(retCoefs);
+    double* currentPredsPtr = NULL;
     const double *currentLambda = REAL(Rlambda);
     const double alpha = *REAL(Ralpha);
+    const bool generatePredictions = Rf_isReal(RXtest);
 
     BEGIN_RCPP
+    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+
+    if (generatePredictions) {
+        retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
+        currentPredsPtr = REAL(retPreds);
+    }
 
     memset(currentCoefsPtr, 0, nvar * nlambda * sizeof(double));
 
@@ -193,19 +224,29 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
         if (en->getStatus() != 0) {
             break;
         }
+
+        if (generatePredictions) {
+            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            predAlias = Xtest * currentBeta + (*currentCoefsPtr);
+            currentPredsPtr += Xtest.n_rows;
+        }
     }
     *INTEGER(status) = en->getStatus();
     statusMessage = Rcpp::wrap(en->getStatusMessage());
 
-    result = PROTECT(Rf_allocVector(VECSXP, 4));
+    result = PROTECT(Rf_allocVector(VECSXP, 5));
 
     SET_VECTOR_ELT(result, 0, status);
     SET_VECTOR_ELT(result, 1, statusMessage);
     SET_VECTOR_ELT(result, 2, retCoefs);
     SET_VECTOR_ELT(result, 3, retResids);
+    SET_VECTOR_ELT(result, 4, retPreds);
 
     delete en;
     UNPROTECT(1);
+    if (generatePredictions) {
+        UNPROTECT(1);
+    }
 
     VOID_END_RCPP
 

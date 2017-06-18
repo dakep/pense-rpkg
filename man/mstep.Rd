@@ -5,7 +5,8 @@
 \title{Perform an M-step after the EN S-Estimator}
 \usage{
 mstep(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
-  ncores = getOption("mc.cores", 1L), cl = NULL)
+  ncores = getOption("mc.cores", 1L), cl = NULL,
+  options = mstep_options(), X, y, cv_objective, lambda_min_ratio, en_options)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
@@ -20,6 +21,14 @@ values or approximate it from the optimal lambda?}
 
 \item{ncores, cl}{use this many cores or the supplied cluster for choosing the
 optima lambda. See \code{\link{pense}} for more details.}
+
+\item{options}{additional options for the M-step.}
+
+\item{X, y, cv_objective, lambda_min_ratio, en_options}{override arguments
+provided to the original call to \code{\link{pense}}.}
+
+\item{adjust_bdp}{should the breakdown point be adjusted based on the
+effective degrees of freedom?}
 }
 \description{
 Performs an M-step on the S-estimator returned from \code{\link{pense}}.

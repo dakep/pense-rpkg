@@ -38,7 +38,7 @@ void MStep::updateWeights(const double *RESTRICT residuals)
     double tmp = 0;
     for (i = 0; i < this->data.numObs(); ++i) {
         this->weights[i] = wgtBisquare2(residuals[i], this->scale * this->cc);
-        tmp += weights[i];
+        tmp += this->weights[i];
     }
 
     /*

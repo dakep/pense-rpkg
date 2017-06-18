@@ -4,7 +4,8 @@
 \alias{mstep_options}
 \title{Additional Options for the Penalized EN M-estimator}
 \usage{
-mstep_options(cc = 3.44, maxit = 1000, eps = 1e-06)
+mstep_options(cc = 3.44, maxit = 1000, eps = 1e-06, adjust_bdp = FALSE,
+  verbosity = 0)
 }
 \arguments{
 \item{cc}{tuning constant for the M-estimator.}
@@ -12,6 +13,11 @@ mstep_options(cc = 3.44, maxit = 1000, eps = 1e-06)
 \item{maxit}{maximum number of iterations allowed.}
 
 \item{eps}{numeric tolerance for convergence.}
+
+\item{adjust_bdp}{should the breakdown point be adjusted based on the
+effective degrees of freedom?}
+
+\item{verbosity}{verbosity of the algorithm.}
 }
 \value{
 a checked options list.

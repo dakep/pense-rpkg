@@ -58,7 +58,7 @@ If weights are supplied, the minimization problem becomes
 \deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left(
         \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
   \right)}{
-     (1/2N) \sum(w * (y - r^2) + \lambda * (
+     (1/2N) \sum(w * (y - r^2)) + \lambda * (
          (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
   )}
 }

@@ -138,18 +138,26 @@ pense_options <- function (
 #' @param cc tuning constant for the M-estimator.
 #' @param maxit maximum number of iterations allowed.
 #' @param eps numeric tolerance for convergence.
+#' @param adjust_bdp should the breakdown point be adjusted based on the
+#'      effective degrees of freedom?
+#' @param verbosity verbosity of the algorithm.
 #' @return a checked options list.
 #' @export
 #' @family specifying additional options
 mstep_options <- function (
     cc = 3.44,
     maxit = 1000,
-    eps = 1e-6
+    eps = 1e-6,
+    adjust_bdp = FALSE,
+    verbosity = 0
 ) {
     return(list(
         maxit = .check_arg(maxit, "integer", range = 0),
         eps = .check_arg(eps, "numeric", range = 0),
-        cc = .check_arg(cc, "numeric", range = 0)
+        cc = .check_arg(cc, "numeric", range = 0),
+        adjustBdp = .check_arg(adjust_bdp, "logical"),
+        verbosity = .check_arg(verbosity, "integer", range = 0,
+                               range_test_lower = ">=")
     ))
 }
 
@@ -312,13 +320,18 @@ en_options_dal <- function (
 ## Get the integer representation of a supported rho function
 ##
 ##
-.rho2IntRho <- function(rho_fun) {
-    rho_fun <- as.integer(pmatch(rho_fun, c("bisquare", "huber", "gauss"))) - 1L
+.rho2IntRho <- function(rho_fun = c("huber", "bisquare", "gauss")) {
+    rho_fun <- switch(
+        match.arg(rho_fun),
+        huber = 0L,
+        bisquare = 1L,
+        gauss = 5L
+    )
 
     rho_fun <- rho_fun[which(!is.na(rho_fun))[1L]]
 
     if (is.na(rho_fun)) {
-        rho_fun <- 0L
+        rho_fun <- 1L
         warning("Unknown rho function selected. Using Tukey's bisquare.")
     }
 
@@ -327,8 +340,12 @@ en_options_dal <- function (
 
 ## Get the integer representation of a supported EN algorithm
 ##
-.enalgo2IntEnalgo <- function(en_algo) {
-    en_algo <- as.integer(pmatch(en_algo, c("augmented-lars", "dal"))) - 1L
+.enalgo2IntEnalgo <- function(en_algo = c("augmented-lars", "dal")) {
+    en_algo <- switch(
+        match.arg(en_algo),
+        `augmented-lars` = 0L,
+        dal = 1L
+    )
 
     en_algo <- en_algo[which(!is.na(en_algo))[1L]]
 

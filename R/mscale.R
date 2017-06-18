@@ -31,12 +31,11 @@ mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc,
         x <- x[!is.na(x)]
     }
 
-    rho <- .rho2IntRho(match.arg(rho))
-
     if (missing(cc)) {
         cc <- consistency.rho(b, rho)
     }
 
+    rho <- .rho2IntRho(match.arg(rho))
     b <- .check_arg(b, "numeric", range = c(0, 1))
     cc <- .check_arg(cc, "numeric", range = 0)
     eps <- .check_arg(eps, "numeric", range = 0)

@@ -26,16 +26,16 @@ build_lambda_grid <- function(X, y, alpha, nlambda, standardize = TRUE,
     covxy <- apply(Xs, 2, covGK, ycs, sigmamu = scaleTau2)
 
     if (is.null(lambda_min_ratio)) {
-        lambda_min_ratio <- min(1e-2, 1e-3 * 10^floor(log10(dX[2L] / dX[1L])))
+        lambda_min_ratio <- min(1e-3, 1e-3 * 10^floor(log10(dX[2L] / dX[1L])))
     }
 
     lmax <- max(abs(covxy))
     lmin <- lambda_min_ratio * lmax
 
-    lambda <- exp(seq(log(lmin), log(lmax), length.out = nlambda)) *
+    lambda <- exp(seq(log(lmin), log(2 * lmax), length.out = nlambda)) *
         2 * scaleFun(y) / alpha
     #adjustment for an S-est (may not be enough)
-    lambda <- lambda * 1.1 * 2
+    # lambda <- lambda * 1.1 * 2
 
     return(lambda)
 }

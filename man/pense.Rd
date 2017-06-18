@@ -5,8 +5,8 @@
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
-  lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
-  "warm0", "cold"), warm_reset = 10, cv_k = 5, cv_objective,
+  lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm0",
+  "warm", "cold"), warm_reset = 10, cv_k = 5, cv_objective,
   ncores = getOption("mc.cores", 1L), cl = NULL,
   options = pense_options(), init_options = initest_options(),
   en_options = en_options_aug_lars())
@@ -65,7 +65,7 @@ information.}
 See \code{\link{pense_options}} for details.}
 
 \item{en_options}{additional options for the EN algorithm.
-See \code{\link{en_options}} for details.}
+See \code{\link{elnet}} and \code{\link{en_options}} for details.}
 
 \item{initest_options}{additional options for computing the initial
 estimator. Ignored if \code{initial = "warm0"}.

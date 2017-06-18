@@ -321,31 +321,45 @@ pense <- function(X, y,
         })
 
         # Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
-        cv_performance <- unlist(lapply(cv_results, function(cv_res) {
-            pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
-            apply(pred_resids, 2, cv_objective_fun)
-        }), use.names = FALSE)
+        cv_obj <- t(do.call(cbind, lapply(
+            cv_results,
+            function(cv_res) {
+                cv_obj_fvals <- unlist(lapply(cv_res, function (lambda_res) {
+                    apply(lambda_res$residuals, 2, cv_objective_fun)
+                }))
+                cv_obj_fvals <- matrix(cv_obj_fvals, ncol = length(cv_res))
+                apply(cv_obj_fvals, 1, function (x) {
+                    c(cvavg = mean(x), cvsd = sd(x))
+                })
 
-        cv_stats <- do.call(rbind, lapply(cv_results, function (cv_res) {
-            sol_stats <- unlist(lapply(cv_res, "[[", "sol_stats"))
-            sol_stats <- array(
-                sol_stats,
-                dim = c(4L, length(sol_stats) %/% (cv_k * 4L), cv_k),
-                dimnames = list(
-                    c("obj_fun", "s_scale", "beta_L1", "beta_L2"),
-                    NULL,
-                    NULL
+                # pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
+                # apply(pred_resids, 2, cv_objective_fun)
+            }))
+        )
+
+        cv_stats <- do.call(rbind, lapply(
+            cv_results,
+            function (cv_res) {
+                sol_stats <- unlist(lapply(cv_res, "[[", "sol_stats"))
+                sol_stats <- array(
+                    sol_stats,
+                    dim = c(4L, length(sol_stats) %/% (cv_k * 4L), cv_k),
+                    dimnames = list(
+                        c("obj_fun", "s_scale", "beta_L1", "beta_L2"),
+                        NULL,
+                        NULL
+                    )
                 )
-            )
-            apply(sol_stats, 1L, rowMeans, na.rm = TRUE)
-        }))
+                apply(sol_stats, 1L, rowMeans, na.rm = TRUE)
+            })
+        )
 
         lambda_grid <- data.frame(
             lambda = lambda * max(scale_x),
-            cv_performance = cv_performance,
+            cv_obj,
             cv_stats
         )
-        lambda_opt <- lambda[which.min(cv_performance)]
+        lambda_opt <- lambda[which.min(cv_obj[, "cvavg"])]
     } else {
         lambda_grid <- NULL
         lambda_opt <- lambda[1L]

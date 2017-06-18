@@ -485,7 +485,7 @@ RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP coefs,
     getMatDims(RXtr, &nvar, &nobs);
 
     const Options penseOpts = listToOptions(RpenseOptions);
-    Options enOpts = listToOptions(RenOptions);
+    const Options enOpts = listToOptions(RenOptions);
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
 
     PENSEReg pr(data, *REAL(Ralpha), *REAL(Rlambda), penseOpts, enOpts);
@@ -534,7 +534,7 @@ RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
     getMatDims(RXtr, &nvar, &nobs);
 
     const Options msOpts = listToOptions(RmsOptions);
-    Options enOpts = listToOptions(RenOptions);
+    const Options enOpts = listToOptions(RenOptions);
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
 
     MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);

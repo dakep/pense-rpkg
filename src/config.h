@@ -51,9 +51,9 @@
 #define LAPACK_EV_MIN 1e-12
 
 typedef enum RhoFunctionNameTag {
-    BISQUARE = 0,
-    HUBER = 1,
-    GAUSS_WEIGHT = 2
+    HUBER = 0,
+    BISQUARE = 1,
+    GAUSS_WEIGHT = 5
 } RhoFunctionName;
 
 

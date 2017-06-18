@@ -31,11 +31,7 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
     }
 
     if (missing(en_options)) {
-        en_options <- if (!is.null(penseobj$call$en_options)) {
-            eval(penseobj$call$en_options, envir = parent.frame())
-        } else {
-            en_options_aug_lars()
-        }
+        en_options <- penseobj$en_options
     }
 
     dX <- dim(X)

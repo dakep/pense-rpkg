@@ -498,9 +498,15 @@ RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP coefs,
     double *RESTRICT newCoefsPtr = REAL(newCoefs);
 
     BEGIN_RCPP
-
     memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
-    pr.compute(newCoefsPtr, REAL(residuals));
+
+    arma::vec residVec(REAL(residuals), nobs, false, true);
+    arma::vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
+    arma::sp_vec beta(betaDense);
+
+    pr.compute(*newCoefsPtr, beta, residVec);
+
+    betaDense = arma::vec(beta);
 
     result = PROTECT(Rf_allocVector(VECSXP, 5));
     scale = PROTECT(Rf_ScalarReal(pr.getScale()));
@@ -538,6 +544,7 @@ RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
 
     MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);
+
     SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
     SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
     SEXP relChange;
@@ -546,9 +553,15 @@ RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
     double *RESTRICT newCoefsPtr = REAL(newCoefs);
 
     BEGIN_RCPP
-
     memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
-    ms.compute(newCoefsPtr, REAL(residuals));
+
+    arma::vec residVec(REAL(residuals), nobs, false, true);
+    arma::vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
+    arma::sp_vec beta(betaDense);
+
+    ms.compute(*newCoefsPtr, beta, residVec);
+
+    betaDense = arma::vec(beta);
 
     result = PROTECT(Rf_allocVector(VECSXP, 4));
     relChange = PROTECT(Rf_ScalarReal(ms.relChange()));

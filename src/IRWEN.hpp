@@ -9,16 +9,21 @@
 #ifndef IRWEN_hpp
 #define IRWEN_hpp
 
+#include "config.h"
+#include <RcppArmadillo.h>
+
+
 #include "Options.hpp"
 #include "ElasticNet.hpp"
 #include "Data.hpp"
+
 
 class IRWEN {
 public:
 	IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts);
 	~IRWEN();
 
-	void compute(double *RESTRICT coefficients, double *RESTRICT residuals);
+	void compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals);
 
 	int iterations() const
 	{
@@ -31,10 +36,11 @@ public:
 	}
 
 protected:
-    virtual void updateWeights(const double *RESTRICT residuals) = 0;
+    virtual void updateWeights(const arma::vec& residuals) = 0;
 
-	const Data& data;
-    double* weights;
+    const arma::mat Xtr;
+    const arma::vec y;
+    arma::vec weights;
 
 private:
     const int verbosity;

@@ -5,15 +5,19 @@
 //  Created by David Kepplinger on 2016-04-22.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
+#include "config.h"
+#include <RcppArmadillo.h>
+
 #include "PENSEreg.hpp"
 
-#include <RcppArmadillo.h>
 #include <Rmath.h>
 
 #include "Data.hpp"
 #include "ElasticNet.hpp"
 #include "olsreg.h"
 #include "mscale.h"
+
+using namespace arma;
 
 static const RhoFunction rhoBisquare2 = getRhoFunctionByName(BISQUARE);
 static const double DEFAULT_OPT_BDP = 0.5;
@@ -37,15 +41,14 @@ PENSEReg::~PENSEReg()
 {
 }
 
-void PENSEReg::updateWeights(const double *RESTRICT residuals)
+void PENSEReg::updateWeights(const vec& residuals)
 {
     double tmp;
-    int i;
-    this->scale = mscale(residuals, this->data.numObs(), this->bdp, this->mscaleEps,
+    this->scale = mscale(residuals.memptr(), residuals.n_elem, this->bdp, this->mscaleEps,
                          this->mscaleMaxIt, rhoBisquare2, this->cc);
 
     tmp = 0;
-    for (i = 0; i < this->data.numObs(); ++i) {
+    for (uword i = 0; i < residuals.n_elem; ++i) {
         this->weights[i] = wgtBisquare2(residuals[i], this->scale * this->cc);
         tmp += this->weights[i];
     }
@@ -53,10 +56,7 @@ void PENSEReg::updateWeights(const double *RESTRICT residuals)
     /*
      * Normalize weights to sum to n --> just as in the unweighted case
      */
-    tmp = this->data.numObs() / tmp;
-    for (i = 0; i < this->data.numObs(); ++i) {
-        this->weights[i] *= tmp;
-    }
+    this->weights *= residuals.n_elem / tmp;
 }
 
 static inline double wgtBisquare2(double x, double c)

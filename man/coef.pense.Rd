@@ -7,12 +7,12 @@
 \method{coef}{pense}(object, lambda, ...)
 }
 \arguments{
-\item{object}{an object of type \code{pense} to extract coefficients from.}
+\item{object}{object of type \code{pense} to extract coefficients from.}
 
-\item{lambda}{the value of the penalty parameter. Default is to use the optimal
-lambda \code{lambda.opt}.}
+\item{lambda}{the value of the penalty parameter. Default is to use the
+optimal lambda \code{lambda.opt}.}
 
-\item{...}{currently ignored.}
+\item{...}{currently not used.}
 }
 \value{
 A numeric vector of size \eqn{p + 1}.

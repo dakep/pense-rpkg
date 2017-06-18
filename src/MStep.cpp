@@ -5,17 +5,19 @@
 //  Created by David Kepplinger on 2016-05-13.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
+#include "config.h"
+#include <RcppArmadillo.h>
 
 #include "MStep.hpp"
 
-#include <RcppArmadillo.h>
 #include <Rmath.h>
-
 
 #include "Data.hpp"
 #include "ElasticNet.hpp"
 #include "olsreg.h"
 #include "mscale.h"
+
+using namespace arma;
 
 static const double DEFAULT_OPT_CC = 3.44;
 
@@ -32,11 +34,10 @@ MStep::~MStep()
 {
 }
 
-void MStep::updateWeights(const double *RESTRICT residuals)
+void MStep::updateWeights(const vec& residuals)
 {
-    int i;
     double tmp = 0;
-    for (i = 0; i < this->data.numObs(); ++i) {
+    for (uword i = 0; i < residuals.n_elem; ++i) {
         this->weights[i] = wgtBisquare2(residuals[i], this->scale * this->cc);
         tmp += this->weights[i];
     }
@@ -44,10 +45,7 @@ void MStep::updateWeights(const double *RESTRICT residuals)
     /*
      * Normalize weights to sum to n --> just as in the unweighted case
      */
-    tmp = this->data.numObs() / tmp;
-    for (i = 0; i < this->data.numObs(); ++i) {
-        this->weights[i] *= tmp;
-    }
+    this->weights *= residuals.n_elem / tmp;
 }
 
 static inline double wgtBisquare2(double x, double c)

@@ -9,6 +9,9 @@
 #ifndef PENSEreg_hpp
 #define PENSEreg_hpp
 
+#include "config.h"
+#include <RcppArmadillo.h>
+
 #include "IRWEN.hpp"
 #include "mscale.h"
 #include "Data.hpp"
@@ -23,7 +26,7 @@ public:
         return this->scale;
     }
 protected:
-    void updateWeights(const double *RESTRICT residuals);
+    void updateWeights(const arma::vec& residuals);
 
 private:
     const double bdp;       // breakdown point

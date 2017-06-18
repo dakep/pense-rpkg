@@ -9,6 +9,9 @@
 #ifndef MStep_hpp
 #define MStep_hpp
 
+#include "config.h"
+#include <RcppArmadillo.h>
+
 #include "IRWEN.hpp"
 #include "Options.hpp"
 #include "Data.hpp"
@@ -20,7 +23,7 @@ public:
 	~MStep();
 
 protected:
-    void updateWeights(const double *RESTRICT residuals);
+    void updateWeights(const arma::vec& residuals);
 
 private:
     const double cc;    // tuning constant

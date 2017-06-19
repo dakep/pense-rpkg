@@ -1,3 +1,4 @@
+#' @importFrom methods is
 nameCoefVec <- function(coef, X) {
     dn <- dimnames(X)
     xnames <- paste("X", seq_len(ncol(X)), sep = "")
@@ -6,7 +7,7 @@ nameCoefVec <- function(coef, X) {
         xnames <- dn[[2L]]
     }
 
-    if (is.matrix(coef)) {
+    if (is.matrix(coef) || is(coef, "Matrix")) {
         rownames(coef) <- c("(Intercept)", xnames)
     } else {
         names(coef) <- c("(Intercept)", xnames)

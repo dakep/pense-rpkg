@@ -51,6 +51,9 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 
     pense_lambda_opt <- penseobj$lambda_opt
     pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE)
+    pense_int <- pense_coef[1L]
+    pense_coef <- pense_coef[-1L]
+
     residuals <- residuals(penseobj, lambda = lambda, exact = TRUE)
 
     ## Standardize data and coefficients
@@ -59,9 +62,9 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     yc <- std_data$yc
 
     if (isTRUE(penseobj$standardize)) {
-        pense_coef[1L] <- pense_coef[1L] - std_data$muy +
-            drop(pense_coef[-1L] %*% std_data$mux)
-        pense_coef[-1L] <- pense_coef[-1L] * std_data$scale_x
+        pense_int <- pense_int - std_data$muy +
+            drop(pense_coef %*% std_data$mux)
+        pense_coef <- pense_coef * std_data$scale_x
     }
 
     pense_lambda_opt <- pense_lambda_opt / max(std_data$scale_x)
@@ -77,7 +80,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     ## Tibshirani, Ryan J.; Taylor, Jonathan. Degrees of freedom in lasso problems.
     ## Ann. Statist. 40 (2012), no. 2, 1198--1232. doi:10.1214/12-AOS1003.
     ##
-    active_set <- (abs(pense_coef[-1L]) > .Machine$double.eps)
+    active_set <- (abs(pense_coef) > .Machine$double.eps)
 
     edf <- if ((penseobj$alpha < 1) && (length(active_set) > 0L)) {
         # this is not the lambda_2 in the objective used for optimization
@@ -182,19 +185,14 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         lambda_min_ratio <- ifelse(is.null(lambda_min_ratio), 1e-5,
                                    lambda_min_ratio)
 
-        check_zero_norm <- function(lambda, init_scale, init_coef, alpha,
-                                    options, en_options) {
+        check_zero_norm <- function(...) {
             msres <- pensemstep(
                 Xs,
                 yc,
-                init_scale = init_scale,
-                init_coef = init_coef,
-                alpha = alpha,
-                lambda = lambda,
-                options = options,
-                en_options = en_options
+                ...
             )
-            return(all(abs(msres$beta) < .Machine$double.eps))
+            # msres$beta is of type `dgCMatrix`
+            return(length(msres$beta@i) == 0L)
         }
 
         ##
@@ -209,6 +207,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                 check_lambdas,
                 check_zero_norm,
                 init_scale = scale_init_corr,
+                init_int = pense_int,
                 init_coef = pense_coef,
                 alpha = penseobj$alpha,
                 options = options,
@@ -239,6 +238,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                     check_lambdas,
                     check_zero_norm,
                     init_scale = scale_init_corr,
+                    init_int = pense_int,
                     init_coef = pense_coef,
                     alpha = penseobj$alpha,
                     options = options,
@@ -296,8 +296,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
 
         ## Run all jobs (combination of all CV segments and all lambda values)
-        dojobcv <- function(job, init_scale, init_coef, alpha,
-                            options, en_options) {
+        dojobcv <- function(job, ...) {
             if (length(job$segment) == 0L) {
                 X_train <- Xs
                 y_train <- yc
@@ -313,12 +312,8 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
             msres <- pensemstep(
                 X_train,
                 y_train,
-                alpha = alpha,
                 lambda = job$lambda,
-                init_scale = init_scale,
-                init_coef = init_coef,
-                options = options,
-                en_options = en_options
+                ...
             )
 
             return(drop(y_test - msres$intercept - X_test %*% msres$beta))
@@ -330,6 +325,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                 dojobcv,
                 alpha = penseobj$alpha,
                 init_scale = scale_init_corr,
+                init_int = pense_int,
                 init_coef = pense_coef,
                 options = options,
                 en_options = en_options
@@ -383,6 +379,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         Xs,
         yc,
         init_scale = scale_init_corr,
+        init_int = pense_int,
         init_coef = pense_coef,
         alpha = penseobj$alpha,
         lambda = lambda_opt_m_cv,
@@ -394,14 +391,14 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     if (isTRUE(penseobj$standardize)) {
         msres$beta <- msres$beta / std_data$scale_x
         msres$intercept <- msres$intercept + std_data$muy -
-            drop(msres$beta %*% std_data$mux)
+            as.numeric(std_data$mux %*% msres$beta)
 
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
 
     return(structure(list(
         residuals = msres$resid,
-        coefficients = nameCoefVec(c(msres$intercept, msres$beta), X),
+        coefficients = nameCoefVec(rbind(msres$intercept, msres$beta), X),
         objective = msres$objF,
         bdp = bdp_adj,
         lambda = lambda_opt_m_cv,
@@ -415,40 +412,38 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 }
 
 ##
-#' @useDynLib pense C_augtrans C_pen_mstep
+#' @useDynLib pense C_augtrans C_pen_mstep_sp
 #' @importFrom robustbase Mchi
-pensemstep <- function(X, y, init_scale, init_coef, alpha, lambda,
+#' @importFrom methods is
+#' @importFrom Matrix Matrix
+#' @importClassesFrom Matrix dgCMatrix
+pensemstep <- function(X, y, init_scale, init_int, init_coef, alpha, lambda,
                        options, en_options) {
     dX <- dim(X)
 
     Xtr <- .Call(C_augtrans, X)
     dX[2L] <- dX[2L] + 1L
 
-    res <- .Call(C_pen_mstep, Xtr, y, init_coef, init_scale, alpha, lambda,
-                 options, en_options)
+    if (!is(init_coef, "dgCMatrix")) {
+        init_coef <- Matrix(init_coef, sparse = TRUE, ncol = 1L)
+    }
 
-    ret <- list(
-        intercept = res[[1L]][1L],
-        beta = res[[1L]][-1L],
-        resid = res[[2L]],
-        rel_change = sqrt(res[[3L]]),
-        iterations = res[[4L]],
-        objF = NA_real_
-    )
+    res <- .Call(C_pen_mstep_sp, Xtr, y, init_int, init_coef, init_scale,
+                 alpha, lambda, options, en_options)
 
-    ret$objF <- sum(Mchi(drop(ret$resid / init_scale),
+    res$objF <- sum(Mchi(drop(res$residuals / init_scale),
                          cc = options$cc, psi = "bisquare")) +
         lambda * (
-            0.5 * (1 - alpha) * sum(ret$beta^2) + alpha * sum(abs(ret$beta))
+            0.5 * (1 - alpha) * sum(res$beta^2) + alpha * sum(abs(res$beta))
         )
 
     ##
     ## Check if the M-step converged.
     ## Be extra careful with the comparison as rel.change may be NaN or NA
     ##
-    if (!isTRUE(ret$rel_change < options$eps)) {
+    if (!isTRUE(res$rel_change < options$eps)) {
         warning(sprintf("M-step did not converge for lambda = %.6f", lambda))
     }
 
-    return(ret)
+    return(res)
 }

@@ -19,6 +19,7 @@
 #'      provided to the original call to \code{\link{pense}}.
 #' @importFrom robustbase .Mchi scaleTau2
 #' @importFrom stats mad median
+#' @importFrom Matrix drop
 #' @export
 mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                   nlambda = 30L,
@@ -50,9 +51,9 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     call[[1L]] <- as.name("mstep")
 
     pense_lambda_opt <- penseobj$lambda_opt
-    pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE)
+    pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE, sparse = TRUE)
     pense_int <- pense_coef[1L]
-    pense_coef <- pense_coef[-1L]
+    pense_beta <- pense_coef[-1L, , drop = FALSE]
 
     residuals <- residuals(penseobj, lambda = lambda, exact = TRUE)
 
@@ -63,8 +64,8 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 
     if (isTRUE(penseobj$standardize)) {
         pense_int <- pense_int - std_data$muy +
-            drop(pense_coef %*% std_data$mux)
-        pense_coef <- pense_coef * std_data$scale_x
+            drop(std_data$mux %*% pense_beta)
+        pense_beta <- pense_beta * std_data$scale_x
     }
 
     pense_lambda_opt <- pense_lambda_opt / max(std_data$scale_x)
@@ -80,14 +81,14 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     ## Tibshirani, Ryan J.; Taylor, Jonathan. Degrees of freedom in lasso problems.
     ## Ann. Statist. 40 (2012), no. 2, 1198--1232. doi:10.1214/12-AOS1003.
     ##
-    active_set <- (abs(pense_coef) > .Machine$double.eps)
+    active_set <- pense_beta@i + 1L
 
     edf <- if ((penseobj$alpha < 1) && (length(active_set) > 0L)) {
         # this is not the lambda_2 in the objective used for optimization
         # since the optimization uses differently scaled objective
         lambda2 <- pense_lambda_opt * (1 - penseobj$alpha) * dX[1L]
         xtx <- crossprod(Xs[, active_set, drop = FALSE])
-        hmat <- solve(xtx + lambda2 * diag(sum(active_set)), xtx)
+        hmat <- solve(xtx + lambda2 * diag(length(active_set)), xtx)
         sum(diag(hmat))
     } else {
         sum(active_set)
@@ -208,7 +209,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                 check_zero_norm,
                 init_scale = scale_init_corr,
                 init_int = pense_int,
-                init_coef = pense_coef,
+                init_coef = pense_beta,
                 alpha = penseobj$alpha,
                 options = options,
                 en_options = en_options
@@ -239,7 +240,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                     check_zero_norm,
                     init_scale = scale_init_corr,
                     init_int = pense_int,
-                    init_coef = pense_coef,
+                    init_coef = pense_beta,
                     alpha = penseobj$alpha,
                     options = options,
                     en_options = en_options
@@ -326,7 +327,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                 alpha = penseobj$alpha,
                 init_scale = scale_init_corr,
                 init_int = pense_int,
-                init_coef = pense_coef,
+                init_coef = pense_beta,
                 options = options,
                 en_options = en_options
             )
@@ -380,7 +381,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         yc,
         init_scale = scale_init_corr,
         init_int = pense_int,
-        init_coef = pense_coef,
+        init_coef = pense_beta,
         alpha = penseobj$alpha,
         lambda = lambda_opt_m_cv,
         options = options,

@@ -6,11 +6,13 @@
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
+#' @param sparse return a sparse vector or a dense (base R) numeric vector
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export
-coef.pense <- function(object, lambda, exact = FALSE, ...) {
+coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
     exact <- isTRUE(exact)
+    sparse <- isTRUE(sparse)
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt
@@ -26,7 +28,7 @@ coef.pense <- function(object, lambda, exact = FALSE, ...) {
         # requested lambda is larger than the largest lambda in the grid AND
         # the largest lambda in the grid gave an all-zero vector -->
         # we can return the result of the largest lambda
-        return(object$coefficients[, max_lambda_ind])
+        return(object$coefficients[, max_lambda_ind, drop = !sparse])
     }
 
     lambda_diff <- object$lambda - lambda
@@ -34,7 +36,7 @@ coef.pense <- function(object, lambda, exact = FALSE, ...) {
 
     if (any(lambda_diff_abs < .Machine$double.eps)) {
         # the requested lambda value is alrady in the grid
-        return(object$coefficients[, which.min(lambda_diff_abs)])
+        return(object$coefficients[, which.min(lambda_diff_abs), drop = !sparse])
     }
 
     # the requested lambda value is not part of the grid
@@ -53,9 +55,15 @@ coef.pense <- function(object, lambda, exact = FALSE, ...) {
             )]
 
             interp_w <- 1 / lambda_diff_abs[c(interp_lambda_left, interp_lambda_right)]
-            interp_c <- (interp_w[1L] * object$coefficients[, interp_lambda_left] +
-                             interp_w[2L] * object$coefficients[, interp_lambda_right]) /
+            interp_c <- (interp_w[1L] *
+                             object$coefficients[, interp_lambda_left, drop = !sparse] +
+                             interp_w[2L] *
+                             object$coefficients[, interp_lambda_right, drop = !sparse]) /
                 sum(interp_w)
+
+            if (!sparse) {
+                interp_c <- as.numeric(interp_c)
+            }
             return(interp_c)
         }
         # else:
@@ -72,12 +80,13 @@ coef.pense <- function(object, lambda, exact = FALSE, ...) {
     xs <- std_data$xs
     yc <- std_data$yc
 
-    init_coef <- object$coefficients[ , closests_lambda_ind]
+    init_int <- object$coefficients[1L, closests_lambda_ind]
+    init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
 
     if (isTRUE(object$standardize)) {
-        init_coef[1L] <- init_coef[1L] - std_data$muy +
-            drop(init_coef[-1L] %*% std_data$mux)
-        init_coef[-1L] <- init_coef[-1L] * std_data$scale_x
+        init_int <- init_int - std_data$muy +
+            as.numeric(std_data$mux %*% init_beta)
+        init_beta <- init_beta * std_data$scale_x
     }
 
     estimate <- pen_s_reg(
@@ -85,7 +94,8 @@ coef.pense <- function(object, lambda, exact = FALSE, ...) {
         yc,
         alpha = object$alpha,
         lambda = lambda / max(std_data$scale_x),
-        init_coef = init_coef,
+        init_int = init_int,
+        init_coef = init_beta,
         options = object$pense_options,
         en_options = object$en_options
     )
@@ -93,13 +103,20 @@ coef.pense <- function(object, lambda, exact = FALSE, ...) {
     if (isTRUE(object$standardize)) {
         estimate$beta <- estimate$beta / std_data$scale_x
         estimate$intercept <- estimate$intercept + std_data$muy -
-            drop(estimate$beta %*% std_data$mux)
+            as.numeric(std_data$mux %*% estimate$beta)
     }
 
-    return(setNames(
-        c(estimate$intercept, estimate$beta),
-        rownames(object$coefficients)
-    ))
+    if (sparse) {
+        coef <- rbind(estimate$intercept, estimate$beta)
+        rownames(coef) <- rownames(object$coefficients)
+    } else {
+        coef <- setNames(
+            c(estimate$intercept, as.numeric(estimate$beta)),
+            rownames(object$coefficients)
+        )
+    }
+    return(coef)
+
 }
 
 #' Extract Residuals from a Fitted Penalized Elastic-Net S-estimator
@@ -128,7 +145,7 @@ residuals.pense <- function(object, lambda, exact = FALSE, ...) {
         return(object$residuals[ , lambda_match[1L]])
     }
 
-    coefs <- coef.pense(object, lambda = lambda, exact)
+    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE)
 
     x <- data.matrix(eval(object$call$X))
     y <- drop(eval(object$call$y))

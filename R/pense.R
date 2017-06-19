@@ -72,6 +72,7 @@
 #'
 #' @importFrom stats mad median
 #' @importFrom robustbase scaleTau2
+#' @importFrom Matrix norm drop
 pense <- function(X, y,
                   alpha = 0.5,
                   nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
@@ -224,17 +225,11 @@ pense <- function(X, y,
         )
 
         residuals <- NULL
-        coefs <- if (isTRUE(ret_coefs)) {
-            vapply(
-                est_all,
-                function(est) {
-                    c(est$intercept, est$beta)
-                },
-                FUN.VALUE = numeric(ncol(X) + 1L),
-                USE.NAMES = FALSE
-            )
-        } else {
-            NULL
+        intercept <- NULL
+        beta <- NULL
+        if (isTRUE(ret_coefs)) {
+            beta <- do.call(cbind, lapply(est_all, "[[", "beta"))
+            intercept <- unlist(lapply(est_all, "[[", "intercept"))
         }
 
         if (length(job$segment) == 0L) {
@@ -251,7 +246,7 @@ pense <- function(X, y,
             residuals <- vapply(
                 est_all,
                 function(est) {
-                    y_test - est$intercept - X_test %*% est$beta
+                    drop(y_test - est$intercept - X_test %*% est$beta)
                 },
                 FUN.VALUE = numeric(length(job$segment)), USE.NAMES = FALSE)
         }
@@ -262,15 +257,16 @@ pense <- function(X, y,
                 c(
                     objF = est$objF,
                     scale = est$scale,
-                    beta_L1 = sum(abs(est$beta / scale_x)),
-                    beta_L2 = sqrt(sum((est$beta / scale_x)^2))
+                    beta_L1 = norm(est$beta, "1"),
+                    beta_L2 = norm(est$beta, "2")
                 )
             },
             FUN.VALUE = numeric(4L), USE.NAMES = TRUE)
 
         return(list(
             residuals = residuals,
-            coefficients = coefs,
+            intercept = intercept,
+            beta = beta,
             sol_stats = sol_stats
         ))
     }
@@ -344,11 +340,8 @@ pense <- function(X, y,
     })
 
     ## Gather all coefficients and residuals from the full results
-    coef_ests <- unlist(
-        lapply(full_results, "[[", "coefficients"),
-        use.names = FALSE
-    )
-    coef_ests <- matrix(coef_ests, nrow = dX[2L] + 1L, ncol = nlambda)
+    int_ests <- unlist(lapply(full_results, "[[", "intercept"))
+    beta_ests <- do.call(cbind, lapply(full_results, "[[", "beta"))
     residuals <- unlist(
         lapply(full_results, "[[", "residuals"),
         use.names = FALSE
@@ -425,7 +418,10 @@ pense <- function(X, y,
     ## Order results on lambda grid by increasing lambda
     lambda_order <- sort.list(lambda, method = "quick", na.last = NA)
     lambda <- lambda[lambda_order]
-    coef_ests <- coef_ests[, lambda_order, drop = FALSE]
+    coef_ests <- rbind(
+        int_ests[lambda_order],
+        beta_ests[ , lambda_order, drop = FALSE]
+    )
     residuals <- residuals[, lambda_order, drop = FALSE]
     scale_ests <- scale_ests[lambda_order]
     obj_fun_vals <- obj_fun_vals[lambda_order]

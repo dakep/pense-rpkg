@@ -736,10 +736,10 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
 
     retList = List::create(
         Named("intercept") = intercept,
-        Named("beta") = beta,
+        Named("beta") = sp_mat(beta),
         Named("residuals") = residuals,
         Named("scale") = pr.getScale(),
-        Named("relChange") = pr.relChange(),
+        Named("rel_change") = pr.relChange(),
         Named("iterations") = pr.iterations()
     );
 

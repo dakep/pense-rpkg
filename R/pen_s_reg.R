@@ -1,36 +1,31 @@
 ## Internal function to calculate PENSE for a given initial estimate (init.coef)
 ## in C++
 ##
-#' @useDynLib pense C_augtrans C_pen_s_reg
-pen_s_reg <- function(X, y, alpha, lambda, init_coef, warn = TRUE,
+#' @useDynLib pense C_augtrans C_pen_s_reg_sp
+#' @importFrom methods is
+#' @importFrom Matrix Matrix
+#' @importClassesFrom Matrix dgCMatrix
+pen_s_reg <- function(X, y, alpha, lambda, init_int, init_coef, warn = TRUE,
                       options, en_options) {
     dX <- dim(X)
 
     Xtr <- .Call(C_augtrans, X)
     dX[2L] <- dX[2L] + 1L
 
-    lambda1 <- alpha * lambda
-    lambda2 <- lambda * (1 - alpha) / 2
+    if (!is(init_coef, "dgCMatrix")) {
+        init_coef <- Matrix(init_coef, ncol = 1L, sparse = TRUE)
+    }
 
-    res <- .Call(
-        C_pen_s_reg,
+    ret <- .Call(
+        C_pen_s_reg_sp,
         Xtr,
         y,
+        init_int,
         init_coef,
         alpha,
         lambda,
         options,
         en_options
-    )
-
-    ret <- list(
-        intercept = res[[1L]][1L],
-        beta = res[[1L]][-1L],
-        resid = res[[2L]],
-        scale = res[[3L]],
-        rel_change = sqrt(res[[4L]]),
-        iterations = res[[5L]],
-        objF = NA_real_
     )
 
     ret$objF <- ret$scale^2 + lambda * (

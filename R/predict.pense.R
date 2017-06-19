@@ -23,7 +23,7 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE, ...) {
             stop("`newdata` must be a numeric matrix")
         }
 
-        if (dX[2L] != length(object$coefficients) - 1L) {
+        if (dX[2L] != nrow(object$coefficients) - 1L) {
             stop("`newdata` must have as many columns as the original data set")
         }
     }
@@ -32,7 +32,7 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE, ...) {
         lambda <- NULL
     }
 
-    coefs <- coef.pense(object, lambda = lambda, exact)
+    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE)
 
     pr <- coefs[1L] + newdata %*% coefs[-1L]
     return(as.vector(pr))

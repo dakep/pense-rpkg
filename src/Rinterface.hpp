@@ -46,12 +46,45 @@ RcppExport SEXP C_augtrans(SEXP X);
  * @return List Returns a list with two elements:
  *		item 1: Integer telling if the status of the algorithm
  *		item 2: Error message explaining the status of the algorithm
- *      item 3: Numeric vector with the cofficient estimates
- *      item 4: Numeric vector with the residuals
+ *      item 3: numeric matrix with the cofficient estimates
+ *      item 4: numeric matrix with the residuals
+ *      item 5: numeric matrix with predictions for Xtest
  */
 RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
 						SEXP lambda, SEXP intercept, SEXP options,
                         SEXP Xtest);
+
+
+/**
+ * Solve following minimzation problem:
+ * (1 / (2*N)) * L2(y - beta0 - X . beta)^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
+ *
+ * It is the caller's responsibility to ensure that at least one predictor is present
+ * in Xtr. The function will NOT check the arguments and will crash if Xtr does not
+ * contain enough values.
+ *
+ * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y           numeric The numeric y vector (size `nobs`)
+ * @param coefs		  numeric The inital coefficients, will be copied if `warm` is 1, otherwise
+ *							  not referenced.
+ * @param alpha       numeric The alpha parameter for the penalization
+ * @param lambda      numeric The lambda parameter for the penalization
+ * @param intercept   integer Should an intercept be estimated be done (1=yes, 0=no)
+ *                            considering only rows with a leading 1.
+ * @param options     list    A list with options for the specific EN algorithm
+ * @param Xtest       numeric numeric matrix (size `nvar` x `nobs-test`) WITHOUT intercept column
+ *                            used to generate predictions. Can be NULL.
+ *
+ * @return List Returns a list with two elements:
+ *		item 1: Integer telling if the status of the algorithm
+ *		item 2: Error message explaining the status of the algorithm
+ *      item 3: sparse matrix (dgCMatrix) with coefficient estimates
+ *      item 4: Numeric matrix with the residuals
+ *      item 5: numeric matrix with predictions for Xtest
+ */
+RcppExport SEXP C_elnet_sp(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
+						   SEXP lambda, SEXP intercept, SEXP options,
+                           SEXP Xtest);
 
 /**
  * Solve following minimzation problem:
@@ -77,12 +110,46 @@ RcppExport SEXP C_elnet(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha,
  * @return List Returns a list with two elements:
  *		item 1: Integer telling if the status of the algorithm
  *		item 2: Error message explaining the status of the algorithm
- *      item 3: Numeric vector with the cofficient estimates
- *      item 4: Numeric vector with the residuals
+ *      item 3: numeric matrix with the cofficient estimates
+ *      item 4: numeric matrix with the residuals
+ *      item 5: numeric matrix with predictions for Xtest
  */
 RcppExport SEXP C_elnet_weighted(SEXP Xtr, SEXP y, SEXP weights, SEXP coefs,
 								 SEXP alpha, SEXP lambda, SEXP intercept, SEXP enOptions,
                                  SEXP Xtest);
+
+/**
+ * Solve following minimzation problem:
+ * (1 / (2*N)) * L2(weights (y - beta0 - X . beta))^2 + lambda * ( ((1 - alpha)/2)*L2(beta)^2 + alpha*L1(beta) )
+ *
+ * It is the caller's responsibility to ensure that at least one predictor is present
+ * in Xtr. The function will NOT check the arguments and will crash if Xtr does not
+ * contain enough values.
+ *
+ * @param Xtr         numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y           numeric The numeric y vector (size `nobs`)
+ * @param weights	  numeric The numeric weights vector (size `nobs`)
+ * @param coefs		  numeric The inital coefficients, will be copied if `warm` is 1, otherwise
+ *							  not referenced.
+ * @param alpha       numeric The alpha parameter for the penalization
+ * @param lambda      numeric The lambda parameter for the penalization
+ * @param intercept   integer Should an intercept be estimated be done (1=yes, 0=no)
+ *                            considering only rows with a leading 1.
+ * @param enOptions     list    A list with options for the specific EN algorithm
+ * @param Xtest       numeric numeric matrix (size `nvar` x `nobs-test`) WITHOUT intercept column
+ *                            used to generate predictions. Can be NULL.
+ *
+ * @return List Returns a list with two elements:
+ *		item 1: Integer telling if the status of the algorithm
+ *		item 2: Error message explaining the status of the algorithm
+ *      item 3: sparse matrix (dgCMatrix) with the cofficient estimates
+ *      item 4: numeric matrix with the residuals
+ *      item 5: numeric matrix with predictions for Xtest
+ */
+RcppExport SEXP C_elnet_weighted_sp(SEXP Xtr, SEXP y, SEXP weights, SEXP coefs,
+								    SEXP alpha, SEXP lambda, SEXP intercept, SEXP enOptions,
+                                    SEXP Xtest);
+
 
 /**
  * @param Xtr     numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)

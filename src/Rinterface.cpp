@@ -20,6 +20,7 @@
 #include "olsreg.h"
 
 using namespace Rcpp;
+using namespace arma;
 
 static inline Options listToOptions(SEXP list);
 static inline void getMatDims(SEXP matrix, int* nrows, int* ncols);
@@ -150,6 +151,97 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     return result;
 }
 
+/***************************************************************************************************
+ *
+ * Elasitc Net with unweighted observations
+ *
+ **************************************************************************************************/
+RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
+                           SEXP Rlambda, SEXP Rintercept, SEXP Roptions,
+                           SEXP RXtest)
+{
+    int nlambda = Rf_length(Rlambda);
+    int nobs, nvar;
+    getMatDims(RXtr, &nvar, &nobs);
+
+    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
+    Options opts = listToOptions(Roptions);
+    Rcpp::List retList;
+    SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
+    SEXP retPreds = R_NilValue;
+    arma::sp_vec interceptSpVec(1);
+    arma::sp_vec currentBeta(nvar - 1);
+    arma::sp_mat coefEsts(nvar, nlambda);
+    double intercept = 0;
+    double* currentResidualsPtr = REAL(retResids);
+    double* currentPredsPtr = NULL;
+    const double *currentLambda = REAL(Rlambda);
+    const double alpha = *REAL(Ralpha);
+    const bool generatePredictions = Rf_isReal(RXtest);
+
+    BEGIN_RCPP
+    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+
+    if (generatePredictions) {
+        retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
+        currentPredsPtr = REAL(retPreds);
+    }
+
+    if (opts.get("warmStart", true)) {
+        arma::sp_vec givenCoefs = Rcpp::as<arma::sp_mat>(Rcoefs).col(0);
+        interceptSpVec[0] = intercept = givenCoefs[0];
+        currentBeta = givenCoefs.tail_rows(nvar - 1);
+    }
+
+    /*
+     * We can always use a warm start, since the currentCoefs would be 0 anyways if it wasn't
+     * specified otherwise.
+     */
+    opts.set("warmStart", true);
+
+    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    arma::sp_vec::const_iterator ccIt;
+    en->setData(data);
+
+    for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, ++currentLambda) {
+        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        en->setAlphaLambda(alpha, *currentLambda);
+
+        en->computeCoefs(intercept, currentBeta, residuals);
+        interceptSpVec[0] = intercept;
+        coefEsts.col(i) = arma::join_cols(interceptSpVec, currentBeta);
+
+        if (en->getStatus() != 0) {
+            break;
+        }
+
+        if (generatePredictions) {
+            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            predAlias = Xtest * currentBeta + intercept;
+            currentPredsPtr += Xtest.n_rows;
+        }
+    }
+
+    retList = List::create(
+        Named("status") = en->getStatus(),
+        Named("message") = en->getStatusMessage(),
+        Named("coefficients") = coefEsts,
+        Named("residuals") = retResids,
+        Named("predictions") = retPreds
+    );
+
+    delete en;
+
+    VOID_END_RCPP
+
+    if (generatePredictions) {
+        UNPROTECT(2);
+    } else {
+        UNPROTECT(1);
+    }
+    return Rcpp::wrap(retList);
+}
+
 
 /***************************************************************************************************
  *
@@ -210,11 +302,6 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
         arma::vec residuals(currentResidualsPtr, nobs, false, true);
         en->setAlphaLambda(alpha, *currentLambda);
 
-//        if (i > 0) {
-//            memcpy(currentCoefsPtr, currentCoefsPtr - nvar, nvar * sizeof(double));
-//        }
-//        en->computeCoefsWeighted(currentCoefsPtr, currentResidualsPtr, REAL(Rweights));
-
         en->computeCoefsWeighted(*currentCoefsPtr, currentBeta, residuals, weights);
         /* Copy active coefficient values to return object */
         for(ccIt = currentBeta.begin(); ccIt != currentBeta.end(); ++ccIt) {
@@ -254,6 +341,99 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     return result;
 }
 
+
+/***************************************************************************************************
+ *
+ * Elasitc Net with weighted observations
+ *
+ **************************************************************************************************/
+RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
+                                    SEXP Ralpha, SEXP Rlambda, SEXP Rintercept, SEXP Roptions,
+                                    SEXP RXtest)
+{
+    int nlambda = Rf_length(Rlambda);
+    int nobs, nvar;
+    getMatDims(RXtr, &nvar, &nobs);
+
+    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
+    const arma::vec weights(REAL(Rweights), nobs, false, true);
+    Options opts = listToOptions(Roptions);
+    List retList;
+    SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
+    SEXP retPreds = R_NilValue;
+    sp_vec interceptSpVec(1);
+    sp_vec currentBeta(nvar - 1);
+    sp_mat coefEsts(nvar, nlambda);
+    double intercept;
+    double* currentResidualsPtr = REAL(retResids);
+    double* currentPredsPtr = NULL;
+    const double *currentLambda = REAL(Rlambda);
+    const double alpha = *REAL(Ralpha);
+    const bool generatePredictions = Rf_isReal(RXtest);
+
+    BEGIN_RCPP
+    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+
+    if (generatePredictions) {
+        retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
+        currentPredsPtr = REAL(retPreds);
+    }
+
+    if (opts.get("warmStart", true)) {
+        arma::sp_vec givenCoefs = Rcpp::as<arma::sp_mat>(Rcoefs).col(0);
+        interceptSpVec[0] = intercept = givenCoefs[0];
+        currentBeta = givenCoefs.tail_rows(nvar - 1);
+    }
+
+    /*
+     * We can always use a warm start, since the currentCoefs would be 0 anyways if it wasn't
+     * specified otherwise.
+     */
+    opts.set("warmStart", true);
+
+    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    arma::sp_vec::const_iterator ccIt;
+    en->setData(data);
+
+    for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, ++currentLambda) {
+        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        en->setAlphaLambda(alpha, *currentLambda);
+
+        en->computeCoefsWeighted(intercept, currentBeta, residuals, weights);
+
+        interceptSpVec[0] = intercept;
+        coefEsts.col(i) = arma::join_cols(interceptSpVec, currentBeta);
+
+        if (en->getStatus() != 0) {
+            break;
+        }
+
+        if (generatePredictions) {
+            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            predAlias = Xtest * currentBeta + intercept;
+            currentPredsPtr += Xtest.n_rows;
+        }
+    }
+
+    retList = List::create(
+        Named("status") = en->getStatus(),
+        Named("message") = en->getStatusMessage(),
+        Named("coefficients") = coefEsts,
+        Named("residuals") = retResids,
+        Named("predictions") = retPreds
+    );
+
+    delete en;
+
+    VOID_END_RCPP
+
+    if (generatePredictions) {
+        UNPROTECT(2);
+    } else {
+        UNPROTECT(1);
+    }
+    return Rcpp::wrap(retList);
+}
 
 /***************************************************************************************************
  *

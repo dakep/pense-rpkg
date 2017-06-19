@@ -431,7 +431,10 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib pense C_augtrans C_elnet
+#' @useDynLib pense C_augtrans C_elnet C_elnet_sp
+#' @importFrom methods is
+#' @importFrom Matrix Matrix
+#' @importClassesFrom Matrix dgCMatrix
 .elnet.fit <- function(X, y, alpha, lambda, intercept = TRUE,
                        addLeading1s = TRUE, options = en_options_aug_lars(),
                        warm_coefs, Xtest = NULL) {
@@ -446,14 +449,17 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     }
 
     if (missing(warm_coefs)) {
-        warm_coefs <- numeric(dX[2L])
+        warm_coefs <- NULL
         options$warmStart <- FALSE
     } else {
+        if (!is(warm_coefs, "dgCMatrix")) {
+            warm_coefs <- Matrix(warm_coefs, sparse = TRUE, ncol = 1L)
+        }
         options$warmStart <- TRUE
     }
 
     elnetres <- .Call(
-        C_elnet,
+        C_elnet_sp,
         Xtr,
         y,
         warm_coefs,
@@ -468,14 +474,14 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
         warning("Elastic Net algorithm had non-zero return status.")
     }
 
-    names(elnetres) <- c("status", "message", "coefficients", "residuals",
-                         "predictions")
-
     return(elnetres)
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib pense C_augtrans C_elnet_weighted
+#' @useDynLib pense C_augtrans C_elnet_weighted C_elnet_weighted_sp
+#' @importFrom methods is
+#' @importFrom Matrix Matrix
+#' @importClassesFrom Matrix dgCMatrix
 .elnet.wfit <- function(X, y, weights, alpha, lambda, intercept = TRUE,
                         addLeading1s = TRUE, options = en_options_aug_lars(),
                         warm_coefs, Xtest = NULL) {
@@ -490,14 +496,17 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     }
 
     if (missing(warm_coefs)) {
-        warm_coefs <- numeric(dX[2L])
+        warm_coefs <- NULL
         options$warmStart <- FALSE
     } else {
+        if (!is(warm_coefs, "dgCMatrix")) {
+            warm_coefs <- Matrix(warm_coefs, sparse = TRUE, ncol = 1L)
+        }
         options$warmStart <- TRUE
     }
 
     elnetres <- .Call(
-        C_elnet_weighted,
+        C_elnet_weighted_sp,
         Xtr,
         y,
         weights,
@@ -512,9 +521,6 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     if (!identical(elnetres[[1L]], 0L)) {
         warning("Elastic Net algorithm had non-zero return status.")
     }
-
-    names(elnetres) <- c("status", "message", "coefficients", "residuals",
-                         "predictions")
 
     return(elnetres)
 }

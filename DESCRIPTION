@@ -14,7 +14,8 @@ Imports:
     Rcpp,
     robustbase,
     parallel,
-    methods
+    methods,
+    Matrix
 LinkingTo: Rcpp, RcppArmadillo
 Suggests:
     testthat,

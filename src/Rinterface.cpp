@@ -74,7 +74,7 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     SEXP status = PROTECT(Rf_allocVector(INTSXP, 1));
     SEXP statusMessage = PROTECT(Rf_allocVector(STRSXP, 1));
     SEXP retPreds = R_NilValue;
-    arma::sp_vec currentBeta(nvar - 1);
+    sp_vec currentBeta(nvar - 1);
     double* currentResidualsPtr = REAL(retResids);
     double* currentCoefsPtr = REAL(retCoefs);
     double* currentPredsPtr = NULL;
@@ -83,7 +83,7 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const bool generatePredictions = Rf_isReal(RXtest);
 
     BEGIN_RCPP
-    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+    const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -94,7 +94,7 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 
     if (opts.get("warmStart", true)) {
         *currentCoefsPtr = *REAL(Rcoefs);
-        currentBeta = arma::sp_vec(arma::vec(REAL(Rcoefs), nvar, false, true));
+        currentBeta = sp_vec(vec(REAL(Rcoefs), nvar, false, true));
     }
 
     /*
@@ -104,11 +104,11 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     opts.set("warmStart", true);
 
     ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
-    arma::sp_vec::const_iterator ccIt;
+    sp_vec::const_iterator ccIt;
     en->setData(data);
 
     for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, currentCoefsPtr += nvar, ++currentLambda) {
-        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        vec residuals(currentResidualsPtr, nobs, false, true);
         en->setAlphaLambda(alpha, *currentLambda);
 
         en->computeCoefs(*currentCoefsPtr, currentBeta, residuals);
@@ -122,13 +122,13 @@ RcppExport SEXP C_elnet(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
         }
 
         if (generatePredictions) {
-            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
             predAlias = Xtest * currentBeta + (*currentCoefsPtr);
             currentPredsPtr += Xtest.n_rows;
         }
     }
     *INTEGER(status) = en->getStatus();
-    statusMessage = Rcpp::wrap(en->getStatusMessage());
+    statusMessage = wrap(en->getStatusMessage());
 
     result = PROTECT(Rf_allocVector(VECSXP, 5));
 
@@ -166,12 +166,12 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
     Options opts = listToOptions(Roptions);
-    Rcpp::List retList;
+    List retList;
     SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
     SEXP retPreds = R_NilValue;
-    arma::sp_vec interceptSpVec(1);
-    arma::sp_vec currentBeta(nvar - 1);
-    arma::sp_mat coefEsts(nvar, nlambda);
+    sp_vec interceptSpVec(1);
+    sp_vec currentBeta(nvar - 1);
+    sp_mat coefEsts(nvar, nlambda);
     double intercept = 0;
     double* currentResidualsPtr = REAL(retResids);
     double* currentPredsPtr = NULL;
@@ -180,7 +180,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const bool generatePredictions = Rf_isReal(RXtest);
 
     BEGIN_RCPP
-    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+    const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -188,7 +188,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     }
 
     if (opts.get("warmStart", true)) {
-        arma::sp_vec givenCoefs = Rcpp::as<arma::sp_mat>(Rcoefs).col(0);
+        sp_vec givenCoefs = as<sp_mat>(Rcoefs).col(0);
         interceptSpVec[0] = intercept = givenCoefs[0];
         currentBeta = givenCoefs.tail_rows(nvar - 1);
     }
@@ -200,23 +200,23 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     opts.set("warmStart", true);
 
     ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
-    arma::sp_vec::const_iterator ccIt;
+    sp_vec::const_iterator ccIt;
     en->setData(data);
 
     for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, ++currentLambda) {
-        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        vec residuals(currentResidualsPtr, nobs, false, true);
         en->setAlphaLambda(alpha, *currentLambda);
 
         en->computeCoefs(intercept, currentBeta, residuals);
         interceptSpVec[0] = intercept;
-        coefEsts.col(i) = arma::join_cols(interceptSpVec, currentBeta);
+        coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
 
         if (en->getStatus() != 0) {
             break;
         }
 
         if (generatePredictions) {
-            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
             predAlias = Xtest * currentBeta + intercept;
             currentPredsPtr += Xtest.n_rows;
         }
@@ -239,7 +239,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     } else {
         UNPROTECT(1);
     }
-    return Rcpp::wrap(retList);
+    return wrap(retList);
 }
 
 
@@ -257,7 +257,7 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     getMatDims(RXtr, &nvar, &nobs);
 
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-    const arma::vec weights(REAL(Rweights), nobs, false, true);
+    const vec weights(REAL(Rweights), nobs, false, true);
     Options opts = listToOptions(Roptions);
     SEXP result = R_NilValue;
     SEXP retCoefs = PROTECT(Rf_allocMatrix(REALSXP, data.numVar(), nlambda));
@@ -265,7 +265,7 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     SEXP status = PROTECT(Rf_allocVector(INTSXP, 1));
     SEXP statusMessage = PROTECT(Rf_allocVector(STRSXP, 1));
     SEXP retPreds = R_NilValue;
-    arma::sp_vec currentBeta(nvar - 1);
+    sp_vec currentBeta(nvar - 1);
     double* currentResidualsPtr = REAL(retResids);
     double* currentCoefsPtr = REAL(retCoefs);
     double* currentPredsPtr = NULL;
@@ -274,7 +274,7 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     const bool generatePredictions = Rf_isReal(RXtest);
 
     BEGIN_RCPP
-    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+    const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -285,7 +285,7 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
 
     if (opts.get("warmStart", true)) {
         *currentCoefsPtr = *REAL(Rcoefs); // intercept
-        currentBeta = arma::sp_vec(arma::vec(REAL(Rcoefs) + 1, nvar - 1, false, true)); // beta
+        currentBeta = sp_vec(vec(REAL(Rcoefs) + 1, nvar - 1, false, true)); // beta
     }
 
     /*
@@ -295,11 +295,11 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
     opts.set("warmStart", true);
 
     ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
-    arma::sp_vec::const_iterator ccIt;
+    sp_vec::const_iterator ccIt;
     en->setData(data);
 
     for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, currentCoefsPtr += nvar, ++currentLambda) {
-        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        vec residuals(currentResidualsPtr, nobs, false, true);
         en->setAlphaLambda(alpha, *currentLambda);
 
         en->computeCoefsWeighted(*currentCoefsPtr, currentBeta, residuals, weights);
@@ -313,13 +313,13 @@ RcppExport SEXP C_elnet_weighted(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoefs,
         }
 
         if (generatePredictions) {
-            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
             predAlias = Xtest * currentBeta + (*currentCoefsPtr);
             currentPredsPtr += Xtest.n_rows;
         }
     }
     *INTEGER(status) = en->getStatus();
-    statusMessage = Rcpp::wrap(en->getStatusMessage());
+    statusMessage = wrap(en->getStatusMessage());
 
     result = PROTECT(Rf_allocVector(VECSXP, 5));
 
@@ -356,7 +356,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     getMatDims(RXtr, &nvar, &nobs);
 
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-    const arma::vec weights(REAL(Rweights), nobs, false, true);
+    const vec weights(REAL(Rweights), nobs, false, true);
     Options opts = listToOptions(Roptions);
     List retList;
     SEXP retResids = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
@@ -372,7 +372,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     const bool generatePredictions = Rf_isReal(RXtest);
 
     BEGIN_RCPP
-    const arma::mat Xtest = (generatePredictions ? Rcpp::as<arma::mat>(RXtest) : arma::mat());
+    const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -380,7 +380,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     }
 
     if (opts.get("warmStart", true)) {
-        arma::sp_vec givenCoefs = Rcpp::as<arma::sp_mat>(Rcoefs).col(0);
+        sp_vec givenCoefs = as<sp_mat>(Rcoefs).col(0);
         interceptSpVec[0] = intercept = givenCoefs[0];
         currentBeta = givenCoefs.tail_rows(nvar - 1);
     }
@@ -392,24 +392,24 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     opts.set("warmStart", true);
 
     ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
-    arma::sp_vec::const_iterator ccIt;
+    sp_vec::const_iterator ccIt;
     en->setData(data);
 
     for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, ++currentLambda) {
-        arma::vec residuals(currentResidualsPtr, nobs, false, true);
+        vec residuals(currentResidualsPtr, nobs, false, true);
         en->setAlphaLambda(alpha, *currentLambda);
 
         en->computeCoefsWeighted(intercept, currentBeta, residuals, weights);
 
         interceptSpVec[0] = intercept;
-        coefEsts.col(i) = arma::join_cols(interceptSpVec, currentBeta);
+        coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
 
         if (en->getStatus() != 0) {
             break;
         }
 
         if (generatePredictions) {
-            arma::vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
+            vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
             predAlias = Xtest * currentBeta + intercept;
             currentPredsPtr += Xtest.n_rows;
         }
@@ -432,7 +432,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     } else {
         UNPROTECT(1);
     }
-    return Rcpp::wrap(retList);
+    return wrap(retList);
 }
 
 /***************************************************************************************************
@@ -680,13 +680,13 @@ RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP coefs,
     BEGIN_RCPP
     memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
 
-    arma::vec residVec(REAL(residuals), nobs, false, true);
-    arma::vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
-    arma::sp_vec beta(betaDense);
+    vec residVec(REAL(residuals), nobs, false, true);
+    vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
+    sp_vec beta(betaDense);
 
     pr.compute(*newCoefsPtr, beta, residVec);
 
-    betaDense = arma::vec(beta);
+    betaDense = vec(beta);
 
     result = PROTECT(Rf_allocVector(VECSXP, 5));
     scale = PROTECT(Rf_ScalarReal(pr.getScale()));
@@ -735,13 +735,13 @@ RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
     BEGIN_RCPP
     memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
 
-    arma::vec residVec(REAL(residuals), nobs, false, true);
-    arma::vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
-    arma::sp_vec beta(betaDense);
+    vec residVec(REAL(residuals), nobs, false, true);
+    vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
+    sp_vec beta(betaDense);
 
     ms.compute(*newCoefsPtr, beta, residVec);
 
-    betaDense = arma::vec(beta);
+    betaDense = vec(beta);
 
     result = PROTECT(Rf_allocVector(VECSXP, 4));
     relChange = PROTECT(Rf_ScalarReal(ms.relChange()));

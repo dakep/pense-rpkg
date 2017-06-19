@@ -236,16 +236,38 @@ RcppExport SEXP C_enpy_exact(SEXP Xtr, SEXP y, SEXP alpha, SEXP lambda,
 RcppExport SEXP C_pen_s_reg(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha, SEXP lambda,
                             SEXP penseOptions, SEXP enOptions);
 
+/**
+ * @param Xtr           numeric   transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y             numeric   numeric y vector (size `nobs`)
+ * @param alpha         numeric   alpha parameter for the EN penalty
+ * @param lambda        numeric   lambda parameter for the EN penalty
+ * @param intercept     numeric   initial intercept
+ * @param coefs         dgCMatrix sparse vector of inital coefficients
+ * @param penseOptions  List      options for PENSE
+ * @param enOptions     List      options for the specific EN algorithm
+ *
+ * @return List Returns a list with 6 elements:
+ *      item 1: intercept
+ *      item 2: sparse coefficient vector
+ *      item 3: residuals vector
+ *      item 4: estimated scale of the residuals
+ *      item 5: relative change in the last iteration
+ *      item 6: number of iterations
+ */
+RcppExport SEXP C_pen_s_reg_sp(SEXP Xtr, SEXP y, SEXP intercept, SEXP coefs, SEXP alpha,
+                               SEXP lambda, SEXP penseOptions, SEXP enOptions);
+
+
 
 /**
- * @param Xtr           numeric The transpose of the numeric X matrix (size `nvar` x `nobs`)
- * @param y             numeric The numeric y vector (size `nobs`)
- * @param coefs         numeric The vector of inital coeffiecients (including the intercept)
- * @param scale         numeric The (fixed) scale estimate
- * @param alpha         numeric The alpha parameter for penalization
- * @param lambda        numeric The lambda parameter for penalization
- * @param msOptions     List    The options for the M-Step
- * @param enOptions     List    The options for the specific EN algorithm
+ * @param Xtr           numeric transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y             numeric numeric y vector (size `nobs`)
+ * @param coefs         numeric vector of inital coeffiecients (including the intercept)
+ * @param scale         numeric (fixed) scale estimate
+ * @param alpha         numeric alpha parameter for penalization
+ * @param lambda        numeric lambda parameter for penalization
+ * @param msOptions     List    options for the M-Step
+ * @param enOptions     List    options for the specific EN algorithm
  *
  * @return List Returns a list with four elements:
  *      item 1: coefficient vector (first element is the intercept)
@@ -255,5 +277,28 @@ RcppExport SEXP C_pen_s_reg(SEXP Xtr, SEXP y, SEXP coefs, SEXP alpha, SEXP lambd
  */
 RcppExport SEXP C_pen_mstep(SEXP Xtr, SEXP y, SEXP coefs, SEXP scale,
                             SEXP alpha, SEXP lambda, SEXP msOptions, SEXP enOptions);
+
+
+
+/**
+ * @param Xtr           numeric   transpose of the numeric X matrix (size `nvar` x `nobs`)
+ * @param y             numeric   numeric y vector (size `nobs`)
+ * @param intercept     numeric   initial intercept
+ * @param coefs         dgCMatrix sparse vector of inital coefficients
+ * @param scale         numeric   (fixed) scale estimate
+ * @param alpha         numeric   alpha parameter for penalization
+ * @param lambda        numeric   lambda parameter for penalization
+ * @param msOptions     List      options for the M-Step
+ * @param enOptions     List      options for the specific EN algorithm
+ *
+ * @return List Returns a list with four elements:
+ *      item 1: intercept
+ *      item 2: sparse coefficient vector (first element is the intercept)
+ *      item 3: residuals vector
+ *      item 4: relative change in the last iteration
+ *      item 5: number of iterations
+ */
+RcppExport SEXP C_pen_mstep_sp(SEXP Xtr, SEXP y, SEXP intercept, SEXP coefs, SEXP scale,
+                               SEXP alpha, SEXP lambda, SEXP msOptions, SEXP enOptions);
 
 #endif /* Rinterface_hpp */

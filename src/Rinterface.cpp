@@ -710,6 +710,48 @@ RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP coefs,
 
 /***************************************************************************************************
  *
+ * Penalized Elastic Net S estimator for regression (PENSE)
+ *
+ **************************************************************************************************/
+RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
+                               SEXP Ralpha, SEXP Rlambda, SEXP RpenseOptions, SEXP RenOptions)
+{
+    int nobs, nvar;
+    getMatDims(RXtr, &nvar, &nobs);
+
+    const Options penseOpts = listToOptions(RpenseOptions);
+    const Options enOpts = listToOptions(RenOptions);
+    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
+
+    PENSEReg pr(data, *REAL(Ralpha), *REAL(Rlambda), penseOpts, enOpts);
+    List retList;
+    double intercept = *REAL(Rintercept);
+    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+
+    BEGIN_RCPP
+    vec residVec(REAL(residuals), nobs, false, true);
+    sp_vec beta = as<sp_mat>(Rcoefs).col(0);
+
+    pr.compute(intercept, beta, residVec);
+
+    retList = List::create(
+        Named("intercept") = intercept,
+        Named("beta") = beta,
+        Named("residuals") = residuals,
+        Named("scale") = pr.getScale(),
+        Named("relChange") = pr.relChange(),
+        Named("iterations") = pr.iterations()
+    );
+
+    VOID_END_RCPP
+
+    UNPROTECT(1);
+
+    return wrap(retList);
+}
+
+/***************************************************************************************************
+ *
  * Penalized Elastic Net M estimator for regression with initial scale (M-Step)
  *
  **************************************************************************************************/
@@ -759,6 +801,48 @@ RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
     UNPROTECT(2);
 
     return result;
+}
+
+/***************************************************************************************************
+ *
+ * Penalized Elastic Net M estimator for regression with initial scale (M-Step)
+ *
+ **************************************************************************************************/
+RcppExport SEXP C_pen_mstep_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs, SEXP scale,
+                               SEXP Ralpha, SEXP Rlambda, SEXP RmsOptions, SEXP RenOptions)
+{
+    int nobs, nvar;
+    getMatDims(RXtr, &nvar, &nobs);
+
+    const Options msOpts = listToOptions(RmsOptions);
+    const Options enOpts = listToOptions(RenOptions);
+    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
+
+    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);
+
+    List retList;
+    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
+    double intercept = *REAL(Rintercept);
+
+    BEGIN_RCPP
+    vec residVec(REAL(residuals), nobs, false, true);
+    sp_vec beta = as<sp_mat>(Rcoefs).col(0);
+
+    ms.compute(intercept, beta, residVec);
+
+    retList = List::create(
+        Named("intercept") = intercept,
+        Named("beta") = sp_mat(beta),
+        Named("residuals") = residuals,
+        Named("rel_change") = ms.relChange(),
+        Named("iterations") = ms.iterations()
+    );
+
+    VOID_END_RCPP
+
+    UNPROTECT(1);
+
+    return wrap(retList);
 }
 
 

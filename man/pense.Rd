@@ -4,7 +4,7 @@
 \alias{pense}
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
-pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
+pense(X, y, alpha = 0.5, nlambda = 50, lambda = NULL,
   lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm0",
   "warm", "cold"), warm_reset = 10, cv_k = 5, cv_objective,
   ncores = getOption("mc.cores", 1L), cl = NULL,
@@ -76,13 +76,11 @@ An object of class \code{"pense"} with elements
 \item{call}{the call that produced this object.}
 \item{lambda_opt}{the optimal value of the regularization parameter
      according to CV.}
-\item{coefficients}{the vector of coefficients for the optimal lambda
-     \code{lambda_opt}.}
-\item{residuals}{the residuals, that is response minus fitted values for
-     \code{lambda_opt}.}
-\item{scale}{the estimated scale for \code{lambda_opt}.}
-\item{lambda_grid}{a matrix with values of lambda in the first
-     column, the \code{cv_objective} as second column and serveral
+\item{coefficients}{a matrix of coefficients for each lambda in the grid.}
+\item{residuals}{a matrix of residuals for each lambda in the grid.}
+\item{scale}{the estimated scales each lambda}
+\item{cv_lambda_grid}{a data frame with values of lambda in the first
+     column, and the CV error as well as serveral
      statistics of the solution in the following columns.}
 \item{alpha,standardize,pense_options,en_options,initest_options}{
      the given arguments.}

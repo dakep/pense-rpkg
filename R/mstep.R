@@ -3,6 +3,8 @@
 #' Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 #'
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
+#' @param lambda regularization of the initial S-estimate. Defaults to
+#'      \code{penseobj$lambda_opt}, the lambda with minimal CV error.
 #' @param complete_grid should the optimal lambda be chosen from a grid of
 #'      values or approximate it from the optimal lambda?
 #' @param cv_k perform k-fold CV to choose optimal lambda (only used if
@@ -18,7 +20,8 @@
 #' @importFrom robustbase .Mchi scaleTau2
 #' @importFrom stats mad median
 #' @export
-mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
+mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
+                  nlambda = 30L,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
                   options = mstep_options(),
                   X, y, cv_objective, lambda_min_ratio, en_options) {
@@ -34,36 +37,34 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
         en_options <- penseobj$en_options
     }
 
+    if (missing(lambda)) {
+        lambda <- penseobj$lambda_opt
+    }
+
+    lambda <- .check_arg(lambda, "numeric", range = 0)
+
     dX <- dim(X)
 
     ## store the call
     call <- match.call()
     call[[1L]] <- as.name("mstep")
 
-    scale_x <- 1
-    mux <- 0
-    muy <- 0
-
-    pense_coef <- penseobj$coefficients
     pense_lambda_opt <- penseobj$lambda_opt
+    pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE)
+    residuals <- residuals(penseobj, lambda = lambda, exact = TRUE)
 
     ## Standardize data and coefficients
-    if (penseobj$standardize == TRUE) {
-        scale_x <- apply(X, 2, mad)
-        mux <- apply(X, 2, median)
-        muy <- median(y)
+    std_data <- standardize_data(X, y, penseobj$standardize)
+    Xs <- std_data$xs
+    yc <- std_data$yc
 
-        Xs <- scale(X, center = mux, scale = scale_x)
-        yc <- y - muy
-
-        pense_coef[1L] <- pense_coef[1L] - muy + drop(pense_coef[-1L] %*% mux)
-        pense_coef[-1L] <- pense_coef[-1L] * max(scale_x)
-
-        pense_lambda_opt <- pense_lambda_opt / max(scale_x)
-    } else {
-        Xs <- X
-        yc <- y
+    if (isTRUE(penseobj$standardize)) {
+        pense_coef[1L] <- pense_coef[1L] - std_data$muy +
+            drop(pense_coef[-1L] %*% std_data$mux)
+        pense_coef[-1L] <- pense_coef[-1L] * std_data$scale_x
     }
+
+    pense_lambda_opt <- pense_lambda_opt / max(std_data$scale_x)
 
     ##
     ## Adjust initial scale according to Maronna & Yohai (2010)
@@ -94,20 +95,23 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
     if (options$adjustBdp) {
         bdp_adj <- penseobj$pense_options$bdp * (1 - edf / dX[1L])
         bdp_adj <- max(0.25, bdp_adj) # Don't go below 0.25
+
+        cc_scale <- consistency.rho(bdp_adj, "bisquare")
+
+        scale_init <- mscale(
+            residuals,
+            b = bdp_adj,
+            cc = cc_scale,
+            eps = penseobj$pense_options$mscaleEps,
+            maxit = penseobj$pense_options$mscaleMaxit
+        )
     } else {
         bdp_adj <- penseobj$pense_options$bdp
+        cc_scale <- penseobj$pense_options$cc
+        scale_init <- penseobj$scale[which.min(abs(lambda - penseobj$lambda))]
     }
 
-    cc_scale <- pense:::consistency.rho(bdp_adj, "bisquare")
-    scale_init <- mscale(
-        penseobj$residuals,
-        b = bdp_adj,
-        cc = cc_scale,
-        eps = penseobj$pense_options$mscaleEps,
-        maxit = penseobj$pense_options$mscaleMaxit
-    )
-
-    resid_scaled <- penseobj$residuals / scale_init
+    resid_scaled <- residuals / scale_init
 
     ##
     ## Adjust the scale for "fat" datasets
@@ -121,6 +125,8 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
         1 + edf / (2 * dX[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
     } else if (edf / dX[1L] > 0.1) {
         1 / (1 - (1.29 - 6.02 / dX[1L]) * edf / dX[1L])
+    } else {
+        1
     }
 
     scale_init_corr <- scale_init * scale_corr_fact
@@ -365,7 +371,7 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
 
         lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj[, "cvavg"])]
         lambda_grid_m <- data.frame(
-            lambda = lambda_grid_m * max(scale_x),
+            lambda = lambda_grid_m * max(std_data$scale_x),
             cv_obj
         )
     }
@@ -385,11 +391,12 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
     )
 
     ## Un-standardize the coefficients
-    if (penseobj$standardize == TRUE) {
-        msres$beta <- msres$beta / scale_x
-        msres$intercept <- msres$intercept + muy - drop(msres$beta %*% mux)
+    if (isTRUE(penseobj$standardize)) {
+        msres$beta <- msres$beta / std_data$scale_x
+        msres$intercept <- msres$intercept + std_data$muy -
+            drop(msres$beta %*% std_data$mux)
 
-        lambda_opt_m_cv <- lambda_opt_m_cv * max(scale_x)
+        lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
 
     return(structure(list(
@@ -397,8 +404,8 @@ mstep <- function(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
         coefficients = nameCoefVec(c(msres$intercept, msres$beta), X),
         objective = msres$objF,
         bdp = bdp_adj,
-        lambda_opt = lambda_opt_m_cv,
-        lambda_grid = lambda_grid_m,
+        lambda = lambda_opt_m_cv,
+        cv_lambda_grid = lambda_grid_m,
         scale = scale_init_corr,
         alpha = penseobj$alpha,
         standardize = penseobj$standardize,

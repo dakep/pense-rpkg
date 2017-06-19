@@ -4,12 +4,15 @@
 \alias{mstep}
 \title{Perform an M-step after the EN S-Estimator}
 \usage{
-mstep(penseobj, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
+mstep(penseobj, lambda, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
   ncores = getOption("mc.cores", 1L), cl = NULL,
   options = mstep_options(), X, y, cv_objective, lambda_min_ratio, en_options)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
+
+\item{lambda}{regularization of the initial S-estimate. Defaults to
+\code{penseobj$lambda_opt}, the lambda with minimal CV error.}
 
 \item{complete_grid}{should the optimal lambda be chosen from a grid of
 values or approximate it from the optimal lambda?}

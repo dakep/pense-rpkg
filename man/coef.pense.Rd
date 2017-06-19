@@ -4,13 +4,17 @@
 \alias{coef.pense}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{pense}(object, lambda, ...)
+\method{coef}{pense}(object, lambda, exact = FALSE, ...)
 }
 \arguments{
 \item{object}{object of type \code{pense} to extract coefficients from.}
 
 \item{lambda}{the value of the penalty parameter. Default is to use the
-optimal lambda \code{lambda.opt}.}
+optimal lambda (\code{object$lambda_opt}).}
+
+\item{exact}{if the lambda is not part of the lambda grid, should the
+estimates be obtained by linear interpolation between the nearest
+lambda values (default) or computed exactly.}
 
 \item{...}{currently not used.}
 }

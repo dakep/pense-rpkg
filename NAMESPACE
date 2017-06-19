@@ -2,6 +2,7 @@
 
 S3method(coef,pense)
 S3method(predict,pense)
+S3method(residuals,pense)
 export(elnet)
 export(elnet_cv)
 export(en_options_aug_lars)

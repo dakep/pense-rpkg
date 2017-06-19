@@ -4,15 +4,19 @@
 \alias{predict.pense}
 \title{Predict Method for Penalized Elastic-Net S-estimator}
 \usage{
-\method{predict}{pense}(object, newdata, lambda, ...)
+\method{predict}{pense}(object, newdata, lambda, exact = FALSE, ...)
 }
 \arguments{
 \item{object}{an object of type \code{pense} to use for prediction.}
 
 \item{newdata}{an optional design matrix}
 
-\item{lambda}{the value of the penalty parameter. Default is to use the optimal
-lambda \code{lambda.opt}.}
+\item{lambda}{the value of the penalty parameter. Default is to use the
+optimal lambda \code{lambda_opt}.}
+
+\item{exact}{if the lambda is not part of the lambda grid, should the
+estimates be obtained by linear interpolation between the nearest
+lambda values (default) or computed exactly.}
 
 \item{...}{currently ignored.}
 }

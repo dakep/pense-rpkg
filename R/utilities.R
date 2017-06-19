@@ -6,7 +6,11 @@ nameCoefVec <- function(coef, X) {
         xnames <- dn[[2L]]
     }
 
-    names(coef) <- c("(Intercept)", xnames)
+    if (is.matrix(coef)) {
+        rownames(coef) <- c("(Intercept)", xnames)
+    } else {
+        names(coef) <- c("(Intercept)", xnames)
+    }
     return(coef)
 }
 
@@ -58,3 +62,27 @@ consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
 
     uniroot(expectation, interval = interval, delta)$root
 }
+
+
+standardize_data <- function (x, y, standardize) {
+    ret_list <- list(
+        scale_x = 1,
+        mux = 0,
+        muy = 0,
+        xs = x,
+        yc = y
+    )
+
+    ## standardize data
+    if (isTRUE(standardize)) {
+        ret_list$scale_x <- apply(x, 2, mad)
+        ret_list$mux <- apply(x, 2, median)
+        ret_list$muy <- median(y)
+
+        ret_list$xs <- scale(x, center = ret_list$mux, scale = ret_list$scale_x)
+        ret_list$yc <- y - ret_list$muy
+    }
+
+    return(ret_list)
+}
+

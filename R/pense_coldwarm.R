@@ -10,34 +10,30 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid, start_0 = FALSE,
                            en_options) {
     dX <- dim(X)
 
-    scale.x <- 1
-    mux <- 0
-    muy <- 0
+    std_data <- standardize_data(X, y, standardize)
 
-    if (isTRUE(standardize)) {
-        scale.x <- apply(X, 2, mad)
-        mux <- apply(X, 2, median)
-        muy <- median(y)
-
-        X <- scale(X, center = mux, scale = scale.x)
-        y <- y - muy
-    }
-
-    final.estimates <- vector("list", length(lambda_grid))
+    final_estimates <- vector("list", length(lambda_grid))
 
     ## For the first value of lambda, we will do a cold start
     init.current <- if (isTRUE(start_0)) {
-        matrix(c(median(y), numeric(dX[2L])), ncol = 1L)
+        matrix(c(median(std_data$yc), numeric(dX[2L])), ncol = 1L)
     } else {
-        initest_cold(X, y, alpha, lambda_grid[1L], pense_options,
-                     initest_options, en_options)$initCoef
+        initest_cold(
+            std_data$xs,
+            std_data$yc,
+            alpha,
+            lambda_grid[1L],
+            pense_options,
+            initest_options,
+            en_options
+        )$initCoef
     }
 
     for (i in seq_along(lambda_grid)) {
-        full.all <- apply(init.current, 2, function(coef, lambda) {
+        full_all <- apply(init.current, 2, function(coef, lambda) {
             pen_s_reg(
-                X,
-                y,
+                std_data$xs,
+                std_data$yc,
                 alpha,
                 lambda,
                 init_coef = coef,
@@ -46,26 +42,26 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid, start_0 = FALSE,
             )
         }, lambda = lambda_grid[i])
 
-        best.est <- which.min(sapply(full.all, function(full) {
+        best_est <- which.min(sapply(full_all, function(full) {
             full$objF
         }))
         init.current <- matrix(
-            c(full.all[[best.est]]$intercept, full.all[[best.est]]$beta),
+            c(full_all[[best_est]]$intercept, full_all[[best_est]]$beta),
             ncol = 1L
         )
 
-        final.estimates[[i]] <- full.all[[best.est]]
+        final_estimates[[i]] <- full_all[[best_est]]
 
-        if (standardize == TRUE) {
-            final.estimates[[i]]$beta <- final.estimates[[i]]$beta / scale.x
-            final.estimates[[i]]$intercept <- final.estimates[[i]]$intercept +
-                muy - drop(final.estimates[[i]]$beta %*% mux)
+        if (standardize) {
+            final_estimates[[i]]$beta <- final_estimates[[i]]$beta /
+                std_data$scale_x
+            final_estimates[[i]]$intercept <- final_estimates[[i]]$intercept +
+                std_data$muy - drop(final_estimates[[i]]$beta %*% std_data$mux)
         }
     }
 
-    return(final.estimates)
+    return(final_estimates)
 }
-
 
 initest_cold <- function(X, y, alpha, lambda, pense_options,
                          initest_options, en_options) {

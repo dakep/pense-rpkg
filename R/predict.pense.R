@@ -2,12 +2,15 @@
 #'
 #' @param object an object of type \code{pense} to use for prediction.
 #' @param newdata an optional design matrix
-#' @param lambda the value of the penalty parameter. Default is to use the optimal
-#'      lambda \code{lambda.opt}.
+#' @param lambda the value of the penalty parameter. Default is to use the
+#'      optimal lambda \code{lambda_opt}.
+#' @param exact if the lambda is not part of the lambda grid, should the
+#'      estimates be obtained by linear interpolation between the nearest
+#'      lambda values (default) or computed exactly.
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
 #' @export
-predict.pense <- function(object, newdata, lambda, ...) {
+predict.pense <- function(object, newdata, lambda, exact = FALSE, ...) {
     if (missing(newdata)) {
         newdata <- data.matrix(eval(object$call$X))
     } else {
@@ -29,7 +32,7 @@ predict.pense <- function(object, newdata, lambda, ...) {
         lambda <- NULL
     }
 
-    coefs <- coef.pense(object, lambda = lambda)
+    coefs <- coef.pense(object, lambda = lambda, exact)
 
     pr <- coefs[1L] + newdata %*% coefs[-1L]
     return(as.vector(pr))

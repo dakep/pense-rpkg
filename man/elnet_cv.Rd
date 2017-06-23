@@ -5,7 +5,7 @@
 \title{Cross-validate Elastic Net}
 \usage{
 elnet_cv(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
-  cv_measure, ncores = getOption("mc.cores", 1L), cl = NULL, ...)
+  cv_measure, ncores = getOption("mc.cores", 1L), cl = NULL, options, ...)
 }
 \arguments{
 \item{X}{data matrix with predictors}

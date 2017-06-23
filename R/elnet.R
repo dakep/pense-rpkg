@@ -127,6 +127,7 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 
     ret_struct <- structure(list(
         status = 0L,
+        intercept = intercept,
         message = "no observations",
         coefficients = matrix(
             NA_real_,
@@ -212,6 +213,11 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
         ret_struct[[ri]] <- elnetres[[ri]]
     }
 
+    lambda_ord <- rev(seq_along(ret_struct$lambda))
+    ret_struct$lambda <- ret_struct$lambda[lambda_ord]
+    ret_struct$coefficients <- ret_struct$coefficients[, lambda_ord, drop = FALSE]
+    ret_struct$residuals <- ret_struct$residuals[, lambda_ord, drop = FALSE]
+
     return(ret_struct)
 }
 
@@ -248,7 +254,7 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 #' @export
 elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
                      cv_measure, ncores = getOption("mc.cores", 1L),
-                     cl = NULL, ...) {
+                     cl = NULL, options = en_options_aug_lars(), ...) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -279,8 +285,11 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     lambda <- sort(lambda, decreasing = TRUE)
 
+    ## Define return structure
     ret_struct <- structure(list(
         status = 0L,
+        intercept = intercept,
+        options = options,
         message = "no observations",
         coefficients = matrix(
             NA_real_,
@@ -349,7 +358,7 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     ## Worker CV function.
     ## Requires the following variables in the environment:
     ## X, y, weights, cv_measure
-    elnet_job_cv <- function(cv_ind, alpha, lambda, intercept, ...) {
+    elnet_job_cv <- function(cv_ind, alpha, lambda, intercept, options, ...) {
         if (length(cv_ind) > 0L) {
             X_test <- X[cv_ind, , drop = FALSE]
             y_test <- y[cv_ind]
@@ -372,6 +381,7 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
             weights = weights_train,
             intercept = intercept,
             Xtest = X_test,
+            options = options,
             ...
         )
 
@@ -401,7 +411,8 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
             elnet_job_cv,
             alpha = alpha,
             lambda = lambda,
-            intercept,
+            intercept = intercept,
+            options = options,
             ...
         )
     },
@@ -521,6 +532,8 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     if (!identical(elnetres[[1L]], 0L)) {
         warning("Elastic Net algorithm had non-zero return status.")
     }
+
+    elnetres$weights <- weights
 
     return(elnetres)
 }

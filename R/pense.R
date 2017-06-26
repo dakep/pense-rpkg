@@ -258,7 +258,7 @@ pense <- function(X, y,
                     objF = est$objF,
                     scale = est$scale,
                     beta_L1 = norm(est$beta, "1"),
-                    beta_L2 = norm(est$beta, "2")
+                    beta_L2 = norm(est$beta, "F")
                 )
             },
             FUN.VALUE = numeric(4L), USE.NAMES = TRUE)

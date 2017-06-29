@@ -5,7 +5,7 @@
 \title{Perform an M-step after the EN S-Estimator}
 \usage{
 mstep(penseobj, lambda, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
-  ncores = getOption("mc.cores", 1L), cl = NULL,
+  scale = c("s", "cv"), ncores = getOption("mc.cores", 1L), cl = NULL,
   options = mstep_options(), X, y, cv_objective, lambda_min_ratio, en_options)
 }
 \arguments{
@@ -21,6 +21,11 @@ values or approximate it from the optimal lambda?}
 \code{complete_grid = TRUE}).}
 
 \item{nlambda}{the number of lambda values to try.}
+
+\item{scale}{what initial scale to use. \code{"s"} uses the estimated
+M-scale of the S-regression residuals, \code{"cv"} uses the
+M-scale of the S-regression out-of-sample residuals. Can also
+be a number directly specifiying the scale to use.}
 
 \item{ncores, cl}{use this many cores or the supplied cluster for choosing the
 optima lambda. See \code{\link{pense}} for more details.}

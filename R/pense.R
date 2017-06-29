@@ -386,6 +386,22 @@ pense <- function(X, y,
                 # apply(pred_resids, 2, cv_objective_fun)
             }))
         )
+        cv_scales <- unlist(lapply(
+            cv_results,
+            function(cv_res) {
+                pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
+                apply(
+                    pred_resids,
+                    2,
+                    mscale,
+                    b = options$bdp,
+                    rho = "bisquare",
+                    cc = options$cc,
+                    eps = options$mscaleEps,
+                    maxit = options$mscaleMaxit
+                )
+            }
+        ))
 
         cv_stats <- do.call(rbind, lapply(
             cv_results,
@@ -395,7 +411,7 @@ pense <- function(X, y,
                     sol_stats,
                     dim = c(4L, length(sol_stats) %/% (cv_k * 4L), cv_k),
                     dimnames = list(
-                        c("obj_fun", "s_scale", "beta_L1", "beta_L2"),
+                        c("obj_fun", "fold_s_scale", "beta_L1", "beta_L2"),
                         NULL,
                         NULL
                     )
@@ -407,6 +423,7 @@ pense <- function(X, y,
         cv_lambda_grid <- data.frame(
             lambda = lambda * max(scale_x),
             cv_obj,
+            s_scale = cv_scales,
             cv_stats
         )
         lambda_opt <- lambda[which.min(cv_obj[, "cvavg"])]

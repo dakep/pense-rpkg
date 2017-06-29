@@ -9,6 +9,10 @@
 #'      values or approximate it from the optimal lambda?
 #' @param cv_k perform k-fold CV to choose optimal lambda (only used if
 #'      \code{complete_grid = TRUE}).
+#' @param scale what initial scale to use. \code{"s"} uses the estimated
+#'      M-scale of the S-regression residuals, \code{"cv"} uses the
+#'      M-scale of the S-regression out-of-sample residuals. Can also
+#'      be a number directly specifiying the scale to use.
 #' @param nlambda the number of lambda values to try.
 #' @param ncores,cl use this many cores or the supplied cluster for choosing the
 #'      optima lambda. See \code{\link{pense}} for more details.
@@ -23,9 +27,11 @@
 #' @export
 mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                   nlambda = 30L,
+                  scale = c("s", "cv"),
                   ncores = getOption("mc.cores", 1L), cl = NULL,
                   options = mstep_options(),
                   X, y, cv_objective, lambda_min_ratio, en_options) {
+
     if (missing(X)) {
         X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
     }
@@ -43,6 +49,14 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     }
 
     lambda <- .check_arg(lambda, "numeric", range = 0)
+
+    adjust_scale <- TRUE
+    if (is.character(scale)) {
+        scale <- match.arg(scale)
+    } else {
+        .check_arg(scale, "numeric", range = 0)
+        adjust_scale <- FALSE
+    }
 
     dX <- dim(X)
 
@@ -120,20 +134,24 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     ##
     ## Adjust the scale for "fat" datasets
     ##
-    scale_corr_fact <- if (edf / dX[1L] > 0.5) {
-        # This corresponds to q_T in the Maronna & Yohai (2010)
-        corr_fact_a <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L)^2)
-        corr_fact_b <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 2L))
-        corr_fact_c <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L) * resid_scaled)
+    scale_init_corr <- if (adjust_scale) {
+        scale_corr_fact <- if (edf / dX[1L] > 0.5) {
+            # This corresponds to q_T in the Maronna & Yohai (2010)
+            corr_fact_a <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L)^2)
+            corr_fact_b <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 2L))
+            corr_fact_c <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L) * resid_scaled)
 
-        1 + edf / (2 * dX[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
-    } else if (edf / dX[1L] > 0.1) {
-        1 / (1 - (1.29 - 6.02 / dX[1L]) * edf / dX[1L])
+            1 + edf / (2 * dX[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
+        } else if (edf / dX[1L] > 0.1) {
+            1 / (1 - (1.29 - 6.02 / dX[1L]) * edf / dX[1L])
+        } else {
+            1
+        }
+
+        scale_init * scale_corr_fact
     } else {
-        1
+        scale_init
     }
-
-    scale_init_corr <- scale_init * scale_corr_fact
 
     ##
     ## Select tuning constant for the M-step for "fat" datasets

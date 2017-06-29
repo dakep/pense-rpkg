@@ -54,7 +54,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     if (is.character(scale)) {
         scale <- match.arg(scale)
     } else {
-        .check_arg(scale, "numeric", range = 0)
+        scale <- .check_arg(scale, "numeric", range = 0)
         adjust_scale <- FALSE
     }
 

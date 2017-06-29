@@ -4,16 +4,22 @@
 \alias{elnet_cv}
 \title{Cross-validate Elastic Net}
 \usage{
-elnet_cv(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
-  cv_measure, ncores = getOption("mc.cores", 1L), cl = NULL,
-  options = en_options_aug_lars(), ...)
+elnet_cv(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
+  cv_k = 10, cv_measure, ncores = getOption("mc.cores", 1L), cl = NULL,
+  options = en_options_aug_lars(), lambda_min_ratio, ...)
 }
 \arguments{
 \item{X}{data matrix with predictors}
 
 \item{y}{response vector}
 
-\item{alpha, lambda}{values for the parameters controlling the penalization}
+\item{alpha}{controls the balance between the L1 and the L2 penalty.
+\code{alpha = 0} is the ridge (L2) penalty, \code{alpha = 1} is
+the lasso.}
+
+\item{nlambda}{size of the lambda grid if \code{lambda} is not specified.}
+
+\item{lambda}{a grid of decreasing lambda values.}
 
 \item{weights}{an optional vector of weights to be used in the fitting
 process. Should be \code{NULL} or a numeric vector. If non-NULL,
@@ -28,6 +34,11 @@ returns a performance measure for each column.}
 
 \item{ncores, cl}{the number of processor cores or an actual \code{parallel}
 cluster. At most \code{cv_k + 1} nodes will be used.}
+
+\item{lambda_min_ratio}{if the lambda grid should be automatically defined,
+the ratio of the smallest to the largest lambda value in the grid. The
+default is \code{1e-6} if $n < p$, and
+\code{1e-5 * 10^floor(log10(p / n))} otherwise.}
 
 \item{...}{additional arguments passed on to \code{\link{elnet}}.}
 }

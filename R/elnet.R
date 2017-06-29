@@ -41,7 +41,11 @@
 #'
 #' @param X data matrix with predictors
 #' @param y response vector
-#' @param alpha,lambda values for the parameters controlling the penalization
+#' @param alpha controls the balance between the L1 and the L2 penalty.
+#'      \code{alpha = 0} is the ridge (L2) penalty, \code{alpha = 1} is
+#'      the lasso.
+#' @param nlambda size of the lambda grid if \code{lambda} is not specified.
+#' @param lambda a grid of decreasing lambda values.
 #' @param weights an optional vector of weights to be used in the fitting
 #'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
 #'      weighted EN is used with weights \code{weights}. See also 'Details'.
@@ -50,6 +54,10 @@
 #' @param options additional options for the EN algorithm. See
 #'      \code{\link{en_options}} for details.
 #' @param intercept should an intercept be estimated?
+#' @param lambda_min_ratio if the lambda grid should be automatically defined,
+#'      the ratio of the smallest to the largest lambda value in the grid. The
+#'      default is \code{1e-6} if $n < p$, and
+#'      \code{1e-5 * 10^floor(log10(p / n))} otherwise.
 #' @param addLeading1s should a leading column of 1's be appended?
 #'      If \code{FALSE}, this has to be done before calling this function.
 #'
@@ -70,9 +78,9 @@
 #'     \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
 #'     for Sparse Learning}. Journal of Machine Learning Research,
 #'     12(May):1537-1586, 2011.
-elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
+elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
                   addLeading1s = TRUE, options = en_options_aug_lars(),
-                  Xtest) {
+                  lambda_min_ratio, Xtest) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -122,6 +130,15 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
+
+    if (missing(lambda)) {
+        if (missing(lambda_min_ratio)) {
+            lambda_min_ratio <- NULL
+        }
+        nlambda <- .check_arg(nlambda, "integer", range = 0)
+        lambda <- .build_lambda_grid_cl(x, y, alpha, nlambda, lambda_min_ratio)
+    }
+
     lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     lambda <- sort(lambda, decreasing = TRUE)
 
@@ -227,7 +244,11 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 #'
 #' @param X data matrix with predictors
 #' @param y response vector
-#' @param alpha,lambda values for the parameters controlling the penalization
+#' @param alpha controls the balance between the L1 and the L2 penalty.
+#'      \code{alpha = 0} is the ridge (L2) penalty, \code{alpha = 1} is
+#'      the lasso.
+#' @param nlambda size of the lambda grid if \code{lambda} is not specified.
+#' @param lambda a grid of decreasing lambda values.
 #' @param weights an optional vector of weights to be used in the fitting
 #'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
 #'      weighted EN is used with weights \code{weights}. See also 'Details'.
@@ -237,6 +258,10 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 #'      returns a performance measure for each column.
 #' @param ncores,cl the number of processor cores or an actual \code{parallel}
 #'      cluster. At most \code{cv_k + 1} nodes will be used.
+#' @param lambda_min_ratio if the lambda grid should be automatically defined,
+#'      the ratio of the smallest to the largest lambda value in the grid. The
+#'      default is \code{1e-6} if $n < p$, and
+#'      \code{1e-5 * 10^floor(log10(p / n))} otherwise.
 #' @param ... additional arguments passed on to \code{\link{elnet}}.
 #'
 #' @return
@@ -252,9 +277,10 @@ elnet <- function(X, y, alpha, lambda, weights, intercept = TRUE,
 #'      and the estimated standard deviation.}
 #'
 #' @export
-elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
+elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE, cv_k = 10,
                      cv_measure, ncores = getOption("mc.cores", 1L),
-                     cl = NULL, options = en_options_aug_lars(), ...) {
+                     cl = NULL, options = en_options_aug_lars(),
+                     lambda_min_ratio, ...) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -282,6 +308,15 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
 
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
+
+    if (missing(lambda)) {
+        if (missing(lambda_min_ratio)) {
+            lambda_min_ratio <- NULL
+        }
+        nlambda <- .check_arg(nlambda, "integer", range = 0)
+        lambda <- .build_lambda_grid_cl(x, y, alpha, nlambda, lambda_min_ratio)
+    }
+
     lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     lambda <- sort(lambda, decreasing = TRUE)
 
@@ -377,7 +412,7 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
             X_train,
             y_train,
             alpha,
-            lambda,
+            lambda = lambda,
             weights = weights_train,
             intercept = intercept,
             Xtest = X_test,
@@ -440,6 +475,23 @@ elnet_cv <- function(X, y, alpha, lambda, weights, intercept = TRUE, cv_k = 10,
     ret_struct$lambda_opt <- with(ret_struct$cvres, lambda[which.min(cvavg)])
     return(ret_struct)
 }
+
+
+## Internal function to compute a lambda grid for elastic net
+.build_lambda_grid_cl <- function(x, y, alpha, nlambda, lambda_min_ratio = NULL) {
+    if (is.null(lambda_min_ratio)) {
+        dX <- dim(x)
+        lambda_min_ratio <- min(1e-6, 1e-5 * 10^floor(log10(dX[2L] / dX[1L])))
+    } else {
+        lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
+                                       range = c(0, 1))
+    }
+    lambda_max <- max(abs(apply(x, 2, cov, y))) / max(0.01, alpha)
+
+    exp(rev(seq(log(lambda_max), log(lambda_min_ratio * lambda_max),
+                length.out = nlambda)))
+}
+
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib pense C_augtrans C_elnet C_elnet_sp

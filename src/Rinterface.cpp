@@ -114,7 +114,8 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
         coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
 
         if (en->getStatus() != 0) {
-            break;
+            Rcpp::warning("EN algorithm had non-zero exit status for lambda=%g: %s",
+                          *currentLambda, en->getStatusMessage());
         }
 
         if (generatePredictions) {
@@ -208,7 +209,8 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
         coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
 
         if (en->getStatus() != 0) {
-            break;
+            Rcpp::warning("EN algorithm had non-zero exit status for lambda=%g: %s",
+                          *currentLambda, en->getStatusMessage());
         }
 
         if (generatePredictions) {

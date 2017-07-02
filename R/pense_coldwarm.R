@@ -7,7 +7,9 @@
 #' @importFrom stats mad median
 #' @importFrom Matrix Matrix sparseMatrix drop
 #' @importClassesFrom Matrix dgCMatrix
-pense_coldwarm <- function(X, y, alpha, lambda_grid, start_0 = FALSE,
+pense_coldwarm <- function(X, y, alpha, lambda_grid,
+                           direction = c("left", "right"),
+                           start_0 = FALSE,
                            standardize, pense_options, initest_options,
                            en_options) {
     dX <- dim(X)
@@ -16,7 +18,14 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid, start_0 = FALSE,
 
     final_estimates <- vector("list", length(lambda_grid))
 
-    ## For the first value of lambda, we will do a cold start
+    lambda_grid <- switch(
+        match.arg(direction),
+        right = sort(lambda_grid, decreasing = FALSE),
+        left = sort(lambda_grid, decreasing = TRUE)
+    )
+
+    ## For the first value of lambda, we will compute a cold start or
+    ## start from the 0-vector
     if (isTRUE(start_0)) {
         init_current <- list(
             list(

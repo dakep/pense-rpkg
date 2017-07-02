@@ -78,6 +78,7 @@ pense <- function(X, y,
                   nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
                   standardize = TRUE,
                   initial = c("warm0", "warm", "cold"),
+                  direction = c("left", "right"),
                   warm_reset = 10,
                   cv_k = 5, cv_objective,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
@@ -137,6 +138,8 @@ pense <- function(X, y,
         1L
     }
 
+    direction <- match.arg(direction)
+
     if (!is.null(lambda)) {
         lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
         nlambda <- length(lambda)
@@ -192,7 +195,8 @@ pense <- function(X, y,
     lambda <- lambda / max(scale_x)
 
     ## Reverse the order if we use a warm-0 start
-    lambda <- sort(lambda, decreasing = isTRUE(initial == "warm0"))
+    lambda <- sort(lambda, decreasing = isTRUE(initial == "warm0") ||
+                       isTRUE(direction == "left"))
 
     ## Setup cluster
     cluster <- setupCluster(
@@ -206,7 +210,7 @@ pense <- function(X, y,
 
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(job, ...) {
+    pense_est_job <- function(job, lambda_max, start_0, direction, ...) {
         if (length(job$segment) == 0L) {
             X_train <- X
             y_train <- y
@@ -221,6 +225,11 @@ pense <- function(X, y,
             X = X_train,
             y = y_train,
             lambda_grid = job$lambda,
+            start_0 = start_0 || (
+                isTRUE(abs(job$lambda[1L] - lambda_max) < .Machine$double.eps) &
+                    direction == "left"
+            ),
+            direction = direction,
             ...
         )
 
@@ -324,9 +333,11 @@ pense <- function(X, y,
         all_results <- cluster$lapply(
             all_jobs,
             pense_est_job,
+            lambda_max = max(lambda),
             alpha = alpha,
             standardize = standardize,
             start_0 = isTRUE(initial == "warm0"),
+            direction = direction,
             pense_options = options,
             initest_options = init_options,
             en_options = en_options

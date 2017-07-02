@@ -6,8 +6,8 @@
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 50, lambda = NULL,
   lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm0",
-  "warm", "cold"), warm_reset = 10, cv_k = 5, cv_objective,
-  ncores = getOption("mc.cores", 1L), cl = NULL,
+  "warm", "cold"), direction = c("left", "right"), warm_reset = 10,
+  cv_k = 5, cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
   options = pense_options(), init_options = initest_options(),
   en_options = en_options_aug_lars())
 }

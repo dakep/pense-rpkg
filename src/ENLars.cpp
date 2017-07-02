@@ -350,12 +350,10 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
     uword nrActive = 0;	// number of active predictors
 
     /*
-     * Center data if requested
+     * Center response if requested
+     * (the predictors are already centered)
      */
 	if(intercept) {
-		this->meanX = mean(this->XtrAug.head_cols(nobs), 1);
-        this->meanX[0] = 0; // Don't change the intercept-column
-        this->XtrAug.head_cols(nobs).each_col() -= this->meanX;
 		meanY = mean(this->yAug.head_rows(nobs));
 		this->yAug.head_rows(nobs) -= meanY;
 	}
@@ -747,6 +745,7 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
     /*
      * Compute residuals and intercept
      */
+
     residuals = this->yAug.head_rows(nobs) - this->XtrAug.head_cols(nobs).t() * beta;
 
     if(intercept) {
@@ -787,6 +786,15 @@ void ENLars::setData(const Data& data)
      */
     memcpy(this->XtrAug.memptr(), data.getXtrConst(),
             data.numObs() * data.numVar() * sizeof(double));
+
+    /*
+     * Center predictors if requested
+     */
+	if(this->intercept) {
+		this->meanX = mean(this->XtrAug.head_cols(data.numObs()), 1);
+        this->meanX[0] = 0; // Don't change the intercept-column
+        this->XtrAug.head_cols(data.numObs()).each_col() -= this->meanX;
+	}
 }
 
 void ENLars::augmentData()

@@ -494,7 +494,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
 
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib pense C_augtrans C_elnet C_elnet_sp
+#' @useDynLib pense C_augtrans C_elnet_sp
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix
@@ -541,7 +541,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib pense C_augtrans C_elnet_weighted C_elnet_weighted_sp
+#' @useDynLib pense C_augtrans C_elnet_weighted_sp
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix

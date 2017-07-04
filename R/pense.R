@@ -38,13 +38,15 @@
 #' @param initial how to initialize the estimator at a new lambda in the grid.
 #'      The default, \code{"warm"}, computes a cold initial estimator at several
 #'      lambda values and uses the PENSE coefficient to warm-start the
-#'      estimator at the next larger lambda value. A variant, \code{"warm0"},
-#'      will initialze PENSE at the largest lambda value with an all-0
-#'      coefficient vector and use the PENSE result for the next smaller
-#'      lambda value. \code{"cold"} computes the full initial estimator at
+#'      estimator at the next larger lambda value. At the largest value in
+#'      the lambda grid, PENSE will be initialized with the 0-vector.
+#'      \code{"cold"} computes the full initial estimator at
 #'      every lambda value.
-#' @param warm_reset if \code{initial = "warm"}, how often should the warm-start
-#'      be reset to a cold initial estimate?
+#' @param direction what direction to traverse the lambda grid in.
+#'      \code{"left"} means from left to right (i.e. from larger to smaller
+#'      lambda values).
+#' @param warm_reset if \code{initial = "warm(0)"}, how often should the
+#'      warm-start be reset to a cold initial estimate?
 #' @param ncores,cl the number of processor cores or an actual parallel cluster
 #'      to use to estimate the optimal value of lambda. See details for more
 #'      information.
@@ -53,7 +55,8 @@
 #' @param en_options additional options for the EN algorithm.
 #'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
 #' @param initest_options additional options for computing the initial
-#'      estimator. Ignored if \code{initial = "warm0"}.
+#'      estimator.
+#'      Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 #'      See \code{\link{initest_options}} for details.
 #'
 #' @return An object of class \code{"pense"} with elements
@@ -77,7 +80,7 @@ pense <- function(X, y,
                   alpha = 0.5,
                   nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
                   standardize = TRUE,
-                  initial = c("warm0", "warm", "cold"),
+                  initial = c("warm", "cold"),
                   direction = c("left", "right"),
                   warm_reset = 10,
                   cv_k = 5, cv_objective,
@@ -127,10 +130,6 @@ pense <- function(X, y,
     initial <- match.arg(initial)
 
     warm_reset <- if (isTRUE(initial == "warm")) {
-        if (is.null(warm_reset)) {
-            warm_reset <- nlambda
-        }
-
         .check_arg(warm_reset, "integer", range = 0)
     } else if (isTRUE(initial == "cold")) {
         Inf
@@ -157,7 +156,8 @@ pense <- function(X, y,
     ## Sanity checks for some arguments. Some combinations are known to
     ## be performing poorly.
     ##
-    if (initial != "warm0" && alpha < 1 && init_options$pscMethod == "rr" &&
+    if (!(initial == "warm" && warm_reset == 1L) &&
+        alpha < 1 && init_options$pscMethod == "rr" &&
         en_options$algorithm == 1L) {
         message("Approximation of PSCs does not work well with the DAL ",
                 "algorithm for EN due to the large number of observations ",
@@ -195,8 +195,7 @@ pense <- function(X, y,
     lambda <- lambda / max(scale_x)
 
     ## Reverse the order if we use a warm-0 start
-    lambda <- sort(lambda, decreasing = isTRUE(initial == "warm0") ||
-                       isTRUE(direction == "left"))
+    lambda <- sort(lambda, decreasing = isTRUE(direction == "left"))
 
     ## Setup cluster
     cluster <- setupCluster(
@@ -210,7 +209,7 @@ pense <- function(X, y,
 
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(job, lambda_max, start_0, direction, ...) {
+    pense_est_job <- function(job, lambda_max, direction, ...) {
         if (length(job$segment) == 0L) {
             X_train <- X
             y_train <- y
@@ -225,11 +224,8 @@ pense <- function(X, y,
             X = X_train,
             y = y_train,
             lambda_grid = job$lambda,
-            start_0 = start_0 || (
-                isTRUE(abs(job$lambda[1L] - lambda_max) < .Machine$double.eps) &
-                    direction == "left"
-            ),
-            direction = direction,
+            start_0 = (direction == "left") &&
+                isTRUE(abs(job$lambda[1L] - lambda_max) < .Machine$double.eps),
             ...
         )
 
@@ -336,7 +332,6 @@ pense <- function(X, y,
             lambda_max = max(lambda),
             alpha = alpha,
             standardize = standardize,
-            start_0 = isTRUE(initial == "warm0"),
             direction = direction,
             pense_options = options,
             initest_options = init_options,
@@ -401,16 +396,16 @@ pense <- function(X, y,
             cv_results,
             function(cv_res) {
                 pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
-                apply(
-                    pred_resids,
-                    2,
-                    mscale,
-                    b = options$bdp,
-                    rho = "bisquare",
-                    cc = options$cc,
-                    eps = options$mscaleEps,
-                    maxit = options$mscaleMaxit
-                )
+                apply(pred_resids, 2, function (r) {
+                    mscale(
+                        r - mean(r),
+                        b = options$bdp,
+                        rho = "bisquare",
+                        cc = options$cc,
+                        eps = options$mscaleEps,
+                        maxit = options$mscaleMaxit
+                    )
+                })
             }
         ))
 

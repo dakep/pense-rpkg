@@ -1,5 +1,7 @@
-## PENSE with a cold start at the beginning and subsequently uses the previous
-## parameter estimate as warm-start
+## Estimate PENSE with a cold start for the first lambda in `lambda_grid`
+## and use the parameter estimate as warm-start for the subsequent
+## values in the `lambda_grid`. The function does not care about the
+## ordering in the lambda_grid.
 ##
 ## @param lambda_grid a grid of lambda values NOT ADJUSTED for sample size!
 ## @param start_0 should an initial estimator be computed at the first lambda
@@ -8,7 +10,6 @@
 #' @importFrom Matrix Matrix sparseMatrix drop
 #' @importClassesFrom Matrix dgCMatrix
 pense_coldwarm <- function(X, y, alpha, lambda_grid,
-                           direction = c("left", "right"),
                            start_0 = FALSE,
                            standardize, pense_options, initest_options,
                            en_options) {
@@ -17,12 +18,6 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid,
     std_data <- standardize_data(X, y, standardize)
 
     final_estimates <- vector("list", length(lambda_grid))
-
-    lambda_grid <- switch(
-        match.arg(direction),
-        right = sort(lambda_grid, decreasing = FALSE),
-        left = sort(lambda_grid, decreasing = TRUE)
-    )
 
     ## For the first value of lambda, we will compute a cold start or
     ## start from the 0-vector

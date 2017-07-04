@@ -5,9 +5,9 @@
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 50, lambda = NULL,
-  lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm0",
-  "warm", "cold"), direction = c("left", "right"), warm_reset = 10,
-  cv_k = 5, cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
+  lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
+  "cold"), direction = c("left", "right"), warm_reset = 10, cv_k = 5,
+  cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
   options = pense_options(), init_options = initest_options(),
   en_options = en_options_aug_lars())
 }
@@ -40,14 +40,17 @@ are returned on the original scale. Defaults to \code{TRUE}.}
 \item{initial}{how to initialize the estimator at a new lambda in the grid.
 The default, \code{"warm"}, computes a cold initial estimator at several
 lambda values and uses the PENSE coefficient to warm-start the
-estimator at the next larger lambda value. A variant, \code{"warm0"},
-will initialze PENSE at the largest lambda value with an all-0
-coefficient vector and use the PENSE result for the next smaller
-lambda value. \code{"cold"} computes the full initial estimator at
+estimator at the next larger lambda value. At the largest value in
+the lambda grid, PENSE will be initialized with the 0-vector.
+\code{"cold"} computes the full initial estimator at
 every lambda value.}
 
-\item{warm_reset}{if \code{initial = "warm"}, how often should the warm-start
-be reset to a cold initial estimate?}
+\item{direction}{what direction to traverse the lambda grid in.
+\code{"left"} means from left to right (i.e. from larger to smaller
+lambda values).}
+
+\item{warm_reset}{if \code{initial = "warm(0)"}, how often should the
+warm-start be reset to a cold initial estimate?}
 
 \item{cv_k}{number of cross-validation segements to use to choose the optimal
 lambda from the grid. If only a single value of lambda is given,
@@ -68,7 +71,8 @@ See \code{\link{pense_options}} for details.}
 See \code{\link{elnet}} and \code{\link{en_options}} for details.}
 
 \item{initest_options}{additional options for computing the initial
-estimator. Ignored if \code{initial = "warm0"}.
+estimator.
+Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 See \code{\link{initest_options}} for details.}
 }
 \value{

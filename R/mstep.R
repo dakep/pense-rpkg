@@ -49,13 +49,10 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     }
 
     lambda <- .check_arg(lambda, "numeric", range = 0)
-
-    adjust_scale <- TRUE
-    if (is.character(scale)) {
-        scale <- match.arg(scale)
-    } else {
-        scale <- .check_arg(scale, "numeric", range = 0)
-        adjust_scale <- FALSE
+    lambda_ind <- which.min(abs(lambda - penseobj$lambda))
+    if (abs(lambda - penseobj$lambda[lambda_ind]) > sqrt(.Machine$double.eps)) {
+        warning("S-estimator was not computed for the given lambda. ",
+                "Using the closest lambda as crude approximation.")
     }
 
     dX <- dim(X)
@@ -85,11 +82,6 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     pense_lambda_opt <- pense_lambda_opt / max(std_data$scale_x)
 
     ##
-    ## Adjust initial scale according to Maronna & Yohai (2010)
-    ## and correct for bias
-    ##
-
-    ##
     ## Compute effective degrees of freedom
     ## according to
     ## Tibshirani, Ryan J.; Taylor, Jonathan. Degrees of freedom in lasso problems.
@@ -110,23 +102,19 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 
     edf <- edf + 1 # add intercept
 
-    if (options$adjustBdp) {
-        bdp_adj <- penseobj$pense_options$bdp * (1 - edf / dX[1L])
-        bdp_adj <- max(0.25, bdp_adj) # Don't go below 0.25
+    bdp_adj <- penseobj$pense_options$bdp
+    cc_scale <- penseobj$pense_options$cc
 
-        cc_scale <- consistency.rho(bdp_adj, "bisquare")
-
-        scale_init <- mscale(
-            residuals,
-            b = bdp_adj,
-            cc = cc_scale,
-            eps = penseobj$pense_options$mscaleEps,
-            maxit = penseobj$pense_options$mscaleMaxit
+    if (is.character(scale)) {
+        scale_init <- switch(
+            match.arg(scale),
+            s = penseobj$scale[lambda_ind],
+            cv = penseobj$cv_lambda_grid$s_scale[lambda_ind]
         )
+        adjust_scale <- TRUE
     } else {
-        bdp_adj <- penseobj$pense_options$bdp
-        cc_scale <- penseobj$pense_options$cc
-        scale_init <- penseobj$scale[which.min(abs(lambda - penseobj$lambda))]
+        scale_init <- .check_arg(scale, "numeric", range = 0)
+        adjust_scale <- FALSE
     }
 
     resid_scaled <- residuals / scale_init
@@ -136,13 +124,15 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     ##
     scale_init_corr <- if (adjust_scale) {
         scale_corr_fact <- if (edf / dX[1L] > 0.5) {
-            # This corresponds to q_T in the Maronna & Yohai (2010)
+            # This corresponds to q_T in Maronna & Yohai (2010)
             corr_fact_a <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L)^2)
             corr_fact_b <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 2L))
-            corr_fact_c <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L) * resid_scaled)
+            corr_fact_c <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L) *
+                                    resid_scaled)
 
             1 + edf / (2 * dX[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
         } else if (edf / dX[1L] > 0.1) {
+            ## this is q_E in Maronna & Yohai (2010)
             1 / (1 - (1.29 - 6.02 / dX[1L]) * edf / dX[1L])
         } else {
             1
@@ -169,8 +159,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     ##
     ## Adjust lambda for the M step
     ##
-    lambda_opt_ls <- pense_lambda_opt * 0.5
-    lambda_opt_m <- lambda_opt_ls * 3 / options$cc^2
+    lambda_opt_m <- pense_lambda_opt * 1.5 / options$cc^2
 
     lambda_opt_m_cv <- lambda_opt_m
     lambda_grid_m <- data.frame(

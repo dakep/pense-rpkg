@@ -142,6 +142,12 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
     Xtr <- .Call(C_augtrans, X)
     dX[2L] <- dX[2L] + 1L
 
+    usableProp <- with(options, if(keepResidualsMethod == 1) {
+        keepResidualsProportion * keepPSCProportion
+    } else {
+        keepPSCProportion
+    })
+
     if (alpha >= 1 - .Machine$double.eps) {
         if (dX[2L] >= dX[1L]) {
             stop("`enpy_rr` can not be used for data with more variables than ",

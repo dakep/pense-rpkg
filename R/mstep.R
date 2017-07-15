@@ -97,7 +97,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         hmat <- solve(xtx + lambda2 * diag(length(active_set)), xtx)
         sum(diag(hmat))
     } else {
-        sum(active_set)
+        length(active_set)
     }
 
     edf <- edf + 1 # add intercept

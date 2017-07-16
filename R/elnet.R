@@ -314,7 +314,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
             lambda_min_ratio <- NULL
         }
         nlambda <- .check_arg(nlambda, "integer", range = 0)
-        lambda <- .build_lambda_grid_cl(x, y, alpha, nlambda, lambda_min_ratio)
+        lambda <- .build_lambda_grid_cl(X, y, alpha, nlambda, lambda_min_ratio)
     }
 
     lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)

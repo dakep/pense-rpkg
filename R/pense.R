@@ -377,21 +377,13 @@ pense <- function(X, y,
         }
 
         # Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
-        cv_obj <- t(do.call(cbind, lapply(
-            cv_results,
-            function(cv_res) {
-                cv_obj_fvals <- unlist(lapply(cv_res, function (lambda_res) {
-                    apply(lambda_res$residuals, 2, cv_objective_fun)
-                }))
-                cv_obj_fvals <- matrix(cv_obj_fvals, ncol = length(cv_res))
-                apply(cv_obj_fvals, 1, function (x) {
-                    c(cvavg = mean(x), cvsd = sd(x))
-                })
+        all_cv_resids <- do.call(cbind, lapply(cv_results, function (cv_res) {
+            do.call(rbind, lapply(cv_res, '[[', 'residuals'))
+        }))
+        cv_obj <- apply(all_cv_resids, 2, function (r) {
+            cv_objective_fun(r[is.finite(r)])
+        })
 
-                # pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
-                # apply(pred_resids, 2, cv_objective_fun)
-            }))
-        )
         cv_scales <- unlist(lapply(
             cv_results,
             function(cv_res) {
@@ -428,11 +420,11 @@ pense <- function(X, y,
 
         cv_lambda_grid <- data.frame(
             lambda = lambda * max(scale_x),
-            cv_obj,
+            cvavg = cv_obj,
             s_scale = cv_scales,
             cv_stats
         )
-        lambda_opt <- lambda[which.min(cv_obj[, "cvavg"])]
+        lambda_opt <- lambda[which.min(cv_obj)]
     } else {
         cv_lambda_grid <- NULL
         lambda_opt <- lambda[1L]

@@ -355,28 +355,20 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                 match.fun(cv_objective)
         }
 
-        cv_obj <- t(do.call(cbind,
+        cv_obj <- unlist(
             lapply(
                 split(pred_errors, rep.int(seq_along(lambda_grid_m), cv_k)),
                 function(preds) {
-                    cv_obj_split <- vapply(
-                        preds,
-                        cv_objective_fun,
-                        FUN.VALUE = numeric(1),
-                        USE.NAMES = FALSE
-                    )
-                    c(
-                        cvavg = mean(cv_obj_split),
-                        cvsd = sd(cv_obj_split)
-                    )
+                    pred_resids <- unlist(preds)
+                    cv_objective_fun(pred_resids[is.finite(pred_resids)])
                 }
             )
-        ))
+        )
 
-        lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj[, "cvavg"])]
+        lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
         lambda_grid_m <- data.frame(
             lambda = lambda_grid_m * max(std_data$scale_x),
-            cv_obj
+            cvavg = cv_obj
         )
     }
 

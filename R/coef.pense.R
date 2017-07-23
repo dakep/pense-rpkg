@@ -76,7 +76,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
     x <- data.matrix(eval(object$call$X))
     y <- drop(eval(object$call$y))
 
-    std_data <- pense:::standardize_data(x, y, object$standardize)
+    std_data <- standardize_data(x, y, object$standardize)
     xs <- std_data$xs
     yc <- std_data$yc
 
@@ -84,9 +84,12 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
     init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
 
     if (isTRUE(object$standardize)) {
-        init_int <- init_int - std_data$muy +
-            as.numeric(std_data$mux %*% init_beta)
-        init_beta <- init_beta * std_data$scale_x
+        std_coefs <- std_data$standardize_coefs(list(
+            intercept = init_int,
+            beta = init_Beta
+        ))
+        init_int <- std_coefs$intercept
+        init_beta <- std_coefs$beta
     }
 
     estimate <- pen_s_reg(
@@ -101,9 +104,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
     )
 
     if (isTRUE(object$standardize)) {
-        estimate$beta <- estimate$beta / std_data$scale_x
-        estimate$intercept <- estimate$intercept + std_data$muy -
-            as.numeric(std_data$mux %*% estimate$beta)
+        estimate <- std_data$unstandardize_coefs(estimate)
     }
 
     if (sparse) {

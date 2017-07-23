@@ -6,13 +6,16 @@
 ## @param lambda_grid a grid of lambda values NOT ADJUSTED for sample size!
 ## @param start_0 should an initial estimator be computed at the first lambda
 ##                value or simply initialized at the 0 vector?
+## @param init_other a list of initial estimates of length
+##      \code{length(lambda_grid)} to add to the ones computed
+##      by this function (e.g., from a similar problem)
 #' @importFrom stats mad median
 #' @importFrom Matrix Matrix sparseMatrix drop
 #' @importClassesFrom Matrix dgCMatrix
 pense_coldwarm <- function(X, y, alpha, lambda_grid,
                            start_0 = FALSE,
                            standardize, pense_options, initest_options,
-                           en_options) {
+                           en_options, init_other) {
     dX <- dim(X)
 
     std_data <- standardize_data(X, y, standardize)
@@ -45,7 +48,17 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid,
         )
     }
 
+    if (missing(init_other)) {
+        init_other <- vector("list", length(lambda_grid))
+    } else {
+        init_other <- lapply(init_other, function(x) {
+            list(std_data$standardize_coefs(x))
+        })
+    }
+
     for (i in seq_along(lambda_grid)) {
+        init_current <- c(init_current, init_other[[i]])
+
         full_all <- lapply(init_current, function (ic) {
             pen_s_reg(
                 std_data$xs,
@@ -68,11 +81,9 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid,
         final_estimates[[i]] <- full_all[[best_est]]
 
         if (standardize) {
-            final_estimates[[i]]$beta <- final_estimates[[i]]$beta /
-                std_data$scale_x
-            final_estimates[[i]]$intercept <- final_estimates[[i]]$intercept +
-                std_data$muy -
-                drop(std_data$mux %*% final_estimates[[i]]$beta)
+            final_estimates[[i]] <- std_data$unstandardize_coefs(
+                final_estimates[[i]]
+            )
         }
     }
 

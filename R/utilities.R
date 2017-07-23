@@ -84,6 +84,35 @@ standardize_data <- function (x, y, standardize) {
         ret_list$yc <- y - ret_list$muy
     }
 
+    ret_list$standardize_coefs <- function(coef_obj) {
+        coef_obj$intercept <- coef_obj$intercept - ret_list$muy +
+            drop(ret_list$mux %*% coef_obj$beta)
+        coef_obj$beta <- coef_obj$beta * ret_list$scale_x
+        return(coef_obj)
+    }
+
+    ret_list$unstandardize_coefs <- function(coef_obj) {
+        coef_obj$beta <- coef_obj$beta / ret_list$scale_x
+        coef_obj$intercept <- coef_obj$intercept + ret_list$muy -
+            drop(ret_list$mux %*% coef_obj$beta)
+        return(coef_obj)
+    }
+
     return(ret_list)
+}
+
+standardize_coefs <- function(intercept, beta, scale_x, mux, muy) {
+    return(list(
+        intercept = intercept - muy + drop(mux %*% beta),
+        beta = beta * scale_x
+    ))
+}
+
+unstandardize_coefs <- function(intercept, beta, scale_x, mux, muy) {
+    beta <- beta / scale_x
+    return(list(
+        intercept = intercept + muy - drop(mux %*% beta),
+        beta = beta
+    ))
 }
 

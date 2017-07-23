@@ -224,6 +224,7 @@ pense <- function(X, y,
             X = X_train,
             y = y_train,
             lambda_grid = job$lambda,
+            init_other = job$init_other,
             start_0 = (direction == "left") &&
                 isTRUE(abs(job$lambda[1L] - lambda_max) < .Machine$double.eps),
             ...
@@ -277,6 +278,33 @@ pense <- function(X, y,
     }
 
     ##
+    ## Always do a warm-0 start to get a local optimum at each lambda value
+    ##
+    warm0res <- pense_coldwarm(
+        X = X,
+        y = y,
+        alpha = alpha,
+        lambda_grid = sort(lambda, decreasing = TRUE),
+        start_0 = TRUE,
+        standardize = standardize,
+        pense_options = options,
+        initest_options = init_options,
+        en_options = en_options
+    )
+
+    if (direction != "left") {
+        warm0res <- rev(warm0res)
+    }
+
+    warm0init <- vector("list", length(warm0res))
+    for (i in seq_along(warm0init)) {
+        warm0init[[i]] <- list(
+            intercept = warm0res[[i]]$intercept,
+            beta = warm0res[[i]]$beta
+        )
+    }
+
+    ##
     ## Define the lambda sub-grids
     ##
     lambda_subgrid_lengths <- nlambda %/% warm_reset
@@ -286,18 +314,27 @@ pense <- function(X, y,
         rep.int(lambda_subgrid_lengths + 1L, overlength)
     )
 
-    lambda_subgrids <- split(
-        lambda,
-        rep.int(seq_len(warm_reset), lambda_subgrid_lengths)
-    )
+    subgrid_splits <- rep.int(seq_len(warm_reset), lambda_subgrid_lengths)
+    lambda_subgrids <- split(lambda, subgrid_splits)
+    warm0init_subgrids <- split(warm0init, subgrid_splits)
 
     ## The jobs for the "full" (original) data set
-    jobgrid_full <- lapply(lambda_subgrids, function(lvs) {
-        list(
-            segment = integer(0L),
-            lambda = lvs
-        )
-    })
+    ## (only necessary if the initial estimate is not a warm-0)
+    full_result_needed <- isTRUE(initial != "warm") ||
+        isTRUE(direction != "left") ||
+        isTRUE(warm_reset > 1L)
+
+    jobgrid_full <- if (full_result_needed) {
+        lapply(seq_along(lambda_subgrids), function(i) {
+            list(
+                segment = integer(0L),
+                lambda = lambda_subgrids[[i]],
+                init_other = warm0init_subgrids[[i]]
+            )
+        })
+    } else {
+        list()
+    }
 
     ## Perform CV (if we have more than a single lambda value)
     if((nlambda > 1L) && (cv_k > 1L))  {
@@ -310,10 +347,11 @@ pense <- function(X, y,
         # Define CV jobs (i.e., all combinations of CV splits and
         # lambda subgrids)
         jobgrid_cv <- lapply(cv_segments, function(cvs) {
-            lapply(lambda_subgrids, function(lvs) {
+            lapply(seq_along(lambda_subgrids), function(i) {
                 list(
                     segment = cvs,
-                    lambda = lvs
+                    lambda = lambda_subgrids[[i]],
+                    init_other = warm0init_subgrids[[i]]
                 )
             })
         })
@@ -346,25 +384,37 @@ pense <- function(X, y,
     })
 
     ## Gather all coefficients and residuals from the full results
-    int_ests <- unlist(lapply(full_results, "[[", "intercept"))
-    beta_ests <- do.call(cbind, lapply(full_results, "[[", "beta"))
-    residuals <- unlist(
-        lapply(full_results, "[[", "residuals"),
-        use.names = FALSE
-    )
-    residuals <- matrix(residuals, nrow = dX[1L], ncol = nlambda)
-    scale_ests <- unlist(
-        lapply(full_results, function (lambda_res) {
-            lambda_res$sol_stats["scale", ]
-        }),
-        use.names = FALSE
-    )
-    obj_fun_vals <- unlist(
-        lapply(full_results, function (lambda_res) {
-            lambda_res$sol_stats["objF", ]
-        }),
-        use.names = FALSE
-    )
+    if (full_result_needed) {
+        int_ests <- unlist(lapply(full_results, "[[", "intercept"))
+        beta_ests <- do.call(cbind, lapply(full_results, "[[", "beta"))
+        residuals <- unlist(
+            lapply(full_results, "[[", "residuals"),
+            use.names = FALSE
+        )
+        residuals <- matrix(residuals, nrow = dX[1L], ncol = nlambda)
+        scale_ests <- unlist(
+            lapply(full_results, function (lambda_res) {
+                lambda_res$sol_stats["scale", ]
+            }),
+            use.names = FALSE
+        )
+        obj_fun_vals <- unlist(
+            lapply(full_results, function (lambda_res) {
+                lambda_res$sol_stats["objF", ]
+            }),
+            use.names = FALSE
+        )
+    } else {
+        int_ests <- unlist(lapply(warm0res, "[[", "intercept"))
+        beta_ests <- do.call(cbind, lapply(warm0res, "[[", "beta"))
+        residuals <- unlist(
+            lapply(warm0res, "[[", "residuals"),
+            use.names = FALSE
+        )
+        residuals <- matrix(residuals, nrow = dX[1L], ncol = nlambda)
+        scale_ests <- unlist(lapply(warm0res, "[[", "scale"))
+        obj_fun_vals <- unlist(lapply(warm0res, "[[", "objF"))
+    }
 
     ## Gather all stats and results from the CV jobs
     if (length(cv_results) > 0L) {

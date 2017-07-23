@@ -74,9 +74,12 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     yc <- std_data$yc
 
     if (isTRUE(penseobj$standardize)) {
-        pense_int <- pense_int - std_data$muy +
-            drop(std_data$mux %*% pense_beta)
-        pense_beta <- pense_beta * std_data$scale_x
+        pense_coefs <- std_data$standardize_coefs(list(
+            intercept = pense_int,
+            beta = pense_beta
+        ))
+        pense_int <- pense_coefs$intercept
+        pense_beta <- pense_coefs$beta
     }
 
     pense_lambda_opt <- pense_lambda_opt / max(std_data$scale_x)
@@ -389,10 +392,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 
     ## Un-standardize the coefficients
     if (isTRUE(penseobj$standardize)) {
-        msres$beta <- msres$beta / std_data$scale_x
-        msres$intercept <- msres$intercept + std_data$muy -
-            as.numeric(std_data$mux %*% msres$beta)
-
+        msres <- std_data$unstandardize_coefs(msres)
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
 

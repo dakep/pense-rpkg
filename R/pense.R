@@ -371,12 +371,17 @@ pense <- function(X, y,
         cv_results <- split(cv_results, rep.int(seq_len(warm_reset), cv_k))
 
         cv_objective_fun <- if (missing(cv_objective)) {
-            scaleTau2
+            # robust version of the RMSPE (i.e., also taking bias into account)
+            function(x) {
+                st2 <- scaleTau2(x, mu.too = TRUE)
+                sqrt(sum(st2^2))
+            }
         } else {
             match.fun(cv_objective)
         }
 
-        # Collect all prediction errors for each lambda sub-grid and determine the optimal lambda
+        # Collect all prediction errors for each lambda sub-grid and determine
+        # the optimal lambda
         all_cv_resids <- do.call(cbind, lapply(cv_results, function (cv_res) {
             do.call(rbind, lapply(cv_res, '[[', 'residuals'))
         }))

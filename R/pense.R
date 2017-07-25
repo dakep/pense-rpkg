@@ -299,8 +299,10 @@ pense <- function(X, y,
     warm0init <- vector("list", length(warm0res))
     for (i in seq_along(warm0init)) {
         warm0init[[i]] <- list(
-            intercept = warm0res[[i]]$intercept,
-            beta = warm0res[[i]]$beta
+            list(
+                intercept = warm0res[[i]]$intercept,
+                beta = warm0res[[i]]$beta
+            )
         )
     }
 

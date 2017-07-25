@@ -52,7 +52,7 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid,
         init_other <- vector("list", length(lambda_grid))
     } else {
         init_other <- lapply(init_other, function(x) {
-            list(std_data$standardize_coefs(x))
+            lapply(x, std_data$standardize_coefs)
         })
     }
 

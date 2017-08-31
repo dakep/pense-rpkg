@@ -4,72 +4,104 @@
 \alias{pense}
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
-pense(X, y, alpha = 0.5, nlambda = 100, lambda = NULL,
-  lambda.min.ratio = NULL, standardize = TRUE, cv.k = 5,
-  warm.reset = 10, ncores = getOption("mc.cores", 2L), cl = NULL,
-  control = pense.control())
+pense(X, y, alpha = 0.5, nlambda = 50, lambda = NULL,
+  lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
+  "cold"), direction = c("left", "right"), warm_reset = 10, cv_k = 5,
+  cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
+  options = pense_options(), init_options = initest_options(),
+  en_options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{the design matrix}
+\item{X}{design matrix with predictors.}
 
-\item{y}{the response vector.}
+\item{y}{response vector.}
 
-\item{alpha}{the elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
-\code{alpha = 1} is the lasso penatly, and \code{alpha = 0} the ridge penalty.}
+\item{alpha}{elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+penalty.}
 
 \item{nlambda}{if \code{lambda} is not given or \code{NULL} (default),
 a grid of \code{nlambda} lambda values is generated based on the data.}
 
-\item{lambda}{a single value or a grid of values for the regularization parameter lambda.
-Assumed to be on the same scale as the data and adjusted for S-estimation.
-Defaults to \code{NULL}, which means a grid of lambda values is automatically
-generated (see parameter \code{nlambda}).
-If given and \code{standardize = TRUE}, the lambda values will be adjusted
-accordingly.}
+\item{lambda}{a single value or a grid of values for the regularization
+parameter lambda.
+Assumed to be on the same scale as the data and adjusted for
+S-estimation. Defaults to \code{NULL}, which means a grid of lambda
+values is automatically generated (see parameter \code{nlambda}).
+If given and \code{standardize = TRUE}, the lambda values will be
+adjusted accordingly.}
 
-\item{lambda.min.ratio}{If the grid should be chosen automatically, the ratio of the
-smallest lambda to the (computed) largest lambda.}
+\item{lambda_min_ratio}{If the grid should be chosen automatically, the
+ratio of the smallest lambda to the (computed) largest lambda.}
 
 \item{standardize}{should the data be standardized robustly? Estimates
 are returned on the original scale. Defaults to \code{TRUE}.}
 
-\item{cv.k}{number of cross-validation segements to use to choose the optimal
-lambda from the grid. If only a single value of lambda is given, cross-validation
-can still done to estimate the prediction performance at this particular lambda.}
+\item{initial}{how to initialize the estimator at a new lambda in the grid.
+The default, \code{"warm"}, computes a cold initial estimator at several
+lambda values and uses the PENSE coefficient to warm-start the
+estimator at the next larger lambda value. At the largest value in
+the lambda grid, PENSE will be initialized with the 0-vector.
+\code{"cold"} computes the full initial estimator at
+every lambda value.}
 
-\item{warm.reset}{how often should the warm-start be reset to a cold initial estimate?
-If \code{NULL}, no warm starts will be used.}
+\item{direction}{what direction to traverse the lambda grid in.
+\code{"left"} means from left to right (i.e. from larger to smaller
+lambda values).}
 
-\item{ncores, cl}{the number of processor cores or an actual parallel cluster to use to
-estimate the optimal value of lambda. See details for more information.}
+\item{warm_reset}{if \code{initial = "warm(0)"}, how often should the
+warm-start be reset to a cold initial estimate?}
 
-\item{control}{a list of control parameters as returned by \code{\link{pense.control}}.}
+\item{cv_k}{number of cross-validation segements to use to choose the optimal
+lambda from the grid. If only a single value of lambda is given,
+cross-validation can still done to estimate the prediction performance
+at this particular lambda.}
+
+\item{cv_objective}{a function (name) to compute the CV performance.
+By default, the robust tau-scale is used.}
+
+\item{ncores, cl}{the number of processor cores or an actual parallel cluster
+to use to estimate the optimal value of lambda. See details for more
+information.}
+
+\item{options}{additional options for the PENSE algorithm.
+See \code{\link{pense_options}} for details.}
+
+\item{en_options}{additional options for the EN algorithm.
+See \code{\link{elnet}} and \code{\link{en_options}} for details.}
+
+\item{initest_options}{additional options for computing the initial
+estimator.
+Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
+See \code{\link{initest_options}} for details.}
 }
 \value{
 An object of class \code{"pense"} with elements
 \item{call}{the call that produced this object.}
-\item{lambda.opt}{the optimal value of the regularization parameter according to CV.}
-\item{coefficients}{the vector of coefficients for the optimal lambda \code{lambda.opt}.}
-\item{residuals}{the residuals, that is response minus fitted values for \code{lambda.opt}.}
-\item{scale}{the estimated scale for \code{lambda.opt}.}
-\item{lambda.grid}{a 2-column matrix with values of lambda in the first column and the
-                   tau-scale estimated via CV in the second column.}
-\item{alpha,standardize,control}{the given arguments.}
-\item{standardize}{}
+\item{lambda_opt}{the optimal value of the regularization parameter
+     according to CV.}
+\item{coefficients}{a matrix of coefficients for each lambda in the grid.}
+\item{residuals}{a matrix of residuals for each lambda in the grid.}
+\item{scale}{the estimated scales each lambda}
+\item{cv_lambda_grid}{a data frame with values of lambda in the first
+     column, and the CV error as well as serveral
+     statistics of the solution in the following columns.}
+\item{alpha,standardize,pense_options,en_options,initest_options}{
+     the given arguments.}
 }
 \description{
 Penalized Elasitc Net S-estimators for Regression
 }
 \section{Parallelization}{
 
-With the parameter \code{ncores}, the number of available processor cores can be set.
-The grid of lambda values is split into \code{ncores} (almost) equally sized chunks.
-On each core, the cold initial estimate is computed for the lower endpoint of the
-lambda sequence. The fully iterated PENSE estimate is then used as warm-start
-for the next lambda value and so on. Therefore, if \code{ncores = 1}, only one
-cold initial estimate is computed and all subsequent values of lambda take the
-previous estimate as warm-start. Similarly, if \code{ncores = nlambda}, a
-cold initial estimate is computed for every lambda on the grid and no warm-starts
-are necessary.
+With the parameter \code{ncores}, the number of available processor cores
+can be set. The grid of lambda values is split into \code{ncores} (almost)
+equally sized chunks. On each core, the cold initial estimate is computed
+for the lower endpoint of the lambda sequence. The fully iterated PENSE
+estimate is then used as warm-start for the next lambda value and so on.
+Therefore, if \code{ncores = 1}, only one cold initial estimate is computed
+and all subsequent values of lambda take the previous estimate as
+warm-start. Similarly, if \code{ncores = nlambda}, a cold initial estimate
+is computed for every lambda on the grid and no warm-starts are necessary.
 }
 

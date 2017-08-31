@@ -1,3 +1,9 @@
+library(pense)
+library(testthat)
+
+RIDGE_TOLERANCE <- 1e-6
+en_opts <- en_options_aug_lars()
+
 .elnet.wfit.rimpl <- function(X, y, weights, alpha, lambda) {
     k <- sqrt(weights)
     Xweight <- diag(k) %*% X
@@ -6,7 +12,8 @@
     etat <- crossprod(k, Xweight) / sum(weights)
     Xweightorth <- Xweight - k %*% etat
 
-    res <- elnet(Xweightorth, yweight, alpha = alpha, lambda = lambda, centering = FALSE)
+    res <- elnet(Xweightorth, yweight, alpha = alpha, lambda = lambda,
+                 intercept = FALSE, options = en_opts)
     res$residuals <- drop(y - X %*% res$coefficients[-1L])
     res$coefficients[1L] <- weighted.mean(res$residuals, weights)
     res$residuals <- res$residuals - res$coefficients[1L]
@@ -21,8 +28,8 @@ test_that("Weighted LASSO", {
     ##
     ## A fairly simple case
     ##
-    n <- 200L
-    p <- 150L
+    n <- 100L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -30,7 +37,8 @@ test_that("Weighted LASSO", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
@@ -38,8 +46,8 @@ test_that("Weighted LASSO", {
     ##
     ## A fairly simple case with large X values
     ##
-    n <- 200L
-    p <- 150L
+    n <- 100L
+    p <- 50L
 
     set.seed(1234)
     X <- 100 * matrix(rnorm(n * p), ncol = p)
@@ -47,7 +55,8 @@ test_that("Weighted LASSO", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
@@ -55,8 +64,8 @@ test_that("Weighted LASSO", {
     ##
     ## Some more observations
     ##
-    n <- 2000L
-    p <- 150L
+    n <- 200L
+    p <- 100L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -64,7 +73,8 @@ test_that("Weighted LASSO", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
@@ -73,7 +83,7 @@ test_that("Weighted LASSO", {
     ## More observations than variables with reasonable regularization
     ##
     n <- 100L
-    p <- 150L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -81,7 +91,8 @@ test_that("Weighted LASSO", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
@@ -90,7 +101,7 @@ test_that("Weighted LASSO", {
     ## More observations than variables with almost no regularization
     ##
     n <- 100L
-    p <- 150L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -98,7 +109,8 @@ test_that("Weighted LASSO", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
@@ -111,8 +123,8 @@ test_that("Weighted Ridge", {
     ##
     ## A fairly simple case
     ##
-    n <- 200L
-    p <- 150L
+    n <- 100L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -120,16 +132,18 @@ test_that("Weighted Ridge", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
-    expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
+    expect_equal(enres.rimpl$coefficients, enres$coefficients,
+                 tolerance = RIDGE_TOLERANCE)
 
     ##
     ## Some more observations
     ##
-    n <- 2000L
-    p <- 150L
+    n <- 200L
+    p <- 100L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -137,16 +151,18 @@ test_that("Weighted Ridge", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
-    expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
+    expect_equal(enres.rimpl$coefficients, enres$coefficients,
+                 tolerance = RIDGE_TOLERANCE)
 
     ##
     ## More observations than variables with reasonable regularization
     ##
     n <- 100L
-    p <- 150L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -154,16 +170,18 @@ test_that("Weighted Ridge", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
-    expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
+    expect_equal(enres.rimpl$coefficients, enres$coefficients,
+                 tolerance = RIDGE_TOLERANCE)
 
     ##
     ## More observations than variables with almost no regularization
     ##
     n <- 100L
-    p <- 150L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -171,10 +189,12 @@ test_that("Weighted Ridge", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
-    expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
+    expect_equal(enres.rimpl$coefficients, enres$coefficients,
+                 tolerance = RIDGE_TOLERANCE)
 
 })
 
@@ -185,8 +205,8 @@ test_that("Weighted EN", {
     ##
     ## A fairly simple case without 2 norm penalty
     ##
-    n <- 200L
-    p <- 150L
+    n <- 100L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -194,17 +214,17 @@ test_that("Weighted EN", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
-
 
     ##
     ## A fairly simple case
     ##
-    n <- 200L
-    p <- 150L
+    n <- 100L
+    p <- 50L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -212,17 +232,17 @@ test_that("Weighted EN", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
-
     ##
     ## A fairly simple case with many observations
     ##
-    n <- 2000L
-    p <- 150L
+    n <- 200L
+    p <- 100L
 
     set.seed(1234)
     X <- matrix(rnorm(n * p), ncol = p)
@@ -230,7 +250,8 @@ test_that("Weighted EN", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
@@ -247,7 +268,8 @@ test_that("Weighted EN", {
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda)
+    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+                   options = en_opts)
     enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)

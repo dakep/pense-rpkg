@@ -4,15 +4,21 @@
 \alias{coef.pense}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{pense}(object, lambda, ...)
+\method{coef}{pense}(object, lambda, exact = FALSE, sparse = FALSE, ...)
 }
 \arguments{
-\item{object}{an object of type \code{pense} to extract coefficients from.}
+\item{object}{object of type \code{pense} to extract coefficients from.}
 
-\item{lambda}{the value of the penalty parameter. Default is to use the optimal
-lambda \code{lambda.opt}.}
+\item{lambda}{the value of the penalty parameter. Default is to use the
+optimal lambda (\code{object$lambda_opt}).}
 
-\item{...}{currently ignored.}
+\item{exact}{if the lambda is not part of the lambda grid, should the
+estimates be obtained by linear interpolation between the nearest
+lambda values (default) or computed exactly.}
+
+\item{sparse}{return a sparse vector or a dense (base R) numeric vector}
+
+\item{...}{currently not used.}
 }
 \value{
 A numeric vector of size \eqn{p + 1}.
@@ -20,4 +26,3 @@ A numeric vector of size \eqn{p + 1}.
 \description{
 Extract Model Coefficients
 }
-

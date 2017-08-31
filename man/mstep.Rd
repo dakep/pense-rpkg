@@ -2,26 +2,42 @@
 % Please edit documentation in R/mstep.R
 \name{mstep}
 \alias{mstep}
-\title{Perform an M-step on the PENSE result}
+\title{Perform an M-step after the EN S-Estimator}
 \usage{
-mstep(penseobj, complete.grid = TRUE, cv.k = 5L, nlambda = 30L,
-  ncores = getOption("mc.cores", 1L), cl = NULL)
+mstep(penseobj, lambda, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
+  scale = c("s", "cv"), ncores = getOption("mc.cores", 1L), cl = NULL,
+  options = mstep_options(), X, y, cv_objective, lambda_min_ratio, en_options)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
 
-\item{complete.grid}{should the optimal lambda be chosen from a grid of values
-or approximate it from the optimal lambda}
+\item{lambda}{regularization of the initial S-estimate. Defaults to
+\code{penseobj$lambda_opt}, the lambda with minimal CV error.}
 
-\item{cv.k}{perform k-fold CV to choose optimal lambda (only used if
-\code{complete.grid = FALSE}).}
+\item{complete_grid}{should the optimal lambda be chosen from a grid of
+values or approximate it from the optimal lambda?}
+
+\item{cv_k}{perform k-fold CV to choose optimal lambda (only used if
+\code{complete_grid = TRUE}).}
 
 \item{nlambda}{the number of lambda values to try.}
 
+\item{scale}{what initial scale to use. \code{"s"} uses the estimated
+M-scale of the S-regression residuals, \code{"cv"} uses the
+M-scale of the S-regression out-of-sample residuals. Can also
+be a number directly specifiying the scale to use.}
+
 \item{ncores, cl}{use this many cores or the supplied cluster for choosing the
 optima lambda. See \code{\link{pense}} for more details.}
+
+\item{options}{additional options for the M-step.}
+
+\item{X, y, cv_objective, lambda_min_ratio, en_options}{override arguments
+provided to the original call to \code{\link{pense}}.}
+
+\item{adjust_bdp}{should the breakdown point be adjusted based on the
+effective degrees of freedom?}
 }
 \description{
 Performs an M-step on the S-estimator returned from \code{\link{pense}}.
 }
-

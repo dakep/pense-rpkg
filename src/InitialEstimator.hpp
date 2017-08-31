@@ -14,7 +14,7 @@
 #include <algorithm>
 
 
-#include "Control.h"
+#include "Options.hpp"
 #include "Data.hpp"
 #include "PSCxx.hpp"
 #include "PartialSort.h"
@@ -38,18 +38,36 @@ public:
 		return this->coefObjFunScore;
 	}
 
+    enum KeepResidualsMethod {
+        PROPORTION = 0,
+        THRESHOLD
+    };
+
 protected:
-	InitialEstimator(const Data& originalData, const Control& ctrl, PSC& psc,
+    typedef struct IEControlTag {
+        const int maxIt;
+        const KeepResidualsMethod keepResidualsMethod;
+        const double keepResidualsThreshold;
+        const double keepResidualsProportion;
+        const double keepPSCProportion;
+        const double eps;
+
+        const double mscaleB;
+        const double mscaleCC;
+        const int mscaleMaxIt;
+        const double mscaleEPS;
+    } IEControl;
+
+	InitialEstimator(const Data& originalData, const Options& opts, PSC& psc,
 					 const int maxEstimators, const int coefMemIncrease = 0);
 
 	const Data& originalData;
-	const Control& ctrl;
+    const IEControl ctrl;
 
     /**
      * Reset to the original data
      */
     virtual void resetData();
-
 
 	/**
 	 * Evaluate the current estimate on the
@@ -63,7 +81,6 @@ protected:
      */
 	virtual void filterDataPSC(const double *RESTRICT values, const double threshold,
 							   CompareFunction compare) = 0;
-
 
 	/**
 	 * Permanently filter the data based on the supplied ordering
@@ -97,17 +114,18 @@ protected:
 private:
 	double *RESTRICT allCoefEstimates;
 	double *RESTRICT coefObjFunScore;
+
+    static IEControl initIEControl(const Options& opts);
 };
 
 
-class OLS : public InitialEstimator
+class IEOls : public InitialEstimator
 {
 public:
-    OLS(const Data& originalData, const Control& ctrl);
-    virtual ~OLS();
+    IEOls(const Data& originalData, const Options& ctrl);
+    virtual ~IEOls();
 
 protected:
-
     virtual void resetData();
     virtual void filterDataResiduals(double threshold);
     virtual void filterDataPSC(const double *RESTRICT values, const double threshold,
@@ -126,7 +144,8 @@ private:
 class ENPY : public InitialEstimator
 {
 public:
-    ENPY(const Data& originalData, const Control& ctrl);
+    ENPY(const Data& originalData, const double alpha, const double lambda, const Options& ctrl,
+         const Options& enOpts);
     virtual ~ENPY();
 
 protected:
@@ -138,6 +157,8 @@ protected:
 	virtual double evaluateEstimate() const;
 
 private:
+    const double alpha;
+    const double lambda;
     const double lambdaLS;
 
 	ElasticNet &en;
@@ -146,8 +167,6 @@ private:
     Data pscFilteredData;
 	Data dataToUse;
 
-	double currentNullDeviance;
-
 	double *RESTRICT XtX;
 };
 
@@ -155,7 +174,8 @@ private:
 class ENPY_Exact : public InitialEstimator
 {
 public:
-    ENPY_Exact(const Data& originalData, const Control& ctrl);
+    ENPY_Exact(const Data& originalData, const double alpha, const double lambda,
+               const Options& ctrl, const Options& enOpts);
     virtual ~ENPY_Exact();
 
 protected:
@@ -167,6 +187,8 @@ protected:
 	virtual double evaluateEstimate() const;
 
 private:
+    const double alpha;
+    const double lambda;
     const double lambdaLS;
 
 	ElasticNet &en;
@@ -174,8 +196,6 @@ private:
     PSC_EN pscEn;
     Data pscFilteredData;
 	Data dataToUse;
-
-	double currentNullDeviance;
 };
 
 

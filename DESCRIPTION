@@ -1,8 +1,8 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S-Estimator of Regression
-Version: 0.5.6
-Date: 2016-08-14
+Version: 0.6.1
+Date: 2017-08-30
 Author: Derek Cho [aut],
     Gabriela Cohen Freue [aut],
     David Kepplinger [aut],
@@ -10,6 +10,9 @@ Author: Derek Cho [aut],
 Maintainer: David Kepplinger <david.kepplinger@gmail.com>
 Description: Robust penalized elastic-net S and MM estimator for linear
     regression.
+Depends:
+    R (>= 3.1.0),
+    Matrix
 Imports:
     Rcpp,
     robustbase,
@@ -21,4 +24,4 @@ Suggests:
     lars
 License: GPL (>= 2)
 NeedsCompilation: yes
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

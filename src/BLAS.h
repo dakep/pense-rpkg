@@ -27,12 +27,12 @@
 #define BLAS_CHAR const char * const
 #define BLAS_INT const int
 
-#include <R_ext/RS.h>
-
 #ifdef __cplusplus
 #   include <RcppArmadillo.h>
+#   include <R_ext/RS.h>
 #   define F77_R_NAME(x) F77_CALL(x)
 #else
+#   include <R_ext/RS.h>
 #   include <R_ext/BLAS.h>
 #   include <R_ext/Lapack.h>
 

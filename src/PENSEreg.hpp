@@ -9,44 +9,32 @@
 #ifndef PENSEreg_hpp
 #define PENSEreg_hpp
 
+#include "config.h"
+#include <RcppArmadillo.h>
+
+#include "IRWEN.hpp"
 #include "mscale.h"
-#include "Control.h"
 #include "Data.hpp"
 
-class PENSEReg {
+class PENSEReg : public IRWEN {
 public:
-	PENSEReg(const Data& data, const double alpha, const double lambda,
-			 const Control& ctrl);
+	PENSEReg(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts);
 	~PENSEReg();
 
-	void compute(double *RESTRICT coefficients, double *RESTRICT residuals);
-
-
-	int getIterations() const
-	{
-		return this->iteration;
-	}
-
-	double getScale() const
-	{
-		return this->scale;
-	}
-
-	double getRelChange() const
-	{
-		return this->relChange;
-	}
+    double getScale() const
+    {
+        return this->scale;
+    }
+protected:
+    void updateWeights(const arma::vec& residuals);
 
 private:
-	const Data& data;
-	const double alpha;
-	const double lambda;
-	const Control& ctrl;
-	const RhoFunction rhoBisquare;
+    const double bdp;       // breakdown point
+    const double cc;        // tuning constant to achieve the breakdown point
+    const double mscaleEps; // tolerance for mscale
+    const int mscaleMaxIt;  // max iterations for mscale
 
-	int iteration;
-	double scale;
-	double relChange;
+    double scale;
 };
 
 #endif /* PENSEreg_hpp */

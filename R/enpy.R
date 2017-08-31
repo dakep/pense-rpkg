@@ -1,47 +1,34 @@
-#' PY (Pena-Yohai) initial estimates for EN
+#' PY (Pena-Yohai) initial estimates for the EN S-estimator
 #'
-#' Computes the PY initial estimates for EN with different strategies for computing
-#' the principal sensitivity components
+#' Computes the PY initial estimates for the EN S-estimator with different
+#' strategies for computing the principal sensitivity components.
 #'
-#' Three different methods to calculate the sensitivity components are implemented:
+#' Two different methods to calculate the sensitivity components are implemented:
 #' \describe{
-#'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the elastic net fit
-#'                         and the hat matrix from the ridge regression. This method only works
-#'                         if \code{alpha} < 1 or \code{ncol(X)} < \code{nrow(X)}.}
-#'      \item{\code{"Mn"}}{Calculate the PSCs from the difference between the
-#'                         residuals and leave-one-out residuals from elastic net.}
+#'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the
+#'          elastic net fit and the hat matrix from the ridge regression.
+#'          This method only works if \code{alpha} < 1 or
+#'          \code{ncol(X)} < \code{nrow(X)}.}
+#'      \item{\code{"exact"}}{Calculate the PSCs from the difference between the
+#'          residuals and leave-one-out residuals from elastic net.}
 #' }
 #'
-#' @param X The data matrix X.
-#' @param y The response vector.
-#' @param alpha,lambda The EN penalty parameters (NOT adjusted for the number of observations
-#'          in \code{X}).
-#' @param deltaesc,cc.scale Parameters for the M-equation of the scale. If \code{cc.scale}
-#'          is missing or invalid, it will be chosen such that the expected value of the
-#'          rho function under the normal model is equal to \code{deltaesc}.
-#'          The default rho function (Tukey's bisquare) can be changed by
-#'          parameter \code{control}.
-#' @param psc.method The method to use for computing the principal sensitivity components.
-#'      See details.
-#' @param prosac The proportion of observations to remove based on PSCs.
-#' @param clean.method How to clean the data based on large residuals.
-#'          If \code{"threshold"}, all observations with scaled residuals larger than
-#'          \code{C.res} will be removed.
-#'          If \code{"proportion"}, observations with the largest \code{prop} residuals
-#'          will be removed.
-#' @param C.res,prop See \code{clean.method} for details.
-#' @param py.nit The maximum number of iterations to perform.
-#' @param en.tol The relative tolerance for convergence.
-#' @param control Optional further control parameters from \code{\link{enpy.control}}.
+#' @param X data matrix with predictors.
+#' @param y response vector.
+#' @param alpha,lambda EN penalty parameters (NOT adjusted for the number of
+#'      observations in \code{X}).
+#' @param options additional options for the initial estimator. See
+#'      \code{\link{initest_options}} for details.
+#' @param en_options additional options for the EN algorithm. See
+#'      \code{\link{en_options}} for details.
 #'
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
 #' @export
-enpy <- function(X, y, alpha, lambda, deltaesc, cc.scale,
-                 psc.method=c("rr", "Mn", "Qp"), prosac,
-                 clean.method = c("threshold", "proportion"), C.res = NULL, prop = NULL,
-                 py.nit, en.tol, control = enpy.control()) {
+enpy <- function(X, y, alpha, lambda,
+                 options = initest_options(),
+                 en_options = en_options_aug_lars()) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -60,24 +47,28 @@ enpy <- function(X, y, alpha, lambda, deltaesc, cc.scale,
         stop("Missing values are not supported")
     }
 
-    if (missing(cc.scale) || length(cc.scale) != 1L || !is.numeric(cc.scale) || is.na(cc.scale) ||
-        cc.scale <= 0) {
-        cc.scale <- 0
+    alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
+                        range_test_lower = ">=", range_test_upper = "<=")
+    lambda <- .check_arg(lambda, "numeric", range = 0, range_test_lower = ">=")
+
+    if (alpha < .Machine$double.eps) {
+        options$pscMethod <- 'rr'
     }
 
-    psc.method <- match.arg(psc.method)
+    if (lambda == 0) {
+        options$pscMethod <- "ols"
+    }
 
-    result <- switch(psc.method,
-                     rr = enpy.rr(X, y, alpha, lambda, deltaesc, cc.scale, prosac, clean.method,
-                                  C.res, prop, py.nit, en.tol, control),
-                     Mn = enpy.exact(X, y, alpha, lambda, deltaesc, cc.scale,
-                                     psc.method, prosac, clean.method, C.res, prop, py.nit,
-                                     en.tol, control),
-                     stop(sprintf("`psc.method` '%s' not supported", psc.method)))
+    result <- switch(
+        options$pscMethod,
+        ols = enpy_ols(X, y, options),
+        rr = enpy_rr(X, y, alpha, lambda, options, en_options),
+        exact = enpy_exact(X, y, alpha, lambda, options, en_options)
+    )
 
     resorder <- sort.list(result$objF, na.last = NA, method = "quick")
 
-    dups <- which(diff(result$objF[resorder]) < en.tol)
+    dups <- which(diff(result$objF[resorder]) < options$eps)
     if (length(dups) > 0) {
         remove <- resorder[dups]
         result$objF <- result$objF[-remove]
@@ -85,4 +76,126 @@ enpy <- function(X, y, alpha, lambda, deltaesc, cc.scale,
     }
 
     return(result)
+}
+
+
+#' PY (Pena-Yohai) initial estimates for EN S-Estimators
+#'
+#' Computes the PY initial estimates for EN  S-Estimators with exact
+#' principal sensitivity components.
+#'
+#' @param X data matrix with predictors -- a leading column of 1's will be
+#'      added!
+#' @param y response vector.
+#' @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
+#'      of observations in \code{X}).
+#' @param options additional options for the initial estimator. See
+#'      \code{\link{initest_options}} for details.
+#' @param en_options additional options for the EN algorithm. See
+#'      \code{\link{en_options}} for details.
+#'
+#' @return \item{coeff}{A numeric matrix with one initial coefficient per
+#'      column}
+#'      \item{objF}{A vector of values of the objective function for the
+#'      respective coefficient}
+#'
+#' @useDynLib pense C_enpy_exact C_augtrans
+#' @importFrom Rcpp evalCpp
+enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
+    dX <- dim(X)
+
+    Xtr <- .Call(C_augtrans, X)
+    dX[2L] <- dX[2L] + 1L
+
+    ies <- .Call(C_enpy_exact, Xtr, y, alpha, lambda, options, en_options)
+
+    return(list(
+        coeff = matrix(ies[[1L]], nrow = dX[2L]),
+        objF = ies[[2L]]
+    ))
+}
+
+#' PY (Pena-Yohai) initial estimates for EN S-Estimators
+#'
+#' Computes the PY initial estimates for EN S-Estimators with
+#' principal sensitivity components approximated by the ridge regression
+#' solution.
+#'
+#' @param X data matrix with predictors -- a leading column of 1's will be
+#'      added!
+#' @param y response vector.
+#' @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
+#'      of observations in \code{X}).
+#' @param options additional options for the initial estimator. See
+#'      \code{\link{initest_options}} for details.
+#' @param en_options additional options for the EN algorithm. See
+#'      \code{\link{en_options}} for details.
+#'
+#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
+#'         \item{objF}{A vector of values of the objective function for the respective coefficient}
+#'
+#' @useDynLib pense C_enpy_rr
+#' @importFrom Rcpp evalCpp
+enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
+    dX <- dim(X)
+
+    Xtr <- .Call(C_augtrans, X)
+    dX[2L] <- dX[2L] + 1L
+
+    usableProp <- with(options, if(keepResidualsMethod == 1) {
+        keepResidualsProportion * keepPSCProportion
+    } else {
+        keepPSCProportion
+    })
+
+    if (alpha >= 1 - .Machine$double.eps) {
+        if (dX[2L] >= dX[1L]) {
+            stop("`enpy_rr` can not be used for data with more variables than ",
+                 "observations if `alpha` is 1.")
+        } else if (dX[2L] >= ceiling(usableProp * dX[1L])) {
+            stop("With the specified proportion of observations to remove, ",
+                 "the number of observations will be smaller than the number ",
+                 "of variables.\n",
+                 "In this case `enpy_rr` can not be used when `alpha` is 1")
+        }
+    }
+
+    ies <- .Call(C_enpy_rr, Xtr, y, alpha, lambda, options, en_options)
+
+    return(list(
+        coeff = matrix(ies[[1L]], nrow = dX[2L]),
+        objF = ies[[2L]]
+    ))
+}
+
+
+#' PY (Pena-Yohai) initial estimates for EN S-Estimators
+#'
+#' Computes the PY initial estimates for EN S-Estimators with
+#' principal sensitivity components approximated by the ridge regression
+#' solution.
+#'
+#' @param X data matrix with predictors -- a leading column of 1's will be
+#'      added!
+#' @param y response vector.
+#' @param options additional options for the initial estimator. See
+#'      \code{\link{initest_options}} for details.
+#'
+#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
+#'         \item{objF}{A vector of values of the objective function for the respective coefficient}
+#'
+#' @useDynLib pense C_py_ols
+#' @importFrom Rcpp evalCpp
+enpy_ols <- function(X, y, options) {
+    dX <- dim(X)
+
+    Xtr <- .Call(C_augtrans, X)
+    dX[2L] <- dX[2L] + 1L
+
+    ies <- .Call(C_py_ols, Xtr, y, options)
+
+    return(list(
+        coeff = matrix(ies[[1L]], nrow = dX[2L]),
+        objF = ies[[2L]]
+    ))
 }

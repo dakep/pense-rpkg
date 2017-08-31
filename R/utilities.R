@@ -1,3 +1,4 @@
+#' @importFrom methods is
 nameCoefVec <- function(coef, X) {
     dn <- dimnames(X)
     xnames <- paste("X", seq_len(ncol(X)), sep = "")
@@ -6,7 +7,11 @@ nameCoefVec <- function(coef, X) {
         xnames <- dn[[2L]]
     }
 
-    names(coef) <- c("(Intercept)", xnames)
+    if (is.matrix(coef) || is(coef, "Matrix")) {
+        rownames(coef) <- c("(Intercept)", xnames)
+    } else {
+        names(coef) <- c("(Intercept)", xnames)
+    }
     return(coef)
 }
 
@@ -40,13 +45,74 @@ consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
         dnorm(x) * .Mchi(x, cc, int.rho.fun)
     }
 
-    expectation <- function(cc, delta) {
-        integrate(integrand, lower = -Inf, upper = Inf, cc)$value - delta
+    expectation <- if (int.rho.fun == 1L) {
+        # For bisquare we have the closed form solution to the expectation as
+        function(cc, delta) {
+            pnorm.mcc <- 2 * pnorm(-cc)
+            1/cc^6 * exp(-(cc^2/2)) * (
+                -cc * (15 - 4 * cc^2 + cc^4) * sqrt(2 / pi) +
+                    3 * (5 - 3 * cc^2 + cc^4) * exp(cc^2/2) * (1 - pnorm.mcc) +
+                    cc^6 * exp(cc^2/2) * pnorm.mcc
+            ) - delta
+        }
+    } else {
+        function(cc, delta) {
+            integrate(integrand, lower = -Inf, upper = Inf, cc)$value - delta
+        }
     }
 
     uniroot(expectation, interval = interval, delta)$root
 }
 
-facon <- function(delta) {
-    23.9716 - 73.4391 * delta + 64.9480 * delta^2
+
+standardize_data <- function (x, y, standardize) {
+    ret_list <- list(
+        scale_x = 1,
+        mux = 0,
+        muy = 0,
+        xs = x,
+        yc = y
+    )
+
+    ## standardize data
+    if (isTRUE(standardize)) {
+        ret_list$scale_x <- apply(x, 2, mad)
+        ret_list$mux <- apply(x, 2, median)
+        ret_list$muy <- median(y)
+
+        ret_list$xs <- scale(x, center = ret_list$mux, scale = ret_list$scale_x)
+        ret_list$yc <- y - ret_list$muy
+    }
+
+    ret_list$standardize_coefs <- function(coef_obj) {
+        coef_obj$intercept <- coef_obj$intercept - ret_list$muy +
+            drop(ret_list$mux %*% coef_obj$beta)
+        coef_obj$beta <- coef_obj$beta * ret_list$scale_x
+        return(coef_obj)
+    }
+
+    ret_list$unstandardize_coefs <- function(coef_obj) {
+        coef_obj$beta <- coef_obj$beta / ret_list$scale_x
+        coef_obj$intercept <- coef_obj$intercept + ret_list$muy -
+            drop(ret_list$mux %*% coef_obj$beta)
+        return(coef_obj)
+    }
+
+    return(ret_list)
 }
+
+standardize_coefs <- function(intercept, beta, scale_x, mux, muy) {
+    return(list(
+        intercept = intercept - muy + drop(mux %*% beta),
+        beta = beta * scale_x
+    ))
+}
+
+unstandardize_coefs <- function(intercept, beta, scale_x, mux, muy) {
+    beta <- beta / scale_x
+    return(list(
+        intercept = intercept + muy - drop(mux %*% beta),
+        beta = beta
+    ))
+}
+

@@ -19,7 +19,7 @@
 #' @param adjust_bdp should the breakdown point be adjusted based on the
 #'      effective degrees of freedom?
 #' @param options additional options for the M-step.
-#' @param X,y,cv_objective,lambda_min_ratio,en_options override arguments
+#' @param X,y,cv_objective,en_options override arguments
 #'      provided to the original call to \code{\link{pense}}.
 #' @importFrom robustbase .Mchi scaleTau2
 #' @importFrom stats mad median
@@ -30,7 +30,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                   scale = c("s", "cv"),
                   ncores = getOption("mc.cores", 1L), cl = NULL,
                   options = mstep_options(),
-                  X, y, cv_objective, lambda_min_ratio, en_options) {
+                  X, y, cv_objective, en_options) {
 
     if (missing(X)) {
         X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
@@ -189,21 +189,16 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         ## Find maximum lambda, starting from adjusted "optimum"
         ## in log-2 steps (i.e., always double the previous value)
         ##
-        lambda_max <- lambda_opt_m
-        if (missing(lambda_min_ratio)) {
-            lambda_min_ratio <- eval(penseobj$call$lambda_min_ratio)
-        }
-        lambda_min_ratio <- ifelse(is.null(lambda_min_ratio), 1e-5,
-                                   lambda_min_ratio)
+        lambda_max <- lambda_min <- lambda_opt_m
 
-        check_zero_norm <- function(...) {
+        get_coef_norm <- function(...) {
             msres <- pensemstep(
                 Xs,
                 yc,
                 ...
             )
             # msres$beta is of type `dgCMatrix`
-            return(length(msres$beta@i) == 0L)
+            return(sum(abs(msres$beta@x)))
         }
 
         ##
@@ -216,7 +211,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 
             zero_norm <- cluster$lapply(
                 check_lambdas,
-                check_zero_norm,
+                get_coef_norm,
                 init_scale = scale_init_corr,
                 init_int = pense_int,
                 init_coef = pense_beta,
@@ -225,7 +220,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                 en_options = en_options
             )
 
-            zero_norm <- which(unlist(zero_norm))
+            zero_norm <- which(unlist(zero_norm) < .Machine$double.eps)
 
             if (length(zero_norm) > 0) {
                 # Check if we moved away from the initial guess
@@ -247,7 +242,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
 
                 zero_norm <- cluster$lapply(
                     check_lambdas,
-                    check_zero_norm,
+                    get_coef_norm,
                     init_scale = scale_init_corr,
                     init_int = pense_int,
                     init_coef = pense_beta,
@@ -256,7 +251,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
                     en_options = en_options
                 )
 
-                not_zero_norm <- which(!unlist(zero_norm))
+                not_zero_norm <- which(unlist(zero_norm) > .Machine$double.eps)
 
                 if (length(not_zero_norm) > 0L) {
                     choose <- not_zero_norm[1L] - 1L
@@ -276,12 +271,52 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
             }
         }
 
+        # We have found a good lambda_max, now let's look for a good lambda_min
+        lambda_min_break <- eval(penseobj$call$lambda_min_ratio) * lambda_max
+        lambda_min_break <- ifelse(
+            isTRUE(is.finite(lambda_min_break)),
+            lambda_min_break,
+            1e-5 * lambda_max
+        )
+
+        lambda_min <- min(lambda_max, lambda_opt_m)
+        if (lambda_max > .Machine$double.eps) {
+            repeat {
+                check_lambdas <- lambda_min * 0.5^seq_len(max(5L, cluster$ncores))
+
+                coef_norm <- cluster$lapply(
+                    check_lambdas,
+                    get_coef_norm,
+                    init_scale = scale_init_corr,
+                    init_int = pense_int,
+                    init_coef = pense_beta,
+                    alpha = penseobj$alpha,
+                    options = options,
+                    en_options = en_options
+                )
+
+                coef_norm <- unlist(coef_norm)
+                coef_norm_diff <- coef_norm[-length(coef_norm)] / coef_norm[-1L]
+                const_norm <- which(abs(coef_norm_diff - 1) < options$eps)
+                if (length(const_norm) > 0L) {
+                    lambda_min <- check_lambdas[[const_norm[[1L]]]]
+                    break
+                }
+
+                lambda_min <- min(check_lambdas)
+                if (lambda_min < lambda_min_break) {
+                    lambda_min <- lambda_min_break
+                    break
+                }
+            }
+        }
+
         ##
         ## Create grid of nlambda values in [lambda.min; lambda.max]
         ## where lambda.min is the adjusted minimum of the grid for the S-estimator
         ##
         lambda_grid_m <- exp(seq(
-            from = log(lambda_min_ratio * lambda_max),
+            from = log(lambda_min),
             to = log(lambda_max),
             length = nlambda
         ))

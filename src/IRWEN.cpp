@@ -31,7 +31,7 @@ IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Op
     weights(data.numObs()),
     verbosity(opts.get("verbosity", DEFAULT_OPT_VERBOSITY)),
     maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
-    eps(opts.get("eps", DEFAULT_OPT_EPS) * opts.get("eps", DEFAULT_OPT_EPS)),
+    eps(opts.get("eps", DEFAULT_OPT_EPS)),
     lambda(lambda)
 {
     this->en = getElasticNetImpl(enOpts, true);

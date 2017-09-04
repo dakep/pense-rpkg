@@ -274,9 +274,9 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         # We have found a good lambda_max, now let's look for a good lambda_min
         lambda_min_break <- eval(penseobj$call$lambda_min_ratio) * lambda_max
         lambda_min_break <- ifelse(
-            is.null(lambda_min_break) | !is.finite(lambda_min_break),
-            1e-5 * lambda_max,
-            lambda_min_break
+            isTRUE(is.finite(lambda_min_break)),
+            lambda_min_break,
+            1e-5 * lambda_max
         )
 
         lambda_min <- min(lambda_max, lambda_opt_m)

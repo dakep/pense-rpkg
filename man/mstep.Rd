@@ -6,7 +6,7 @@
 \usage{
 mstep(penseobj, lambda, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
   scale = c("s", "cv"), ncores = getOption("mc.cores", 1L), cl = NULL,
-  options = mstep_options(), X, y, cv_objective, lambda_min_ratio, en_options)
+  options = mstep_options(), X, y, cv_objective, en_options)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
@@ -32,7 +32,7 @@ optima lambda. See \code{\link{pense}} for more details.}
 
 \item{options}{additional options for the M-step.}
 
-\item{X, y, cv_objective, lambda_min_ratio, en_options}{override arguments
+\item{X, y, cv_objective, en_options}{override arguments
 provided to the original call to \code{\link{pense}}.}
 
 \item{adjust_bdp}{should the breakdown point be adjusted based on the

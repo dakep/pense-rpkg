@@ -42,9 +42,10 @@
 #'      the lambda grid, PENSE will be initialized with the 0-vector.
 #'      \code{"cold"} computes the full initial estimator at
 #'      every lambda value.
-#' @param direction what direction to traverse the lambda grid in.
-#'      \code{"left"} means from left to right (i.e. from larger to smaller
-#'      lambda values).
+#' @param direction what direction to traverse the lambda grid in. Default
+#'      to \code{"both"} to traverse it in both directions.
+#'      \code{"left"} means from right to left (i.e. from larger to smaller
+#'      lambda values) and \code{"right"} means from left to right.
 #' @param warm_reset if \code{initial = "warm(0)"}, how often should the
 #'      warm-start be reset to a cold initial estimate?
 #' @param ncores,cl the number of processor cores or an actual parallel cluster
@@ -81,7 +82,7 @@ pense <- function(X, y,
                   nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
                   standardize = TRUE,
                   initial = c("warm", "cold"),
-                  direction = c("left", "right"),
+                  direction = c("both", "left", "right"),
                   warm_reset = 10,
                   cv_k = 5, cv_objective,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
@@ -194,8 +195,8 @@ pense <- function(X, y,
 
     lambda <- lambda / max(scale_x)
 
-    ## Reverse the order if we use a warm-0 start
-    lambda <- sort(lambda, decreasing = isTRUE(direction == "left"))
+    ## Ensure lambda is sorted in an increasing direction
+    lambda <- sort(lambda)
 
     ## Setup cluster
     cluster <- setupCluster(
@@ -209,30 +210,63 @@ pense <- function(X, y,
 
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(job, lambda_max, direction, ...) {
-        if (length(job$segment) == 0L) {
+    pense_est_job <- function(segment, direction, lambda, init_other, ...) {
+        if (length(segment) == 0L) {
             X_train <- X
             y_train <- y
         } else {
-            X_train <- X[-job$segment, , drop = FALSE]
-            y_train <- y[-job$segment]
+            X_train <- X[-segment, , drop = FALSE]
+            y_train <- y[-segment]
         }
 
-        est_all <- pense_coldwarm(
-            X = X_train,
-            y = y_train,
-            lambda_grid = job$lambda,
-            init_other = job$init_other,
-            start_0 = (direction == "left") &&
-                isTRUE(abs(job$lambda[1L] - lambda_max) < .Machine$double.eps),
-            ...
-        )
+        est_all_right <- if (direction == "both" || direction == "right") {
+            # Traverse from left to right (increasing lambda)
+            pense_coldwarm(
+                X = X_train,
+                y = y_train,
+                lambda_grid = lambda,
+                init_other = init_other,
+                start_0 = TRUE,
+                ...
+            )
+        } else {
+            vector("list", length(lambda))
+        }
+
+        est_all_left <- if (direction == "both" || direction == "left") {
+            # Traverse from right to left (decreasing lambda)
+            rev(pense_coldwarm(
+                X = X_train,
+                y = y_train,
+                lambda_grid = rev(lambda),
+                init_other = rev(init_other),
+                start_0 = FALSE,
+                ...
+            ))
+        } else {
+            vector("list", length(lambda))
+        }
+
+        est_all <- mapply(function (left, right) {
+            if (is.null(left)) {
+                return(right)
+            }
+            if (is.null(right)) {
+                return(left)
+            }
+
+            if (isTRUE(left$objF < right$objF)) {
+                return(left)
+            }
+
+            return(right)
+        }, left = est_all_left, right = est_all_right, SIMPLIFY = FALSE)
 
         residuals <- NULL
         beta <- do.call(cbind, lapply(est_all, "[[", "beta"))
         intercept <- unlist(lapply(est_all, "[[", "intercept"))
 
-        if (length(job$segment) == 0L) {
+        if (length(segment) == 0L) {
             residuals <- vapply(
                 est_all,
                 function(est) {
@@ -241,14 +275,14 @@ pense <- function(X, y,
                 FUN.VALUE = y, USE.NAMES = FALSE
             )
         } else {
-            X_test <- X[job$segment, , drop = FALSE]
-            y_test <- y[job$segment]
+            X_test <- X[segment, , drop = FALSE]
+            y_test <- y[segment]
             residuals <- vapply(
                 est_all,
                 function(est) {
                     drop(y_test - est$intercept - X_test %*% est$beta)
                 },
-                FUN.VALUE = numeric(length(job$segment)), USE.NAMES = FALSE)
+                FUN.VALUE = numeric(length(segment)), USE.NAMES = FALSE)
         }
 
         sol_stats <- vapply(
@@ -278,17 +312,13 @@ pense <- function(X, y,
         X = X,
         y = y,
         alpha = alpha,
-        lambda_grid = sort(lambda, decreasing = TRUE),
+        lambda_grid = lambda,
         start_0 = TRUE,
         standardize = standardize,
         pense_options = options,
         initest_options = init_options,
         en_options = en_options
     )
-
-    if (direction != "left") {
-        warm0res <- rev(warm0res)
-    }
 
     warm0init <- vector("list", length(warm0res))
     for (i in seq_along(warm0init)) {
@@ -301,20 +331,38 @@ pense <- function(X, y,
     }
 
     ##
-    ## Define the lambda sub-grids
+    ## Compute `warm_reset` "cold" initial estimators for each
+    ## CV split and the full data
     ##
-    lambda_subgrid_lengths <- nlambda %/% warm_reset
-    overlength <- nlambda %% warm_reset
-    lambda_subgrid_lengths <- c(
-        rep.int(lambda_subgrid_lengths, warm_reset - overlength),
-        rep.int(lambda_subgrid_lengths + 1L, overlength)
-    )
+    get_cold_est <- function (job, ...) {
+        if (length(job$segment) == 0L) {
+            X_train <- X
+            y_train <- y
+        } else {
+            X_train <- X[-job$segment, , drop = FALSE]
+            y_train <- y[-job$segment]
+        }
 
-    subgrid_splits <- rep.int(seq_len(warm_reset), lambda_subgrid_lengths)
-    lambda_subgrids <- split(lambda, subgrid_splits)
-    warm0init_subgrids <- split(warm0init, subgrid_splits)
+        pense_coldwarm(
+            X = X_train,
+            y = y_train,
+            lambda_grid = job$lambda,
+            start_0 = FALSE,
+            ...
+        )[[1L]][c("intercept", "beta")]
+    }
 
-    ## Perform CV (if we have more than a single lambda value)
+    lambda_cold_ind <- floor(seq(1, nlambda, length.out = warm_reset))
+    lambda_cold <- lambda[lambda_cold_ind]
+    jobs_cold_est <- lapply(lambda_cold, function (l) {
+        list(
+            lambda = l,
+            segment = integer(0L)
+        )
+    })
+
+    cv_segments <- list(integer(0L))
+
     if((nlambda > 1L) && (cv_k > 1L))  {
         # Create CV segments
         cv_segments <- split(
@@ -322,29 +370,59 @@ pense <- function(X, y,
             sample(rep_len(seq_len(cv_k), dX[1L]))
         )
 
-        # Define CV jobs (i.e., all combinations of CV splits and
-        # lambda subgrids)
-        jobgrid_cv <- lapply(cv_segments, function(cvs) {
-            lapply(seq_along(lambda_subgrids), function(i) {
+        jobs_cold_cv <- unlist(lapply(cv_segments, function (seg) {
+            lapply(lambda_cold, function (l) {
                 list(
-                    segment = cvs,
-                    lambda = lambda_subgrids[[i]],
-                    init_other = warm0init_subgrids[[i]]
+                    lambda = l,
+                    segment = seg
                 )
             })
-        })
+        }), recursive = FALSE, use.names = FALSE)
 
-        jobgrid_cv <- unlist(jobgrid_cv, recursive = FALSE, use.names = FALSE)
+        jobs_cold_est <- c(jobs_cold_est, jobs_cold_cv)
+    }
 
-        # Run all CV jobs
+    # Compute all cold initial estimators
+    tryCatch({
+        cold_inits <- cluster$lapply(
+            jobs_cold_est,
+            get_cold_est,
+            alpha = alpha,
+            standardize = standardize,
+            pense_options = options,
+            initest_options = init_options,
+            en_options = en_options
+        )
+    }, error = function(e) {
+        cluster$stopCluster()
+        stop(e)
+    })
+
+    # Group the initial estimators by lambda
+    cold_inits <- split(
+        cold_inits,
+        rep.int(seq_len(warm_reset), length(cold_inits) %/% warm_reset)
+    )
+
+    # Prepare initial estimate list
+    for (i in seq_along(lambda_cold_ind)) {
+        warm0init[[lambda_cold_ind[[i]]]] <- c(
+            warm0init[[lambda_cold_ind[[i]]]],
+            cold_inits[[i]]
+        )
+    }
+
+    ## Perform actual CV (if we have more than a single lambda value)
+    if((nlambda > 1L) && (cv_k > 1L))  {
         tryCatch({
             cv_results <- cluster$lapply(
-                jobgrid_cv,
+                cv_segments,
                 pense_est_job,
-                lambda_max = max(lambda),
+                direction = direction,
+                lambda = lambda,
+                init_other = warm0init,
                 alpha = alpha,
                 standardize = standardize,
-                direction = direction,
                 pense_options = options,
                 initest_options = init_options,
                 en_options = en_options
@@ -354,22 +432,16 @@ pense <- function(X, y,
             stop(e)
         })
 
-        ## Gather all stats and results from the CV jobs
-        cv_results <- split(cv_results, rep.int(seq_len(warm_reset), cv_k))
-
-        ## Extract estimates from CV results to use as initial estimates
-        warm0init_subgrids <- mapply(function (cv_subgrid_res, warm0init_subgrid) {
-            lapply(seq_along(warm0init_subgrid), function (j) {
-                additional <- lapply(cv_subgrid_res, function (subgrid_res) {
-                    list(
-                        intercept = subgrid_res$intercept[[j]],
-                        beta = subgrid_res$beta[ , j, drop = FALSE]
-                    )
-                })
-
-                c(warm0init_subgrid[[j]], additional)
+        # Add CV estimates to initial estimate list
+        warm0init <- lapply(seq_along(lambda), function (j) {
+            cv_ests <- lapply(cv_results, function (cvr) {
+                list(
+                    intercept = cvr$intercept[[j]],
+                    beta = cvr$beta[ , j, drop = FALSE]
+                )
             })
-        }, cv_results, warm0init_subgrids, SIMPLIFY = FALSE)
+            c(cv_ests, warm0init[[j]])
+        })
 
         cv_objective_fun <- if (missing(cv_objective)) {
             # robust version of the RMSPE (i.e., also taking bias into account)
@@ -383,46 +455,32 @@ pense <- function(X, y,
 
         # Collect all prediction errors for each lambda sub-grid and determine
         # the optimal lambda
-        all_cv_resids <- do.call(cbind, lapply(cv_results, function (cv_res) {
-            do.call(rbind, lapply(cv_res, '[[', 'residuals'))
-        }))
+        all_cv_resids <- do.call(rbind, lapply(cv_results, '[[', 'residuals'))
         cv_obj <- apply(all_cv_resids, 2, function (r) {
             cv_objective_fun(r[is.finite(r)])
         })
 
-        cv_scales <- unlist(lapply(
-            cv_results,
-            function(cv_res) {
-                pred_resids <- do.call(rbind, lapply(cv_res, "[[", "residuals"))
-                apply(pred_resids, 2, function (r) {
-                    mscale(
-                        r - mean(r),
-                        b = options$bdp,
-                        rho = "bisquare",
-                        cc = options$cc,
-                        eps = options$mscaleEps,
-                        maxit = options$mscaleMaxit
-                    )
-                })
-            }
-        ))
+        cv_scales <- apply(all_cv_resids, 2, function (r) {
+            mscale(
+                r - mean(r),
+                b = options$bdp,
+                rho = "bisquare",
+                cc = options$cc,
+                eps = options$mscaleEps,
+                maxit = options$mscaleMaxit
+            )
+        })
 
-        cv_stats <- do.call(rbind, lapply(
-            cv_results,
-            function (cv_res) {
-                sol_stats <- unlist(lapply(cv_res, "[[", "sol_stats"))
-                sol_stats <- array(
-                    sol_stats,
-                    dim = c(4L, length(sol_stats) %/% (cv_k * 4L), cv_k),
-                    dimnames = list(
-                        c("obj_fun", "fold_s_scale", "beta_L1", "beta_L2"),
-                        NULL,
-                        NULL
-                    )
-                )
-                apply(sol_stats, 1L, rowMeans, na.rm = TRUE)
-            })
+        cv_stats <- array(
+            unlist(lapply(cv_results, '[[', 'sol_stats')),
+            dim = c(4L, nlambda, cv_k),
+            dimnames = list(
+                c("obj_fun", "fold_s_scale", "beta_L1", "beta_L2"),
+                NULL,
+                NULL
+            )
         )
+        cv_stats <- apply(cv_stats, 1L, rowMeans, na.rm = TRUE)
 
         cv_lambda_grid <- data.frame(
             lambda = lambda * max(scale_x),
@@ -436,78 +494,37 @@ pense <- function(X, y,
         lambda_opt <- lambda[1L]
     }
 
+    cluster$stopCluster()
+
     ##
     ## Now compute the estimator on the full data set
     ## (using the warm-0 and the CV coefficients as additional
     ## initial estimators)
     ##
-    jobgrid_full <- lapply(seq_along(lambda_subgrids), function(i) {
-        init_other <- warm0init_subgrids[[i]]
-        list(
-            segment = integer(0L),
-            lambda = lambda_subgrids[[i]],
-            init_other = init_other
-        )
-    })
 
-    # Run jobs for the full data
-    tryCatch({
-        full_results <- cluster$lapply(
-            jobgrid_full,
-            pense_est_job,
-            lambda_max = max(lambda),
-            alpha = alpha,
-            standardize = standardize,
-            direction = direction,
-            pense_options = options,
-            initest_options = init_options,
-            en_options = en_options
-        )
-    },
-    finally = {
-        cluster$stopCluster()
-    })
-
-    ## Gather all coefficients and residuals from the full results
-    int_ests <- unlist(lapply(full_results, "[[", "intercept"))
-    beta_ests <- do.call(cbind, lapply(full_results, "[[", "beta"))
-    residuals <- unlist(
-        lapply(full_results, "[[", "residuals"),
-        use.names = FALSE
-    )
-    residuals <- matrix(residuals, nrow = dX[1L], ncol = nlambda)
-    scale_ests <- unlist(
-        lapply(full_results, function (lambda_res) {
-            lambda_res$sol_stats["scale", ]
-        }),
-        use.names = FALSE
-    )
-    obj_fun_vals <- unlist(
-        lapply(full_results, function (lambda_res) {
-            lambda_res$sol_stats["objF", ]
-        }),
-        use.names = FALSE
+    full_results <- pense_est_job(
+        integer(0L),
+        direction = direction,
+        lambda = lambda,
+        init_other = warm0init,
+        alpha = alpha,
+        standardize = standardize,
+        pense_options = options,
+        initest_options = init_options,
+        en_options = en_options
     )
 
-
-    ## Order results on lambda grid by increasing lambda
-    lambda_order <- sort.list(lambda, method = "quick", na.last = NA)
-    lambda <- lambda[lambda_order]
     coef_ests <- rbind(
-        int_ests[lambda_order],
-        beta_ests[ , lambda_order, drop = FALSE]
+        full_results$intercept,
+        full_results$beta
     )
-    residuals <- residuals[, lambda_order, drop = FALSE]
-    scale_ests <- scale_ests[lambda_order]
-    obj_fun_vals <- obj_fun_vals[lambda_order]
-    cv_lambda_grid <- cv_lambda_grid[lambda_order, , drop = FALSE]
 
     return(structure(list(
-        residuals = residuals,
+        residuals = full_results$residuals,
         coefficients = nameCoefVec(coef_ests, X),
         lambda = lambda * max(scale_x),
-        scale = scale_ests,
-        objective = obj_fun_vals,
+        scale = full_results$sol_stats["scale", ],
+        objective = full_results$sol_stats["objF", ],
         cv_lambda_grid = cv_lambda_grid,
         lambda_opt = lambda_opt * max(scale_x),
         alpha = alpha,

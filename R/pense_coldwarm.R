@@ -101,6 +101,9 @@ initest_cold <- function(X, y, alpha, lambda, pense_options,
         en_options = en_options
     )
 
+    short_pense_options <- pense_options
+    short_pense_options$maxit <- 10L
+
     ## Compute a "short" PENSE for each candidate solution
     initconc <- apply(initraw$coeff, 2, function(coef) {
         conc <- pen_s_reg(
@@ -111,7 +114,7 @@ initest_cold <- function(X, y, alpha, lambda, pense_options,
             init_int = coef[1L],
             init_coef = coef[-1L],
             warn = FALSE,
-            options = pense_options,
+            options = short_pense_options,
             en_options = en_options
         )
 

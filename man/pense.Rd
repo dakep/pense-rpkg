@@ -6,8 +6,8 @@
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 50, lambda = NULL,
   lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
-  "cold"), direction = c("left", "right"), warm_reset = 10, cv_k = 5,
-  cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
+  "cold"), direction = c("both", "left", "right"), warm_reset = 10,
+  cv_k = 5, cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
   options = pense_options(), init_options = initest_options(),
   en_options = en_options_aug_lars())
 }
@@ -45,9 +45,10 @@ the lambda grid, PENSE will be initialized with the 0-vector.
 \code{"cold"} computes the full initial estimator at
 every lambda value.}
 
-\item{direction}{what direction to traverse the lambda grid in.
-\code{"left"} means from left to right (i.e. from larger to smaller
-lambda values).}
+\item{direction}{what direction to traverse the lambda grid in. Default
+to \code{"both"} to traverse it in both directions.
+\code{"left"} means from right to left (i.e. from larger to smaller
+lambda values) and \code{"right"} means from left to right.}
 
 \item{warm_reset}{if \code{initial = "warm(0)"}, how often should the
 warm-start be reset to a cold initial estimate?}

@@ -5,7 +5,8 @@
 \title{Additional Options for the Penalized EN S-estimator}
 \usage{
 pense_options(delta = 0.5, maxit = 1000, eps = 1e-06,
-  mscale_eps = 1e-08, mscale_maxit = 200, verbosity = 0, cc)
+  mscale_eps = 1e-08, mscale_maxit = 200, verbosity = 0, cc,
+  naive_en = FALSE)
 }
 \arguments{
 \item{delta}{desired breakdown point of the resulting estimator.}
@@ -21,6 +22,9 @@ tolerance for the M-scale.}
 
 \item{cc}{tuning constant for the S-estimator. Default is to chosen based
 on the breakdown point \code{delta}. Should never have to be changed.}
+
+\item{naive_en}{should the "naive" EN estimator be returned. If \code{FALSE},
+as by default, the estimator is "bias corrected".}
 }
 \value{
 a checked options list.

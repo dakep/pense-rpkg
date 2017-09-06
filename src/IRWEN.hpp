@@ -25,6 +25,11 @@ public:
 
 	void compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals);
 
+    arma::vec getWeights() const
+    {
+        return this->weights;
+    }
+
 	int iterations() const
 	{
 		return this->iteration;

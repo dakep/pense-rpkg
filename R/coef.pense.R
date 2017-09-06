@@ -7,12 +7,18 @@
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
+#' @param correction apply EN correction ("de-biasing")
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
+#'
+#' @importFrom Matrix drop
+#' @importClassesFrom Matrix dgCMatrix
+#'
 #' @export
-coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
+coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
     sparse <- isTRUE(sparse)
+    correction <- isTRUE(correction)
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt
@@ -31,16 +37,21 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
         return(object$coefficients[, max_lambda_ind, drop = !sparse])
     }
 
+    adj_fact <- sqrt(1 + 0.5 * (1 - object$alpha) * lambda)
+
     lambda_diff <- object$lambda - lambda
     lambda_diff_abs <- abs(lambda_diff)
 
     if (any(lambda_diff_abs < .Machine$double.eps)) {
         # the requested lambda value is alrady in the grid
-        return(object$coefficients[, which.min(lambda_diff_abs), drop = !sparse])
-    }
-
-    # the requested lambda value is not part of the grid
-    if (!exact) {
+        sel_lambda_index <- which.min(lambda_diff_abs)
+        ret_coef <- object$coefficients[, sel_lambda_index, drop = FALSE]
+        if (correction) {
+            ret_coef[1L, ] <- object$adjusted$intercept[sel_lambda_index]
+            adj_fact <- object$adjusted$factor[sel_lambda_index]
+        }
+    } else if (!exact) {
+        # the requested lambda value is not part of the grid
         # take the average of the closest two solutions
         lambda_diff_neg_ind <- which(lambda_diff < 0)
         lambda_diff_pos_ind <- which(lambda_diff > 0)
@@ -56,67 +67,81 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
 
             interp_w <- 1 / lambda_diff_abs[c(interp_lambda_left, interp_lambda_right)]
             interp_c <- (interp_w[1L] *
-                             object$coefficients[, interp_lambda_left, drop = !sparse] +
+                             object$coefficients[, interp_lambda_left, drop = FALSE] +
                              interp_w[2L] *
-                             object$coefficients[, interp_lambda_right, drop = !sparse]) /
+                             object$coefficients[, interp_lambda_right, drop = FALSE]) /
                 sum(interp_w)
 
-            if (!sparse) {
-                interp_c <- as.numeric(interp_c)
+            if (correction) {
+                interp_c[1L, ] <- weighted.mean(
+                    object$adjusted$intercept[c(interp_lambda_left, interp_lambda_right)],
+                    interp_w
+                )
             }
-            return(interp_c)
+
+            ret_coef <- interp_c
         }
+    } else {
         # else:
         # there is no left or right interpolation point available --> use
         # exact solution
-    }
+        closests_lambda_ind <- which.min(lambda_diff_abs)
 
-    closests_lambda_ind <- which.min(lambda_diff_abs)
+        x <- data.matrix(eval(object$call$X))
+        y <- drop(eval(object$call$y))
 
-    x <- data.matrix(eval(object$call$X))
-    y <- drop(eval(object$call$y))
+        std_data <- standardize_data(x, y, object$standardize)
+        xs <- std_data$xs
+        yc <- std_data$yc
 
-    std_data <- standardize_data(x, y, object$standardize)
-    xs <- std_data$xs
-    yc <- std_data$yc
+        init_int <- object$coefficients[1L, closests_lambda_ind]
+        init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
 
-    init_int <- object$coefficients[1L, closests_lambda_ind]
-    init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
+        if (isTRUE(object$standardize)) {
+            std_coefs <- std_data$standardize_coefs(list(
+                intercept = init_int,
+                beta = init_Beta
+            ))
+            init_int <- std_coefs$intercept
+            init_beta <- std_coefs$beta
+        }
 
-    if (isTRUE(object$standardize)) {
-        std_coefs <- std_data$standardize_coefs(list(
-            intercept = init_int,
-            beta = init_Beta
-        ))
-        init_int <- std_coefs$intercept
-        init_beta <- std_coefs$beta
-    }
-
-    estimate <- pen_s_reg(
-        xs,
-        yc,
-        alpha = object$alpha,
-        lambda = lambda / max(std_data$scale_x),
-        init_int = init_int,
-        init_coef = init_beta,
-        options = object$pense_options,
-        en_options = object$en_options
-    )
-
-    if (isTRUE(object$standardize)) {
-        estimate <- std_data$unstandardize_coefs(estimate)
-    }
-
-    if (sparse) {
-        coef <- rbind(estimate$intercept, estimate$beta)
-        rownames(coef) <- rownames(object$coefficients)
-    } else {
-        coef <- setNames(
-            c(estimate$intercept, as.numeric(estimate$beta)),
-            rownames(object$coefficients)
+        estimate <- pen_s_reg(
+            xs,
+            yc,
+            alpha = object$alpha,
+            lambda = lambda / max(std_data$scale_x),
+            init_int = init_int,
+            init_coef = init_beta,
+            options = object$pense_options,
+            en_options = object$en_options
         )
+
+        if (isTRUE(object$standardize)) {
+            estimate <- std_data$unstandardize_coefs(estimate)
+        }
+
+        ret_coef <- rbind(estimate$intercept, estimate$beta)
+        rownames(ret_coef) <- rownames(object$coefficients)
+
+        if (correction) {
+            ret_coef[-1L, ] <- ret_coef[-1L, , drop = FALSE] * adj_fact
+            residuals <- drop(y - x %*% ret_coef[-1L, , drop = FALSE])
+            ret_coef[1L, ] <- weighted.mean(residuals, estimate$weights)
+            correction <- FALSE
+        }
     }
-    return(coef)
+
+    if (correction) {
+        # The intercept was already adjusted before!
+        ret_coef[-1L, ] <- ret_coef[-1L, , drop = FALSE] * adj_fact
+    }
+
+    if (!sparse) {
+        ret_coef <- as.numeric(ret_coef)
+    }
+
+    return(ret_coef)
 
 }
 
@@ -124,14 +149,22 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
 #'
 #' @param object object of type \code{pensem} to extract coefficients from.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
+#' @param correction apply EN correction ("de-biasing")
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export
-coef.pensem <- function(object, sparse = FALSE, ...) {
+coef.pensem <- function(object, sparse = FALSE, correction = TRUE, ...) {
+    ret_coef <- object$coefficients
+
+    if (isTRUE(correction)) {
+        ret_coef[-1L, ] <- ret_coef[-1L, ] * object$adjusted$factor
+        ret_coef[1L, ] <- object$adjusted$intercept
+    }
+
     if (isTRUE(sparse)) {
-        return(object$coefficients)
+        return(ret_coef)
     } else {
-        return(as.numeric(object$coefficients))
+        return(as.numeric(ret_coef))
     }
 }
 
@@ -143,10 +176,12 @@ coef.pensem <- function(object, sparse = FALSE, ...) {
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
+#' @param correction apply EN correction ("de-biasing")
 #' @param ... currently ignored.
 #' @return a numeric vector of residuals for the given lambda.
+#' @importFrom Matrix drop
 #' @export
-residuals.pense <- function(object, lambda, exact = FALSE, ...) {
+residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
 
     if (missing(lambda) || is.null(lambda)) {
@@ -161,7 +196,8 @@ residuals.pense <- function(object, lambda, exact = FALSE, ...) {
         return(object$residuals[ , lambda_match[1L]])
     }
 
-    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE)
+    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE,
+                        correction = correction)
 
     x <- data.matrix(eval(object$call$X))
     y <- drop(eval(object$call$y))
@@ -180,12 +216,19 @@ residuals.pense <- function(object, lambda, exact = FALSE, ...) {
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
+#' @param correction apply EN correction ("de-biasing")
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export
-coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
+coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
+                          correction = TRUE, ...) {
     exact <- isTRUE(exact)
     sparse <- isTRUE(sparse)
+    correction <- isTRUE(correction) && isTRUE(object$alpha < 1)
+
+    if (correction) {
+        warning("EN correction not yet supported")
+    }
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt

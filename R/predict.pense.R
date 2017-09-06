@@ -10,7 +10,8 @@
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
 #' @export
-predict.pense <- function(object, newdata, lambda, exact = FALSE, ...) {
+predict.pense <- function(object, newdata, lambda, exact = FALSE,
+                          correction = TRUE, ...) {
     if (missing(newdata)) {
         newdata <- data.matrix(eval(object$call$X))
     } else {
@@ -32,7 +33,8 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE, ...) {
         lambda <- NULL
     }
 
-    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE)
+    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE,
+                        correction = correction)
 
     pr <- coefs[1L] + newdata %*% coefs[-1L]
     return(as.vector(pr))
@@ -50,7 +52,8 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE, ...) {
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
 #' @export
-predict.elnetfit <- function(object, newdata, lambda, exact = FALSE, ...) {
+predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
+                             correction = TRUE, ...) {
     if (missing(newdata)) {
         newdata <- data.matrix(eval(object$call$X))
     } else {
@@ -72,7 +75,8 @@ predict.elnetfit <- function(object, newdata, lambda, exact = FALSE, ...) {
         lambda <- NULL
     }
 
-    coefs <- coef.elnetfit(object, lambda = lambda, exact = exact, sparse = TRUE)
+    coefs <- coef.elnetfit(object, lambda = lambda, exact = exact,
+                           sparse = TRUE, correction = correction)
 
     pr <- coefs[1L] + newdata %*% coefs[-1L]
     return(as.vector(pr))

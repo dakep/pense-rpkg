@@ -4,7 +4,8 @@
 \alias{coef.elnetfit}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{elnetfit}(object, lambda, exact = FALSE, sparse = FALSE, ...)
+\method{coef}{elnetfit}(object, lambda, exact = FALSE, sparse = FALSE,
+  correction = TRUE, ...)
 }
 \arguments{
 \item{object}{object of type \code{elnetfit} to extract coefficients from.}
@@ -17,6 +18,8 @@ estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
 
 \item{sparse}{return a sparse vector or a dense (base R) numeric vector}
+
+\item{correction}{apply EN correction ("de-biasing")}
 
 \item{...}{currently not used.}
 }

@@ -62,7 +62,8 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     call[[1L]] <- as.name("mstep")
 
     pense_lambda_opt <- penseobj$lambda_opt
-    pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE, sparse = TRUE)
+    pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE, sparse = TRUE,
+                       correction = FALSE)
     pense_int <- pense_coef[1L]
     pense_beta <- pense_coef[-1L, , drop = FALSE]
 
@@ -431,9 +432,18 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
 
+    adj_fact <- sqrt(1 + 0.5 * (1 - penseobj$alpha) * lambda_opt_m_cv)
+    adj_beta <- msres$beta * adj_fact
+
+    adjusted <- list(
+        factor = adj_fact,
+        intercept = weighted.mean(y - X %*% adj_beta, msres$weights)
+    )
+
     return(structure(list(
-        residuals = msres$resid,
+        residuals = msres$residuals,
         coefficients = nameCoefVec(rbind(msres$intercept, msres$beta), X),
+        adjusted = adjusted,
         objective = msres$objF,
         bdp = bdp_adj,
         lambda_opt = lambda_opt_m_cv,

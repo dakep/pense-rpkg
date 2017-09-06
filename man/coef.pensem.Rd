@@ -4,12 +4,14 @@
 \alias{coef.pensem}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{pensem}(object, sparse = FALSE, ...)
+\method{coef}{pensem}(object, sparse = FALSE, correction = TRUE, ...)
 }
 \arguments{
 \item{object}{object of type \code{pensem} to extract coefficients from.}
 
 \item{sparse}{return a sparse vector or a dense (base R) numeric vector}
+
+\item{correction}{apply EN correction ("de-biasing")}
 
 \item{...}{currently not used.}
 }

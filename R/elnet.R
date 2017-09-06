@@ -60,6 +60,9 @@
 #'      \code{1e-5 * 10^floor(log10(p / n))} otherwise.
 #' @param addLeading1s should a leading column of 1's be appended?
 #'      If \code{FALSE}, this has to be done before calling this function.
+#' @param naive should the "naive" EN estimator be returned. If \code{FALSE},
+#'      as by default, the correction estimator as defined in Zou (2005)
+#'      is returned.
 #'
 #' @return
 #'  \item{lambda}{vector of lambda values.}
@@ -74,13 +77,14 @@
 #'      column corresponds to the predictions for the lambda value at the
 #'      same index.}
 #' @export
+#'
 #' @references Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
 #'     \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
 #'     for Sparse Learning}. Journal of Machine Learning Research,
 #'     12(May):1537-1586, 2011.
 elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
                   addLeading1s = TRUE, options = en_options_aug_lars(),
-                  lambda_min_ratio, Xtest) {
+                  lambda_min_ratio, Xtest, naive = FALSE) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -211,7 +215,8 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
             intercept = intercept,
             addLeading1s = addLeading1s,
             options = options,
-            Xtest = Xtest
+            Xtest = Xtest,
+            naive = naive
         )
     } else {
         .elnet.fit(
@@ -222,7 +227,8 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
             intercept = intercept,
             addLeading1s = addLeading1s,
             options = options,
-            Xtest = Xtest
+            Xtest = Xtest,
+            naive = naive
         )
     }
 
@@ -496,11 +502,11 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib pense C_augtrans C_elnet_sp
 #' @importFrom methods is
-#' @importFrom Matrix Matrix
-#' @importClassesFrom Matrix dgCMatrix
+#' @importFrom Matrix Matrix Diagonal crossprod colMeans
+#' @importClassesFrom Matrix dgCMatrix ddiMatrix
 .elnet.fit <- function(X, y, alpha, lambda, intercept = TRUE,
                        addLeading1s = TRUE, options = en_options_aug_lars(),
-                       warm_coefs, Xtest = NULL) {
+                       warm_coefs, Xtest = NULL, naive = FALSE) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -519,6 +525,12 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
             warm_coefs <- Matrix(warm_coefs, sparse = TRUE, ncol = 1L)
         }
         options$warmStart <- TRUE
+    }
+
+    if (!isTRUE(naive)) {
+        options$naive <- FALSE
+    } else {
+        options$naive <- TRUE
     }
 
     elnetres <- .Call(
@@ -543,11 +555,11 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
 #' @useDynLib pense C_augtrans C_elnet_weighted_sp
 #' @importFrom methods is
-#' @importFrom Matrix Matrix
-#' @importClassesFrom Matrix dgCMatrix
+#' @importFrom Matrix Matrix Diagonal crossprod colSums
+#' @importClassesFrom Matrix dgCMatrix ddiMatrix
 .elnet.wfit <- function(X, y, weights, alpha, lambda, intercept = TRUE,
                         addLeading1s = TRUE, options = en_options_aug_lars(),
-                        warm_coefs, Xtest = NULL) {
+                        warm_coefs, Xtest = NULL, naive = FALSE) {
     y <- drop(y)
     dX <- dim(X)
 
@@ -566,6 +578,12 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
             warm_coefs <- Matrix(warm_coefs, sparse = TRUE, ncol = 1L)
         }
         options$warmStart <- TRUE
+    }
+
+    if (!isTRUE(naive)) {
+        options$naive <- FALSE
+    } else {
+        options$naive <- TRUE
     }
 
     elnetres <- .Call(

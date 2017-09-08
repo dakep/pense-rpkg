@@ -1,3 +1,12 @@
+2017-09-06: Version 0.6.4
+    *) Add DAL algorithm for (weighted) Elastic Net
+    *) Split options for different parts of the algorithm into separate option
+       functions.
+    *) Use multiple starting points and strategies at each point in the lambda
+       grid to compute PENSE.
+    *) Add support for the a "corrected" Elastic Net estimate to counter the
+       bias introduced by the L2 penalty.
+
 2016-08-10: Version 0.5.4
     *) Change lambda grid for m-step
 

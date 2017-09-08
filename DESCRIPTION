@@ -1,8 +1,8 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S-Estimator of Regression
-Version: 0.6.3-2
-Date: 2017-09-06
+Version: 0.6.4
+Date: 2017-09-08
 Author: Derek Cho [aut],
     Gabriela Cohen Freue [aut],
     David Kepplinger [aut],

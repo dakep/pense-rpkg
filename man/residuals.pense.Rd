@@ -4,7 +4,8 @@
 \alias{residuals.pense}
 \title{Extract Residuals from a Fitted Penalized Elastic-Net S-estimator}
 \usage{
-\method{residuals}{pense}(object, lambda, exact = FALSE, ...)
+\method{residuals}{pense}(object, lambda, exact = FALSE, correction = TRUE,
+  ...)
 }
 \arguments{
 \item{object}{an object of type \code{pense} to extract the residuals from.}
@@ -15,6 +16,8 @@ optimal lambda \code{object$lambda_opt}.}
 \item{exact}{if the lambda is not part of the lambda grid, should the
 estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
+
+\item{correction}{apply EN correction ("de-biasing")}
 
 \item{...}{currently ignored.}
 }

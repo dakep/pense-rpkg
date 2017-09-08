@@ -76,7 +76,7 @@
 #'
 #' @importFrom stats mad median
 #' @importFrom robustbase scaleTau2
-#' @importFrom Matrix norm drop
+#' @importFrom Matrix norm drop Diagonal colSums
 pense <- function(X, y,
                   alpha = 0.5,
                   nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
@@ -210,7 +210,8 @@ pense <- function(X, y,
 
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(segment, direction, lambda, init_other, ...) {
+    pense_est_job <- function(segment, direction, alpha, lambda, init_other,
+                              pense_options, ...) {
         if (length(segment) == 0L) {
             X_train <- X
             y_train <- y
@@ -224,9 +225,11 @@ pense <- function(X, y,
             pense_coldwarm(
                 X = X_train,
                 y = y_train,
+                alpha = alpha,
                 lambda_grid = lambda,
                 init_other = init_other,
                 start_0 = TRUE,
+                pense_options = pense_options,
                 ...
             )
         } else {
@@ -238,9 +241,11 @@ pense <- function(X, y,
             rev(pense_coldwarm(
                 X = X_train,
                 y = y_train,
+                alpha = alpha,
                 lambda_grid = rev(lambda),
                 init_other = rev(init_other),
-                start_0 = FALSE,
+                start_0 = TRUE,
+                pense_options = pense_options,
                 ...
             ))
         } else {
@@ -263,26 +268,57 @@ pense <- function(X, y,
         }, left = est_all_left, right = est_all_right, SIMPLIFY = FALSE)
 
         residuals <- NULL
+        weights <- NULL
         beta <- do.call(cbind, lapply(est_all, "[[", "beta"))
         intercept <- unlist(lapply(est_all, "[[", "intercept"))
 
+        adj_est <- NULL
+        if (!identical(pense_options$naiveEn, TRUE)) {
+            adj_facts <- sqrt(1 + (1 - alpha) * lambda)
+
+            adj_est <- mapply(function (est, adj_fact) {
+                beta <- est$beta * adj_fact
+                residuals <- drop(y_train - X_train %*% beta)
+                intercept <- weighted.mean(residuals, est$weights)
+                list(
+                    beta = beta,
+                    intercept = intercept,
+                    adj_fact = adj_fact,
+                    residuals = residuals - intercept
+                )
+            }, est_all, adj_facts, SIMPLIFY = FALSE)
+        }
+
+        adjusted <- NULL
+
         if (length(segment) == 0L) {
-            residuals <- vapply(
-                est_all,
-                function(est) {
-                    est$resid
-                },
-                FUN.VALUE = y, USE.NAMES = FALSE
-            )
+            residuals <- vapply(est_all, '[[', 'residuals', FUN.VALUE = y, USE.NAMES = FALSE)
+            if (!identical(pense_options$naiveEn, TRUE)) {
+                adjusted <- list(
+                    factor = unlist(lapply(adj_est, "[[", "adj_fact")),
+                    intercept = unlist(lapply(adj_est, "[[", "intercept"))
+                )
+            }
         } else {
             X_test <- X[segment, , drop = FALSE]
             y_test <- y[segment]
-            residuals <- vapply(
-                est_all,
-                function(est) {
-                    drop(y_test - est$intercept - X_test %*% est$beta)
-                },
-                FUN.VALUE = numeric(length(segment)), USE.NAMES = FALSE)
+            if (!identical(pense_options$naiveEn, TRUE)) {
+                residuals <- vapply(
+                    adj_est,
+                    function(est) {
+                        drop(y_test - est$intercept - X_test %*% est$beta)
+                    },
+                    FUN.VALUE = numeric(length(segment)), USE.NAMES = FALSE
+                )
+            } else {
+                residuals <- vapply(
+                    est_all,
+                    function(est) {
+                        drop(y_test - est$intercept - X_test %*% est$beta)
+                    },
+                    FUN.VALUE = numeric(length(segment)), USE.NAMES = FALSE
+                )
+            }
         }
 
         sol_stats <- vapply(
@@ -300,6 +336,7 @@ pense <- function(X, y,
         return(list(
             residuals = residuals,
             intercept = intercept,
+            adjusted = adjusted,
             beta = beta,
             sol_stats = sol_stats
         ))
@@ -308,17 +345,17 @@ pense <- function(X, y,
     ##
     ## Always do a warm-0 start to get a local optimum at each lambda value
     ##
-    warm0res <- pense_coldwarm(
+    warm0res <- rev(pense_coldwarm(
         X = X,
         y = y,
         alpha = alpha,
-        lambda_grid = lambda,
+        lambda_grid = rev(lambda),
         start_0 = TRUE,
         standardize = standardize,
         pense_options = options,
         initest_options = init_options,
         en_options = en_options
-    )
+    ))
 
     warm0init <- vector("list", length(warm0res))
     for (i in seq_along(warm0init)) {
@@ -522,6 +559,7 @@ pense <- function(X, y,
     return(structure(list(
         residuals = full_results$residuals,
         coefficients = nameCoefVec(coef_ests, X),
+        adjusted = full_results$adjusted,
         lambda = lambda * max(scale_x),
         scale = full_results$sol_stats["scale", ],
         objective = full_results$sol_stats["objF", ],

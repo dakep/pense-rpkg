@@ -4,7 +4,8 @@
 \alias{predict.pense}
 \title{Predict Method for Penalized Elastic-Net S-estimator}
 \usage{
-\method{predict}{pense}(object, newdata, lambda, exact = FALSE, ...)
+\method{predict}{pense}(object, newdata, lambda, exact = FALSE,
+  correction = TRUE, ...)
 }
 \arguments{
 \item{object}{an object of type \code{pense} to use for prediction.}

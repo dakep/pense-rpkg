@@ -74,6 +74,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     sp_vec interceptSpVec(1);
     sp_vec currentBeta(nvar - 1);
     sp_mat coefEsts(nvar, nlambda);
+    double adjFactor = 1;
     double intercept = 0;
     double* currentResidualsPtr = REAL(retResids);
     double* currentPredsPtr = NULL;
@@ -83,6 +84,8 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
+    const mat XtrTrain = as<mat>(RXtr);
+    const vec yTrain = as< colvec >(Ry);
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -111,16 +114,26 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
 
         en->computeCoefs(intercept, currentBeta, residuals);
         interceptSpVec[0] = intercept;
-        coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
 
         if (en->getStatus() != 0) {
             Rcpp::warning("EN algorithm had non-zero exit status for lambda=%g: %s",
                           *currentLambda, en->getStatusMessage());
         }
 
+        if (!opts.get("naive", false)) {
+            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
+            coefEsts.col(i) = join_cols(
+                interceptSpVec,
+                currentBeta * adjFactor
+            );
+            coefEsts(0, i) = mean(yTrain - XtrTrain.t() * currentBeta * adjFactor);
+        } else {
+            coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
+        }
+
         if (generatePredictions) {
             vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
-            predAlias = Xtest * currentBeta + intercept;
+            predAlias = Xtest * currentBeta * adjFactor + coefEsts(0, i);
             currentPredsPtr += Xtest.n_rows;
         }
     }
@@ -169,6 +182,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     sp_vec currentBeta(nvar - 1);
     sp_mat coefEsts(nvar, nlambda);
     double intercept;
+    double adjFactor = 1;
     double* currentResidualsPtr = REAL(retResids);
     double* currentPredsPtr = NULL;
     const double *currentLambda = REAL(Rlambda);
@@ -177,6 +191,8 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
+    const mat XtrTrain = as<mat>(RXtr);
+    const vec yTrain = as< colvec >(Ry);
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -206,16 +222,27 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
         en->computeCoefsWeighted(intercept, currentBeta, residuals, weights);
 
         interceptSpVec[0] = intercept;
-        coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
 
         if (en->getStatus() != 0) {
             Rcpp::warning("EN algorithm had non-zero exit status for lambda=%g: %s",
                           *currentLambda, en->getStatusMessage());
         }
 
+        if (!opts.get("naive", false)) {
+            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
+            coefEsts.col(i) = join_cols(
+                interceptSpVec,
+                currentBeta * adjFactor
+            );
+            coefEsts(0, i) = accu(weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)) /
+                                accu(weights);
+        } else {
+            coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
+        }
+
         if (generatePredictions) {
             vec predAlias(currentPredsPtr, Xtest.n_rows, false, true);
-            predAlias = Xtest * currentBeta + intercept;
+            predAlias = Xtest * currentBeta * adjFactor + coefEsts(0, i);
             currentPredsPtr += Xtest.n_rows;
         }
     }
@@ -544,6 +571,7 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
         Named("beta") = sp_mat(beta),
         Named("residuals") = residuals,
         Named("scale") = pr.getScale(),
+        Named("weights") = pr.getWeights(),
         Named("rel_change") = pr.relChange(),
         Named("iterations") = pr.iterations()
     );
@@ -639,6 +667,7 @@ RcppExport SEXP C_pen_mstep_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
         Named("intercept") = intercept,
         Named("beta") = sp_mat(beta),
         Named("residuals") = residuals,
+        Named("weights") = ms.getWeights(),
         Named("rel_change") = ms.relChange(),
         Named("iterations") = ms.iterations()
     );

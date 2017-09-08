@@ -6,7 +6,7 @@
 \usage{
 elnet(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
   addLeading1s = TRUE, options = en_options_aug_lars(), lambda_min_ratio,
-  Xtest)
+  Xtest, naive = FALSE)
 }
 \arguments{
 \item{X}{data matrix with predictors}
@@ -40,6 +40,10 @@ default is \code{1e-6} if $n < p$, and
 
 \item{Xtest}{data matrix with predictors used for prediction. This is useful
 for testing the prediciton performance on an independent test set.}
+
+\item{naive}{should the "naive" EN estimator be returned. If \code{FALSE},
+as by default, the correction estimator as defined in Zou (2005)
+is returned.}
 }
 \value{
 \item{lambda}{vector of lambda values.}

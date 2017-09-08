@@ -432,7 +432,7 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
 
-    adj_fact <- sqrt(1 + 0.5 * (1 - penseobj$alpha) * lambda_opt_m_cv)
+    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_opt_m_cv)
     adj_beta <- msres$beta * adj_fact
 
     adjusted <- list(

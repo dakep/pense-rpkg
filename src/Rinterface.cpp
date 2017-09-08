@@ -121,7 +121,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
         }
 
         if (!opts.get("naive", false)) {
-            adjFactor = sqrt(1.0 + 0.5 * (1 - alpha) * (*currentLambda));
+            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -229,7 +229,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
         }
 
         if (!opts.get("naive", false)) {
-            adjFactor = sqrt(1.0 + 0.5 * (1 - alpha) * (*currentLambda));
+            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor

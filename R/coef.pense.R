@@ -37,7 +37,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         return(object$coefficients[, max_lambda_ind, drop = !sparse])
     }
 
-    adj_fact <- sqrt(1 + 0.5 * (1 - object$alpha) * lambda)
+    adj_fact <- sqrt(1 + (1 - object$alpha) * lambda)
 
     lambda_diff <- object$lambda - lambda
     lambda_diff_abs <- abs(lambda_diff)

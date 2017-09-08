@@ -274,7 +274,7 @@ pense <- function(X, y,
 
         adj_est <- NULL
         if (!identical(pense_options$naiveEn, TRUE)) {
-            adj_facts <- sqrt(1 + 0.5 * (1 - alpha) * lambda)
+            adj_facts <- sqrt(1 + (1 - alpha) * lambda)
 
             adj_est <- mapply(function (est, adj_fact) {
                 beta <- est$beta * adj_fact

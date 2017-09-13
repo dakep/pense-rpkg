@@ -18,7 +18,8 @@
 coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
     sparse <- isTRUE(sparse)
-    correction <- isTRUE(correction)
+    correction <- isTRUE(correction) && (object$alpha < 1) &&
+        !is.null(object$adjusted)
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt

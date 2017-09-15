@@ -42,12 +42,8 @@
 #'      the lambda grid, PENSE will be initialized with the 0-vector.
 #'      \code{"cold"} computes the full initial estimator at
 #'      every lambda value.
-#' @param direction what direction to traverse the lambda grid in. Default
-#'      to \code{"both"} to traverse it in both directions.
-#'      \code{"left"} means from right to left (i.e. from larger to smaller
-#'      lambda values) and \code{"right"} means from left to right.
-#' @param warm_reset if \code{initial = "warm(0)"}, how often should the
-#'      warm-start be reset to a cold initial estimate?
+#' @param warm_reset if \code{initial = "warm"} (default), how many cold initial
+#'      estimates be computed?
 #' @param ncores,cl the number of processor cores or an actual parallel cluster
 #'      to use to estimate the optimal value of lambda. See details for more
 #'      information.
@@ -55,8 +51,8 @@
 #'      See \code{\link{pense_options}} for details.
 #' @param en_options additional options for the EN algorithm.
 #'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
-#' @param initest_options additional options for computing the initial
-#'      estimator.
+#' @param initest_options additional options for computing the cold initial
+#'      estimates.
 #'      Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 #'      See \code{\link{initest_options}} for details.
 #'
@@ -82,7 +78,6 @@ pense <- function(X, y,
                   nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
                   standardize = TRUE,
                   initial = c("warm", "cold"),
-                  direction = c("both", "left", "right"),
                   warm_reset = 10,
                   cv_k = 5, cv_objective,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
@@ -137,8 +132,6 @@ pense <- function(X, y,
     } else {
         1L
     }
-
-    direction <- match.arg(direction)
 
     if (!is.null(lambda)) {
         lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
@@ -210,7 +203,7 @@ pense <- function(X, y,
 
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(segment, direction, alpha, lambda, init_other,
+    pense_est_job <- function(segment, alpha, lambda, init_other,
                               pense_options, ...) {
         if (length(segment) == 0L) {
             X_train <- X
@@ -220,37 +213,29 @@ pense <- function(X, y,
             y_train <- y[-segment]
         }
 
-        est_all_right <- if (direction == "both" || direction == "right") {
-            # Traverse from left to right (increasing lambda)
-            pense_coldwarm(
-                X = X_train,
-                y = y_train,
-                alpha = alpha,
-                lambda_grid = lambda,
-                init_other = init_other,
-                start_0 = TRUE,
-                pense_options = pense_options,
-                ...
-            )
-        } else {
-            vector("list", length(lambda))
-        }
+        # Traverse from left to right (increasing lambda)
+        est_all_right <- pense_coldwarm(
+            X = X_train,
+            y = y_train,
+            alpha = alpha,
+            lambda_grid = lambda,
+            init_other = init_other,
+            start_0 = TRUE,
+            pense_options = pense_options,
+            ...
+        )
 
-        est_all_left <- if (direction == "both" || direction == "left") {
-            # Traverse from right to left (decreasing lambda)
-            rev(pense_coldwarm(
-                X = X_train,
-                y = y_train,
-                alpha = alpha,
-                lambda_grid = rev(lambda),
-                init_other = rev(init_other),
-                start_0 = TRUE,
-                pense_options = pense_options,
-                ...
-            ))
-        } else {
-            vector("list", length(lambda))
-        }
+        # Traverse from right to left (decreasing lambda)
+        est_all_left <- rev(pense_coldwarm(
+            X = X_train,
+            y = y_train,
+            alpha = alpha,
+            lambda_grid = rev(lambda),
+            init_other = rev(init_other),
+            start_0 = TRUE,
+            pense_options = pense_options,
+            ...
+        ))
 
         est_all <- mapply(function (left, right) {
             if (is.null(left)) {
@@ -455,7 +440,6 @@ pense <- function(X, y,
             cv_results <- cluster$lapply(
                 cv_segments,
                 pense_est_job,
-                direction = direction,
                 lambda = lambda,
                 init_other = warm0init,
                 alpha = alpha,
@@ -541,7 +525,6 @@ pense <- function(X, y,
 
     full_results <- pense_est_job(
         integer(0L),
-        direction = direction,
         lambda = lambda,
         init_other = warm0init,
         alpha = alpha,

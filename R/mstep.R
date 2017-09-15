@@ -5,6 +5,15 @@
 #' estimate.
 #'
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
+#' @param nlambda if \code{lambda} is not given,
+#'      a grid of \code{nlambda} lambda values is generated based on the data.
+#' @param lambda a single value or a grid of values for the regularization
+#'      parameter of the M-step.
+#'      Assumed to be on the same scale as the data.
+#'      If missing, a grid of lambda
+#'      values is automatically generated (see parameter \code{nlambda}).
+#'      If supplied and \code{standardize = TRUE}, the lambda values will be
+#'      adjusted accordingly.
 #' @param lambda regularization parameter for the MM-estimator.
 #'      If missing, a grid of lambda values is chosen automatically.
 #' @param cv_k perform k-fold CV to choose the optimal lambda for prediction.
@@ -15,18 +24,19 @@
 #' @param ncores,cl use multiple cores or the supplied cluster for the
 #'      cross-validation. See \code{\link{pense}} for more details.
 #' @param options additional options for the M-step.
-#' @param X,y,cv_objective,en_options override arguments
+#' @param X,y,cv_objective,en_options,standardize override arguments
 #'      provided to the original call to \code{\link{pense}}.
 #' @importFrom robustbase .Mchi scaleTau2
 #' @importFrom stats mad median
 #' @importFrom Matrix drop
 #' @export
-mstep <- function(penseobj, lambda, cv_k = 5L,
+mstep <- function(penseobj,
                   nlambda = 100L,
+                  lambda, cv_k = 5L,
                   scale,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
                   options = mstep_options(),
-                  X, y, cv_objective, en_options) {
+                  X, y, cv_objective, en_options, standardize) {
 
     if (missing(X)) {
         X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
@@ -38,6 +48,10 @@ mstep <- function(penseobj, lambda, cv_k = 5L,
 
     if (missing(en_options)) {
         en_options <- penseobj$en_options
+    }
+
+    if (missing(standardize)) {
+        standardize <- penseobj$standardize
     }
 
     pense_lambda_opt <- penseobj$lambda_opt
@@ -58,11 +72,11 @@ mstep <- function(penseobj, lambda, cv_k = 5L,
     residuals <- residuals(penseobj, lambda = lambda, exact = TRUE)
 
     ## Standardize data and coefficients
-    std_data <- standardize_data(X, y, penseobj$standardize)
+    std_data <- standardize_data(X, y, standardize)
     Xs <- std_data$xs
     yc <- std_data$yc
 
-    if (isTRUE(penseobj$standardize)) {
+    if (isTRUE(standardize)) {
         pense_coefs <- std_data$standardize_coefs(list(
             intercept = pense_int,
             beta = pense_beta
@@ -311,7 +325,7 @@ mstep <- function(penseobj, lambda, cv_k = 5L,
         ))
         lambda_grid_m <- sort(c(lambda_grid_m, lambda_opt_m))
     } else {
-        lambda_grid_m <- sort(lambda)
+        lambda_grid_m <- sort(lambda / max(std_data$scale_x))
     }
 
     ##

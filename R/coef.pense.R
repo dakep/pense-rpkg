@@ -7,7 +7,7 @@
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
-#' @param correction apply EN correction ("de-biasing")
+#' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #'
@@ -150,7 +150,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
 #'
 #' @param object object of type \code{pensem} to extract coefficients from.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
-#' @param correction apply EN correction ("de-biasing")
+#' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export
@@ -177,7 +177,7 @@ coef.pensem <- function(object, sparse = FALSE, correction = TRUE, ...) {
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
-#' @param correction apply EN correction ("de-biasing")
+#' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently ignored.
 #' @return a numeric vector of residuals for the given lambda.
 #' @importFrom Matrix drop
@@ -217,7 +217,7 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
-#' @param correction apply EN correction ("de-biasing")
+#' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export

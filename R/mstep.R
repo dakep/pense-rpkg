@@ -19,8 +19,6 @@
 #' @param cv_k perform k-fold CV to choose the optimal lambda for prediction.
 #' @param scale initial scale estimate for the M step. By default the
 #'      S-scale from the initial estimator (\code{penseobj}) is used.
-#' @param nlambda the number of lambda values to try. If \code{lambda} is
-#'      missing, a grid of \code{nlambda} values is picked automatically.
 #' @param ncores,cl use multiple cores or the supplied cluster for the
 #'      cross-validation. See \code{\link{pense}} for more details.
 #' @param options additional options for the M-step.

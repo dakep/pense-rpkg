@@ -1,15 +1,7 @@
 #' Penalized Elasitc Net S-estimators for Regression
 #'
-#' @section Parallelization:
-#' With the parameter \code{ncores}, the number of available processor cores
-#' can be set. The grid of lambda values is split into \code{ncores} (almost)
-#' equally sized chunks. On each core, the cold initial estimate is computed
-#' for the lower endpoint of the lambda sequence. The fully iterated PENSE
-#' estimate is then used as warm-start for the next lambda value and so on.
-#' Therefore, if \code{ncores = 1}, only one cold initial estimate is computed
-#' and all subsequent values of lambda take the previous estimate as
-#' warm-start. Similarly, if \code{ncores = nlambda}, a cold initial estimate
-#' is computed for every lambda on the grid and no warm-starts are necessary.
+#' Computes the Penalized Elasitc Net S-estimators (PENSE) for linear
+#' regression.
 #'
 #' @param X design matrix with predictors.
 #' @param y response vector.
@@ -21,7 +13,7 @@
 #' @param lambda a single value or a grid of values for the regularization
 #'      parameter lambda.
 #'      Assumed to be on the same scale as the data and adjusted for
-#'      S-estimation. Defaults to \code{NULL}, which means a grid of lambda
+#'      S-estimation. If missing a grid of lambda
 #'      values is automatically generated (see parameter \code{nlambda}).
 #'      If given and \code{standardize = TRUE}, the lambda values will be
 #'      adjusted accordingly.
@@ -45,8 +37,8 @@
 #' @param warm_reset if \code{initial = "warm"} (default), how many cold initial
 #'      estimates be computed?
 #' @param ncores,cl the number of processor cores or an actual parallel cluster
-#'      to use to estimate the optimal value of lambda. See details for more
-#'      information.
+#'      to use to estimate the optimal value of lambda. See
+#'      \code{\link{makeCluster}} on how to create a cluster manually.
 #' @param options additional options for the PENSE algorithm.
 #'      See \code{\link{pense_options}} for details.
 #' @param en_options additional options for the EN algorithm.
@@ -75,7 +67,7 @@
 #' @importFrom Matrix norm drop Diagonal colSums
 pense <- function(X, y,
                   alpha = 0.5,
-                  nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
+                  nlambda = 50, lambda, lambda_min_ratio,
                   standardize = TRUE,
                   initial = c("warm", "cold"),
                   warm_reset = 10,
@@ -133,13 +125,18 @@ pense <- function(X, y,
         1L
     }
 
-    if (!is.null(lambda)) {
+    if (!missing(lambda) && !is.null(lambda)) {
         lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
         nlambda <- length(lambda)
     } else {
         nlambda <- .check_arg(nlambda, "integer", range = 0)
+        lambda <- NULL
     }
     warm_reset <- min(nlambda, warm_reset)
+
+    if (missing(lambda_min_ratio)) {
+        lambda_min_ratio <- NULL
+    }
 
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {
         lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
@@ -464,7 +461,7 @@ pense <- function(X, y,
             c(cv_ests, warm0init[[j]])
         })
 
-        cv_objective_fun <- if (missing(cv_objective)) {
+        cv_objective_fun <- if (missing(cv_objective) || is.null(cv_objective)) {
             # robust version of the RMSPE (i.e., also taking bias into account)
             function(x) {
                 st2 <- scaleTau2(x, mu.too = TRUE)

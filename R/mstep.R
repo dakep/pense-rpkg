@@ -1,23 +1,19 @@
 #' Perform an M-step after the EN S-Estimator
 #'
-#' Performs an M-step on the S-estimator returned from \code{\link{pense}}.
+#' Performs an M-step using the S-estimator at the optimal penalty
+#' parameter as returned from \code{\link{pense}} as the initial
+#' estimate.
 #'
 #' @param penseobj an object returned from a call to \code{\link{pense}}.
-#' @param lambda regularization of the initial S-estimate. Defaults to
-#'      \code{penseobj$lambda_opt}, the lambda with minimal CV error.
-#' @param complete_grid should the optimal lambda be chosen from a grid of
-#'      values or approximate it from the optimal lambda?
-#' @param cv_k perform k-fold CV to choose optimal lambda (only used if
-#'      \code{complete_grid = TRUE}).
-#' @param scale what initial scale to use. \code{"s"} uses the estimated
-#'      M-scale of the S-regression residuals, \code{"cv"} uses the
-#'      M-scale of the S-regression out-of-sample residuals. Can also
-#'      be a number directly specifiying the scale to use.
-#' @param nlambda the number of lambda values to try.
-#' @param ncores,cl use this many cores or the supplied cluster for choosing the
-#'      optima lambda. See \code{\link{pense}} for more details.
-#' @param adjust_bdp should the breakdown point be adjusted based on the
-#'      effective degrees of freedom?
+#' @param lambda regularization parameter for the MM-estimator.
+#'      If missing, a grid of lambda values is chosen automatically.
+#' @param cv_k perform k-fold CV to choose the optimal lambda for prediction.
+#' @param scale initial scale estimate for the M step. By default the
+#'      S-scale from the initial estimator (\code{penseobj}) is used.
+#' @param nlambda the number of lambda values to try. If \code{lambda} is
+#'      missing, a grid of \code{nlambda} values is picked automatically.
+#' @param ncores,cl use multiple cores or the supplied cluster for the
+#'      cross-validation. See \code{\link{pense}} for more details.
 #' @param options additional options for the M-step.
 #' @param X,y,cv_objective,en_options override arguments
 #'      provided to the original call to \code{\link{pense}}.
@@ -25,9 +21,9 @@
 #' @importFrom stats mad median
 #' @importFrom Matrix drop
 #' @export
-mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
-                  nlambda = 30L,
-                  scale = c("s", "cv"),
+mstep <- function(penseobj, lambda, cv_k = 5L,
+                  nlambda = 100L,
+                  scale,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
                   options = mstep_options(),
                   X, y, cv_objective, en_options) {
@@ -44,16 +40,9 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         en_options <- penseobj$en_options
     }
 
-    if (missing(lambda)) {
-        lambda <- penseobj$lambda_opt
-    }
-
+    pense_lambda_opt <- penseobj$lambda_opt
     lambda <- .check_arg(lambda, "numeric", range = 0)
-    lambda_ind <- which.min(abs(lambda - penseobj$lambda))
-    if (abs(lambda - penseobj$lambda[lambda_ind]) > sqrt(.Machine$double.eps)) {
-        warning("S-estimator was not computed for the given lambda. ",
-                "Using the closest lambda as crude approximation.")
-    }
+    lambda_ind <- which.min(abs(pense_lambda_opt - penseobj$lambda))
 
     dX <- dim(X)
 
@@ -61,7 +50,6 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
     call <- match.call()
     call[[1L]] <- as.name("mstep")
 
-    pense_lambda_opt <- penseobj$lambda_opt
     pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE, sparse = TRUE,
                        correction = FALSE)
     pense_int <- pense_coef[1L]
@@ -160,30 +148,30 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
         3.44
     }
 
-    ##
-    ## Adjust lambda for the M step
-    ##
-    lambda_opt_m <- pense_lambda_opt * 1.5 / options$cc^2
-
-    lambda_opt_m_cv <- lambda_opt_m
-    lambda_grid_m <- data.frame(
-        lambda = lambda_opt_m_cv,
-        cvavg = NA_real_,
-        cvsd = NA_real_
+    ## Setup cluster
+    cluster <- setupCluster(
+        ncores,
+        cl,
+        export = c("Xs", "yc"),
+        eval = {
+            library(pense)
+        }
     )
 
     ##
-    ## Optionally choose optimal lambda from a grid of candidate values
+    ## If no lambda was provided, choose the grid automatically
     ##
-    if (isTRUE(complete_grid)) {
-        ## Setup cluster
-        cluster <- setupCluster(
-            ncores,
-            cl,
-            export = c("Xs", "yc"),
-            eval = {
-                library(pense)
-            }
+    if (missing(lambda)) {
+        ##
+        ## Adjust lambda for the M step
+        ##
+        lambda_opt_m <- pense_lambda_opt * 1.5 / options$cc^2
+
+        lambda_opt_m_cv <- lambda_opt_m
+        lambda_grid_m <- data.frame(
+            lambda = lambda_opt_m_cv,
+            cvavg = NA_real_,
+            cvsd = NA_real_
         )
 
         ##
@@ -322,94 +310,99 @@ mstep <- function(penseobj, lambda, complete_grid = TRUE, cv_k = 5L,
             length = nlambda
         ))
         lambda_grid_m <- sort(c(lambda_grid_m, lambda_opt_m))
-
-        ## Determine CV segments
-        cv_segments <- if(cv_k > 1L) {
-            split(seq_len(dX[1L]), sample(rep_len(seq_len(cv_k), dX[1L])))
-        } else {
-            list(integer(0))
-        }
-
-        ## Combine CV segments and lambda grid to a list of jobs
-        jobgrid <- lapply(cv_segments, function(cvs) {
-            lapply(lambda_grid_m, function(lvs) {
-                list(
-                    segment = cvs,
-                    lambda = lvs
-                )
-            })
-        })
-
-        jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
-
-        ## Run all jobs (combination of all CV segments and all lambda values)
-        dojobcv <- function(job, ...) {
-            if (length(job$segment) == 0L) {
-                X_train <- Xs
-                y_train <- yc
-                X_test <- Xs
-                y_test <- yc
-            } else {
-                X_train <- Xs[-job$segment, , drop = FALSE]
-                y_train <- yc[-job$segment]
-                X_test <- Xs[job$segment, , drop = FALSE]
-                y_test <- yc[job$segment]
-            }
-
-            msres <- pensemstep(
-                X_train,
-                y_train,
-                lambda = job$lambda,
-                ...
-            )
-
-            return(drop(y_test - msres$intercept - X_test %*% msres$beta))
-        }
-
-        tryCatch({
-            pred_errors <- cluster$lapply(
-                jobgrid,
-                dojobcv,
-                alpha = penseobj$alpha,
-                init_scale = scale_init_corr,
-                init_int = pense_int,
-                init_coef = pense_beta,
-                options = options,
-                en_options = en_options
-            )
-        },
-        finally = {
-            cluster$stopCluster()
-        })
-
-        ## Collect all prediction errors for each lambda sub-grid and
-        ## determine the optimal lambda
-        cv_objective_fun <- if (missing (cv_objective)) {
-            if (is.null(penseobj$call$cv_objective)) {
-                scaleTau2
-            } else {
-                match.fun(penseobj$call$cv_objective)
-            }
-        } else {
-                match.fun(cv_objective)
-        }
-
-        cv_obj <- unlist(
-            lapply(
-                split(pred_errors, rep.int(seq_along(lambda_grid_m), cv_k)),
-                function(preds) {
-                    pred_resids <- unlist(preds)
-                    cv_objective_fun(pred_resids[is.finite(pred_resids)])
-                }
-            )
-        )
-
-        lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
-        lambda_grid_m <- data.frame(
-            lambda = lambda_grid_m * max(std_data$scale_x),
-            cvavg = cv_obj
-        )
+    } else {
+        lambda_grid_m <- sort(lambda)
     }
+
+    ##
+    ## Choose optimal lambda from a grid of candidate values
+    ##
+    ## Determine CV segments
+    cv_segments <- if(cv_k > 1L) {
+        split(seq_len(dX[1L]), sample(rep_len(seq_len(cv_k), dX[1L])))
+    } else {
+        list(integer(0))
+    }
+
+    ## Combine CV segments and lambda grid to a list of jobs
+    jobgrid <- lapply(cv_segments, function(cvs) {
+        lapply(lambda_grid_m, function(lvs) {
+            list(
+                segment = cvs,
+                lambda = lvs
+            )
+        })
+    })
+
+    jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
+
+    ## Run all jobs (combination of all CV segments and all lambda values)
+    dojobcv <- function(job, ...) {
+        if (length(job$segment) == 0L) {
+            X_train <- Xs
+            y_train <- yc
+            X_test <- Xs
+            y_test <- yc
+        } else {
+            X_train <- Xs[-job$segment, , drop = FALSE]
+            y_train <- yc[-job$segment]
+            X_test <- Xs[job$segment, , drop = FALSE]
+            y_test <- yc[job$segment]
+        }
+
+        msres <- pensemstep(
+            X_train,
+            y_train,
+            lambda = job$lambda,
+            ...
+        )
+
+        return(drop(y_test - msres$intercept - X_test %*% msres$beta))
+    }
+
+    tryCatch({
+        pred_errors <- cluster$lapply(
+            jobgrid,
+            dojobcv,
+            alpha = penseobj$alpha,
+            init_scale = scale_init_corr,
+            init_int = pense_int,
+            init_coef = pense_beta,
+            options = options,
+            en_options = en_options
+        )
+    },
+    finally = {
+        cluster$stopCluster()
+    })
+
+    ## Collect all prediction errors for each lambda sub-grid and
+    ## determine the optimal lambda
+    cv_objective_fun <- if (missing (cv_objective)) {
+        if (is.null(penseobj$call$cv_objective)) {
+            scaleTau2
+        } else {
+            match.fun(penseobj$call$cv_objective)
+        }
+    } else {
+            match.fun(cv_objective)
+    }
+
+    cv_obj <- unlist(
+        lapply(
+            split(pred_errors, rep.int(seq_along(lambda_grid_m), cv_k)),
+            function(preds) {
+                pred_resids <- unlist(preds)
+                cv_objective_fun(pred_resids[is.finite(pred_resids)])
+            }
+        )
+    )
+
+    lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
+    lambda_grid_m <- data.frame(
+        lambda = lambda_grid_m * max(std_data$scale_x),
+        cvavg = cv_obj
+    )
 
     ##
     ## Compute M-estimator for lambda.opt.mm.cv

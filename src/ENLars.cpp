@@ -319,6 +319,10 @@ void ENLars::augmentedOLS(vec& coefs, vec& residuals, const uword nobs,
     }
 
     residuals = this->yAug.head_rows(nobs) - this->XtrAug.head_cols(nobs).t() * coefs;
+
+    if (intercept) {
+        coefs[0] -= dot(this->meanX, coefs);
+    }
 }
 
 

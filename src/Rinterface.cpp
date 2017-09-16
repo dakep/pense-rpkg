@@ -81,11 +81,14 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const double *currentLambda = REAL(Rlambda);
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
+    const bool estimate_intercept = (bool) *INTEGER(Rintercept);
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
-    const mat XtrTrain = as<mat>(RXtr);
+    /* this does not need the column of 1's in the beginning */
+    const mat XtrTrain = as<mat>(RXtr).tail_rows(nvar - 1);
     const vec yTrain = as< colvec >(Ry);
+
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -104,7 +107,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
      */
     opts.set("warmStart", true);
 
-    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    ElasticNet *en = getElasticNetImpl(opts, estimate_intercept);
     sp_vec::const_iterator ccIt;
     en->setData(data);
 
@@ -120,13 +123,15 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (!opts.get("naive", false)) {
+        if (!opts.get("naive", false) && alpha < 1) {
             adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
             );
-            coefEsts(0, i) = mean(yTrain - XtrTrain.t() * currentBeta * adjFactor);
+            if (estimate_intercept) {
+                coefEsts(0, i) = mean(yTrain - XtrTrain.t() * currentBeta * adjFactor);
+            }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
         }
@@ -188,10 +193,12 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     const double *currentLambda = REAL(Rlambda);
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
+    const bool estimate_intercept = (bool) *INTEGER(Rintercept);
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
-    const mat XtrTrain = as<mat>(RXtr);
+    /* this does not need the column of 1's in the beginning */
+    const mat XtrTrain = as<mat>(RXtr).tail_rows(nvar - 1);
     const vec yTrain = as< colvec >(Ry);
 
     if (generatePredictions) {
@@ -211,7 +218,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
      */
     opts.set("warmStart", true);
 
-    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    ElasticNet *en = getElasticNetImpl(opts, estimate_intercept);
     sp_vec::const_iterator ccIt;
     en->setData(data);
 
@@ -228,14 +235,16 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (!opts.get("naive", false)) {
+        if (!opts.get("naive", false) && alpha < 1) {
             adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
             );
-            coefEsts(0, i) = accu(weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)) /
-                                accu(weights);
+            if (estimate_intercept) {
+                coefEsts(0, i) = accu(weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)) /
+                                    accu(weights);
+            }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
         }

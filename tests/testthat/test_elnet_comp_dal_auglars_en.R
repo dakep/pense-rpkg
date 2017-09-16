@@ -3,7 +3,7 @@ library(testthat)
 
 n <- 100
 p <- 1000
-lambda <- 1e-5
+lambda <- 1e-4
 alpha <- 0.5
 set.seed(1234)
 weights <- runif(n, 0, 1)

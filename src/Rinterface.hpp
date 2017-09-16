@@ -180,7 +180,7 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP Xtr, SEXP y, SEXP intercept, SEXP coefs, SEX
  * @param coefs         dgCMatrix sparse vector of inital coefficients
  * @param scale         numeric   (fixed) scale estimate
  * @param alpha         numeric   alpha parameter for penalization
- * @param lambda        numeric   lambda parameter for penalization
+ * @param lambda        numeric   lambda parameter(s) for penalization
  * @param msOptions     List      options for the M-Step
  * @param enOptions     List      options for the specific EN algorithm
  *

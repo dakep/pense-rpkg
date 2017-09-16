@@ -25,6 +25,8 @@ public:
 
 	void compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals);
 
+    void setLambda(const double lambda);
+
     arma::vec getWeights() const
     {
         return this->weights;
@@ -40,18 +42,27 @@ public:
 		return this->relChangeVal;
 	}
 
+    double getObjective() const
+    {
+        return this->objectiveVal;
+    }
+
 protected:
     virtual void updateWeights(const arma::vec& residuals) = 0;
+    virtual void updateObjective(const arma::vec& residuals, const double betaENPenalty) = 0;
 
     const arma::mat Xtr;
     const arma::vec y;
     arma::vec weights;
 
+    double objectiveVal;
+
 private:
     const int verbosity;
     const int maxIt;
     const double eps;
-    const double lambda;
+    const double alpha;
+    double lambda;
 
     ElasticNet* en;
 

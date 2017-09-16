@@ -481,18 +481,16 @@ pensemstep <- function(X, y, init_scale, init_int, init_coef, alpha, lambda,
     res <- .Call(C_pen_mstep_sp, Xtr, y, init_int, init_coef, init_scale,
                  alpha, lambda, options, en_options)
 
-    res$objF <- sum(Mchi(drop(res$residuals / init_scale),
-                         cc = options$cc, psi = "bisquare")) +
-        lambda * (
-            0.5 * (1 - alpha) * sum(res$beta^2) + alpha * sum(abs(res$beta))
-        )
-
     ##
     ## Check if the M-step converged.
     ## Be extra careful with the comparison as rel.change may be NaN or NA
     ##
-    if (!isTRUE(res$rel_change < options$eps)) {
-        warning(sprintf("M-step did not converge for lambda = %.6f", lambda))
+    if (!isTRUE(any(res$rel_change < options$eps))) {
+        not_converged <- which(res$rel_change < options$eps)
+        warning(sprintf(
+            "M-step did not converge for lambda = %s",
+            paste(sprintf("%g", lambda[not_converged]), collapse = ", ")
+        ))
     }
 
     return(res)

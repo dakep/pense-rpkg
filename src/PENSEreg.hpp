@@ -25,8 +25,10 @@ public:
     {
         return this->scale;
     }
+
 protected:
     void updateWeights(const arma::vec& residuals);
+    void updateObjective(const arma::vec& residuals, const double betaENPenalty);
 
 private:
     const double bdp;       // breakdown point

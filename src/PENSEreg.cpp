@@ -41,6 +41,11 @@ PENSEReg::~PENSEReg()
 {
 }
 
+void PENSEReg::updateObjective(const vec& residuals, const double betaENPenalty)
+{
+    this->objectiveVal = this->scale * this->scale + betaENPenalty;
+}
+
 void PENSEReg::updateWeights(const vec& residuals)
 {
     double tmp;

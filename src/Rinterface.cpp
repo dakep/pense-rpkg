@@ -524,6 +524,7 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
         Named("intercept") = intercept,
         Named("beta") = sp_mat(beta),
         Named("residuals") = residuals,
+        Named("objF") = pr.getObjective(),
         Named("scale") = pr.getScale(),
         Named("weights") = pr.getWeights(),
         Named("rel_change") = pr.relChange(),
@@ -545,37 +546,75 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
 RcppExport SEXP C_pen_mstep_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs, SEXP scale,
                                SEXP Ralpha, SEXP Rlambda, SEXP RmsOptions, SEXP RenOptions)
 {
+    int nlambda = Rf_length(Rlambda);
     int nobs, nvar;
     getMatDims(RXtr, &nvar, &nobs);
 
     const Options msOpts = listToOptions(RmsOptions);
     const Options enOpts = listToOptions(RenOptions);
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
+    const double *lambdaPtr = REAL(Rlambda);
 
-    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);
+    MStep ms(data, *REAL(Ralpha), *lambdaPtr, *REAL(scale), msOpts, enOpts);
 
     List retList;
-    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
-    double intercept = *REAL(Rintercept);
+
+    SEXP interceptEsts = PROTECT(Rf_allocVector(REALSXP, nlambda));
+    double* interceptPtr = REAL(interceptEsts);
+
+    SEXP residuals = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
+    double* currentResidualsPtr = REAL(residuals);
+
+    SEXP weights = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
+    double* currentWeightsPtr = REAL(weights);
+
+    SEXP relChange = PROTECT(Rf_allocVector(REALSXP, nlambda));
+    double* relChangePtr = REAL(relChange);
+
+    SEXP objF = PROTECT(Rf_allocVector(REALSXP, nlambda));
+    double* objFPtr = REAL(objF);
+
+
+    SEXP iterations = PROTECT(Rf_allocVector(INTSXP, nlambda));
+    int* iterationsPtr = INTEGER(iterations);
+
+    double initIntercept = *REAL(Rintercept);
 
     BEGIN_RCPP
-    vec residVec(REAL(residuals), nobs, false, true);
-    sp_vec beta = as<sp_mat>(Rcoefs).col(0);
+    sp_vec initBeta = as<sp_mat>(Rcoefs).col(0);
+    sp_vec currentBeta(nvar - 1);
+    sp_mat coefEsts(nvar - 1, nlambda);
 
-    ms.compute(intercept, beta, residVec);
+    for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, currentWeightsPtr += nobs) {
+        vec residVec(currentResidualsPtr, nobs, false, true);
+        vec weightsVec(currentWeightsPtr, nobs, false, true);
+
+        interceptPtr[i] = initIntercept;
+        currentBeta = initBeta;
+
+        ms.setLambda(lambdaPtr[i]);
+        ms.compute(interceptPtr[i], currentBeta, residVec);
+
+        coefEsts.col(i) = currentBeta;
+        weightsVec = ms.getWeights();
+        relChangePtr[i] = ms.relChange();
+        iterationsPtr[i] = ms.iterations();
+        objFPtr[i] = ms.getObjective();
+    }
 
     retList = List::create(
-        Named("intercept") = intercept,
-        Named("beta") = sp_mat(beta),
+        Named("intercept") = interceptEsts,
+        Named("beta") = coefEsts,
         Named("residuals") = residuals,
-        Named("weights") = ms.getWeights(),
-        Named("rel_change") = ms.relChange(),
-        Named("iterations") = ms.iterations()
+        Named("objF") = objF,
+        Named("weights") = weights,
+        Named("rel_change") = relChange,
+        Named("iterations") = iterations
     );
 
     VOID_END_RCPP
 
-    UNPROTECT(1);
+    UNPROTECT(6);
 
     return wrap(retList);
 }

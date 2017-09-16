@@ -28,10 +28,6 @@ pen_s_reg <- function(X, y, alpha, lambda, init_int, init_coef, warn = TRUE,
         en_options
     )
 
-    ret$objF <- ret$scale^2 + lambda * (
-        0.5 * (1 - alpha) * sum(ret$beta^2) + alpha * sum(abs(ret$beta))
-    )
-
     ##
     ## Check if the S-step converged.
     ## Be extra careful with the comparison as rel_change may be NaN or NA

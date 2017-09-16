@@ -1,6 +1,6 @@
-#' Elastic Net Regression
+#' Elastic Net Estimator for Regression
 #'
-#' Compute the elastic net regression coefficients
+#' Estimate the elastic net regression coefficients.
 #'
 #' This solves the minimization problem
 #' \deqn{\frac{1}{2 N} RSS + \lambda \left(
@@ -58,11 +58,9 @@
 #'      the ratio of the smallest to the largest lambda value in the grid. The
 #'      default is \code{1e-6} if $n < p$, and
 #'      \code{1e-5 * 10^floor(log10(p / n))} otherwise.
-#' @param addLeading1s should a leading column of 1's be appended?
-#'      If \code{FALSE}, this has to be done before calling this function.
-#' @param naive should the "naive" EN estimator be returned. If \code{FALSE},
-#'      as by default, the correction estimator as defined in Zou (2005)
-#'      is returned.
+#' @param correction should the "corrected" EN estimator be returned.
+#'      If \code{TRUE}, as by default, the corrected estimator as defined in
+#'      Zou & Hastie (2005) is returned.
 #'
 #' @return
 #'  \item{lambda}{vector of lambda values.}
@@ -78,13 +76,19 @@
 #'      same index.}
 #' @export
 #'
-#' @references Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
+#' @references
+#' Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
 #'     \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
 #'     for Sparse Learning}. Journal of Machine Learning Research,
 #'     12(May):1537-1586, 2011.
+#'
+#' H. Zou and T. Hastie.
+#'     \emph{Regularization and variable selection via the elastic net.}
+#'     Journal of the Royal Statistical Society.
+#'     Series B (Statistical Methodology), 67(2):301–320, 2005.
 elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
-                  addLeading1s = TRUE, options = en_options_aug_lars(),
-                  lambda_min_ratio, Xtest, naive = FALSE) {
+                  options = en_options_aug_lars(),
+                  lambda_min_ratio, Xtest, correction = TRUE) {
     y <- drop(y)
 
     dX <- dim(X)
@@ -131,7 +135,7 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
     }
 
     intercept <- isTRUE(intercept)
-
+    correction <- !identical(correction, FALSE)
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
 
@@ -213,10 +217,9 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
             alpha = alpha,
             lambda = lambda,
             intercept = intercept,
-            addLeading1s = addLeading1s,
             options = options,
             Xtest = Xtest,
-            naive = naive
+            correction = correction
         )
     } else {
         .elnet.fit(
@@ -225,10 +228,9 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
             alpha = alpha,
             lambda = lambda,
             intercept = intercept,
-            addLeading1s = addLeading1s,
             options = options,
             Xtest = Xtest,
-            naive = naive
+            correction = correction
         )
     }
 
@@ -283,7 +285,8 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #'      and the estimated standard deviation.}
 #'
 #' @export
-elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE, cv_k = 10,
+elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
+                     intercept = TRUE, cv_k = 10,
                      cv_measure, ncores = getOption("mc.cores", 1L),
                      cl = NULL, options = en_options_aug_lars(),
                      lambda_min_ratio, ...) {
@@ -505,16 +508,19 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
 #' @importFrom Matrix Matrix Diagonal crossprod colMeans
 #' @importClassesFrom Matrix dgCMatrix ddiMatrix
 .elnet.fit <- function(X, y, alpha, lambda, intercept = TRUE,
-                       addLeading1s = TRUE, options = en_options_aug_lars(),
-                       warm_coefs, Xtest = NULL, naive = FALSE) {
+                       options = en_options_aug_lars(),
+                       warm_coefs, Xtest = NULL, correction = TRUE) {
     y <- drop(y)
     dX <- dim(X)
 
-    ## Add leading column of 1's
-    Xtr <- if (!identical(addLeading1s, FALSE)) {
-        .Call(C_augtrans, X)
-    } else {
+    ## Add leading column of 1's if necessary
+    Xtr <- if (isTRUE(sd(X[, 1L]) < sqrt(.Machine$double.eps)) &&
+               isTRUE(abs(X[1L, 1L] - 1) < .Machine$double.eps)) {
+        # The first column has no variation and the first element is a 1
+        # --> we have a column of 1's
         t(X)
+    } else {
+        .Call(C_augtrans, X)
     }
 
     if (missing(warm_coefs)) {
@@ -527,7 +533,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
         options$warmStart <- TRUE
     }
 
-    if (!isTRUE(naive)) {
+    if (isTRUE(correction)) {
         options$naive <- FALSE
     } else {
         options$naive <- TRUE
@@ -558,16 +564,19 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
 #' @importFrom Matrix Matrix Diagonal crossprod colSums
 #' @importClassesFrom Matrix dgCMatrix ddiMatrix
 .elnet.wfit <- function(X, y, weights, alpha, lambda, intercept = TRUE,
-                        addLeading1s = TRUE, options = en_options_aug_lars(),
-                        warm_coefs, Xtest = NULL, naive = FALSE) {
+                        options = en_options_aug_lars(),
+                        warm_coefs, Xtest = NULL, correction = TRUE) {
     y <- drop(y)
     dX <- dim(X)
 
-    ## Add leading column of 1's
-    Xtr <- if (!identical(addLeading1s, FALSE)) {
-        .Call(C_augtrans, X)
-    } else {
+    ## Add leading column of 1's if necessary
+    Xtr <- if (isTRUE(sd(X[, 1L]) < sqrt(.Machine$double.eps)) &&
+               isTRUE(abs(X[1L, 1L] - 1) < .Machine$double.eps)) {
+        # The first column has no variation and the first element is a 1
+        # --> we have a column of 1's
         t(X)
+    } else {
+        .Call(C_augtrans, X)
     }
 
     if (missing(warm_coefs)) {
@@ -580,7 +589,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TR
         options$warmStart <- TRUE
     }
 
-    if (!isTRUE(naive)) {
+    if (isTRUE(correction)) {
         options$naive <- FALSE
     } else {
         options$naive <- TRUE

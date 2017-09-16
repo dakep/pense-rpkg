@@ -37,10 +37,11 @@ orderOmitTies <- function(x, tol) {
 #' @importFrom robustbase .Mchi
 consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
     if (is.character(int.rho.fun)) {
-        int.rho.fun <- switch (int.rho.fun,
-                               huber = 0L,
-                               bisquare = 1L,
-                               1L
+        int.rho.fun <- switch (
+            int.rho.fun,
+            huber = 0L,
+            bisquare = 1L,
+            1L
         )
     }
 
@@ -49,7 +50,7 @@ consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
     }
 
     expectation <- if (int.rho.fun == 1L) {
-        # For bisquare we have the closed form solution to the expectation as
+        # For bisquare we have the closed form solution to the expectation
         function(cc, delta) {
             pnorm.mcc <- 2 * pnorm(-cc)
             1/cc^6 * exp(-(cc^2/2)) * (

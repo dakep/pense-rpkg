@@ -20,9 +20,11 @@ en_opts_lars <- en_options_aug_lars()
 ##
 test_that("Normal EN without intercept", {
     el_res_dal <- elnet(x, y, alpha = alpha, lambda = lambda, intercept = FALSE,
-                        options = en_opts_dal)
+                        options = en_opts_dal,
+                        correction = FALSE)
     el_res_lars <- elnet(x, y, alpha = alpha, lambda = lambda,
-                         intercept = FALSE, options = en_opts_lars)
+                         intercept = FALSE, options = en_opts_lars,
+                         correction = FALSE)
 
     expect_equal(el_res_dal$coefficients, el_res_lars$coefficients,
                  tolerance = EQUALITY_THRESHOLD)
@@ -35,9 +37,11 @@ test_that("Normal EN without intercept", {
 ##
 test_that("Normal EN with intercept", {
     el_res_dal <- elnet(x, y, alpha = alpha, lambda = lambda, intercept = TRUE,
-                        options = en_opts_dal)
+                        options = en_opts_dal,
+                        correction = FALSE)
     el_res_lars <- elnet(x, y, alpha = alpha, lambda = lambda, intercept = TRUE,
-                         options = en_opts_lars)
+                         options = en_opts_lars,
+                         correction = FALSE)
 
     expect_equal(el_res_dal$coefficients, el_res_lars$coefficients,
                  tolerance = EQUALITY_THRESHOLD)
@@ -55,10 +59,12 @@ test_that("Normal EN with intercept", {
 test_that("Weighted EN without intercept", {
     el_res_dal_w <- elnet(x, y, alpha = alpha, lambda = lambda,
                           intercept = FALSE, weights = weights,
-                          options = en_opts_dal)
+                          options = en_opts_dal,
+                          correction = FALSE)
     el_res_lars_w <- elnet(x, y, alpha = alpha, lambda = lambda,
                            intercept = FALSE, weights = weights,
-                           options = en_opts_lars)
+                           options = en_opts_lars,
+                           correction = FALSE)
     expect_equal(el_res_dal_w$coefficients, el_res_lars_w$coefficients,
                  tolerance = EQUALITY_THRESHOLD)
     expect_equal(el_res_dal_w$residuals, el_res_lars_w$residuals)
@@ -79,11 +85,13 @@ test_that("Weighted EN without intercept", {
 test_that("Weighted EN with intercept", {
     el_res_dal_w <- elnet(x, y, alpha = alpha, lambda = lambda,
                           intercept = TRUE, weights = weights,
-                          options = en_opts_dal)
+                          options = en_opts_dal,
+                          correction = FALSE)
 
     el_res_lars_w <- elnet(x, y, alpha = alpha, lambda = lambda,
                            intercept = TRUE, weights = weights,
-                           options = en_opts_lars)
+                           options = en_opts_lars,
+                           correction = FALSE)
     expect_equal(el_res_dal_w$coefficients, el_res_lars_w$coefficients,
                  tolerance = EQUALITY_THRESHOLD)
     expect_equal(

@@ -499,61 +499,6 @@ RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP Ralpha, SEXP Rlambda, SEXP
  * Penalized Elastic Net S estimator for regression (PENSE)
  *
  **************************************************************************************************/
-RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP coefs,
-                            SEXP Ralpha, SEXP Rlambda, SEXP RpenseOptions, SEXP RenOptions)
-{
-    int nobs, nvar;
-    getMatDims(RXtr, &nvar, &nobs);
-
-    const Options penseOpts = listToOptions(RpenseOptions);
-    const Options enOpts = listToOptions(RenOptions);
-    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-
-    PENSEReg pr(data, *REAL(Ralpha), *REAL(Rlambda), penseOpts, enOpts);
-    SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
-    SEXP relChange;
-    SEXP scale;
-    SEXP iterations;
-    SEXP result = R_NilValue;
-    double *RESTRICT newCoefsPtr = REAL(newCoefs);
-
-    BEGIN_RCPP
-    memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
-
-    vec residVec(REAL(residuals), nobs, false, true);
-    vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
-    sp_vec beta(betaDense);
-
-    pr.compute(*newCoefsPtr, beta, residVec);
-
-    betaDense = vec(beta);
-
-    result = PROTECT(Rf_allocVector(VECSXP, 5));
-    scale = PROTECT(Rf_ScalarReal(pr.getScale()));
-    relChange = PROTECT(Rf_ScalarReal(pr.relChange()));
-    iterations = PROTECT(Rf_ScalarInteger(pr.iterations()));
-
-    SET_VECTOR_ELT(result, 0, newCoefs);
-    SET_VECTOR_ELT(result, 1, residuals);
-    SET_VECTOR_ELT(result, 2, scale);
-    SET_VECTOR_ELT(result, 3, relChange);
-    SET_VECTOR_ELT(result, 4, iterations);
-
-    UNPROTECT(4);
-
-    VOID_END_RCPP
-
-    UNPROTECT(2);
-
-    return result;
-}
-
-/***************************************************************************************************
- *
- * Penalized Elastic Net S estimator for regression (PENSE)
- *
- **************************************************************************************************/
 RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
                                SEXP Ralpha, SEXP Rlambda, SEXP RpenseOptions, SEXP RenOptions)
 {
@@ -590,59 +535,6 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
     UNPROTECT(1);
 
     return wrap(retList);
-}
-
-/***************************************************************************************************
- *
- * Penalized Elastic Net M estimator for regression with initial scale (M-Step)
- *
- **************************************************************************************************/
-RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
-                            SEXP Ralpha, SEXP Rlambda, SEXP RmsOptions, SEXP RenOptions)
-{
-    int nobs, nvar;
-    getMatDims(RXtr, &nvar, &nobs);
-
-    const Options msOpts = listToOptions(RmsOptions);
-    const Options enOpts = listToOptions(RenOptions);
-    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-
-    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);
-
-    SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
-    SEXP relChange;
-    SEXP iterations;
-    SEXP result = R_NilValue;
-    double *RESTRICT newCoefsPtr = REAL(newCoefs);
-
-    BEGIN_RCPP
-    memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
-
-    vec residVec(REAL(residuals), nobs, false, true);
-    vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
-    sp_vec beta(betaDense);
-
-    ms.compute(*newCoefsPtr, beta, residVec);
-
-    betaDense = vec(beta);
-
-    result = PROTECT(Rf_allocVector(VECSXP, 4));
-    relChange = PROTECT(Rf_ScalarReal(ms.relChange()));
-    iterations = PROTECT(Rf_ScalarInteger(ms.iterations()));
-
-    SET_VECTOR_ELT(result, 0, newCoefs);
-    SET_VECTOR_ELT(result, 1, residuals);
-    SET_VECTOR_ELT(result, 2, relChange);
-    SET_VECTOR_ELT(result, 3, iterations);
-
-    UNPROTECT(3);
-
-    VOID_END_RCPP
-
-    UNPROTECT(2);
-
-    return result;
 }
 
 /***************************************************************************************************

@@ -140,12 +140,13 @@ void ENLars::computeCoefsWeighted(double& intercept, sp_vec &coefs, vec &residua
 
     residuals = this->yOrig - conv_to< colvec >::from(
         coefsDense.t() * this->XtrAug.head_cols(trueNobs)
-    ) - as_scalar(this->meanX.t() * coefsDense);
+    );
 
     /*
      * Recover intercept if requested
      */
     if (this->intercept) {
+        residuals -= dot(this->meanX, coefsDense);
         intercept = accu(weights % residuals) * recipSumWeights;
         residuals -= intercept;
     }
@@ -216,12 +217,14 @@ void ENLars::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resid
 
     residuals = this->yOrig - conv_to< colvec >::from(
         beta.t() * this->XtrAug.head_cols(trueNobs)
-    ) - as_scalar(this->meanX.t() * beta);
+    );
 
     /*
      * Recover intercept if requested
      */
     if (this->intercept) {
+        residuals -= dot(this->meanX, beta);
+
         coefs[0] = 0;
 
         for (i = 0; i < trueNobs; ++i) {

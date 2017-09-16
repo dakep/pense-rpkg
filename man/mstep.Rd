@@ -4,40 +4,42 @@
 \alias{mstep}
 \title{Perform an M-step after the EN S-Estimator}
 \usage{
-mstep(penseobj, lambda, complete_grid = TRUE, cv_k = 5L, nlambda = 30L,
-  scale = c("s", "cv"), ncores = getOption("mc.cores", 1L), cl = NULL,
-  options = mstep_options(), X, y, cv_objective, en_options)
+mstep(penseobj, nlambda = 100L, lambda, cv_k = 5L, scale,
+  ncores = getOption("mc.cores", 1L), cl = NULL,
+  options = mstep_options(), X, y, cv_objective, en_options, standardize)
 }
 \arguments{
 \item{penseobj}{an object returned from a call to \code{\link{pense}}.}
 
-\item{lambda}{regularization of the initial S-estimate. Defaults to
-\code{penseobj$lambda_opt}, the lambda with minimal CV error.}
+\item{nlambda}{if \code{lambda} is not given,
+a grid of \code{nlambda} lambda values is generated based on the data.}
 
-\item{complete_grid}{should the optimal lambda be chosen from a grid of
-values or approximate it from the optimal lambda?}
+\item{lambda}{a single value or a grid of values for the regularization
+parameter of the M-step.
+Assumed to be on the same scale as the data.
+If missing, a grid of lambda
+values is automatically generated (see parameter \code{nlambda}).
+If supplied and \code{standardize = TRUE}, the lambda values will be
+adjusted accordingly.}
 
-\item{cv_k}{perform k-fold CV to choose optimal lambda (only used if
-\code{complete_grid = TRUE}).}
+\item{cv_k}{perform k-fold CV to choose the optimal lambda for prediction.}
 
-\item{nlambda}{the number of lambda values to try.}
+\item{scale}{initial scale estimate for the M step. By default the
+S-scale from the initial estimator (\code{penseobj}) is used.}
 
-\item{scale}{what initial scale to use. \code{"s"} uses the estimated
-M-scale of the S-regression residuals, \code{"cv"} uses the
-M-scale of the S-regression out-of-sample residuals. Can also
-be a number directly specifiying the scale to use.}
-
-\item{ncores, cl}{use this many cores or the supplied cluster for choosing the
-optima lambda. See \code{\link{pense}} for more details.}
+\item{ncores, cl}{use multiple cores or the supplied cluster for the
+cross-validation. See \code{\link{pense}} for more details.}
 
 \item{options}{additional options for the M-step.}
 
-\item{X, y, cv_objective, en_options}{override arguments
+\item{X, y, cv_objective, en_options, standardize}{override arguments
 provided to the original call to \code{\link{pense}}.}
 
-\item{adjust_bdp}{should the breakdown point be adjusted based on the
-effective degrees of freedom?}
+\item{lambda}{regularization parameter for the MM-estimator.
+If missing, a grid of lambda values is chosen automatically.}
 }
 \description{
-Performs an M-step on the S-estimator returned from \code{\link{pense}}.
+Performs an M-step using the S-estimator at the optimal penalty
+parameter as returned from \code{\link{pense}} as the initial
+estimate.
 }

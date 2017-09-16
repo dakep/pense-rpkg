@@ -2,13 +2,14 @@
 % Please edit documentation in R/predict.pense.R
 \name{predict.pense}
 \alias{predict.pense}
-\title{Predict Method for Penalized Elastic-Net S-estimator}
+\title{Predict Method for Penalized Elastic Net S- and MM-estimators}
 \usage{
 \method{predict}{pense}(object, newdata, lambda, exact = FALSE,
   correction = TRUE, ...)
 }
 \arguments{
-\item{object}{an object of type \code{pense} to use for prediction.}
+\item{object}{an object of type \code{pense} or \code{pensem} to use for
+prediction.}
 
 \item{newdata}{an optional design matrix}
 
@@ -19,11 +20,14 @@ optimal lambda \code{lambda_opt}.}
 estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
 
+\item{correction}{should a correction factor be applied to the PENSE(M)
+estimate?}
+
 \item{...}{currently ignored.}
 }
 \value{
 a numeric vector of predicted values for the given lambda.
 }
 \description{
-Predict Method for Penalized Elastic-Net S-estimator
+Predict Method for Penalized Elastic Net S- and MM-estimators
 }

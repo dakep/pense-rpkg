@@ -11,7 +11,7 @@
 
 \item{sparse}{return a sparse vector or a dense (base R) numeric vector}
 
-\item{correction}{apply EN correction ("de-biasing")}
+\item{correction}{should a correction factor be applied to the EN estimate?}
 
 \item{...}{currently not used.}
 }

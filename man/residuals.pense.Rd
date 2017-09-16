@@ -17,7 +17,7 @@ optimal lambda \code{object$lambda_opt}.}
 estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
 
-\item{correction}{apply EN correction ("de-biasing")}
+\item{correction}{should a correction factor be applied to the EN estimate?}
 
 \item{...}{currently ignored.}
 }

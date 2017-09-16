@@ -2,7 +2,7 @@
 % Please edit documentation in R/predict.pense.R
 \name{predict.elnetfit}
 \alias{predict.elnetfit}
-\title{Predict Method for Penalized Elastic-Net Estimator}
+\title{Predict Method for the classical Elastic Net Estimator}
 \usage{
 \method{predict}{elnetfit}(object, newdata, lambda, exact = FALSE,
   correction = TRUE, ...)
@@ -19,11 +19,13 @@ optimal lambda \code{lambda_opt}.}
 estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
 
+\item{correction}{should a correction factor be applied to the EN estimate?}
+
 \item{...}{currently ignored.}
 }
 \value{
 a numeric vector of predicted values for the given lambda.
 }
 \description{
-Predict Method for Penalized Elastic-Net Estimator
+Predict Method for the classical Elastic Net Estimator
 }

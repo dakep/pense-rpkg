@@ -33,7 +33,8 @@ test_that("LASSO", {
 
     lambda1 <- 0.02
 
-    enres <- elnet(X, y, 1, lambda1, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = 1, lambda = lambda1, intercept = FALSE,
+                   options = en_options)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -62,7 +63,8 @@ test_that("LASSO", {
 
     lambda1 <- 0.02
 
-    enres <- elnet(X, y, 1, lambda1, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = 1, lambda = lambda1, intercept = FALSE,
+                   options = en_options)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -90,7 +92,8 @@ test_that("LASSO", {
 
     lambda1 <- 0.2
 
-    enres <- elnet(X, y, 1, lambda1, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = 1, lambda = lambda1, intercept = FALSE,
+                   options = en_options)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -119,7 +122,8 @@ test_that("LASSO", {
 
     lambda1 <- 0.02
 
-    enres <- elnet(X, y, 1, lambda1, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = 1, lambda = lambda1, intercept = FALSE,
+                   options = en_options)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -148,7 +152,8 @@ test_that("LASSO", {
 
     lambda1 <- 0.00002
 
-    enres <- elnet(X, y, 1, lambda1, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = 1, lambda = lambda1, intercept = FALSE,
+                   options = en_options)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, 1, lambda1),
@@ -197,7 +202,8 @@ test_that("Ridge", {
 
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, intercept = TRUE, options = en_options)
+    enres <- elnet(X, y, alpha = 0, lambda = lambda2, intercept = TRUE,
+                   options = en_options, correction = FALSE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(drop(enres$coefficients), olsres$coefficients)
@@ -221,7 +227,8 @@ test_that("Ridge", {
     lambda2 <- 0.2
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, intercept = TRUE, options = en_options)
+    enres <- elnet(X, y, alpha = 0, lambda = lambda2, intercept = TRUE,
+                   options = en_options, correction = FALSE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(drop(enres$coefficients), olsres$coefficients)
@@ -245,7 +252,8 @@ test_that("Ridge", {
     lambda2 <- 3
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, intercept = TRUE, options = en_options)
+    enres <- elnet(X, y, alpha = 0, lambda = lambda2, intercept = TRUE,
+                   options = en_options, correction = FALSE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(drop(enres$coefficients), olsres$coefficients)
@@ -269,7 +277,8 @@ test_that("Ridge", {
     lambda2 <- 1
     au <- augment(X, y, lambda2)
 
-    enres <- elnet(X, y, 0, lambda2, intercept = TRUE, options = en_options)
+    enres <- elnet(X, y, alpha = 0, lambda = lambda2, intercept = TRUE,
+                   options = en_options, correction = FALSE)
     olsres <- .lm.fit(au$X, au$y)
 
     expect_equal(drop(enres$coefficients), olsres$coefficients)
@@ -314,7 +323,8 @@ test_that("EN", {
     lambda <- 2 * lambda2 + lambda1
     alpha <- lambda1 / (2 * lambda2 + lambda1)
 
-    enres <- elnet(X, y, alpha, lambda, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = alpha, lambda = lambda, intercept = FALSE,
+                   options = en_options, correction = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
@@ -323,8 +333,8 @@ test_that("EN", {
     ## check if we can match the result by augmenting the data
     au <- augment(X, y, lambda2, leading1s = FALSE)
 
-    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p),
-                  intercept = FALSE, options = en_options)
+    elau <- elnet(au$X, au$y, alpha = 1, lambda = n * lambda1 / (n + p),
+                  intercept = FALSE, options = en_options, correction = FALSE)
     expect_equal(drop(enres$coefficients)[-1L], elau$coefficients[-1L])
 
     ## check if results match with lars
@@ -353,7 +363,8 @@ test_that("EN", {
     lambda <- 2 * lambda2 + lambda1
     alpha <- lambda1 / (2 * lambda2 + lambda1)
 
-    enres <- elnet(X, y, alpha, lambda, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = alpha, lambda = lambda, intercept = FALSE,
+                   options = en_options, correction = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
@@ -362,8 +373,8 @@ test_that("EN", {
     ## check if we can match the result by augmenting the data
     au <- augment(X, y, lambda2, leading1s = FALSE)
 
-    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p),
-                  intercept = FALSE, options = en_options)
+    elau <- elnet(au$X, au$y, alpha = 1, lambda = n * lambda1 / (n + p),
+                  intercept = FALSE, options = en_options, correction = FALSE)
     expect_equal(drop(enres$coefficients)[-1L], elau$coefficients[-1L])
 
     ## check if results match with lars
@@ -392,7 +403,8 @@ test_that("EN", {
     lambda <- 2 * lambda2 + lambda1
     alpha <- lambda1 / (2 * lambda2 + lambda1)
 
-    enres <- elnet(X, y, alpha, lambda, intercept = FALSE, options = en_options)
+    enres <- elnet(X, y, alpha = alpha, lambda = lambda, intercept = FALSE,
+                   options = en_options, correction = FALSE)
 
     ## check if zero is in the gradient
     expect_equal(gradient(enres$coefficients, X, y, alpha, lambda),
@@ -401,8 +413,8 @@ test_that("EN", {
     ## check if we can match the result by augmenting the data
     au <- augment(X, y, lambda2, leading1s = FALSE)
 
-    elau <- elnet(au$X, au$y, alpha = 1, n * lambda1 / (n + p),
-                  intercept = FALSE, options = en_options)
+    elau <- elnet(au$X, au$y, alpha = 1, lambda = n * lambda1 / (n + p),
+                  intercept = FALSE, options = en_options, correction = FALSE)
     expect_equal(drop(enres$coefficients)[-1L], elau$coefficients[-1L])
 
     ## check if results match with lars
@@ -424,7 +436,8 @@ test_that("EN - Bugs", {
     ##
     X <- matrix(0.0, ncol = p, nrow = 0L)
     y <- numeric(0L)
-    res <- elnet(X, y, alpha = 0.5, lambda = 2, options = en_options)
+    res <- elnet(X, y, alpha = 0.5, lambda = 2, options = en_options,
+                 correction = FALSE)
 
     # All coefficients should be NA and residuals of length zero
     expect_identical(

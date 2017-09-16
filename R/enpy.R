@@ -25,6 +25,11 @@
 #' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
+#' @references Pena, D., and Yohai, V.J. (1999).
+#'     A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
+#'     \emph{Journal of the American Statistical Association}, \bold{94}(446),
+#'     434-445. \url{http://doi.org/10.2307/2670164}
+#'
 #' @export
 enpy <- function(X, y, alpha, lambda,
                  options = initest_options(),

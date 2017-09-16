@@ -77,15 +77,16 @@
 #' @export
 #'
 #' @references
-#' Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
-#'     \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
-#'     for Sparse Learning}. Journal of Machine Learning Research,
-#'     12(May):1537-1586, 2011.
+#' Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).
+#'     Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
+#'     for Sparse Learning.
+#'     \emph{Journal of Machine Learning Research}
+#'     \bold{12}(May):1537-1586.
 #'
-#' H. Zou and T. Hastie.
-#'     \emph{Regularization and variable selection via the elastic net.}
-#'     Journal of the Royal Statistical Society.
-#'     Series B (Statistical Methodology), 67(2):301–320, 2005.
+#' Zou, H. and Hastie, T. (2005).
+#'     Regularization and variable selection via the elastic net.
+#'     \emph{Journal of the Royal Statistical Society}.
+#'     Series B (Statistical Methodology), \bold{67}(2):301–320.
 elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
                   options = en_options_aug_lars(),
                   lambda_min_ratio, Xtest, correction = TRUE) {

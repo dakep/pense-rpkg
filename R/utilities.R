@@ -95,6 +95,10 @@ standardize_data <- function (x, y, standardize) {
     }
 
     ret_list$standardize_coefs <- function(coef_obj) {
+        if (!isTRUE(standardize)) {
+            return(coef_obj)
+        }
+
         coef_obj$intercept <- coef_obj$intercept - ret_list$muy +
             drop(ret_list$mux %*% coef_obj$beta)
         coef_obj$beta <- coef_obj$beta * ret_list$scale_x
@@ -102,6 +106,10 @@ standardize_data <- function (x, y, standardize) {
     }
 
     ret_list$unstandardize_coefs <- function(coef_obj) {
+        if (!isTRUE(standardize)) {
+            return(coef_obj)
+        }
+
         coef_obj$beta <- coef_obj$beta / ret_list$scale_x
         coef_obj$intercept <- coef_obj$intercept + ret_list$muy -
             drop(ret_list$mux %*% coef_obj$beta)

@@ -53,8 +53,11 @@ mstep <- function(penseobj,
     }
 
     pense_lambda_opt <- penseobj$lambda_opt
-    lambda <- .check_arg(lambda, "numeric", range = 0)
     lambda_ind <- which.min(abs(pense_lambda_opt - penseobj$lambda))
+
+    if (!missing(lambda)) {
+        lambda <- .check_arg(lambda, "numeric", range = 0)
+    }
 
     dX <- dim(X)
 
@@ -62,12 +65,12 @@ mstep <- function(penseobj,
     call <- match.call()
     call[[1L]] <- as.name("mstep")
 
-    pense_coef <- coef(penseobj, lambda = lambda, exact = TRUE, sparse = TRUE,
-                       correction = FALSE)
+    pense_coef <- coef(penseobj, lambda = pense_lambda_opt, exact = TRUE,
+                       sparse = TRUE, correction = FALSE)
     pense_int <- pense_coef[1L]
     pense_beta <- pense_coef[-1L, , drop = FALSE]
 
-    residuals <- residuals(penseobj, lambda = lambda, exact = TRUE)
+    residuals <- drop(y - X %*% pense_beta - pense_int)
 
     ## Standardize data and coefficients
     std_data <- standardize_data(X, y, standardize)
@@ -109,12 +112,8 @@ mstep <- function(penseobj,
     bdp_adj <- penseobj$pense_options$bdp
     cc_scale <- penseobj$pense_options$cc
 
-    if (is.character(scale)) {
-        scale_init <- switch(
-            match.arg(scale),
-            s = penseobj$scale[lambda_ind],
-            cv = penseobj$cv_lambda_grid$s_scale[lambda_ind]
-        )
+    if (missing(scale)) {
+        scale_init <- penseobj$scale[lambda_ind]
         adjust_scale <- TRUE
     } else {
         scale_init <- .check_arg(scale, "numeric", range = 0)
@@ -432,7 +431,7 @@ mstep <- function(penseobj,
     )
 
     ## Un-standardize the coefficients
-    if (isTRUE(penseobj$standardize)) {
+    if (isTRUE(standardize)) {
         msres <- std_data$unstandardize_coefs(msres)
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
@@ -456,7 +455,7 @@ mstep <- function(penseobj,
         cv_lambda_grid = lambda_grid_m,
         scale = scale_init_corr,
         alpha = penseobj$alpha,
-        standardize = penseobj$standardize,
+        standardize = standardize,
         sest = penseobj,
         call = call
     ), class = c("pensem", "pense")))

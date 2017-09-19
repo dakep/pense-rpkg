@@ -82,6 +82,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
     const bool estimate_intercept = (bool) *INTEGER(Rintercept);
+    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
@@ -123,7 +124,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (!opts.get("naive", false) && alpha < 1) {
+        if (applyENCorrection) {
             adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
@@ -194,6 +195,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
     const bool estimate_intercept = (bool) *INTEGER(Rintercept);
+    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
@@ -235,15 +237,16 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (!opts.get("naive", false) && alpha < 1) {
+        if (applyENCorrection) {
             adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
             );
             if (estimate_intercept) {
-                coefEsts(0, i) = accu(weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)) /
-                                    accu(weights);
+                coefEsts(0, i) = accu(
+                    weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)
+                ) / accu(weights);
             }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);

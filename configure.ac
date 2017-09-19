@@ -1,4 +1,4 @@
-AC_INIT(pense, version-1.0)
+AC_INIT(pense, 0.6.6)
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
@@ -17,15 +17,17 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
 
-####################################################################################################
+################################################################################
 ##
 ## Check for necessary support by C compiler
 ##
-####################################################################################################
+################################################################################
 AC_LANG(C)
 AC_CHECK_HEADERS(stdint.h inttypes.h limits.h float.h)
 
-#check for -restrict CFLAGS support
+##
+## check for -restrict CFLAGS support
+##
 oldCflags="$CFLAGS"
 CFLAGS="$CFLAGS -restrict"
 AC_MSG_CHECKING([whether C supports -restrict])
@@ -37,52 +39,11 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 CFLAGS="$oldCflags"
 AC_SUBST([RESTRICT_CFLAGS])
 
-PTHREAD_CPPFLAGS=" -pthread"
-$oldCPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $PTHREAD_CPPFLAGS"
-AC_CHECK_HEADER([pthread.h],[],[
-    PTHREAD_CPPFLAGS=" -D_REENTRANT"
-    CPPFLAGS="$oldCPPFLAGS $PTHREAD_CPPFLAGS"
-    AC_CHECK_HEADER([pthread.h],[],[
-        AC_MSG_RESULT([no])
-        PTHREAD_CPPFLAGS=""
-    ])
-])
-CPPFLAGS="$oldCPPFLAGS $PTHREAD_CPPFLAGS"
-AC_SUBST([PTHREAD_CPPFLAGS])
-
-AC_MSG_CHECKING([for pthread library support])
-PTHREAD_LIBS=" -pthread"
-oldLIBS="$LIBS"
-LIBS="$LIBS $PTHREAD_LIBS"
-AC_LINK_IFELSE([
-    AC_LANG_PROGRAM([[#include <pthread.h>]],
-                    [[pthread_t pthread_self();]])
-],[
-    AC_MSG_RESULT([yes (-pthread)])
-],[
-    PTHREAD_LIBS=" -lpthread"
-    LIBS="$oldLIBS $PTHREAD_LIBS"
-    AC_LINK_IFELSE([
-        AC_LANG_PROGRAM([[#include <pthread.h>]],
-                        [[pthread_t pthread_self();]])
-    ],[
-        AC_MSG_RESULT([yes (-lpthread)])
-    ],[
-        PTHREAD_LIBS=""
-        AC_MSG_RESULT([no])
-    ])
-])
-AC_SUBST([PTHREAD_LIBS])
-
-LIBS="$oldLIBS"
-
-####################################################################################################
+################################################################################
 ##
 ## Check for necessary support by C++ compiler
 ##
-####################################################################################################
-
+################################################################################
 AC_LANG(C++)
 AC_CHECK_HEADERS(stdint.h inttypes.h climits cfloat)
 
@@ -132,7 +93,9 @@ if test $restrict_support != "yes"; then
     )
 fi
 
-#check for -restrict CXXFLAGS support
+##
+## check for -restrict CXXFLAGS support
+##
 oldCXXflags="$CXXFLAGS"
 CXXFLAGS="$CXXFLAGS -restrict"
 AC_MSG_CHECKING([whether C++ supports -restrict])

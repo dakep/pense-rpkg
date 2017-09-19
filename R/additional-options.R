@@ -104,8 +104,9 @@ initest_options <- function (
 #' @param cc tuning constant for the S-estimator. Default is to chosen based
 #'      on the breakdown point \code{delta}. Should never have to be changed.
 #' @param verbosity verbosity of the algorithm.
-#' @param naive_en should the "naive" EN estimator be returned. If \code{FALSE},
-#'      as by default, the estimator is "bias corrected".
+#' @param en_correction should the corrected EN estimator be used to choose
+#'      the optimal lambda with CV.
+#'      If \code{TRUE}, as by default, the estimator is "bias corrected".
 #' @return a checked options list.
 #' @export
 #' @family specifying additional options
@@ -117,7 +118,7 @@ pense_options <- function (
     mscale_maxit = 200,
     verbosity = 0,
     cc,
-    naive_en = FALSE
+    en_correction = TRUE
 ) {
     if (missing(cc)) {
         cc <- consistency.rho(delta, 1L)
@@ -137,15 +138,16 @@ pense_options <- function (
     ))
 }
 
-#' Additional Options for the Penalized EN M-estimator
+#' Additional Options for the Penalized EN MM-estimator
 #'
 #' @param cc tuning constant for the M-estimator.
 #' @param maxit maximum number of iterations allowed.
 #' @param eps numeric tolerance for convergence.
 #' @param adjust_bdp should the breakdown point be adjusted based on the
 #'      effective degrees of freedom?
-#' @param naive_en should the "naive" EN estimator be returned. If \code{FALSE},
-#'      as by default, the estimator is "bias corrected".
+#' @param en_correction should the corrected EN estimator be used to choose
+#'      the optimal lambda with CV.
+#'      If \code{TRUE}, as by default, the estimator is "bias corrected".
 #' @param verbosity verbosity of the algorithm.
 #' @return a checked options list.
 #' @export
@@ -156,14 +158,14 @@ mstep_options <- function (
     eps = 1e-6,
     adjust_bdp = FALSE,
     verbosity = 0,
-    naive_en = FALSE
+    en_correction = TRUE
 ) {
     return(list(
         maxit = .check_arg(maxit, "integer", range = 0),
         eps = .check_arg(eps, "numeric", range = 0),
         cc = .check_arg(cc, "numeric", range = 0),
         adjustBdp = .check_arg(adjust_bdp, "logical"),
-        naiveEn = .check_arg(naive_en, "logical"),
+        naiveEn = !.check_arg(en_correction, "logical"),
         verbosity = .check_arg(verbosity, "integer", range = 0,
                                range_test_lower = ">=")
     ))
@@ -195,8 +197,6 @@ en_options_aug_lars <- function (
     ))
 }
 
-#' Additional Options for the DAL Algorithm
-#'
 #' @param maxit maximum number of iterations allowed.
 #' @param eta_mult multiplier to increase eta at each iteration.
 #' @param eta_start the start value for eta.

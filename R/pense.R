@@ -1,7 +1,26 @@
 #' Penalized Elasitc Net S-estimators for Regression
 #'
-#' Computes the Penalized Elasitc Net S-estimators (PENSE) for linear
-#' regression.
+#' Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+#' linear regression models.
+#'
+#' The PENSE estimate minimizes the robust M-scale of the residuals penalized
+#' by the L1 and L2 norm of the regression coefficients (elastic net penalty).
+#' The level of penalization is chosen to minimize the \code{cv_k}-fold
+#' cross-validated prediction error (using a robust measure).
+#'
+#' @section Initial Estimate:
+#' By default (\code{initial == "warm"}), the method does not compute a
+#' full initial estimate at each
+#' lambda value in the grid, but only at \code{warm_reset} of the lambda
+#' values. At the remaining lambda values, the estimate at the previous
+#' lambda value is used to initialze the estimator (the lambda grid is
+#' first traversed in descending and then in ascending direction). If
+#' \code{warm_reset} is 1, only the 0-vector is used to initialize PENSE at the
+#' largest penalty value. No further initial estimates are computed.
+#'
+#' If \code{initial == "cold"}, a full initial estimate is computed at each
+#' lambda value. This is equal to setting \code{warm_reset} to
+#' \code{length(lambda)}.
 #'
 #' @param X design matrix with predictors.
 #' @param y response vector.
@@ -49,17 +68,25 @@
 #'      See \code{\link{initest_options}} for details.
 #'
 #' @return An object of class \code{"pense"} with elements
-#' \item{call}{the call that produced this object.}
+#' \item{lambda}{grid of regularization parameter values for which an estimate
+#'      is available.}
 #' \item{lambda_opt}{the optimal value of the regularization parameter
 #'      according to CV.}
-#' \item{coefficients}{a matrix of coefficients for each lambda in the grid.}
+#' \item{coefficients}{a sparse matrix of coefficients for each lambda in the
+#'      grid.}
 #' \item{residuals}{a matrix of residuals for each lambda in the grid.}
-#' \item{scale}{the estimated scales each lambda}
-#' \item{cv_lambda_grid}{a data frame with values of lambda in the first
-#'      column, and the CV error as well as serveral
-#'      statistics of the solution in the following columns.}
-#' \item{alpha,standardize,pense_options,en_options,initest_options}{
-#'      the given arguments.}
+#' \item{cv_lambda_grid}{a data frame with CV prediction errors and serveral
+#'      statistics of the solutions.}
+#' \item{scale}{the estimated scales each lambda in the grid.}
+#' \item{objective}{value of the objective function at each lambda in the grid.}
+#' \item{adjusted}{necessary information to compute the corrected EN estimates.}
+#' \item{call}{the call that produced this object.}
+#' \item{...}{values of the given arguments.}
+#'
+#' @seealso To improve the S-estimate with an M-step, see \code{\link{pensem}}.
+#'
+#' @example inst/examples/pense-1.R
+#'
 #' @export
 #'
 #' @importFrom stats mad median
@@ -135,12 +162,15 @@ pense <- function(X, y,
     warm_reset <- min(nlambda, warm_reset)
 
     if (missing(lambda_min_ratio)) {
-        lambda_min_ratio <- NULL
+        lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dX[2L] / dX[1L])))
     }
 
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {
-        lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
-                                       range = c(0, 1))
+        lambda_min_ratio <- .check_arg(
+            lambda_min_ratio,
+            "numeric",
+            range = c(0, 1)
+        )
     }
 
     ##
@@ -181,6 +211,7 @@ pense <- function(X, y,
             nlambda,
             lambda_min_ratio = lambda_min_ratio
         )
+        call$lambda_min_ratio <- lambda_min_ratio
     }
 
     lambda <- lambda / max(scale_x)

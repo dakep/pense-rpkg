@@ -1,10 +1,13 @@
 #' Perform an M-step after the EN S-Estimator
 #'
+#' Compute the PENSEM estimate, an efficient and robust
+#' elastic net estimator for linear regression.
+#'
 #' Performs an M-step using the S-estimator at the optimal penalty
 #' parameter as returned from \code{\link{pense}} as the initial
-#' estimate.
+#' estimate. For "fat" datasets, the initial scale as returned by the
+#' S-estimate is adjusted according to Maronna & Yohai (2010).
 #'
-#' @param penseobj an object returned from a call to \code{\link{pense}}.
 #' @param nlambda if \code{lambda} is not given,
 #'      a grid of \code{nlambda} lambda values is generated based on the data.
 #' @param lambda a single value or a grid of values for the regularization
@@ -21,42 +24,197 @@
 #'      S-scale from the initial estimator (\code{penseobj}) is used.
 #' @param ncores,cl use multiple cores or the supplied cluster for the
 #'      cross-validation. See \code{\link{pense}} for more details.
-#' @param options additional options for the M-step.
-#' @param X,y,cv_objective,en_options,standardize override arguments
-#'      provided to the original call to \code{\link{pense}}.
+#' @param mm_options additional options for the M-step.
+#'
+#' @return An object of class \code{"pensem"}. All elements as an object
+#'      of class \code{\link{pense}} as well as the following:
+#' \item{init_scale}{the initial scale estimate used in the M step.}
+#' \item{sest}{the PENSE estimate used to initialze the M step.}
+#' \item{bdp}{breakdown point of the MM-estimator.}
+#'
+#' @references Maronna, R. and Yohai, V. (2010).
+#'      Correcting MM estimates for "fat" data sets.
+#'      \emph{Computational Statistics & Data Analysis},
+#'      \bold{54}:31683173.
+#'
+#' @seealso \code{\link{pense}} to compute only the S-estimator.
+#'
 #' @importFrom robustbase .Mchi scaleTau2
 #' @importFrom stats mad median
 #' @importFrom Matrix drop
 #' @export
-mstep <- function(penseobj,
-                  nlambda = 100L,
-                  lambda, cv_k = 5L,
-                  scale,
-                  ncores = getOption("mc.cores", 1L), cl = NULL,
-                  options = mstep_options(),
-                  X, y, cv_objective, en_options, standardize) {
+#'
+#' @rdname pensem
+pensem <- function(x, ...) {
+    UseMethod("pensem", x)
+}
 
-    if (missing(X)) {
-        X <- data.matrix(eval(penseobj$call$X, envir = parent.frame()))
+#' @param y numeric response vector.
+#' @param lambda_s regularization parameter for the \emph{S-estimator}.
+#'      If missing, a grid of lambda values is chosen automatically.
+#'      If \code{standardize = TRUE}, the lambda values will be
+#'      adjusted accordingly.
+#' @param initial how to initialize the estimator at a new lambda in the grid.
+#'      The default, \code{"warm"}, computes a cold initial estimator at several
+#'      lambda values and uses the PENSE coefficient to warm-start the
+#'      estimator at the next larger lambda value. At the largest value in
+#'      the lambda grid, PENSE will be initialized with the 0-vector.
+#'      \code{"cold"} computes the full initial estimator at
+#'      every lambda value.
+#' @param warm_reset if \code{initial = "warm"} (default), how many cold initial
+#'      estimates be computed?
+#' @param s_options additional options for the PENSE algorithm.
+#'      See \code{\link{pense_options}} for details.
+#' @param initest_options additional options for computing the cold initial
+#'      estimates.
+#'      Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
+#'      See \code{\link{initest_options}} for details.
+#'
+#' @rdname pensem
+#' @method pensem default
+#' @export
+pensem.default <- function(x, y,
+                           alpha = 0.5,
+                           nlambda = 50,
+                           lambda,
+                           lambda_s,
+                           lambda_min_ratio,
+                           standardize = TRUE,
+                           initial = c("warm", "cold"),
+                           warm_reset = 10,
+                           cv_k = 5, cv_objective,
+                           ncores = getOption("mc.cores", 1L), cl = NULL,
+                           s_options = pense_options(),
+                           mm_options = mstep_options(),
+                           init_options = initest_options(),
+                           en_options = en_options_aug_lars()
+) {
+    lambda_s <- if (!missing(lambda_s)) {
+        lambda_s
+    } else {
+        NULL
     }
 
-    if (missing(y)) {
-        y <- eval(penseobj$call$y, envir = parent.frame())
+    lambda_m <- if (!missing(lambda)) {
+        lambda
+    } else {
+        NULL
     }
 
-    if (missing(en_options)) {
+    lambda_min_ratio <- if (!missing(lambda_min_ratio)) {
+        lambda_min_ratio
+    } else {
+        NULL
+    }
+
+    cv_objective <- if (!missing(cv_objective)) {
+        cv_objective
+    } else {
+        NULL
+    }
+
+    pense_est <- pense(
+        X = x,
+        y = y,
+        alpha = alpha,
+        nlambda = nlambda,
+        lambda = lambda_s,
+        lambda_min_ratio = lambda_min_ratio,
+        standardize = standardize,
+        initial = initial,
+        warm_reset = warm_reset,
+        cv_k = cv_k,
+        cv_objective = cv_objective,
+        ncores = ncores,
+        cl = cl,
+        options = s_options,
+        init_options = init_options,
+        en_options = en_options
+    )
+
+    return(pensem.pense(
+        pense_est,
+        alpha = alpha,
+        nlambda = nlambda,
+        lambda = lambda_m,
+        lambda_min_ratio = lambda_min_ratio,
+        standardize = standardize,
+        cv_k = cv_k,
+        cv_objective = cv_objective,
+        ncores = ncores,
+        cl = cl,
+        mm_options = mm_options,
+        en_options = en_options,
+        x_train = x,
+        y_train = y
+    ))
+}
+
+
+
+#' Refine an already computed PENSE with an additional M-step
+#'
+#' @param scale initial scale estimate for the M step. By default the
+#'      S-scale from the initial estimator (\code{penseobj}) is used.
+#' @param x_train,y_train override arguments
+#'      provided to the original call to \code{\link{pense}}.
+#'
+#' @rdname pensem
+#' @method pensem pense
+#' @export
+pensem.pense <- function(x,
+                         alpha,
+                         scale,
+                         nlambda = 50,
+                         lambda,
+                         lambda_min_ratio,
+                         standardize,
+                         cv_k = 5, cv_objective,
+                         ncores = getOption("mc.cores", 1L), cl = NULL,
+                         mm_options = mstep_options(),
+                         en_options,
+                         x_train, y_train
+
+) {
+    penseobj <- x
+
+    X <- if (missing(x_train) || is.null(x_train)) {
+        data.matrix(eval(x$call$X, envir = parent.frame()))
+    } else {
+        x_train
+    }
+
+    y <- if (missing(y_train) || is.null(y_train)) {
+        eval(penseobj$call$y, envir = parent.frame())
+    } else {
+        y_train
+    }
+
+    if (missing(alpha) || is.null(alpha)) {
+        alpha <- penseobj$alpha
+    }
+
+    if (missing(en_options) || is.null(en_options)) {
         en_options <- penseobj$en_options
     }
 
-    if (missing(standardize)) {
+    if (missing(standardize) || is.null(standardize)) {
         standardize <- penseobj$standardize
+    }
+
+    if (missing(lambda_min_ratio) || is.null(lambda_min_ratio)) {
+        lambda_min_ratio <- if (is.null(penseobj$call$lambda_min_ratio)) {
+            eval(penseobj$call$lambda_min_ratio)
+        } else {
+            1e-5
+        }
     }
 
     pense_lambda_opt <- penseobj$lambda_opt
     lambda_ind <- which.min(abs(pense_lambda_opt - penseobj$lambda))
 
-    if (!missing(lambda)) {
-        lambda <- .check_arg(lambda, "numeric", range = 0)
+    if (!missing(lambda) && !is.null(lambda)) {
+        lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     }
 
     dX <- dim(X)
@@ -149,7 +307,7 @@ mstep <- function(penseobj,
     ##
     ## Select tuning constant for the M-step for "fat" datasets
     ##
-    options$cc <- if (edf / dX[1L] > 0.33) {
+    mm_options$cc <- if (edf / dX[1L] > 0.33) {
         4.2
     } else if (edf / dX[1L] > 0.2) {
         4
@@ -172,11 +330,11 @@ mstep <- function(penseobj,
     ##
     ## If no lambda was provided, choose the grid automatically
     ##
-    if (missing(lambda)) {
+    if (missing(lambda) || is.null(lambda)) {
         ##
         ## Adjust lambda for the M step
         ##
-        lambda_opt_m <- pense_lambda_opt * 1.5 / options$cc^2
+        lambda_opt_m <- pense_lambda_opt * 1.5 / mm_options$cc^2
 
         lambda_opt_m_cv <- lambda_opt_m
         lambda_grid_m <- data.frame(
@@ -216,7 +374,7 @@ mstep <- function(penseobj,
                 init_int = pense_int,
                 init_coef = pense_beta,
                 alpha = penseobj$alpha,
-                options = options,
+                options = mm_options,
                 en_options = en_options
             )
 
@@ -247,7 +405,7 @@ mstep <- function(penseobj,
                     init_int = pense_int,
                     init_coef = pense_beta,
                     alpha = penseobj$alpha,
-                    options = options,
+                    options = mm_options,
                     en_options = en_options
                 )
 
@@ -272,7 +430,7 @@ mstep <- function(penseobj,
         }
 
         # We have found a good lambda_max, now let's look for a good lambda_min
-        lambda_min_break <- eval(penseobj$call$lambda_min_ratio) * lambda_max
+        lambda_min_break <- lambda_min_ratio * lambda_max
         lambda_min_break <- ifelse(
             isTRUE(is.finite(lambda_min_break)),
             lambda_min_break,
@@ -291,13 +449,13 @@ mstep <- function(penseobj,
                     init_int = pense_int,
                     init_coef = pense_beta,
                     alpha = penseobj$alpha,
-                    options = options,
+                    options = mm_options,
                     en_options = en_options
                 )
 
                 coef_norm <- unlist(coef_norm)
                 coef_norm_diff <- coef_norm[-length(coef_norm)] / coef_norm[-1L]
-                const_norm <- which(abs(coef_norm_diff - 1) < options$eps)
+                const_norm <- which(abs(coef_norm_diff - 1) < mm_options$eps)
                 if (length(const_norm) > 0L) {
                     lambda_min <- check_lambdas[[const_norm[[1L]]]]
                     break
@@ -328,95 +486,122 @@ mstep <- function(penseobj,
     ##
     ## Choose optimal lambda from a grid of candidate values
     ##
-    ## Determine CV segments
-    cv_segments <- if(cv_k > 1L) {
-        split(seq_len(dX[1L]), sample(rep_len(seq_len(cv_k), dX[1L])))
-    } else {
-        list(integer(0))
-    }
+    if (cv_k > 1L) {
+        cv_segments <- split(
+            seq_len(dX[1L]),
+            sample(rep_len(seq_len(cv_k), dX[1L]))
+        )
 
-    ## Combine CV segments and lambda grid to a list of jobs
-    jobgrid <- lapply(cv_segments, function(cvs) {
-        lapply(lambda_grid_m, function(lvs) {
-            list(
-                segment = cvs,
-                lambda = lvs
+        ## Check if there are more cores than CV segments available
+        if (isTRUE(cluster$ncores / cv_k > 1)) {
+            lg_length <- rep.int(cluster$ncores %/% cv_k, cv_k)
+            lg_length[seq_len(cluster$ncores %% cv_k)] <- lg_length[1L] + 1L
+            lg_length <- pmin(
+                lg_length,
+                length(lambda_grid_m)
             )
-        })
-    })
-
-    jobgrid <- unlist(jobgrid, recursive = FALSE, use.names = FALSE)
-
-    ## Run all jobs (combination of all CV segments and all lambda values)
-    dojobcv <- function(job, ...) {
-        if (length(job$segment) == 0L) {
-            X_train <- Xs
-            y_train <- yc
-            X_test <- Xs
-            y_test <- yc
         } else {
+            lg_length <- rep.int(1L, max(1L, cv_k))
+        }
+
+        ## Combine CV segments and lambda grid to a list of jobs
+        jobgrid <- unlist(
+            mapply(function (cvs, num_lgs) {
+                lambda_subgrids <- split(
+                    lambda_grid_m,
+                    sort(rep(seq_len(num_lgs), length = length(lambda_grid_m)))
+                )
+
+                lapply(lambda_subgrids, function(lg) {
+                    list(
+                        segment = cvs,
+                        lambda = lg
+                    )
+                })
+            }, cvs = cv_segments, num_lgs = lg_length, SIMPLIFY = FALSE),
+            recursive = FALSE, use.names = FALSE
+        )
+
+        ## Run all jobs (combination of all CV segments and all lambda values)
+        dojobcv <- function(job, ...) {
             X_train <- Xs[-job$segment, , drop = FALSE]
             y_train <- yc[-job$segment]
             X_test <- Xs[job$segment, , drop = FALSE]
             y_test <- yc[job$segment]
+
+            msres <- pensemstep(
+                X_train,
+                y_train,
+                lambda = job$lambda,
+                ...
+            )
+
+            return(y_test - sweep(
+                X_test %*% msres$beta,
+                2,
+                msres$intercept,
+                check.margin = FALSE
+            ))
         }
 
-        msres <- pensemstep(
-            X_train,
-            y_train,
-            lambda = job$lambda,
-            ...
-        )
+        tryCatch({
+            pred_errors <- cluster$lapply(
+                jobgrid,
+                dojobcv,
+                alpha = penseobj$alpha,
+                init_scale = scale_init_corr,
+                init_int = pense_int,
+                init_coef = pense_beta,
+                options = mm_options,
+                en_options = en_options
+            )
+        },
+        finally = {
+            cluster$stopCluster()
+        })
 
-        return(drop(y_test - msres$intercept - X_test %*% msres$beta))
-    }
-
-    tryCatch({
-        pred_errors <- cluster$lapply(
-            jobgrid,
-            dojobcv,
-            alpha = penseobj$alpha,
-            init_scale = scale_init_corr,
-            init_int = pense_int,
-            init_coef = pense_beta,
-            options = options,
-            en_options = en_options
-        )
-    },
-    finally = {
-        cluster$stopCluster()
-    })
-
-    ## Collect all prediction errors for each lambda sub-grid and
-    ## determine the optimal lambda
-    cv_objective_fun <- if (missing (cv_objective)) {
-        if (is.null(penseobj$call$cv_objective)) {
-            scaleTau2
-        } else {
-            match.fun(penseobj$call$cv_objective)
-        }
-    } else {
-            match.fun(cv_objective)
-    }
-
-    cv_obj <- unlist(
-        lapply(
-            split(pred_errors, rep.int(seq_along(lambda_grid_m), cv_k)),
-            function(preds) {
-                pred_resids <- unlist(preds)
-                cv_objective_fun(pred_resids[is.finite(pred_resids)])
+        ## Collect all prediction errors for each lambda sub-grid and
+        ## determine the optimal lambda
+        cv_objective_fun <- if (missing(cv_objective) || is.null(cv_objective)) {
+            if (is.null(penseobj$call$cv_objective) ||
+                is.null(eval(penseobj$call$cv_objective))) {
+                function(x) {
+                    st2 <- scaleTau2(x, mu.too = TRUE)
+                    sqrt(sum(st2^2))
+                }
+            } else {
+                match.fun(penseobj$call$cv_objective)
             }
-        )
-    )
+        } else {
+            match.fun(cv_objective)
+        }
 
-    lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
-    lambda_grid_m <- data.frame(
-        lambda = lambda_grid_m * max(std_data$scale_x),
-        cvavg = cv_obj
-    )
+        cv_pred_errors <- do.call(rbind, lapply(
+            split(pred_errors, rep.int(seq_along(lg_length), times = lg_length)),
+            function(preds) {
+                do.call(cbind, preds)
+            }
+        ))
+
+        cv_obj <- apply(cv_pred_errors, 2, function (r) {
+            cv_objective_fun(r[is.finite(r)])
+        })
+
+        lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
+        lambda_grid_m <- data.frame(
+            lambda = lambda_grid_m * max(std_data$scale_x),
+            cvavg = cv_obj
+        )
+    } else {
+        lambda_opt_m_cv <- min(lambda_grid_m)
+        lambda_grid_m <- data.frame(
+            lambda = lambda_grid_m * max(std_data$scale_x),
+            cvavg = NA_real_
+        )
+    }
 
     ##
-    ## Compute M-estimator for lambda.opt.mm.cv
+    ## Compute M-estimator for all lambda in the grid
     ##
     msres <- pensemstep(
         Xs,
@@ -425,8 +610,8 @@ mstep <- function(penseobj,
         init_int = pense_int,
         init_coef = pense_beta,
         alpha = penseobj$alpha,
-        lambda = lambda_opt_m_cv,
-        options = options,
+        lambda = lambda_grid_m$lambda,
+        options = mm_options,
         en_options = en_options
     )
 
@@ -436,12 +621,16 @@ mstep <- function(penseobj,
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
     }
 
-    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_opt_m_cv)
-    adj_beta <- msres$beta * adj_fact
+    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_grid_m$lambda)
 
     adjusted <- list(
         factor = adj_fact,
-        intercept = weighted.mean(y - X %*% adj_beta, msres$weights)
+        intercept = unlist(lapply(seq_along(lambda_grid_m$lambda), function (i) {
+            weighted.mean(
+                drop(y - X %*% msres$beta[ , i, drop = FALSE] * adj_fact[i]),
+                msres$weights[ , i]
+            )
+        }), use.names = FALSE)
     )
 
     return(structure(list(
@@ -451,17 +640,20 @@ mstep <- function(penseobj,
         objective = msres$objF,
         bdp = bdp_adj,
         lambda_opt = lambda_opt_m_cv,
-        lambda = lambda_opt_m_cv,
+        lambda = lambda_grid_m$lambda,
         cv_lambda_grid = lambda_grid_m,
-        scale = scale_init_corr,
+        init_scale = scale_init_corr,
         alpha = penseobj$alpha,
         standardize = standardize,
         sest = penseobj,
+        options = mm_options,
+        en_options = en_options,
         call = call
     ), class = c("pensem", "pense")))
 }
 
-##
+
+## This performs the actual M-step on the given initial estimate.
 #' @useDynLib pense C_augtrans C_pen_mstep_sp
 #' @importFrom robustbase Mchi
 #' @importFrom methods is
@@ -495,3 +687,4 @@ pensemstep <- function(X, y, init_scale, init_int, init_coef, alpha, lambda,
 
     return(res)
 }
+

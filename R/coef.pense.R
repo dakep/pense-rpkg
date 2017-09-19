@@ -1,15 +1,17 @@
 #' Extract Model Coefficients
 #'
-#' @param object object of type \code{pense} to extract coefficients from.
+#' @param object a PENSE or PENSEM estimate to extract coefficients from.
 #' @param lambda the value of the penalty parameter. Default is to use the
 #'      optimal lambda (\code{object$lambda_opt}).
-#' @param exact if the lambda is not part of the lambda grid, should the
+#' @param exact if \code{lambda} is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
 #' @param correction should a correction factor be applied to the EN estimate?
+#'       See \code{\link{elnet}} for details on the applied correction.
 #' @param ... currently not used.
-#' @return A numeric vector of size \eqn{p + 1}.
+#' @return if \code{sparse = FALSE} a numeric vector of size \eqn{p + 1}.
+#'      Otherwise a sparse matrix with one column and \eqn{p + 1} rows.
 #'
 #' @importFrom Matrix drop
 #' @importClassesFrom Matrix dgCMatrix
@@ -86,37 +88,80 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         # else:
         # there is no left or right interpolation point available --> use
         # exact solution
-        closests_lambda_ind <- which.min(lambda_diff_abs)
+        x <- if (!is.null(object$call$x_train)) {
+            data.matrix(eval(object$call$x_train))
+        } else if (!is.null(object$sest$call$X)) {
+            data.matrix(eval(object$sest$call$X))
+        } else {
+            data.matrix(eval(object$call$X))
+        }
 
-        x <- data.matrix(eval(object$call$X))
-        y <- drop(eval(object$call$y))
+        y <- if (!is.null(object$call$y_train)) {
+            data.matrix(eval(object$call$y_train))
+        } else if (!is.null(object$sest$call$y)) {
+            data.matrix(eval(object$sest$call$y))
+        } else {
+            data.matrix(eval(object$call$y))
+        }
 
         std_data <- standardize_data(x, y, object$standardize)
         xs <- std_data$xs
         yc <- std_data$yc
 
-        init_int <- object$coefficients[1L, closests_lambda_ind]
-        init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
+        ## is it the S- or MM-estimate
+        if ("pensem" %in% class(object)) {
+            ## compute the MM-estimate starting from the "best" S-estimate
+            sel_lambda_ind <- with(object$sest, which(lambda == lambda_opt))
+            init_int <- object$sest$coefficients[1L, sel_lambda_ind]
+            init_beta <- object$sest$coefficients[-1L, sel_lambda_ind, drop = FALSE]
 
-        if (isTRUE(object$standardize)) {
-            std_coefs <- std_data$standardize_coefs(list(
-                intercept = init_int,
-                beta = init_Beta
-            ))
-            init_int <- std_coefs$intercept
-            init_beta <- std_coefs$beta
+            if (isTRUE(object$standardize)) {
+                std_coefs <- std_data$standardize_coefs(list(
+                    intercept = init_int,
+                    beta = init_beta
+                ))
+                init_int <- std_coefs$intercept
+                init_beta <- std_coefs$beta
+            }
+
+            estimate <- pensemstep(
+                xs,
+                yc,
+                init_scale = object$init_scale,
+                init_int = init_int,
+                init_coef = init_beta,
+                alpha = object$alpha,
+                lambda = lambda / max(std_data$scale_x),
+                options = object$options,
+                en_options = object$en_options
+            )
+        } else {
+            ## compute the S-estimate starting from the closest lambda
+            closests_lambda_ind <- which.min(lambda_diff_abs)
+            init_int <- object$coefficients[1L, closests_lambda_ind]
+            init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
+
+            if (isTRUE(object$standardize)) {
+                std_coefs <- std_data$standardize_coefs(list(
+                    intercept = init_int,
+                    beta = init_beta
+                ))
+                init_int <- std_coefs$intercept
+                init_beta <- std_coefs$beta
+            }
+
+            estimate <- pen_s_reg(
+                xs,
+                yc,
+                alpha = object$alpha,
+                lambda = lambda / max(std_data$scale_x),
+                init_int = init_int,
+                init_coef = init_beta,
+                options = object$pense_options,
+                en_options = object$en_options
+            )
         }
 
-        estimate <- pen_s_reg(
-            xs,
-            yc,
-            alpha = object$alpha,
-            lambda = lambda / max(std_data$scale_x),
-            init_int = init_int,
-            init_coef = init_beta,
-            options = object$pense_options,
-            en_options = object$en_options
-        )
 
         if (isTRUE(object$standardize)) {
             estimate <- std_data$unstandardize_coefs(estimate)
@@ -146,38 +191,16 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
 
 }
 
-#' Extract Model Coefficients
+#' Extract Residuals from a Fitted Penalized Elastic-Net S/MM-estimator
 #'
-#' @param object object of type \code{pensem} to extract coefficients from.
-#' @param sparse return a sparse vector or a dense (base R) numeric vector
-#' @param correction should a correction factor be applied to the EN estimate?
-#' @param ... currently not used.
-#' @return A numeric vector of size \eqn{p + 1}.
-#' @export
-coef.pensem <- function(object, sparse = FALSE, correction = TRUE, ...) {
-    ret_coef <- object$coefficients
-
-    if (isTRUE(correction)) {
-        ret_coef[-1L, ] <- ret_coef[-1L, ] * object$adjusted$factor
-        ret_coef[1L, ] <- object$adjusted$intercept
-    }
-
-    if (isTRUE(sparse)) {
-        return(ret_coef)
-    } else {
-        return(as.numeric(ret_coef))
-    }
-}
-
-#' Extract Residuals from a Fitted Penalized Elastic-Net S-estimator
-#'
-#' @param object an object of type \code{pense} to extract the residuals from.
+#' @param object a PENSE or PENSEM estimate to extract the residuals from.
 #' @param lambda the value of the penalty parameter. Default is to use the
 #'      optimal lambda \code{object$lambda_opt}.
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param correction should a correction factor be applied to the EN estimate?
+#'       See \code{\link{elnet}} for details on the applied correction.
 #' @param ... currently ignored.
 #' @return a numeric vector of residuals for the given lambda.
 #' @importFrom Matrix drop
@@ -197,8 +220,13 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
         return(object$residuals[ , lambda_match[1L]])
     }
 
-    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE,
-                        correction = correction)
+    coefs <- coef.pense(
+        object,
+        lambda = lambda,
+        exact = exact,
+        sparse = TRUE,
+        correction = correction
+    )
 
     x <- data.matrix(eval(object$call$X))
     y <- drop(eval(object$call$y))
@@ -218,6 +246,7 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
 #' @param correction should a correction factor be applied to the EN estimate?
+#'       See \code{\link{elnet}} for details on the applied correction.
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export

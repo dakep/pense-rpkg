@@ -19,7 +19,8 @@ lambda values (default) or computed exactly.}
 
 \item{sparse}{return a sparse vector or a dense (base R) numeric vector}
 
-\item{correction}{should a correction factor be applied to the EN estimate?}
+\item{correction}{should a correction factor be applied to the EN estimate?
+See \code{\link{elnet}} for details on the applied correction.}
 
 \item{...}{currently not used.}
 }

@@ -2,13 +2,13 @@
 % Please edit documentation in R/coef.pense.R
 \name{residuals.pense}
 \alias{residuals.pense}
-\title{Extract Residuals from a Fitted Penalized Elastic-Net S-estimator}
+\title{Extract Residuals from a Fitted Penalized Elastic-Net S/MM-estimator}
 \usage{
 \method{residuals}{pense}(object, lambda, exact = FALSE, correction = TRUE,
   ...)
 }
 \arguments{
-\item{object}{an object of type \code{pense} to extract the residuals from.}
+\item{object}{a PENSE or PENSEM estimate to extract the residuals from.}
 
 \item{lambda}{the value of the penalty parameter. Default is to use the
 optimal lambda \code{object$lambda_opt}.}
@@ -17,7 +17,8 @@ optimal lambda \code{object$lambda_opt}.}
 estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
 
-\item{correction}{should a correction factor be applied to the EN estimate?}
+\item{correction}{should a correction factor be applied to the EN estimate?
+See \code{\link{elnet}} for details on the applied correction.}
 
 \item{...}{currently ignored.}
 }
@@ -25,5 +26,5 @@ lambda values (default) or computed exactly.}
 a numeric vector of residuals for the given lambda.
 }
 \description{
-Extract Residuals from a Fitted Penalized Elastic-Net S-estimator
+Extract Residuals from a Fitted Penalized Elastic-Net S/MM-estimator
 }

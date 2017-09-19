@@ -72,19 +72,112 @@ See \code{\link{initest_options}} for details.}
 }
 \value{
 An object of class \code{"pense"} with elements
-\item{call}{the call that produced this object.}
+\item{lambda}{grid of regularization parameter values for which an estimate
+     is available.}
 \item{lambda_opt}{the optimal value of the regularization parameter
      according to CV.}
-\item{coefficients}{a matrix of coefficients for each lambda in the grid.}
+\item{coefficients}{a sparse matrix of coefficients for each lambda in the
+     grid.}
 \item{residuals}{a matrix of residuals for each lambda in the grid.}
-\item{scale}{the estimated scales each lambda}
-\item{cv_lambda_grid}{a data frame with values of lambda in the first
-     column, and the CV error as well as serveral
-     statistics of the solution in the following columns.}
-\item{alpha,standardize,pense_options,en_options,initest_options}{
-     the given arguments.}
+\item{cv_lambda_grid}{a data frame with CV prediction errors and serveral
+     statistics of the solutions.}
+\item{scale}{the estimated scales each lambda in the grid.}
+\item{objective}{value of the objective function at each lambda in the grid.}
+\item{adjusted}{necessary information to compute the corrected EN estimates.}
+\item{call}{the call that produced this object.}
+\item{...}{values of the given arguments.}
 }
 \description{
-Computes the Penalized Elasitc Net S-estimators (PENSE) for linear
-regression.
+Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+linear regression models.
+}
+\details{
+The PENSE estimate minimizes the robust M-scale of the residuals penalized
+by the L1 and L2 norm of the regression coefficients (elastic net penalty).
+The level of penalization is chosen to minimize the \code{cv_k}-fold
+cross-validated prediction error (using a robust measure).
+}
+\section{Initial Estimate}{
+
+By default (\code{initial == "warm"}), the method does not compute a
+full initial estimate at each
+lambda value in the grid, but only at \code{warm_reset} of the lambda
+values. At the remaining lambda values, the estimate at the previous
+lambda value is used to initialze the estimator (the lambda grid is
+first traversed in descending and then in ascending direction). If
+\code{warm_reset} is 1, only the 0-vector is used to initialize PENSE at the
+largest penalty value. No further initial estimates are computed.
+
+If \code{initial == "cold"}, a full initial estimate is computed at each
+lambda value. This is equal to setting \code{warm_reset} to
+\code{length(lambda)}.
+}
+
+\examples{
+##
+## A very simple example on artificial data
+##
+
+# Generate some dummy data
+set.seed(1234)
+n <- 50
+p <- 40
+x <- 1 + matrix(rnorm(n * p), ncol = p)
+y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+
+x_test <- 1 + matrix(rnorm(10 * n * p), ncol = p)
+y_test <- x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+
+# Compute the S-estimator with an EN penalty for 30 lambda values
+# (Note: In real applications, warm_reset should be at least 5)
+set.seed(1234)
+est <- pense(
+    x, y,
+    alpha = 0.8,
+    nlambda = 30,
+    warm_reset = 1L,
+    cv_k = 5
+)
+
+# We can plot the CV prediction error curve
+with(est,
+     plot(
+         cvavg ~ lambda,
+         cv_lambda_grid,
+         log = "x",
+         col = 1L + (lambda == lambda_opt),
+         pch = 20L,
+         xlab = expression(lambda),
+         ylab = "Robust RMSPE",
+         main = "CV Prediction Error"
+     )
+)
+
+# What is the RMSPE on test data
+(rmspe <- sqrt(mean((y_test - predict(est, newdata = x_test))^2)))
+
+##
+## What happens if we replace 5 observations in the dummy data
+## with outliers?
+##
+y[1:3] <- rnorm(3, -1000)
+
+# Compute the S-estimator again
+# (Note: In real applications, warm_reset should be at least 5)
+set.seed(12345)
+est_out <- pense(
+    x, y,
+    alpha = 0.8,
+    nlambda = 30,
+    warm_reset = 1L,
+    cv_k = 5
+)
+
+# How does the RMSPE compare?
+rmspe_out <- sqrt(mean((y_test - predict(est_out, newdata = x_test))^2))
+c(rmspe = rmspe, rmspe_out = rmspe_out)
+
+}
+\seealso{
+To improve the S-estimate with an M-step, see \code{\link{pensem}}.
 }

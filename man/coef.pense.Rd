@@ -8,23 +8,25 @@
   correction = TRUE, ...)
 }
 \arguments{
-\item{object}{object of type \code{pense} to extract coefficients from.}
+\item{object}{a PENSE or PENSEM estimate to extract coefficients from.}
 
 \item{lambda}{the value of the penalty parameter. Default is to use the
 optimal lambda (\code{object$lambda_opt}).}
 
-\item{exact}{if the lambda is not part of the lambda grid, should the
+\item{exact}{if \code{lambda} is not part of the lambda grid, should the
 estimates be obtained by linear interpolation between the nearest
 lambda values (default) or computed exactly.}
 
 \item{sparse}{return a sparse vector or a dense (base R) numeric vector}
 
-\item{correction}{should a correction factor be applied to the EN estimate?}
+\item{correction}{should a correction factor be applied to the EN estimate?
+See \code{\link{elnet}} for details on the applied correction.}
 
 \item{...}{currently not used.}
 }
 \value{
-A numeric vector of size \eqn{p + 1}.
+if \code{sparse = FALSE} a numeric vector of size \eqn{p + 1}.
+     Otherwise a sparse matrix with one column and \eqn{p + 1} rows.
 }
 \description{
 Extract Model Coefficients

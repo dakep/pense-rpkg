@@ -2,10 +2,10 @@
 % Please edit documentation in R/additional-options.R
 \name{mstep_options}
 \alias{mstep_options}
-\title{Additional Options for the Penalized EN M-estimator}
+\title{Additional Options for the Penalized EN MM-estimator}
 \usage{
 mstep_options(cc = 3.44, maxit = 1000, eps = 1e-06, adjust_bdp = FALSE,
-  verbosity = 0, naive_en = FALSE)
+  verbosity = 0, en_correction = TRUE)
 }
 \arguments{
 \item{cc}{tuning constant for the M-estimator.}
@@ -19,14 +19,15 @@ effective degrees of freedom?}
 
 \item{verbosity}{verbosity of the algorithm.}
 
-\item{naive_en}{should the "naive" EN estimator be returned. If \code{FALSE},
-as by default, the estimator is "bias corrected".}
+\item{en_correction}{should the corrected EN estimator be used to choose
+the optimal lambda with CV.
+If \code{TRUE}, as by default, the estimator is "bias corrected".}
 }
 \value{
 a checked options list.
 }
 \description{
-Additional Options for the Penalized EN M-estimator
+Additional Options for the Penalized EN MM-estimator
 }
 \seealso{
 Other specifying additional options: \code{\link{en_options_aug_lars}},

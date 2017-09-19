@@ -35,6 +35,7 @@ orderOmitTies <- function(x, tol) {
 ## Get the constant needed for consistency for the given delta
 ## and the given rho function
 #' @importFrom robustbase .Mchi
+#' @importFrom stats dnorm pnorm integrate uniroot
 consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
     if (is.character(int.rho.fun)) {
         int.rho.fun <- switch (

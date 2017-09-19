@@ -104,7 +104,7 @@ enpy <- function(X, y, alpha, lambda,
 #'      \item{objF}{A vector of values of the objective function for the
 #'      respective coefficient}
 #'
-#' @useDynLib pense C_enpy_exact C_augtrans
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
     dX <- dim(X)
@@ -139,7 +139,7 @@ enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
 #' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
-#' @useDynLib pense C_enpy_rr
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
     dX <- dim(X)
@@ -189,7 +189,7 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
 #' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
-#' @useDynLib pense C_py_ols
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 enpy_ols <- function(X, y, options) {
     dX <- dim(X)

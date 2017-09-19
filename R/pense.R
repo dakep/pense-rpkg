@@ -62,7 +62,7 @@
 #'      See \code{\link{pense_options}} for details.
 #' @param en_options additional options for the EN algorithm.
 #'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
-#' @param initest_options additional options for computing the cold initial
+#' @param init_options additional options for computing the cold initial
 #'      estimates.
 #'      Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 #'      See \code{\link{initest_options}} for details.
@@ -85,11 +85,11 @@
 #'
 #' @seealso To improve the S-estimate with an M-step, see \code{\link{pensem}}.
 #'
-#' @example inst/examples/pense-1.R
+#' @example examples/pense-1.R
 #'
 #' @export
 #'
-#' @importFrom stats mad median
+#' @importFrom stats mad median weighted.mean
 #' @importFrom robustbase scaleTau2
 #' @importFrom Matrix norm drop Diagonal colSums
 pense <- function(X, y,

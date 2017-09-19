@@ -62,13 +62,13 @@ to use to estimate the optimal value of lambda. See
 \item{options}{additional options for the PENSE algorithm.
 See \code{\link{pense_options}} for details.}
 
-\item{en_options}{additional options for the EN algorithm.
-See \code{\link{elnet}} and \code{\link{en_options}} for details.}
-
-\item{initest_options}{additional options for computing the cold initial
+\item{init_options}{additional options for computing the cold initial
 estimates.
 Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 See \code{\link{initest_options}} for details.}
+
+\item{en_options}{additional options for the EN algorithm.
+See \code{\link{elnet}} and \code{\link{en_options}} for details.}
 }
 \value{
 An object of class \code{"pense"} with elements

@@ -12,8 +12,11 @@
 #'       estimate?
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
-#' @export
+#'
 #' @importFrom Matrix drop
+#' @importFrom stats coef
+#'
+#' @export
 predict.pense <- function(object, newdata, lambda, exact = FALSE,
                           correction = TRUE, ...) {
     if (missing(newdata)) {

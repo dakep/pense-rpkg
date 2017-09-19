@@ -5,6 +5,7 @@
 //  Created by David Kepplinger on 2016-02-03.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
+#include "config.h"
 
 #include <stdexcept>
 #include <string>
@@ -18,12 +19,39 @@
 #include "PENSEreg.hpp"
 #include "MStep.hpp"
 #include "olsreg.h"
+#include "mscale.h"
 
 using namespace Rcpp;
 using namespace arma;
 
 static inline Options listToOptions(SEXP list);
 static inline void getMatDims(SEXP matrix, int* nrows, int* ncols);
+
+/**
+ * .C entry point definitions for R
+ */
+static const R_CallMethodDef exportedCallMethods[] = {
+    {"C_augtrans", (DL_FUNC) &C_augtrans, 1},
+    {"C_elnet_sp", (DL_FUNC) &C_elnet_sp, 8},
+    {"C_elnet_weighted_sp", (DL_FUNC) &C_elnet_weighted_sp, 9},
+    {"C_pscs_ols", (DL_FUNC) &C_pscs_ols, 2},
+    {"C_pscs_en", (DL_FUNC) &C_pscs_en, 6},
+    {"C_py_ols", (DL_FUNC) &C_py_ols, 3},
+    {"C_enpy_rr", (DL_FUNC) &C_enpy_rr, 6},
+    {"C_enpy_exact", (DL_FUNC) &C_enpy_exact, 6},
+    {"C_pen_s_reg_sp", (DL_FUNC) &C_pen_s_reg_sp, 8},
+    {"C_pen_mstep_sp", (DL_FUNC) &C_pen_mstep_sp, 9},
+    {"C_mscale", (DL_FUNC) &C_mscale, 7},
+    {NULL, NULL, 0}
+};
+
+
+void R_init_pense(DllInfo *dll)
+{
+    R_registerRoutines(dll, NULL, exportedCallMethods, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+    R_forceSymbols(dll, TRUE);
+}
 
 RcppExport SEXP C_augtrans(SEXP RX)
 {
@@ -52,6 +80,23 @@ RcppExport SEXP C_augtrans(SEXP RX)
 
     return RXaug;
 }
+
+/**
+ * Calculate the M-Scale of a vector of numbers
+ */
+RcppExport SEXP C_mscale(SEXP Rvalues, SEXP Rlength, SEXP Rb, SEXP Rcc, SEXP RmaxIt, SEXP Reps,
+                         SEXP Rrhofun)
+{
+    SEXP Rscale = PROTECT(Rf_allocVector(REALSXP, 1));
+    RhoFunction rhoFun = getRhoFunctionByName((RhoFunctionName) *INTEGER(Rrhofun));
+
+    *REAL(Rscale) = mscale(REAL(Rvalues), *INTEGER(Rlength), *REAL(Rb), *REAL(Reps),
+                           *INTEGER(RmaxIt), rhoFun, *REAL(Rcc));
+
+    UNPROTECT(1);
+    return Rscale;
+}
+
 
 /***************************************************************************************************
  *

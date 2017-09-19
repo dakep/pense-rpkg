@@ -108,5 +108,5 @@ Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).
 Zou, H. and Hastie, T. (2005).
     Regularization and variable selection via the elastic net.
     \emph{Journal of the Royal Statistical Society}.
-    Series B (Statistical Methodology), \bold{67}(2):301–320.
+    Series B (Statistical Methodology), \bold{67}(2):301-320.
 }

@@ -8,7 +8,7 @@ The main functions of the package are
 
 ## Installation
 To install the most recent stable version of the package from github, either
-use the [devtools](https://cran.r-project.org/web/packages/devtools) package's function
+use the [devtools](https://cran.r-project.org/package=devtools) package's function
 ```
 install_github("gcohenfr/PENSE-package", auth_token = "XXX")
 ```

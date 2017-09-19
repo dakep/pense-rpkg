@@ -14,6 +14,7 @@
 #'      Otherwise a sparse matrix with one column and \eqn{p + 1} rows.
 #'
 #' @importFrom Matrix drop
+#' @importFrom stats weighted.mean
 #' @importClassesFrom Matrix dgCMatrix
 #'
 #' @export
@@ -250,6 +251,7 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
 #' @param ... currently not used.
 #' @return A numeric vector of size \eqn{p + 1}.
 #' @export
+#' @importFrom stats setNames
 coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
                           correction = TRUE, ...) {
     exact <- isTRUE(exact)
@@ -333,7 +335,6 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
             alpha = object$alpha,
             lambda = lambda,
             intercept = object$intercept,
-            addLeading1s = TRUE,
             options = object$options,
             warm_coefs = object$coefficients[ , closests_lambda_ind, drop = FALSE]
         )
@@ -344,7 +345,6 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
             alpha = object$alpha,
             lambda = lambda,
             intercept = object$intercept,
-            addLeading1s = TRUE,
             options = object$options,
             warm_coefs = object$coefficients[ , closests_lambda_ind, drop = FALSE]
         )

@@ -8,6 +8,11 @@
 #' estimate. For "fat" datasets, the initial scale as returned by the
 #' S-estimate is adjusted according to Maronna & Yohai (2010).
 #'
+#' @param x either a numeric data matrix or a fitted PENSE estimate obtained
+#'      from \code{\link{pense}}.
+#' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
+#'      \code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+#'      penalty. If a \code{pense} object is supplied as first argument,
 #' @param nlambda if \code{lambda} is not given,
 #'      a grid of \code{nlambda} lambda values is generated based on the data.
 #' @param lambda a single value or a grid of values for the regularization
@@ -17,14 +22,19 @@
 #'      values is automatically generated (see parameter \code{nlambda}).
 #'      If supplied and \code{standardize = TRUE}, the lambda values will be
 #'      adjusted accordingly.
-#' @param lambda regularization parameter for the MM-estimator.
-#'      If missing, a grid of lambda values is chosen automatically.
+#' @param lambda_min_ratio If the grid should be chosen automatically, the
+#'      ratio of the smallest lambda to the (computed) largest lambda.
+#' @param standardize should the data be standardized robustly? Estimates
+#'      are returned on the original scale. Defaults to \code{TRUE}.
 #' @param cv_k perform k-fold CV to choose the optimal lambda for prediction.
-#' @param scale initial scale estimate for the M step. By default the
-#'      S-scale from the initial estimator (\code{penseobj}) is used.
+#' @param cv_objective a function (name) to compute the CV performance.
+#'      By default, the robust tau-scale is used.
 #' @param ncores,cl use multiple cores or the supplied cluster for the
 #'      cross-validation. See \code{\link{pense}} for more details.
 #' @param mm_options additional options for the M-step.
+#' @param en_options additional options for the EN algorithm.
+#'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
+#' @param ... currently ignored.
 #'
 #' @return An object of class \code{"pensem"}. All elements as an object
 #'      of class \code{\link{pense}} as well as the following:
@@ -40,11 +50,13 @@
 #' @seealso \code{\link{pense}} to compute only the S-estimator.
 #'
 #' @importFrom robustbase .Mchi scaleTau2
-#' @importFrom stats mad median
+#' @importFrom stats mad median coef weighted.mean
 #' @importFrom Matrix drop
-#' @export
+#'
+#' @example examples/pensem-1.R
 #'
 #' @rdname pensem
+#' @export
 pensem <- function(x, ...) {
     UseMethod("pensem", x)
 }
@@ -65,7 +77,7 @@ pensem <- function(x, ...) {
 #'      estimates be computed?
 #' @param s_options additional options for the PENSE algorithm.
 #'      See \code{\link{pense_options}} for details.
-#' @param initest_options additional options for computing the cold initial
+#' @param init_options additional options for computing the cold initial
 #'      estimates.
 #'      Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 #'      See \code{\link{initest_options}} for details.
@@ -87,7 +99,8 @@ pensem.default <- function(x, y,
                            s_options = pense_options(),
                            mm_options = mstep_options(),
                            init_options = initest_options(),
-                           en_options = en_options_aug_lars()
+                           en_options = en_options_aug_lars(),
+                           ...
 ) {
     lambda_s <- if (!missing(lambda_s)) {
         lambda_s
@@ -155,7 +168,7 @@ pensem.default <- function(x, y,
 #' Refine an already computed PENSE with an additional M-step
 #'
 #' @param scale initial scale estimate for the M step. By default the
-#'      S-scale from the initial estimator (\code{penseobj}) is used.
+#'      S-scale from the initial estimator (\code{x}) is used.
 #' @param x_train,y_train override arguments
 #'      provided to the original call to \code{\link{pense}}.
 #'
@@ -173,7 +186,8 @@ pensem.pense <- function(x,
                          ncores = getOption("mc.cores", 1L), cl = NULL,
                          mm_options = mstep_options(),
                          en_options,
-                         x_train, y_train
+                         x_train, y_train,
+                         ...
 
 ) {
     penseobj <- x
@@ -654,7 +668,7 @@ pensem.pense <- function(x,
 
 
 ## This performs the actual M-step on the given initial estimate.
-#' @useDynLib pense C_augtrans C_pen_mstep_sp
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom robustbase Mchi
 #' @importFrom methods is
 #' @importFrom Matrix Matrix

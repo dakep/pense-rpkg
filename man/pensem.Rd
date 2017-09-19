@@ -13,15 +13,24 @@ pensem(x, ...)
   warm_reset = 10, cv_k = 5, cv_objective, ncores = getOption("mc.cores",
   1L), cl = NULL, s_options = pense_options(),
   mm_options = mstep_options(), init_options = initest_options(),
-  en_options = en_options_aug_lars())
+  en_options = en_options_aug_lars(), ...)
 
 \method{pensem}{pense}(x, alpha, scale, nlambda = 50, lambda,
   lambda_min_ratio, standardize, cv_k = 5, cv_objective,
   ncores = getOption("mc.cores", 1L), cl = NULL,
-  mm_options = mstep_options(), en_options, x_train, y_train)
+  mm_options = mstep_options(), en_options, x_train, y_train, ...)
 }
 \arguments{
+\item{x}{either a numeric data matrix or a fitted PENSE estimate obtained
+from \code{\link{pense}}.}
+
+\item{...}{currently ignored.}
+
 \item{y}{numeric response vector.}
+
+\item{alpha}{elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+penalty. If a \code{pense} object is supplied as first argument,}
 
 \item{nlambda}{if \code{lambda} is not given,
 a grid of \code{nlambda} lambda values is generated based on the data.}
@@ -39,6 +48,12 @@ If missing, a grid of lambda values is chosen automatically.
 If \code{standardize = TRUE}, the lambda values will be
 adjusted accordingly.}
 
+\item{lambda_min_ratio}{If the grid should be chosen automatically, the
+ratio of the smallest lambda to the (computed) largest lambda.}
+
+\item{standardize}{should the data be standardized robustly? Estimates
+are returned on the original scale. Defaults to \code{TRUE}.}
+
 \item{initial}{how to initialize the estimator at a new lambda in the grid.
 The default, \code{"warm"}, computes a cold initial estimator at several
 lambda values and uses the PENSE coefficient to warm-start the
@@ -52,6 +67,9 @@ estimates be computed?}
 
 \item{cv_k}{perform k-fold CV to choose the optimal lambda for prediction.}
 
+\item{cv_objective}{a function (name) to compute the CV performance.
+By default, the robust tau-scale is used.}
+
 \item{ncores, cl}{use multiple cores or the supplied cluster for the
 cross-validation. See \code{\link{pense}} for more details.}
 
@@ -60,22 +78,19 @@ See \code{\link{pense_options}} for details.}
 
 \item{mm_options}{additional options for the M-step.}
 
-\item{scale}{initial scale estimate for the M step. By default the
-S-scale from the initial estimator (\code{penseobj}) is used.}
-
-\item{x_train, y_train}{override arguments
-provided to the original call to \code{\link{pense}}.}
-
-\item{lambda}{regularization parameter for the MM-estimator.
-If missing, a grid of lambda values is chosen automatically.}
-
-\item{initest_options}{additional options for computing the cold initial
+\item{init_options}{additional options for computing the cold initial
 estimates.
 Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 See \code{\link{initest_options}} for details.}
 
+\item{en_options}{additional options for the EN algorithm.
+See \code{\link{elnet}} and \code{\link{en_options}} for details.}
+
 \item{scale}{initial scale estimate for the M step. By default the
-S-scale from the initial estimator (\code{penseobj}) is used.}
+S-scale from the initial estimator (\code{x}) is used.}
+
+\item{x_train, y_train}{override arguments
+provided to the original call to \code{\link{pense}}.}
 }
 \value{
 An object of class \code{"pensem"}. All elements as an object
@@ -95,6 +110,75 @@ Performs an M-step using the S-estimator at the optimal penalty
 parameter as returned from \code{\link{pense}} as the initial
 estimate. For "fat" datasets, the initial scale as returned by the
 S-estimate is adjusted according to Maronna & Yohai (2010).
+}
+\examples{
+##
+## A very simple example on artificial data
+##
+
+# Generate some dummy data
+set.seed(1234)
+n <- 50
+p <- 40
+x <- 1 + matrix(rnorm(n * p), ncol = p)
+y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+
+x_test <- 1 + matrix(rnorm(10 * n * p), ncol = p)
+y_test <- x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+
+# Compute the MM-estimator with an EN penalty for 30 lambda values
+# (Note: In real applications, warm_reset should be at least 5)
+set.seed(1234)
+est_mm <- pensem(
+    x, y,
+    alpha = 0.8,
+    nlambda = 30,
+    warm_reset = 1L,
+    cv_k = 5
+)
+
+# We can plot the CV prediction error curve
+with(est_mm,
+     plot(
+         cvavg ~ lambda,
+         cv_lambda_grid,
+         log = "x",
+         col = 1L + (lambda == lambda_opt),
+         pch = 20L,
+         xlab = expression(lambda),
+         ylab = "Robust RMSPE",
+         main = "CV Prediction Error"
+     )
+)
+
+# What is the RMSPE on test data
+(rmspe <- sqrt(mean((y_test - predict(est_mm, newdata = x_test))^2)))
+
+##
+## This is the same as computing first the S-estimator and adding the
+## M-step afterwards
+##
+set.seed(1234)
+est_s <- pense(
+    x, y,
+    alpha = 0.8,
+    nlambda = 30,
+    warm_reset = 1L,
+    cv_k = 5
+)
+
+est_mm_2 <- pensem(
+    est_s,
+    nlambda = 30,
+    cv_k = 5
+)
+
+## The initial S-estimate is the same used in both `pensem` calls
+## because the seed which governs the CV to select the optimal lambda was the
+## same
+sum(abs(est_s$coefficients - est_mm$sest$coefficients))
+## Therefore, the MM-estimate at each lambda is also the same
+sum(abs(est_mm_2$coefficients - est_mm$coefficients))
 }
 \references{
 Maronna, R. and Yohai, V. (2010).

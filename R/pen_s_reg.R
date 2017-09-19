@@ -1,7 +1,7 @@
 ## Internal function to calculate PENSE for a given initial estimate (init.coef)
 ## in C++
 ##
-#' @useDynLib pense C_augtrans C_pen_s_reg_sp
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix

@@ -74,7 +74,8 @@
 #'  \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
 #'      column corresponds to the predictions for the lambda value at the
 #'      same index.}
-#' @export
+#'
+#' @importFrom stats weighted.mean
 #'
 #' @references
 #' Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).
@@ -86,7 +87,9 @@
 #' Zou, H. and Hastie, T. (2005).
 #'     Regularization and variable selection via the elastic net.
 #'     \emph{Journal of the Royal Statistical Society}.
-#'     Series B (Statistical Methodology), \bold{67}(2):301–320.
+#'     Series B (Statistical Methodology), \bold{67}(2):301-320.
+#'
+#' @export
 elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
                   options = en_options_aug_lars(),
                   lambda_min_ratio, Xtest, correction = TRUE) {
@@ -271,6 +274,8 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #'      the ratio of the smallest to the largest lambda value in the grid. The
 #'      default is \code{1e-6} if $n < p$, and
 #'      \code{1e-5 * 10^floor(log10(p / n))} otherwise.
+#' @param options additional options for the EN algorithm. See
+#'      \code{\link{en_options}} for details.
 #' @param ... additional arguments passed on to \code{\link{elnet}}.
 #'
 #' @return
@@ -284,6 +289,8 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #'      residuals for the lambda value at the same index.}
 #'  \item{cvres}{data frame with lambda, average cross-validated performance
 #'      and the estimated standard deviation.}
+#'
+#' @importFrom stats weighted.mean sd
 #'
 #' @export
 elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
@@ -358,7 +365,11 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
     } else if (identical(dX[2L], 0L)) {
         # no predictors given
         if (intercept) {
-            my <- ifelse(weighted, weighted.mean(y, weights), mean(y))
+            my <- if(!is.null(weights)) {
+                weighted.mean(y, weights)
+            } else {
+                mean(y)
+            }
 
             ret_struct$coefficients <- matrix(
                 my,
@@ -488,6 +499,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
 
 
 ## Internal function to compute a lambda grid for elastic net
+#' @importFrom stats cov
 .build_lambda_grid_cl <- function(x, y, alpha, nlambda, lambda_min_ratio = NULL) {
     if (is.null(lambda_min_ratio)) {
         dX <- dim(x)
@@ -504,8 +516,9 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
 
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib pense C_augtrans C_elnet_sp
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom methods is
+#' @importFrom stats sd
 #' @importFrom Matrix Matrix Diagonal crossprod colMeans
 #' @importClassesFrom Matrix dgCMatrix ddiMatrix
 .elnet.fit <- function(X, y, alpha, lambda, intercept = TRUE,
@@ -560,8 +573,9 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
 }
 
 ## Internal function to fit an EN linear regression WITHOUT parameter checks!
-#' @useDynLib pense C_augtrans C_elnet_weighted_sp
+#' @useDynLib pense, .registration = TRUE
 #' @importFrom methods is
+#' @importFrom stats sd
 #' @importFrom Matrix Matrix Diagonal crossprod colSums
 #' @importClassesFrom Matrix dgCMatrix ddiMatrix
 .elnet.wfit <- function(X, y, weights, alpha, lambda, intercept = TRUE,

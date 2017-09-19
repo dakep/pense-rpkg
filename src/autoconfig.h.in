@@ -17,6 +17,8 @@
 #undef HAVE_UNISTD_H
 #undef HAVE_STDINT_H
 #undef HAVE_LIMITS_H
+#undef HAVE_OPENMP_C
+#undef HAVE_OPENMP_CXX
 #undef HAVE_UINT8_16_MAX
 #undef HAVE_UINT32_MAX
 #undef RESTRICT

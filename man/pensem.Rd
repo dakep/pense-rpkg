@@ -117,9 +117,9 @@ S-estimate is adjusted according to Maronna & Yohai (2010).
 ##
 
 # Generate some dummy data
-set.seed(1234)
-n <- 50
-p <- 40
+set.seed(12345)
+n <- 30
+p <- 15
 x <- 1 + matrix(rnorm(n * p), ncol = p)
 y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
 
@@ -131,25 +131,14 @@ y_test <- x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
 set.seed(1234)
 est_mm <- pensem(
     x, y,
-    alpha = 0.8,
-    nlambda = 30,
+    alpha = 0.7,
+    nlambda = 20,
     warm_reset = 1L,
-    cv_k = 5
+    cv_k = 3
 )
 
 # We can plot the CV prediction error curve
-with(est_mm,
-     plot(
-         cvavg ~ lambda,
-         cv_lambda_grid,
-         log = "x",
-         col = 1L + (lambda == lambda_opt),
-         pch = 20L,
-         xlab = expression(lambda),
-         ylab = "Robust RMSPE",
-         main = "CV Prediction Error"
-     )
-)
+plot(est_mm)
 
 # What is the RMSPE on test data
 (rmspe <- sqrt(mean((y_test - predict(est_mm, newdata = x_test))^2)))
@@ -161,16 +150,16 @@ with(est_mm,
 set.seed(1234)
 est_s <- pense(
     x, y,
-    alpha = 0.8,
-    nlambda = 30,
+    alpha = 0.7,
+    nlambda = 20,
     warm_reset = 1L,
-    cv_k = 5
+    cv_k = 3
 )
 
 est_mm_2 <- pensem(
     est_s,
-    nlambda = 30,
-    cv_k = 5
+    nlambda = 20,
+    cv_k = 3
 )
 
 ## The initial S-estimate is the same used in both `pensem` calls

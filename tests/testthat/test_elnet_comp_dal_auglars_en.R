@@ -11,7 +11,7 @@ weights <- weights / mean(weights)
 x <- matrix(rnorm(p * n), ncol = p, nrow = n)
 y <- rnorm(n)
 
-EQUALITY_THRESHOLD <- 1e-6
+EQUALITY_THRESHOLD <- 1e-5
 en_opts_dal <- en_options_dal(eps = 1e-12, preconditioner = "approx")
 en_opts_lars <- en_options_aug_lars()
 
@@ -45,10 +45,12 @@ test_that("Normal EN with intercept", {
 
     expect_equal(el_res_dal$coefficients, el_res_lars$coefficients,
                  tolerance = EQUALITY_THRESHOLD)
-    expect_equal(el_res_dal$residuals, el_res_lars$residuals)
+    expect_equal(el_res_dal$residuals, el_res_lars$residuals,
+                 tolerance = EQUALITY_THRESHOLD)
 
     with(el_res_dal, expect_equal(coefficients[1L],
-                                  mean(y - x %*% coefficients[-1L])))
+                                  mean(y - x %*% coefficients[-1L]),
+                                  tolerance = EQUALITY_THRESHOLD))
     with(el_res_lars, expect_equal(coefficients[1L],
                                    mean(y - x %*% coefficients[-1L])))
 })

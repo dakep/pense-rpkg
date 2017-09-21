@@ -169,6 +169,7 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
             ncol = length(lambda)
         ),
         lambda = lambda,
+        call = match.call(expand.dots = FALSE),
         predictions = NULL
     ), class = "elnetfit")
 
@@ -317,6 +318,8 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
         stop("Missing values are not supported")
     }
 
+    call <- match.call(expand.dots = FALSE)
+
     intercept <- isTRUE(intercept)
 
     if (missing(weights)) {
@@ -355,6 +358,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
         ),
         lambda = lambda,
         cvres = data.frame(lambda = lambda, avg = NA_real_, sd = NA_real_),
+        call = call,
         lambda_opt = NA_real_
     ), class = c("cv_elnetfit", "elnetfit"))
 
@@ -494,6 +498,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
     )
 
     ret_struct$lambda_opt <- with(ret_struct$cvres, lambda[which.min(cvavg)])
+    ret_struct$call <- call
     return(ret_struct)
 }
 

@@ -192,51 +192,6 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
 
 }
 
-#' Extract Residuals from a Fitted Penalized Elastic-Net S/MM-estimator
-#'
-#' @param object a PENSE or PENSEM estimate to extract the residuals from.
-#' @param lambda the value of the penalty parameter. Default is to use the
-#'      optimal lambda \code{object$lambda_opt}.
-#' @param exact if the lambda is not part of the lambda grid, should the
-#'      estimates be obtained by linear interpolation between the nearest
-#'      lambda values (default) or computed exactly.
-#' @param correction should a correction factor be applied to the EN estimate?
-#'       See \code{\link{elnet}} for details on the applied correction.
-#' @param ... currently ignored.
-#' @return a numeric vector of residuals for the given lambda.
-#' @importFrom Matrix drop
-#' @export
-residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ...) {
-    exact <- isTRUE(exact)
-
-    if (missing(lambda) || is.null(lambda)) {
-        lambda <- object$lambda_opt
-        exact <- FALSE
-    }
-
-    lambda_diff_abs <- abs(object$lambda - lambda)
-    lambda_match <- which(lambda_diff_abs < .Machine$double.eps)
-
-    if (length(lambda_match) > 0L) {
-        return(object$residuals[ , lambda_match[1L]])
-    }
-
-    coefs <- coef.pense(
-        object,
-        lambda = lambda,
-        exact = exact,
-        sparse = TRUE,
-        correction = correction
-    )
-
-    x <- data.matrix(eval(object$call$X))
-    y <- drop(eval(object$call$y))
-
-    return(drop(y - coefs[1L] - x %*% coefs[-1L]))
-}
-
-
-
 #' Extract Model Coefficients
 #'
 #' @param object object of type \code{elnetfit} to extract coefficients from.

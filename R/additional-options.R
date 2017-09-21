@@ -46,11 +46,11 @@ initest_options <- function (
     psc_method = c("rr", "exact"),
     maxit = 10,
     eps = 1e-6,
-    psc_keep = 0.2,
+    psc_keep = 0.5,
     resid_keep_method = c("proportion", "threshold"),
     resid_keep_prop = 0.6,
     resid_keep_thresh = 2,
-    delta = 0.5,
+    delta = 0.25,
     mscale_eps = 1e-8,
     mscale_maxit = 200,
     cc
@@ -111,7 +111,7 @@ initest_options <- function (
 #' @export
 #' @family specifying additional options
 pense_options <- function (
-    delta = 0.5,
+    delta = 0.25,
     maxit = 1000,
     eps = 1e-6,
     mscale_eps = 1e-8,

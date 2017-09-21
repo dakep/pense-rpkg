@@ -1,9 +1,18 @@
 #!/bin/bash
 PACKAGE_NAME=`sed -En 's/Package: ([a-zA-Z0-9_]+)/\1/p' DESCRIPTION`
 VERSION=`sed -En 's/Version: ([0-9\.]+)/\1/p' DESCRIPTION`
+CURRENT_DATE=`date "+%Y-%m-%d"`
+
+sed -i '' -E "s/Date: [0-9\-]+/Date: ${CURRENT_DATE}/g" DESCRIPTION
 
 TMP_DIR=`mktemp -d`
 TMP_TARFILE="${TMP_DIR}/package.tar"
+
+# Fix package name and version in autoconfig.win.h
+sed -i '' -E "s/(PACKAGE_(NAME|TARNAME)) .*/\1 \"${PACKAGE_NAME}\"/g" src/autoconfig.win.h
+sed -i '' -E "s/(PACKAGE_VERSION) .*/\1 \"${VERSION}\"/g" src/autoconfig.win.h
+sed -i '' -E "s/(PACKAGE_STRING) .*/\1 \"${PACKAGE_NAME} ${VERSION}\"/g" src/autoconfig.win.h
+sed -i '' -E "s/AC_INIT.*/AC_INIT(${PACKAGE_NAME}, ${VERSION})/g" configure.ac
 
 # Run autoconf
 autoconf
@@ -17,12 +26,6 @@ pushd "${TMP_DIR}"
 mkdir "${PACKAGE_NAME}"
 pushd "${PACKAGE_NAME}"
 tar xf "${TMP_TARFILE}"
-
-# Fix package name and version in autoconfig.win.h
-sed -i '' -E "s/(PACKAGE_(NAME|TARNAME)) .*/\1 \"${PACKAGE_NAME}\"/g" src/autoconfig.win.h
-sed -i '' -E "s/(PACKAGE_VERSION) .*/\1 \"${VERSION}\"/g" src/autoconfig.win.h
-sed -i '' -E "s/(PACKAGE_STRING) .*/\1 \"${PACKAGE_NAME} ${VERSION}\"/g" src/autoconfig.win.h
-sed -i '' -E "s/AC_INIT.*/AC_INIT(${PACKAGE_NAME}, ${VERSION})/g" configure.ac
 
 # Cleanup unnecessary files
 bash cleanup

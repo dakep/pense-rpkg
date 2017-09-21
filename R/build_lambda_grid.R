@@ -19,7 +19,7 @@ build_lambda_grid <- function(X, y, alpha, nlambda, lambda_min_ratio = NULL) {
         lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dX[2L] / dX[1L])))
     }
 
-    lmax <- max(abs(covxy)) * 2 * scale_y / (max_scale_x * alpha)
+    lmax <- max(abs(covxy)) * 2 * scale_y / (max_scale_x * max(0.01, alpha))
     lmin <- lambda_min_ratio * lmax
 
     lambda <- exp(seq(log(lmin), log(lmax), length.out = nlambda))

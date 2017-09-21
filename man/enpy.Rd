@@ -40,3 +40,9 @@ Two different methods to calculate the sensitivity components are implemented:
          residuals and leave-one-out residuals from elastic net.}
 }
 }
+\references{
+Pena, D., and Yohai, V.J. (1999).
+    A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
+    \emph{Journal of the American Statistical Association}, \bold{94}(446),
+    434-445. \url{http://doi.org/10.2307/2670164}
+}

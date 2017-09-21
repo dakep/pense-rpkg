@@ -35,6 +35,9 @@ returns a performance measure for each column.}
 \item{ncores, cl}{the number of processor cores or an actual \code{parallel}
 cluster. At most \code{cv_k + 1} nodes will be used.}
 
+\item{options}{additional options for the EN algorithm. See
+\code{\link{en_options}} for details.}
+
 \item{lambda_min_ratio}{if the lambda grid should be automatically defined,
 the ratio of the smallest to the largest lambda value in the grid. The
 default is \code{1e-6} if $n < p$, and

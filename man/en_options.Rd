@@ -38,8 +38,6 @@ a checked options list.
 \description{
 Specify additional options for the augmented LARS and the DAL algorithm
 to solve the EN problem.
-
-Additional Options for the DAL Algorithm
 }
 \seealso{
 Other specifying additional options: \code{\link{initest_options}},

@@ -4,9 +4,8 @@
 \alias{pense}
 \title{Penalized Elasitc Net S-estimators for Regression}
 \usage{
-pense(X, y, alpha = 0.5, nlambda = 50, lambda = NULL,
-  lambda_min_ratio = NULL, standardize = TRUE, initial = c("warm",
-  "cold"), direction = c("both", "left", "right"), warm_reset = 10,
+pense(X, y, alpha = 0.5, nlambda = 50, lambda, lambda_min_ratio,
+  standardize = TRUE, initial = c("warm", "cold"), warm_reset = 10,
   cv_k = 5, cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
   options = pense_options(), init_options = initest_options(),
   en_options = en_options_aug_lars())
@@ -26,7 +25,7 @@ a grid of \code{nlambda} lambda values is generated based on the data.}
 \item{lambda}{a single value or a grid of values for the regularization
 parameter lambda.
 Assumed to be on the same scale as the data and adjusted for
-S-estimation. Defaults to \code{NULL}, which means a grid of lambda
+S-estimation. If missing a grid of lambda
 values is automatically generated (see parameter \code{nlambda}).
 If given and \code{standardize = TRUE}, the lambda values will be
 adjusted accordingly.}
@@ -45,13 +44,8 @@ the lambda grid, PENSE will be initialized with the 0-vector.
 \code{"cold"} computes the full initial estimator at
 every lambda value.}
 
-\item{direction}{what direction to traverse the lambda grid in. Default
-to \code{"both"} to traverse it in both directions.
-\code{"left"} means from right to left (i.e. from larger to smaller
-lambda values) and \code{"right"} means from left to right.}
-
-\item{warm_reset}{if \code{initial = "warm(0)"}, how often should the
-warm-start be reset to a cold initial estimate?}
+\item{warm_reset}{if \code{initial = "warm"} (default), how many cold initial
+estimates be computed?}
 
 \item{cv_k}{number of cross-validation segements to use to choose the optimal
 lambda from the grid. If only a single value of lambda is given,
@@ -62,47 +56,118 @@ at this particular lambda.}
 By default, the robust tau-scale is used.}
 
 \item{ncores, cl}{the number of processor cores or an actual parallel cluster
-to use to estimate the optimal value of lambda. See details for more
-information.}
+to use to estimate the optimal value of lambda. See
+\code{\link{makeCluster}} on how to create a cluster manually.}
 
 \item{options}{additional options for the PENSE algorithm.
 See \code{\link{pense_options}} for details.}
 
-\item{en_options}{additional options for the EN algorithm.
-See \code{\link{elnet}} and \code{\link{en_options}} for details.}
-
-\item{initest_options}{additional options for computing the initial
-estimator.
+\item{init_options}{additional options for computing the cold initial
+estimates.
 Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 See \code{\link{initest_options}} for details.}
+
+\item{en_options}{additional options for the EN algorithm.
+See \code{\link{elnet}} and \code{\link{en_options}} for details.}
 }
 \value{
 An object of class \code{"pense"} with elements
-\item{call}{the call that produced this object.}
+\item{lambda}{grid of regularization parameter values for which an estimate
+     is available.}
 \item{lambda_opt}{the optimal value of the regularization parameter
      according to CV.}
-\item{coefficients}{a matrix of coefficients for each lambda in the grid.}
+\item{coefficients}{a sparse matrix of coefficients for each lambda in the
+     grid.}
 \item{residuals}{a matrix of residuals for each lambda in the grid.}
-\item{scale}{the estimated scales each lambda}
-\item{cv_lambda_grid}{a data frame with values of lambda in the first
-     column, and the CV error as well as serveral
-     statistics of the solution in the following columns.}
-\item{alpha,standardize,pense_options,en_options,initest_options}{
-     the given arguments.}
+\item{cv_lambda_grid}{a data frame with CV prediction errors and serveral
+     statistics of the solutions.}
+\item{scale}{the estimated scales each lambda in the grid.}
+\item{objective}{value of the objective function at each lambda in the grid.}
+\item{adjusted}{necessary information to compute the corrected EN estimates.}
+\item{call}{the call that produced this object.}
+\item{...}{values of the given arguments.}
 }
 \description{
-Penalized Elasitc Net S-estimators for Regression
+Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+linear regression models.
 }
-\section{Parallelization}{
+\details{
+The PENSE estimate minimizes the robust M-scale of the residuals penalized
+by the L1 and L2 norm of the regression coefficients (elastic net penalty).
+The level of penalization is chosen to minimize the \code{cv_k}-fold
+cross-validated prediction error (using a robust measure).
+}
+\section{Initial Estimate}{
 
-With the parameter \code{ncores}, the number of available processor cores
-can be set. The grid of lambda values is split into \code{ncores} (almost)
-equally sized chunks. On each core, the cold initial estimate is computed
-for the lower endpoint of the lambda sequence. The fully iterated PENSE
-estimate is then used as warm-start for the next lambda value and so on.
-Therefore, if \code{ncores = 1}, only one cold initial estimate is computed
-and all subsequent values of lambda take the previous estimate as
-warm-start. Similarly, if \code{ncores = nlambda}, a cold initial estimate
-is computed for every lambda on the grid and no warm-starts are necessary.
+By default (\code{initial == "warm"}), the method does not compute a
+full initial estimate at each
+lambda value in the grid, but only at \code{warm_reset} of the lambda
+values. At the remaining lambda values, the estimate at the previous
+lambda value is used to initialze the estimator (the lambda grid is
+first traversed in descending and then in ascending direction). If
+\code{warm_reset} is 1, only the 0-vector is used to initialize PENSE at the
+largest penalty value. No further initial estimates are computed.
+
+If \code{initial == "cold"}, a full initial estimate is computed at each
+lambda value. This is equal to setting \code{warm_reset} to
+\code{length(lambda)}.
 }
 
+\examples{
+##
+## A very simple example on artificial data
+##
+
+# Generate some dummy data
+set.seed(12345)
+n <- 30
+p <- 15
+x <- 1 + matrix(rnorm(n * p), ncol = p)
+y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+
+x_test <- matrix(rnorm(10 * n * p), ncol = p)
+y_test <- x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+
+# Compute the S-estimator with an EN penalty for 30 lambda values
+# (Note: In real applications, warm_reset should be at least 5)
+set.seed(1234)
+est <- pense(
+    x, y,
+    alpha = 0.6,
+    nlambda = 20,
+    warm_reset = 1L,
+    cv_k = 3
+)
+
+# We can plot the CV prediction error curve
+plot(est)
+
+# What is the RMSPE on test data
+(rmspe <- sqrt(mean((y_test - predict(est, newdata = x_test))^2)))
+
+##
+## What happens if we replace 5 observations in the dummy data
+## with outliers?
+##
+y_out <- y
+y_out[1:3] <- rnorm(3, -500)
+
+# Compute the S-estimator again
+# (Note: In real applications, warm_reset should be at least 5)
+set.seed(12345)
+est_out <- pense(
+    x, y_out,
+    alpha = 0.6,
+    nlambda = 20,
+    warm_reset = 1L,
+    cv_k = 3
+)
+
+# How does the RMSPE compare?
+rmspe_out <- sqrt(mean((y_test - predict(est_out, newdata = x_test))^2))
+c(rmspe = rmspe, rmspe_out = rmspe_out)
+
+}
+\seealso{
+To improve the S-estimate with an M-step, see \code{\link{pensem}}.
+}

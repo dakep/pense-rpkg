@@ -20,13 +20,13 @@
 using namespace arma;
 
 static const double DEFAULT_OPT_CC = 3.44;
+static const RhoFunction rhoBisquare2 = getRhoFunctionByName(BISQUARE);
 
 static inline double wgtBisquare2(double x, double c);
 
 MStep::MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, const Options &enOpts) :
     IRWEN(data, alpha, lambda, opts, enOpts),
-    cc(opts.get("cc", DEFAULT_OPT_CC)),
-    scale(scale)
+    ccScaled(scale * opts.get("cc", DEFAULT_OPT_CC))
 {
 }
 
@@ -34,11 +34,19 @@ MStep::~MStep()
 {
 }
 
+void MStep::updateObjective(const vec& residuals, const double betaENPenalty)
+{
+    this->objectiveVal = betaENPenalty;
+    for (uword i = 0; i < residuals.n_elem; ++i) {
+        this->objectiveVal += rhoBisquare2(residuals[i], this->ccScaled);
+    }
+}
+
 void MStep::updateWeights(const vec& residuals)
 {
     double tmp = 0;
     for (uword i = 0; i < residuals.n_elem; ++i) {
-        this->weights[i] = wgtBisquare2(residuals[i], this->scale * this->cc);
+        this->weights[i] = wgtBisquare2(residuals[i], this->ccScaled);
         tmp += this->weights[i];
     }
 

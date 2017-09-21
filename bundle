@@ -1,22 +1,44 @@
 #!/bin/bash
-
-sh cleanup
-
-ROOT_DIR="pense-rpkg"
-
-VERSION=`sed -En 's/Version: ([0-9\.]+)/\1/p' DESCRIPTION`
 PACKAGE_NAME=`sed -En 's/Package: ([a-zA-Z0-9_]+)/\1/p' DESCRIPTION`
+VERSION=`sed -En 's/Version: ([0-9\.]+)/\1/p' DESCRIPTION`
+CURRENT_DATE=`date "+%Y-%m-%d"`
 
-DIRNAME="${PACKAGE_NAME}_${VERSION}"
+sed -i '' -E "s/Date: [0-9\-]+/Date: ${CURRENT_DATE}/g" DESCRIPTION
 
-pushd ..
+TMP_DIR=`mktemp -d`
+TMP_TARFILE="${TMP_DIR}/package.tar"
 
-ln -sv "${ROOT_DIR}" "${PACKAGE_NAME}"
+# Fix package name and version in autoconfig.win.h
+sed -i '' -E "s/(PACKAGE_(NAME|TARNAME)) .*/\1 \"${PACKAGE_NAME}\"/g" src/autoconfig.win.h
+sed -i '' -E "s/(PACKAGE_VERSION) .*/\1 \"${VERSION}\"/g" src/autoconfig.win.h
+sed -i '' -E "s/(PACKAGE_STRING) .*/\1 \"${PACKAGE_NAME} ${VERSION}\"/g" src/autoconfig.win.h
+sed -i '' -E "s/AC_INIT.*/AC_INIT(${PACKAGE_NAME}, ${VERSION})/g" configure.ac
 
-tar hczf "${ROOT_DIR}/builds/$DIRNAME.tar.gz" --exclude=".*" --exclude="*Makevars.dbg" \
+# Run autoconf
+autoconf
+
+rm -Rf autom4te.cache
+
+# First tar the "package" contents of the current folder
+tar hcf "${TMP_TARFILE}" --exclude=".*" --exclude="*Makevars.dbg" \
     --exclude="*.Rproj" --exclude="*.o" --exclude="*.ac" --exclude="*.so"  --exclude="bundle" \
-    --exclude="build" --exclude="builds/" --exclude="examples/" "${PACKAGE_NAME}"
+    --exclude="build" --exclude="builds/" --exclude="examples/" ./*
 
-rm "${PACKAGE_NAME}"
+pushd "${TMP_DIR}"
+mkdir "${PACKAGE_NAME}"
+pushd "${PACKAGE_NAME}"
+tar xf "${TMP_TARFILE}"
+
+# Cleanup unnecessary files
+bash cleanup
+
+popd # --> go back to temporary directory
+
+# build source package
+R CMD build "pense"
 
 popd
+
+# Move built package back here and remove temporary files
+mv "${TMP_DIR}/${PACKAGE_NAME}_${VERSION}.tar.gz" "builds/"
+rm -Rf "${TMP_DIR}"

@@ -41,11 +41,13 @@
 #   define RESTRICT
 #endif
 
-
 #ifndef DEBUG
 #   define ARMA_NO_DEBUG
 #endif
 
+#ifndef HAVE_OPENMP_CXX
+#   define ARMA_DONT_USE_OPENMP
+#endif
 
 #define NUMERIC_EPS 1e-32
 #define LAPACK_EV_MIN 1e-12

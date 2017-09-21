@@ -16,11 +16,12 @@
 #'      PSCs found (at most the number of columns in \code{X} plus one for the
 #'      intercept). Each column is a PSC.
 #'
-#' @references Pena, D., & Yohai, V.. (1999). A Fast Procedure for Outlier Diagnostics in Large
-#' Regression Problems. \emph{Journal of the American Statistical Association}, 94(446),
-#' 434-445. \url{http://doi.org/10.2307/2670164}
+#' @references Pena, D., and Yohai, V.J. (1999).
+#'     A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
+#'     \emph{Journal of the American Statistical Association}, \bold{94}(446),
+#'     434-445. \url{http://doi.org/10.2307/2670164}
 #'
-#' @useDynLib pense C_pscs_ols C_pscs_en C_augtrans
+#' @useDynLib pense, .registration = TRUE
 #' @export
 prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
                      alpha, lambda, en_options = en_options_aug_lars()) {

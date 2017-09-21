@@ -24,10 +24,10 @@ public:
 
 protected:
     void updateWeights(const arma::vec& residuals);
+    void updateObjective(const arma::vec& residuals, const double betaENPenalty);
 
 private:
-    const double cc;    // tuning constant
-    const double scale; // initial scale
+    const double ccScaled;    // tuning constant times the initial scale
 };
 
 #endif /* MStep_hpp */

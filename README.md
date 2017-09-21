@@ -9,8 +9,12 @@ The main functions in the package are
     from an S-estimator previously computed with `pense()`.
 
 Both of these functions perform k-fold cross-validation to choose the optimal penalty level
-`lambda`, butthe optimal balance between the L1 and the L2 penalties (the `alpha` parameter) needs
+`lambda`, but the optimal balance between the L1 and the L2 penalties (the `alpha` parameter) needs
 to be pre-specified by the user.
+
+The default breakdown point is set to 25%. If the user needs an estimator with a higher breakdown
+point, the `delta` argument in the `pense_options()` and `initest_options()` can be set to the
+desired breakdown point (.e.g, `delta = 0.5`).
 
 The package also exports an efficient classical elastic net algorithm available via the functions
 `elnet()` and `elnet_cv()` which chooses an optimal penalty parameter based on cross-validation.

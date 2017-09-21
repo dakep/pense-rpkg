@@ -17,6 +17,8 @@ sed -i '' -E "s/AC_INIT.*/AC_INIT(${PACKAGE_NAME}, ${VERSION})/g" configure.ac
 # Run autoconf
 autoconf
 
+rm -Rf autom4te.cache
+
 # First tar the "package" contents of the current folder
 tar hcf "${TMP_TARFILE}" --exclude=".*" --exclude="*Makevars.dbg" \
     --exclude="*.Rproj" --exclude="*.o" --exclude="*.ac" --exclude="*.so"  --exclude="bundle" \

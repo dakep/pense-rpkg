@@ -32,6 +32,7 @@ IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Op
     verbosity(opts.get("verbosity", DEFAULT_OPT_VERBOSITY)),
     maxIt(opts.get("maxit", DEFAULT_OPT_MAXIT)),
     eps(opts.get("eps", DEFAULT_OPT_EPS)),
+    alpha(alpha),
     lambda(lambda)
 {
     this->en = getElasticNetImpl(enOpts, true);
@@ -43,6 +44,12 @@ IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Op
 IRWEN::~IRWEN()
 {
     delete this->en;
+}
+
+void IRWEN::setLambda(const double lambda)
+{
+    this->lambda = lambda;
+    this->en->setAlphaLambda(this->alpha, this->lambda);
 }
 
 void IRWEN::compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
@@ -78,8 +85,12 @@ void IRWEN::compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
         /*
          * Compute relative change
          */
-        normOldBeta = norm(oldBeta) + sqrt(oldIntercept * oldIntercept);
-        this->relChangeVal = norm(beta - oldBeta) + sqrt((intercept - oldIntercept) * (intercept - oldIntercept));
+        
+        normOldBeta = norm(oldBeta);
+        normOldBeta = sqrt(normOldBeta * normOldBeta + oldIntercept * oldIntercept);
+        this->relChangeVal = norm(beta - oldBeta);
+        this->relChangeVal = sqrt(this->relChangeVal * this->relChangeVal +
+                                    (intercept - oldIntercept) * (intercept - oldIntercept));
 
         if (normOldBeta < NUMERICAL_TOLERANCE) {
             if (this->relChangeVal < NUMERICAL_TOLERANCE) {
@@ -104,5 +115,12 @@ void IRWEN::compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
 
     } while((this->iteration < this->maxIt) && (this->relChangeVal > normOldBeta * this->eps));
 
+    double betaENPenalty = norm(beta, 2);
+    betaENPenalty = this->lambda * (
+        0.5 * (1 - this->alpha) * betaENPenalty * betaENPenalty +
+        this->alpha * norm(beta, 1)
+    );
+
+    this->updateObjective(residuals, betaENPenalty);
     this->relChangeVal /= normOldBeta;
 }

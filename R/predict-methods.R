@@ -1,14 +1,21 @@
-#' Predict Method for Penalized Elastic-Net S-estimator
+#' Predict Method for Penalized Elastic Net S- and MM-estimators
 #'
-#' @param object an object of type \code{pense} to use for prediction.
+#' @param object an object of type \code{pense} or \code{pensem} to use for
+#'      prediction.
 #' @param newdata an optional design matrix
 #' @param lambda the value of the penalty parameter. Default is to use the
 #'      optimal lambda \code{lambda_opt}.
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
+#' @param correction should a correction factor be applied to the PENSE(M)
+#'       estimate?
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
+#'
+#' @importFrom Matrix drop
+#' @importFrom stats coef
+#'
 #' @export
 predict.pense <- function(object, newdata, lambda, exact = FALSE,
                           correction = TRUE, ...) {
@@ -33,14 +40,14 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
         lambda <- NULL
     }
 
-    coefs <- coef.pense(object, lambda = lambda, exact = exact, sparse = TRUE,
-                        correction = correction)
+    coefs <- coef(object, lambda = lambda, exact = exact, sparse = TRUE,
+                  correction = correction)
 
-    pr <- coefs[1L] + newdata %*% coefs[-1L]
+    pr <- drop(coefs[1L] + newdata %*% coefs[-1L, , drop = FALSE])
     return(as.vector(pr))
 }
 
-#' Predict Method for Penalized Elastic-Net Estimator
+#' Predict Method for the classical Elastic Net Estimator
 #'
 #' @param object an object of type \code{elnetfit} to use for prediction.
 #' @param newdata an optional design matrix
@@ -49,9 +56,11 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
+#' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
 #' @export
+#' @importFrom Matrix drop
 predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
                              correction = TRUE, ...) {
     if (missing(newdata)) {
@@ -78,6 +87,6 @@ predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
     coefs <- coef.elnetfit(object, lambda = lambda, exact = exact,
                            sparse = TRUE, correction = correction)
 
-    pr <- coefs[1L] + newdata %*% coefs[-1L]
+    pr <- drop(coefs[1L] + newdata %*% coefs[-1L, , drop = FALSE])
     return(as.vector(pr))
 }

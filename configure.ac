@@ -1,4 +1,4 @@
-AC_INIT(pense, version-1.0)
+AC_INIT(pense, 0.6.6)
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then
@@ -6,26 +6,29 @@ if test -z "${R_HOME}"; then
   exit 1
 fi
 
-CC=`"${R_HOME}/bin/R" CMD config CC`
-CPP=`"${R_HOME}/bin/R" CMD config CPP`
-CXX=`"${R_HOME}/bin/R" CMD config CXX`
-CXXCPP=`"${R_HOME}/bin/R" CMD config CXXCPP`
-CXXFLAGS=`"${R_HOME}/bin/R" CMD config CXXFLAGS`
-CPPFLAGS=`"${R_HOME}/bin/R" CMD config CPPFLAGS`
+RBIN="${R_HOME}/bin/R"
+CC=`"${RBIN}" CMD config CC`
+CPP=`"${RBIN}" CMD config CPP`
+CXX=`"${RBIN}" CMD config CXX`
+CXXCPP=`"${RBIN}" CMD config CXXCPP`
+CXXFLAGS=`"${RBIN}" CMD config CXXFLAGS`
+CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_CXX
 
-####################################################################################################
+################################################################################
 ##
 ## Check for necessary support by C compiler
 ##
-####################################################################################################
+################################################################################
 AC_LANG(C)
 AC_CHECK_HEADERS(stdint.h inttypes.h limits.h float.h)
 
-#check for -restrict CFLAGS support
+##
+## check for -restrict CFLAGS support
+##
 oldCflags="$CFLAGS"
 CFLAGS="$CFLAGS -restrict"
 AC_MSG_CHECKING([whether C supports -restrict])
@@ -37,52 +40,36 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 CFLAGS="$oldCflags"
 AC_SUBST([RESTRICT_CFLAGS])
 
-PTHREAD_CPPFLAGS=" -pthread"
-$oldCPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS $PTHREAD_CPPFLAGS"
-AC_CHECK_HEADER([pthread.h],[],[
-    PTHREAD_CPPFLAGS=" -D_REENTRANT"
-    CPPFLAGS="$oldCPPFLAGS $PTHREAD_CPPFLAGS"
-    AC_CHECK_HEADER([pthread.h],[],[
-        AC_MSG_RESULT([no])
-        PTHREAD_CPPFLAGS=""
-    ])
-])
-CPPFLAGS="$oldCPPFLAGS $PTHREAD_CPPFLAGS"
-AC_SUBST([PTHREAD_CPPFLAGS])
+##
+## Check for OpenMP support
+##
+AC_OPENMP
 
-AC_MSG_CHECKING([for pthread library support])
-PTHREAD_LIBS=" -pthread"
-oldLIBS="$LIBS"
-LIBS="$LIBS $PTHREAD_LIBS"
-AC_LINK_IFELSE([
-    AC_LANG_PROGRAM([[#include <pthread.h>]],
-                    [[pthread_t pthread_self();]])
-],[
-    AC_MSG_RESULT([yes (-pthread)])
-],[
-    PTHREAD_LIBS=" -lpthread"
-    LIBS="$oldLIBS $PTHREAD_LIBS"
-    AC_LINK_IFELSE([
-        AC_LANG_PROGRAM([[#include <pthread.h>]],
-                        [[pthread_t pthread_self();]])
-    ],[
-        AC_MSG_RESULT([yes (-lpthread)])
-    ],[
-        PTHREAD_LIBS=""
-        AC_MSG_RESULT([no])
-    ])
-])
-AC_SUBST([PTHREAD_LIBS])
+# since some systems have broken OMP libraries
+# we also check that the actual package will work
+ac_pkg_openmp_c=no
+if test -n "${OPENMP_CFLAGS}"; then
+  AC_MSG_CHECKING([checking if OpenMP works in C])
+  AC_LANG_CONFTEST(
+  [AC_LANG_PROGRAM([[#include <omp.h>]], [[ return omp_get_num_threads (); ]])])
+  PKG_CFLAGS="${OPENMP_CFLAGS}" PKG_LIBS="${OPENMP_CFLAGS}" "$RBIN" CMD SHLIB conftest.c 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && "$RBIN" --vanilla -q -e "dyn.load(paste('conftest',.Platform\$dynlib.ext,sep=''))" 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && ac_pkg_openmp_c=yes
+  AC_MSG_RESULT([${ac_pkg_openmp_c}])
+fi
 
-LIBS="$oldLIBS"
+# if ${ac_pkg_openmp_c} = "yes" then we have OMP, otherwise it will be "no"
+if test "${ac_pkg_openmp_c}" = no; then
+  OPENMP_CFLAGS=''
+else
+  AC_DEFINE([HAVE_OPENMP_C])
+fi
 
-####################################################################################################
+AC_SUBST(OPENMP_CFLAGS)
+
+################################################################################
 ##
 ## Check for necessary support by C++ compiler
 ##
-####################################################################################################
-
+################################################################################
 AC_LANG(C++)
 AC_CHECK_HEADERS(stdint.h inttypes.h climits cfloat)
 
@@ -132,7 +119,9 @@ if test $restrict_support != "yes"; then
     )
 fi
 
-#check for -restrict CXXFLAGS support
+##
+## check for -restrict CXXFLAGS support
+##
 oldCXXflags="$CXXFLAGS"
 CXXFLAGS="$CXXFLAGS -restrict"
 AC_MSG_CHECKING([whether C++ supports -restrict])
@@ -143,6 +132,32 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
 )
 CXXFLAGS="$oldCXXflags"
 AC_SUBST([RESTRICT_CXXFLAGS])
+
+
+##
+## Check for OpenMP support
+##
+AC_OPENMP
+
+# since some systems have broken OMP libraries
+# we also check that the actual package will work
+ac_pkg_openmp_cxx=no
+if test -n "${OPENMP_CXXFLAGS}"; then
+  AC_MSG_CHECKING([checking if OpenMP works in C++])
+  AC_LANG_CONFTEST(
+  [AC_LANG_PROGRAM([[#include <omp.h>]], [[ return omp_get_num_threads (); ]])])
+  PKG_CFLAGS="${OPENMP_CXXFLAGS}" PKG_LIBS="${OPENMP_CXXFLAGS}" "$RBIN" CMD SHLIB conftest.c 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && "$RBIN" --vanilla -q -e "dyn.load(paste('conftest',.Platform\$dynlib.ext,sep=''))" 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && ac_pkg_openmp_cxx=yes
+  AC_MSG_RESULT([${ac_pkg_openmp_cxx}])
+fi
+
+# if ${ac_pkg_openmp_cxx} = "yes" then we have OMP, otherwise it will be "no"
+if test "${ac_pkg_openmp_cxx}" = no; then
+  OPENMP_CXXFLAGS=''
+else
+  AC_DEFINE([HAVE_OPENMP_CXX])
+fi
+
+AC_SUBST(OPENMP_CXXFLAGS)
 
 
 AC_CONFIG_HEADERS([src/autoconfig.h])

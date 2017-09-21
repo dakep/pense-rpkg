@@ -5,6 +5,7 @@
 //  Created by David Kepplinger on 2016-02-03.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
+#include "config.h"
 
 #include <stdexcept>
 #include <string>
@@ -18,12 +19,39 @@
 #include "PENSEreg.hpp"
 #include "MStep.hpp"
 #include "olsreg.h"
+#include "mscale.h"
 
 using namespace Rcpp;
 using namespace arma;
 
 static inline Options listToOptions(SEXP list);
 static inline void getMatDims(SEXP matrix, int* nrows, int* ncols);
+
+/**
+ * .C entry point definitions for R
+ */
+static const R_CallMethodDef exportedCallMethods[] = {
+    {"C_augtrans", (DL_FUNC) &C_augtrans, 1},
+    {"C_elnet_sp", (DL_FUNC) &C_elnet_sp, 8},
+    {"C_elnet_weighted_sp", (DL_FUNC) &C_elnet_weighted_sp, 9},
+    {"C_pscs_ols", (DL_FUNC) &C_pscs_ols, 2},
+    {"C_pscs_en", (DL_FUNC) &C_pscs_en, 6},
+    {"C_py_ols", (DL_FUNC) &C_py_ols, 3},
+    {"C_enpy_rr", (DL_FUNC) &C_enpy_rr, 6},
+    {"C_enpy_exact", (DL_FUNC) &C_enpy_exact, 6},
+    {"C_pen_s_reg_sp", (DL_FUNC) &C_pen_s_reg_sp, 8},
+    {"C_pen_mstep_sp", (DL_FUNC) &C_pen_mstep_sp, 9},
+    {"C_mscale", (DL_FUNC) &C_mscale, 7},
+    {NULL, NULL, 0}
+};
+
+
+void R_init_pense(DllInfo *dll)
+{
+    R_registerRoutines(dll, NULL, exportedCallMethods, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
+    R_forceSymbols(dll, TRUE);
+}
 
 RcppExport SEXP C_augtrans(SEXP RX)
 {
@@ -53,6 +81,23 @@ RcppExport SEXP C_augtrans(SEXP RX)
     return RXaug;
 }
 
+/**
+ * Calculate the M-Scale of a vector of numbers
+ */
+RcppExport SEXP C_mscale(SEXP Rvalues, SEXP Rlength, SEXP Rb, SEXP Rcc, SEXP RmaxIt, SEXP Reps,
+                         SEXP Rrhofun)
+{
+    SEXP Rscale = PROTECT(Rf_allocVector(REALSXP, 1));
+    RhoFunction rhoFun = getRhoFunctionByName((RhoFunctionName) *INTEGER(Rrhofun));
+
+    *REAL(Rscale) = mscale(REAL(Rvalues), *INTEGER(Rlength), *REAL(Rb), *REAL(Reps),
+                           *INTEGER(RmaxIt), rhoFun, *REAL(Rcc));
+
+    UNPROTECT(1);
+    return Rscale;
+}
+
+
 /***************************************************************************************************
  *
  * Elasitc Net with unweighted observations
@@ -81,11 +126,15 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const double *currentLambda = REAL(Rlambda);
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
+    const bool estimate_intercept = (bool) *INTEGER(Rintercept);
+    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
-    const mat XtrTrain = as<mat>(RXtr);
+    /* this does not need the column of 1's in the beginning */
+    const mat XtrTrain = as<mat>(RXtr).tail_rows(nvar - 1);
     const vec yTrain = as< colvec >(Ry);
+
 
     if (generatePredictions) {
         retPreds = PROTECT(Rf_allocMatrix(REALSXP, Xtest.n_rows, nlambda));
@@ -104,7 +153,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
      */
     opts.set("warmStart", true);
 
-    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    ElasticNet *en = getElasticNetImpl(opts, estimate_intercept);
     sp_vec::const_iterator ccIt;
     en->setData(data);
 
@@ -120,13 +169,15 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (!opts.get("naive", false)) {
+        if (applyENCorrection) {
             adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
             );
-            coefEsts(0, i) = mean(yTrain - XtrTrain.t() * currentBeta * adjFactor);
+            if (estimate_intercept) {
+                coefEsts(0, i) = mean(yTrain - XtrTrain.t() * currentBeta * adjFactor);
+            }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
         }
@@ -188,10 +239,13 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     const double *currentLambda = REAL(Rlambda);
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
+    const bool estimate_intercept = (bool) *INTEGER(Rintercept);
+    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
-    const mat XtrTrain = as<mat>(RXtr);
+    /* this does not need the column of 1's in the beginning */
+    const mat XtrTrain = as<mat>(RXtr).tail_rows(nvar - 1);
     const vec yTrain = as< colvec >(Ry);
 
     if (generatePredictions) {
@@ -211,7 +265,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
      */
     opts.set("warmStart", true);
 
-    ElasticNet *en = getElasticNetImpl(opts, (bool) *INTEGER(Rintercept));
+    ElasticNet *en = getElasticNetImpl(opts, estimate_intercept);
     sp_vec::const_iterator ccIt;
     en->setData(data);
 
@@ -228,14 +282,17 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (!opts.get("naive", false)) {
+        if (applyENCorrection) {
             adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
             );
-            coefEsts(0, i) = accu(weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)) /
-                                accu(weights);
+            if (estimate_intercept) {
+                coefEsts(0, i) = accu(
+                    weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)
+                ) / accu(weights);
+            }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
         }
@@ -490,61 +547,6 @@ RcppExport SEXP C_enpy_exact(SEXP RXtr, SEXP Ry, SEXP Ralpha, SEXP Rlambda, SEXP
  * Penalized Elastic Net S estimator for regression (PENSE)
  *
  **************************************************************************************************/
-RcppExport SEXP C_pen_s_reg(SEXP RXtr, SEXP Ry, SEXP coefs,
-                            SEXP Ralpha, SEXP Rlambda, SEXP RpenseOptions, SEXP RenOptions)
-{
-    int nobs, nvar;
-    getMatDims(RXtr, &nvar, &nobs);
-
-    const Options penseOpts = listToOptions(RpenseOptions);
-    const Options enOpts = listToOptions(RenOptions);
-    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-
-    PENSEReg pr(data, *REAL(Ralpha), *REAL(Rlambda), penseOpts, enOpts);
-    SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
-    SEXP relChange;
-    SEXP scale;
-    SEXP iterations;
-    SEXP result = R_NilValue;
-    double *RESTRICT newCoefsPtr = REAL(newCoefs);
-
-    BEGIN_RCPP
-    memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
-
-    vec residVec(REAL(residuals), nobs, false, true);
-    vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
-    sp_vec beta(betaDense);
-
-    pr.compute(*newCoefsPtr, beta, residVec);
-
-    betaDense = vec(beta);
-
-    result = PROTECT(Rf_allocVector(VECSXP, 5));
-    scale = PROTECT(Rf_ScalarReal(pr.getScale()));
-    relChange = PROTECT(Rf_ScalarReal(pr.relChange()));
-    iterations = PROTECT(Rf_ScalarInteger(pr.iterations()));
-
-    SET_VECTOR_ELT(result, 0, newCoefs);
-    SET_VECTOR_ELT(result, 1, residuals);
-    SET_VECTOR_ELT(result, 2, scale);
-    SET_VECTOR_ELT(result, 3, relChange);
-    SET_VECTOR_ELT(result, 4, iterations);
-
-    UNPROTECT(4);
-
-    VOID_END_RCPP
-
-    UNPROTECT(2);
-
-    return result;
-}
-
-/***************************************************************************************************
- *
- * Penalized Elastic Net S estimator for regression (PENSE)
- *
- **************************************************************************************************/
 RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
                                SEXP Ralpha, SEXP Rlambda, SEXP RpenseOptions, SEXP RenOptions)
 {
@@ -570,6 +572,7 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
         Named("intercept") = intercept,
         Named("beta") = sp_mat(beta),
         Named("residuals") = residuals,
+        Named("objF") = pr.getObjective(),
         Named("scale") = pr.getScale(),
         Named("weights") = pr.getWeights(),
         Named("rel_change") = pr.relChange(),
@@ -588,93 +591,78 @@ RcppExport SEXP C_pen_s_reg_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs,
  * Penalized Elastic Net M estimator for regression with initial scale (M-Step)
  *
  **************************************************************************************************/
-RcppExport SEXP C_pen_mstep(SEXP RXtr, SEXP Ry, SEXP coefs, SEXP scale,
-                            SEXP Ralpha, SEXP Rlambda, SEXP RmsOptions, SEXP RenOptions)
-{
-    int nobs, nvar;
-    getMatDims(RXtr, &nvar, &nobs);
-
-    const Options msOpts = listToOptions(RmsOptions);
-    const Options enOpts = listToOptions(RenOptions);
-    const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
-
-    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);
-
-    SEXP newCoefs = PROTECT(Rf_allocVector(REALSXP, data.numVar()));
-    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
-    SEXP relChange;
-    SEXP iterations;
-    SEXP result = R_NilValue;
-    double *RESTRICT newCoefsPtr = REAL(newCoefs);
-
-    BEGIN_RCPP
-    memcpy(newCoefsPtr, REAL(coefs), data.numVar() * sizeof(double));
-
-    vec residVec(REAL(residuals), nobs, false, true);
-    vec betaDense(newCoefsPtr + 1, nvar - 1, false, true);
-    sp_vec beta(betaDense);
-
-    ms.compute(*newCoefsPtr, beta, residVec);
-
-    betaDense = vec(beta);
-
-    result = PROTECT(Rf_allocVector(VECSXP, 4));
-    relChange = PROTECT(Rf_ScalarReal(ms.relChange()));
-    iterations = PROTECT(Rf_ScalarInteger(ms.iterations()));
-
-    SET_VECTOR_ELT(result, 0, newCoefs);
-    SET_VECTOR_ELT(result, 1, residuals);
-    SET_VECTOR_ELT(result, 2, relChange);
-    SET_VECTOR_ELT(result, 3, iterations);
-
-    UNPROTECT(3);
-
-    VOID_END_RCPP
-
-    UNPROTECT(2);
-
-    return result;
-}
-
-/***************************************************************************************************
- *
- * Penalized Elastic Net M estimator for regression with initial scale (M-Step)
- *
- **************************************************************************************************/
 RcppExport SEXP C_pen_mstep_sp(SEXP RXtr, SEXP Ry, SEXP Rintercept, SEXP Rcoefs, SEXP scale,
                                SEXP Ralpha, SEXP Rlambda, SEXP RmsOptions, SEXP RenOptions)
 {
+    int nlambda = Rf_length(Rlambda);
     int nobs, nvar;
     getMatDims(RXtr, &nvar, &nobs);
 
     const Options msOpts = listToOptions(RmsOptions);
     const Options enOpts = listToOptions(RenOptions);
     const Data data(REAL(RXtr), REAL(Ry), nobs, nvar);
+    const double *lambdaPtr = REAL(Rlambda);
 
-    MStep ms(data, *REAL(Ralpha), *REAL(Rlambda), *REAL(scale), msOpts, enOpts);
+    MStep ms(data, *REAL(Ralpha), *lambdaPtr, *REAL(scale), msOpts, enOpts);
 
     List retList;
-    SEXP residuals = PROTECT(Rf_allocVector(REALSXP, data.numObs()));
-    double intercept = *REAL(Rintercept);
+
+    SEXP interceptEsts = PROTECT(Rf_allocVector(REALSXP, nlambda));
+    double* interceptPtr = REAL(interceptEsts);
+
+    SEXP residuals = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
+    double* currentResidualsPtr = REAL(residuals);
+
+    SEXP weights = PROTECT(Rf_allocMatrix(REALSXP, data.numObs(), nlambda));
+    double* currentWeightsPtr = REAL(weights);
+
+    SEXP relChange = PROTECT(Rf_allocVector(REALSXP, nlambda));
+    double* relChangePtr = REAL(relChange);
+
+    SEXP objF = PROTECT(Rf_allocVector(REALSXP, nlambda));
+    double* objFPtr = REAL(objF);
+
+
+    SEXP iterations = PROTECT(Rf_allocVector(INTSXP, nlambda));
+    int* iterationsPtr = INTEGER(iterations);
+
+    double initIntercept = *REAL(Rintercept);
 
     BEGIN_RCPP
-    vec residVec(REAL(residuals), nobs, false, true);
-    sp_vec beta = as<sp_mat>(Rcoefs).col(0);
+    sp_vec initBeta = as<sp_mat>(Rcoefs).col(0);
+    sp_vec currentBeta(nvar - 1);
+    sp_mat coefEsts(nvar - 1, nlambda);
 
-    ms.compute(intercept, beta, residVec);
+    for (int i = 0; i < nlambda; ++i, currentResidualsPtr += nobs, currentWeightsPtr += nobs) {
+        vec residVec(currentResidualsPtr, nobs, false, true);
+        vec weightsVec(currentWeightsPtr, nobs, false, true);
+
+        interceptPtr[i] = initIntercept;
+        currentBeta = initBeta;
+
+        ms.setLambda(lambdaPtr[i]);
+        ms.compute(interceptPtr[i], currentBeta, residVec);
+
+        coefEsts.col(i) = currentBeta;
+        weightsVec = ms.getWeights();
+        relChangePtr[i] = ms.relChange();
+        iterationsPtr[i] = ms.iterations();
+        objFPtr[i] = ms.getObjective();
+    }
 
     retList = List::create(
-        Named("intercept") = intercept,
-        Named("beta") = sp_mat(beta),
+        Named("intercept") = interceptEsts,
+        Named("beta") = coefEsts,
         Named("residuals") = residuals,
-        Named("weights") = ms.getWeights(),
-        Named("rel_change") = ms.relChange(),
-        Named("iterations") = ms.iterations()
+        Named("objF") = objF,
+        Named("weights") = weights,
+        Named("rel_change") = relChange,
+        Named("iterations") = iterations
     );
 
     VOID_END_RCPP
 
-    UNPROTECT(1);
+    UNPROTECT(6);
 
     return wrap(retList);
 }

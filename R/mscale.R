@@ -19,7 +19,7 @@
 #'
 #' @return the M-scale as a numeric vector of length one.
 #'
-#' @useDynLib pense C_mscale
+#' @useDynLib pense, .registration = TRUE
 #' @export
 mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc,
                    eps = 1e-8, maxit = 200) {

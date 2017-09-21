@@ -1,3 +1,6 @@
+library(testthat)
+library(pense)
+
 test_that("EN Objective", {
     ## Check that we are indeed solving the problem
     ## 1/(2N) * sum(residuals^2) + lambda * penalty
@@ -18,8 +21,8 @@ test_that("EN Objective", {
 
     invisible(lapply(en_algos, function (algorithm) {
         opts_fun <- match.fun(algorithm)
-        elres <- elnet(x, y, alpha = alpha, lambda, intercept = FALSE,
-                       options = opts_fun())
+        elres <- elnet(x, y, alpha = alpha, lambda = lambda, intercept = FALSE,
+                       options = opts_fun(), correction = FALSE)
 
         expect_equal(elres$coefficients[2L], target_beta,
                      tolerance = 0.006,
@@ -31,8 +34,9 @@ test_that("EN Objective", {
     weights <- rep.int(1, n)
     invisible(lapply(en_algos, function (algorithm) {
         opts_fun <- match.fun(algorithm)
-        elres <- elnet(x, y, alpha = alpha, lambda, intercept = FALSE,
-                       options = opts_fun(), weights = weights)
+        elres <- elnet(x, y, alpha = alpha, lambda = lambda, intercept = FALSE,
+                       options = opts_fun(), weights = weights,
+                       correction = FALSE)
 
         expect_equal(elres$coefficients[2L], target_beta,
                      tolerance = 0.006,

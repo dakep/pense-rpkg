@@ -1,15 +1,26 @@
 #' Penalized Elasitc Net S-estimators for Regression
 #'
-#' @section Parallelization:
-#' With the parameter \code{ncores}, the number of available processor cores
-#' can be set. The grid of lambda values is split into \code{ncores} (almost)
-#' equally sized chunks. On each core, the cold initial estimate is computed
-#' for the lower endpoint of the lambda sequence. The fully iterated PENSE
-#' estimate is then used as warm-start for the next lambda value and so on.
-#' Therefore, if \code{ncores = 1}, only one cold initial estimate is computed
-#' and all subsequent values of lambda take the previous estimate as
-#' warm-start. Similarly, if \code{ncores = nlambda}, a cold initial estimate
-#' is computed for every lambda on the grid and no warm-starts are necessary.
+#' Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+#' linear regression models.
+#'
+#' The PENSE estimate minimizes the robust M-scale of the residuals penalized
+#' by the L1 and L2 norm of the regression coefficients (elastic net penalty).
+#' The level of penalization is chosen to minimize the \code{cv_k}-fold
+#' cross-validated prediction error (using a robust measure).
+#'
+#' @section Initial Estimate:
+#' By default (\code{initial == "warm"}), the method does not compute a
+#' full initial estimate at each
+#' lambda value in the grid, but only at \code{warm_reset} of the lambda
+#' values. At the remaining lambda values, the estimate at the previous
+#' lambda value is used to initialze the estimator (the lambda grid is
+#' first traversed in descending and then in ascending direction). If
+#' \code{warm_reset} is 1, only the 0-vector is used to initialize PENSE at the
+#' largest penalty value. No further initial estimates are computed.
+#'
+#' If \code{initial == "cold"}, a full initial estimate is computed at each
+#' lambda value. This is equal to setting \code{warm_reset} to
+#' \code{length(lambda)}.
 #'
 #' @param X design matrix with predictors.
 #' @param y response vector.
@@ -21,7 +32,7 @@
 #' @param lambda a single value or a grid of values for the regularization
 #'      parameter lambda.
 #'      Assumed to be on the same scale as the data and adjusted for
-#'      S-estimation. Defaults to \code{NULL}, which means a grid of lambda
+#'      S-estimation. If missing a grid of lambda
 #'      values is automatically generated (see parameter \code{nlambda}).
 #'      If given and \code{standardize = TRUE}, the lambda values will be
 #'      adjusted accordingly.
@@ -42,47 +53,50 @@
 #'      the lambda grid, PENSE will be initialized with the 0-vector.
 #'      \code{"cold"} computes the full initial estimator at
 #'      every lambda value.
-#' @param direction what direction to traverse the lambda grid in. Default
-#'      to \code{"both"} to traverse it in both directions.
-#'      \code{"left"} means from right to left (i.e. from larger to smaller
-#'      lambda values) and \code{"right"} means from left to right.
-#' @param warm_reset if \code{initial = "warm(0)"}, how often should the
-#'      warm-start be reset to a cold initial estimate?
+#' @param warm_reset if \code{initial = "warm"} (default), how many cold initial
+#'      estimates be computed?
 #' @param ncores,cl the number of processor cores or an actual parallel cluster
-#'      to use to estimate the optimal value of lambda. See details for more
-#'      information.
+#'      to use to estimate the optimal value of lambda. See
+#'      \code{\link{makeCluster}} on how to create a cluster manually.
 #' @param options additional options for the PENSE algorithm.
 #'      See \code{\link{pense_options}} for details.
 #' @param en_options additional options for the EN algorithm.
 #'      See \code{\link{elnet}} and \code{\link{en_options}} for details.
-#' @param initest_options additional options for computing the initial
-#'      estimator.
+#' @param init_options additional options for computing the cold initial
+#'      estimates.
 #'      Ignored if \code{initial = "warm"} and \code{warm_reset = 0}.
 #'      See \code{\link{initest_options}} for details.
 #'
 #' @return An object of class \code{"pense"} with elements
-#' \item{call}{the call that produced this object.}
+#' \item{lambda}{grid of regularization parameter values for which an estimate
+#'      is available.}
 #' \item{lambda_opt}{the optimal value of the regularization parameter
 #'      according to CV.}
-#' \item{coefficients}{a matrix of coefficients for each lambda in the grid.}
+#' \item{coefficients}{a sparse matrix of coefficients for each lambda in the
+#'      grid.}
 #' \item{residuals}{a matrix of residuals for each lambda in the grid.}
-#' \item{scale}{the estimated scales each lambda}
-#' \item{cv_lambda_grid}{a data frame with values of lambda in the first
-#'      column, and the CV error as well as serveral
-#'      statistics of the solution in the following columns.}
-#' \item{alpha,standardize,pense_options,en_options,initest_options}{
-#'      the given arguments.}
+#' \item{cv_lambda_grid}{a data frame with CV prediction errors and serveral
+#'      statistics of the solutions.}
+#' \item{scale}{the estimated scales each lambda in the grid.}
+#' \item{objective}{value of the objective function at each lambda in the grid.}
+#' \item{adjusted}{necessary information to compute the corrected EN estimates.}
+#' \item{call}{the call that produced this object.}
+#' \item{...}{values of the given arguments.}
+#'
+#' @seealso To improve the S-estimate with an M-step, see \code{\link{pensem}}.
+#'
+#' @example examples/pense-1.R
+#'
 #' @export
 #'
-#' @importFrom stats mad median
+#' @importFrom stats mad median weighted.mean
 #' @importFrom robustbase scaleTau2
 #' @importFrom Matrix norm drop Diagonal colSums
 pense <- function(X, y,
                   alpha = 0.5,
-                  nlambda = 50, lambda = NULL, lambda_min_ratio = NULL,
+                  nlambda = 50, lambda, lambda_min_ratio,
                   standardize = TRUE,
                   initial = c("warm", "cold"),
-                  direction = c("both", "left", "right"),
                   warm_reset = 10,
                   cv_k = 5, cv_objective,
                   ncores = getOption("mc.cores", 1L), cl = NULL,
@@ -138,19 +152,25 @@ pense <- function(X, y,
         1L
     }
 
-    direction <- match.arg(direction)
-
-    if (!is.null(lambda)) {
+    if (!missing(lambda) && !is.null(lambda)) {
         lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
         nlambda <- length(lambda)
     } else {
         nlambda <- .check_arg(nlambda, "integer", range = 0)
+        lambda <- NULL
     }
     warm_reset <- min(nlambda, warm_reset)
 
+    if (missing(lambda_min_ratio)) {
+        lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dX[2L] / dX[1L])))
+    }
+
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {
-        lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
-                                       range = c(0, 1))
+        lambda_min_ratio <- .check_arg(
+            lambda_min_ratio,
+            "numeric",
+            range = c(0, 1)
+        )
     }
 
     ##
@@ -191,6 +211,7 @@ pense <- function(X, y,
             nlambda,
             lambda_min_ratio = lambda_min_ratio
         )
+        call$lambda_min_ratio <- lambda_min_ratio
     }
 
     lambda <- lambda / max(scale_x)
@@ -210,7 +231,7 @@ pense <- function(X, y,
 
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(segment, direction, alpha, lambda, init_other,
+    pense_est_job <- function(segment, alpha, lambda, init_other,
                               pense_options, ...) {
         if (length(segment) == 0L) {
             X_train <- X
@@ -220,37 +241,29 @@ pense <- function(X, y,
             y_train <- y[-segment]
         }
 
-        est_all_right <- if (direction == "both" || direction == "right") {
-            # Traverse from left to right (increasing lambda)
-            pense_coldwarm(
-                X = X_train,
-                y = y_train,
-                alpha = alpha,
-                lambda_grid = lambda,
-                init_other = init_other,
-                start_0 = TRUE,
-                pense_options = pense_options,
-                ...
-            )
-        } else {
-            vector("list", length(lambda))
-        }
+        # Traverse from left to right (increasing lambda)
+        est_all_right <- pense_coldwarm(
+            X = X_train,
+            y = y_train,
+            alpha = alpha,
+            lambda_grid = lambda,
+            init_other = init_other,
+            start_0 = TRUE,
+            pense_options = pense_options,
+            ...
+        )
 
-        est_all_left <- if (direction == "both" || direction == "left") {
-            # Traverse from right to left (decreasing lambda)
-            rev(pense_coldwarm(
-                X = X_train,
-                y = y_train,
-                alpha = alpha,
-                lambda_grid = rev(lambda),
-                init_other = rev(init_other),
-                start_0 = TRUE,
-                pense_options = pense_options,
-                ...
-            ))
-        } else {
-            vector("list", length(lambda))
-        }
+        # Traverse from right to left (decreasing lambda)
+        est_all_left <- rev(pense_coldwarm(
+            X = X_train,
+            y = y_train,
+            alpha = alpha,
+            lambda_grid = rev(lambda),
+            init_other = rev(init_other),
+            start_0 = TRUE,
+            pense_options = pense_options,
+            ...
+        ))
 
         est_all <- mapply(function (left, right) {
             if (is.null(left)) {
@@ -455,7 +468,6 @@ pense <- function(X, y,
             cv_results <- cluster$lapply(
                 cv_segments,
                 pense_est_job,
-                direction = direction,
                 lambda = lambda,
                 init_other = warm0init,
                 alpha = alpha,
@@ -480,7 +492,7 @@ pense <- function(X, y,
             c(cv_ests, warm0init[[j]])
         })
 
-        cv_objective_fun <- if (missing(cv_objective)) {
+        cv_objective_fun <- if (missing(cv_objective) || is.null(cv_objective)) {
             # robust version of the RMSPE (i.e., also taking bias into account)
             function(x) {
                 st2 <- scaleTau2(x, mu.too = TRUE)
@@ -541,7 +553,6 @@ pense <- function(X, y,
 
     full_results <- pense_est_job(
         integer(0L),
-        direction = direction,
         lambda = lambda,
         init_other = warm0init,
         alpha = alpha,

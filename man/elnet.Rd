@@ -2,11 +2,11 @@
 % Please edit documentation in R/elnet.R
 \name{elnet}
 \alias{elnet}
-\title{Elastic Net Regression}
+\title{Elastic Net Estimator for Regression}
 \usage{
 elnet(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
-  addLeading1s = TRUE, options = en_options_aug_lars(), lambda_min_ratio,
-  Xtest, naive = FALSE)
+  options = en_options_aug_lars(), lambda_min_ratio, Xtest,
+  correction = TRUE)
 }
 \arguments{
 \item{X}{data matrix with predictors}
@@ -27,9 +27,6 @@ weighted EN is used with weights \code{weights}. See also 'Details'.}
 
 \item{intercept}{should an intercept be estimated?}
 
-\item{addLeading1s}{should a leading column of 1's be appended?
-If \code{FALSE}, this has to be done before calling this function.}
-
 \item{options}{additional options for the EN algorithm. See
 \code{\link{en_options}} for details.}
 
@@ -41,9 +38,9 @@ default is \code{1e-6} if $n < p$, and
 \item{Xtest}{data matrix with predictors used for prediction. This is useful
 for testing the prediciton performance on an independent test set.}
 
-\item{naive}{should the "naive" EN estimator be returned. If \code{FALSE},
-as by default, the correction estimator as defined in Zou (2005)
-is returned.}
+\item{correction}{should the "corrected" EN estimator be returned.
+If \code{TRUE}, as by default, the corrected estimator as defined in
+Zou & Hastie (2005) is returned.}
 }
 \value{
 \item{lambda}{vector of lambda values.}
@@ -59,7 +56,7 @@ is returned.}
      same index.}
 }
 \description{
-Compute the elastic net regression coefficients
+Estimate the elastic net regression coefficients.
 }
 \details{
 This solves the minimization problem
@@ -102,8 +99,14 @@ number of predictors, especially if an approximate solution is available.
 }
 
 \references{
-Ryota Tomioka, Taiji Suzuki, and Masashi Sugiyama.
-    \emph{Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
-    for Sparse Learning}. Journal of Machine Learning Research,
-    12(May):1537-1586, 2011.
+Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).
+    Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
+    for Sparse Learning.
+    \emph{Journal of Machine Learning Research}
+    \bold{12}(May):1537-1586.
+
+Zou, H. and Hastie, T. (2005).
+    Regularization and variable selection via the elastic net.
+    \emph{Journal of the Royal Statistical Society}.
+    Series B (Statistical Methodology), \bold{67}(2):301-320.
 }

@@ -1,8 +1,8 @@
 /* confdefs.h */
 #define PACKAGE_NAME "pense"
 #define PACKAGE_TARNAME "pense"
-#define PACKAGE_VERSION "0.1"
-#define PACKAGE_STRING "pense"
+#define PACKAGE_VERSION "0.6.6"
+#define PACKAGE_STRING "pense 0.6.6"
 #define PACKAGE_BUGREPORT ""
 #define PACKAGE_URL ""
 #define STDC_HEADERS 1
@@ -18,5 +18,8 @@
 #define HAVE_STDINT_H 1
 #define HAVE_INTTYPES_H 1
 #define HAVE_LIMITS_H 1
+/* #undef HAVE_OPENMP_C */
+/* #undef HAVE_OPENMP_CXX */
 #define HAVE_UINT8_16_MAX 1
 #define HAVE_UINT32_MAX 1
+#define RESTRICT __restrict__

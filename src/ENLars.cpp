@@ -8,9 +8,8 @@
 #include "config.h"
 
 #include <cfloat>
-#include <Rmath.h>
-
 #include <RcppArmadillo.h>
+#include <Rmath.h>
 
 #include "ENLars.hpp"
 #include "olsreg.h"

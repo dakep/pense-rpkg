@@ -6,13 +6,14 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
+#include "config.h"
+
 #include <Rinternals.h>
 #include <Rmath.h>
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
 
-#include "config.h"
 #include "mscale.h"
 #include "PartialSort.h"
 

@@ -6,13 +6,14 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
+#include "config.h"
+
 #include <cstring>
 #include <cfloat>
 
 #include "BLAS.h"
 #include <RcppArmadillo.h>
 
-#include "config.h"
 #include "PSCxx.hpp"
 #include "LapackException.hpp"
 

@@ -9,7 +9,7 @@
 \arguments{
 \item{x}{a PENSE estimate from \code{\link{pense}} or  \code{\link{pensem}}.}
 
-\item{what}{what Plot either ther cross-validated prediction error
+\item{what}{what Plot either the cross-validated prediction error
 (\code{"cv"}; default) or the coefficient paths.}
 
 \item{...}{currently ignored.}

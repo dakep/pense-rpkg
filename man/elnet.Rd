@@ -36,7 +36,7 @@ default is \code{1e-6} if $n < p$, and
 \code{1e-5 * 10^floor(log10(p / n))} otherwise.}
 
 \item{Xtest}{data matrix with predictors used for prediction. This is useful
-for testing the prediciton performance on an independent test set.}
+for testing the prediction performance on an independent test set.}
 
 \item{correction}{should the "corrected" EN estimator be returned.
 If \code{TRUE}, as by default, the corrected estimator as defined in
@@ -45,14 +45,14 @@ Zou & Hastie (2005) is returned.}
 \value{
 \item{lambda}{vector of lambda values.}
  \item{status}{integer specifying the exit status of the EN algorithm.}
- \item{message}{explenation of the exit status.}
+ \item{message}{explanation of the exit status.}
  \item{coefficients}{matrix of regression coefficients. Each
      column corresponds to the estimate for the lambda value at the same
      index.}
  \item{residuals}{matrix of residuals. Each column corresponds to the
      residuals for the lambda value at the same index.}
- \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
-     column corresponds to the predictions for the lambda value at the
+ \item{predictions}{if \code{Xtest} was given, matrix of predicted values.
+     Each column corresponds to the predictions for the lambda value at the
      same index.}
 }
 \description{

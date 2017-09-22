@@ -29,7 +29,7 @@ A numeric matrix with as many rows as \code{X} and as many columns as
      intercept). Each column is a PSC.
 }
 \description{
-Compute the principal sensitiviy components (PSC) for regression.
+Compute the principal sensitivity components (PSC) for regression.
 }
 \references{
 Pena, D., and Yohai, V.J. (1999).

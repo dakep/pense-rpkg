@@ -50,7 +50,7 @@
 #'      process. Should be \code{NULL} or a numeric vector. If non-NULL,
 #'      weighted EN is used with weights \code{weights}. See also 'Details'.
 #' @param Xtest data matrix with predictors used for prediction. This is useful
-#'      for testing the prediciton performance on an independent test set.
+#'      for testing the prediction performance on an independent test set.
 #' @param options additional options for the EN algorithm. See
 #'      \code{\link{en_options}} for details.
 #' @param intercept should an intercept be estimated?
@@ -65,14 +65,14 @@
 #' @return
 #'  \item{lambda}{vector of lambda values.}
 #'  \item{status}{integer specifying the exit status of the EN algorithm.}
-#'  \item{message}{explenation of the exit status.}
+#'  \item{message}{explanation of the exit status.}
 #'  \item{coefficients}{matrix of regression coefficients. Each
 #'      column corresponds to the estimate for the lambda value at the same
 #'      index.}
 #'  \item{residuals}{matrix of residuals. Each column corresponds to the
 #'      residuals for the lambda value at the same index.}
-#'  \item{predictions}{if `Xtest` was given, matrix of predicted values. Each
-#'      column corresponds to the predictions for the lambda value at the
+#'  \item{predictions}{if \code{Xtest} was given, matrix of predicted values.
+#'      Each column corresponds to the predictions for the lambda value at the
 #'      same index.}
 #'
 #' @importFrom stats weighted.mean
@@ -282,7 +282,7 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #' @return
 #'  \item{lambda}{vector of lambda values.}
 #'  \item{status}{integer specifying the exit status of the EN algorithm.}
-#'  \item{message}{explenation of the exit status.}
+#'  \item{message}{explanation of the exit status.}
 #'  \item{coefficients}{matrix of regression coefficients. Each
 #'      column corresponds to the estimate for the lambda value at the same
 #'      index.}

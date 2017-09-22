@@ -2,7 +2,7 @@
 % Please edit documentation in R/pense.R
 \name{pense}
 \alias{pense}
-\title{Penalized Elasitc Net S-estimators for Regression}
+\title{Penalized Elastic Net S-estimators for Regression}
 \usage{
 pense(X, y, alpha = 0.5, nlambda = 50, lambda, lambda_min_ratio,
   standardize = TRUE, initial = c("warm", "cold"), warm_reset = 10,
@@ -16,7 +16,7 @@ pense(X, y, alpha = 0.5, nlambda = 50, lambda, lambda_min_ratio,
 \item{y}{response vector.}
 
 \item{alpha}{elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
-\code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
 penalty.}
 
 \item{nlambda}{if \code{lambda} is not given or \code{NULL} (default),
@@ -47,7 +47,7 @@ every lambda value.}
 \item{warm_reset}{if \code{initial = "warm"} (default), how many cold initial
 estimates be computed?}
 
-\item{cv_k}{number of cross-validation segements to use to choose the optimal
+\item{cv_k}{number of cross-validation segments to use to choose the optimal
 lambda from the grid. If only a single value of lambda is given,
 cross-validation can still done to estimate the prediction performance
 at this particular lambda.}
@@ -79,7 +79,7 @@ An object of class \code{"pense"} with elements
 \item{coefficients}{a sparse matrix of coefficients for each lambda in the
      grid.}
 \item{residuals}{a matrix of residuals for each lambda in the grid.}
-\item{cv_lambda_grid}{a data frame with CV prediction errors and serveral
+\item{cv_lambda_grid}{a data frame with CV prediction errors and several
      statistics of the solutions.}
 \item{scale}{the estimated scales each lambda in the grid.}
 \item{objective}{value of the objective function at each lambda in the grid.}
@@ -88,7 +88,7 @@ An object of class \code{"pense"} with elements
 \item{...}{values of the given arguments.}
 }
 \description{
-Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+Computes the highly robust Penalized Elastic Net S-estimators (PENSE) for
 linear regression models.
 }
 \details{
@@ -103,7 +103,7 @@ By default (\code{initial == "warm"}), the method does not compute a
 full initial estimate at each
 lambda value in the grid, but only at \code{warm_reset} of the lambda
 values. At the remaining lambda values, the estimate at the previous
-lambda value is used to initialze the estimator (the lambda grid is
+lambda value is used to initialize the estimator (the lambda grid is
 first traversed in descending and then in ascending direction). If
 \code{warm_reset} is 1, only the 0-vector is used to initialize PENSE at the
 largest penalty value. No further initial estimates are computed.

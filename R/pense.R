@@ -1,6 +1,6 @@
-#' Penalized Elasitc Net S-estimators for Regression
+#' Penalized Elastic Net S-estimators for Regression
 #'
-#' Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+#' Computes the highly robust Penalized Elastic Net S-estimators (PENSE) for
 #' linear regression models.
 #'
 #' The PENSE estimate minimizes the robust M-scale of the residuals penalized
@@ -13,7 +13,7 @@
 #' full initial estimate at each
 #' lambda value in the grid, but only at \code{warm_reset} of the lambda
 #' values. At the remaining lambda values, the estimate at the previous
-#' lambda value is used to initialze the estimator (the lambda grid is
+#' lambda value is used to initialize the estimator (the lambda grid is
 #' first traversed in descending and then in ascending direction). If
 #' \code{warm_reset} is 1, only the 0-vector is used to initialize PENSE at the
 #' largest penalty value. No further initial estimates are computed.
@@ -25,7 +25,7 @@
 #' @param X design matrix with predictors.
 #' @param y response vector.
 #' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
-#'      \code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+#'      \code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
 #'      penalty.
 #' @param nlambda if \code{lambda} is not given or \code{NULL} (default),
 #'      a grid of \code{nlambda} lambda values is generated based on the data.
@@ -40,7 +40,7 @@
 #'      ratio of the smallest lambda to the (computed) largest lambda.
 #' @param standardize should the data be standardized robustly? Estimates
 #'      are returned on the original scale. Defaults to \code{TRUE}.
-#' @param cv_k number of cross-validation segements to use to choose the optimal
+#' @param cv_k number of cross-validation segments to use to choose the optimal
 #'      lambda from the grid. If only a single value of lambda is given,
 #'      cross-validation can still done to estimate the prediction performance
 #'      at this particular lambda.
@@ -75,7 +75,7 @@
 #' \item{coefficients}{a sparse matrix of coefficients for each lambda in the
 #'      grid.}
 #' \item{residuals}{a matrix of residuals for each lambda in the grid.}
-#' \item{cv_lambda_grid}{a data frame with CV prediction errors and serveral
+#' \item{cv_lambda_grid}{a data frame with CV prediction errors and several
 #'      statistics of the solutions.}
 #' \item{scale}{the estimated scales each lambda in the grid.}
 #' \item{objective}{value of the objective function at each lambda in the grid.}

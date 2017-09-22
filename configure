@@ -3828,8 +3828,8 @@ $as_echo "$ac_cv_prog_c_openmp" >&6; }
 # we also check that the actual package will work
 ac_pkg_openmp_c=no
 if test -n "${OPENMP_CFLAGS}"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking checking if OpenMP works in C" >&5
-$as_echo_n "checking checking if OpenMP works in C... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if OpenMP works in C" >&5
+$as_echo_n "checking if OpenMP works in C... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <omp.h>
@@ -4219,8 +4219,8 @@ $as_echo "$ac_cv_prog_cxx_openmp" >&6; }
 # we also check that the actual package will work
 ac_pkg_openmp_cxx=no
 if test -n "${OPENMP_CXXFLAGS}"; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking checking if OpenMP works in C++" >&5
-$as_echo_n "checking checking if OpenMP works in C++... " >&6; }
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if OpenMP works in C++" >&5
+$as_echo_n "checking if OpenMP works in C++... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <omp.h>

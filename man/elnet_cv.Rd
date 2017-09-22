@@ -48,7 +48,7 @@ default is \code{1e-6} if $n < p$, and
 \value{
 \item{lambda}{vector of lambda values.}
  \item{status}{integer specifying the exit status of the EN algorithm.}
- \item{message}{explenation of the exit status.}
+ \item{message}{explanation of the exit status.}
  \item{coefficients}{matrix of regression coefficients. Each
      column corresponds to the estimate for the lambda value at the same
      index.}

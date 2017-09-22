@@ -4,7 +4,7 @@
 #' PENSE estimate.
 #'
 #' @param x a PENSE estimate from \code{\link{pense}} or  \code{\link{pensem}}.
-#' @param what what Plot either ther cross-validated prediction error
+#' @param what what Plot either the cross-validated prediction error
 #'      (\code{"cv"}; default) or the coefficient paths.
 #' @param ... currently ignored.
 #'
@@ -26,7 +26,7 @@ plot.pense <- function(x, what = c("cv", "coef.path"), ...) {
 #' elastic net regression model.
 #'
 #' @param x a fitted, cross-validated EN model from \code{\link{elnet_cv}}.
-#' @param what what Plot either ther cross-validated prediction error
+#' @param what what Plot either the cross-validated prediction error
 #'      (\code{"cv"}; default) or the coefficient paths.
 #' @param ... currently ignored.
 #'

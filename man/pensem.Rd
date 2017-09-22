@@ -29,7 +29,7 @@ from \code{\link{pense}}.}
 \item{y}{numeric response vector.}
 
 \item{alpha}{elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
-\code{alpha = 1} is the LASSO penatly, and \code{alpha = 0} the Ridge
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
 penalty. If a \code{pense} object is supplied as first argument,}
 
 \item{nlambda}{if \code{lambda} is not given,
@@ -96,7 +96,7 @@ provided to the original call to \code{\link{pense}}.}
 An object of class \code{"pensem"}. All elements as an object
      of class \code{\link{pense}} as well as the following:
 \item{init_scale}{the initial scale estimate used in the M step.}
-\item{sest}{the PENSE estimate used to initialze the M step.}
+\item{sest}{the PENSE estimate used to initialize the M step.}
 \item{bdp}{breakdown point of the MM-estimator.}
 }
 \description{

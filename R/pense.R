@@ -1,6 +1,6 @@
 #' Penalized Elastic Net S-estimators for Regression
 #'
-#' Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+#' Computes the highly robust Penalized Elastic Net S-estimators (PENSE) for
 #' linear regression models.
 #'
 #' The PENSE estimate minimizes the robust M-scale of the residuals penalized

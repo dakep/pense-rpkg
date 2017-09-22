@@ -88,7 +88,7 @@ An object of class \code{"pense"} with elements
 \item{...}{values of the given arguments.}
 }
 \description{
-Computes the highly robust Penalized Elasitc Net S-estimators (PENSE) for
+Computes the highly robust Penalized Elastic Net S-estimators (PENSE) for
 linear regression models.
 }
 \details{

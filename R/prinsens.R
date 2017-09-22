@@ -1,6 +1,6 @@
 #' Principal Sensitivity Components
 #'
-#' Compute the principal sensitiviy components (PSC) for regression.
+#' Compute the principal sensitivity components (PSC) for regression.
 #'
 #' @param X data matrix with predictors
 #' @param y response vector

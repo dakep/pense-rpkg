@@ -8,9 +8,8 @@
 #include "config.h"
 
 #include <cfloat>
-#include <Rmath.h>
-
 #include <RcppArmadillo.h>
+#include <Rmath.h>
 
 #include "ENDal.hpp"
 
@@ -407,7 +406,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
     vec XtrStepDir;
     vec phiGradient;
     vec Xtra;
-    
+
     int innerIter = 0, lineSearchIter = 0;
     int pcgSteps = 0;
     double stepSize, stepSizePrev;
@@ -604,7 +603,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
             if ((innerIter > 1) && (normGradient < threshold)) {
                 break;
             }
-            
+
             /*
              * Gradient is not small enough -- continue Newton steps
              */
@@ -652,7 +651,7 @@ inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
         }
 
         beta *= multFact;
-        
+
         /*========================================================================================*/
         /* END minimize phi                                                                       */
         /*========================================================================================*/
@@ -855,7 +854,7 @@ static inline double spSquaredL2Norm(const sp_vec& x)
  * original source code from http://math.nist.gov/iml++/cg.h.txt
  * as well as from the Eigen C++ template library for linear algebra.
  * Copyright (C) 2011-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla
  * Public License v. 2.0. If a copy of the MPL was not distributed
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
@@ -923,7 +922,7 @@ static int solve_pcg_diag(const mat &A, vec &x, const vec &b, const double eps)
  * original source code from http://math.nist.gov/iml++/cg.h.txt
  * as well as from the Eigen C++ template library for linear algebra.
  * Copyright (C) 2011-2014 Gael Guennebaud <gael.guennebaud@inria.fr>
- * 
+ *
  * This Source Code Form is subject to the terms of the Mozilla
  * Public License v. 2.0. If a copy of the MPL was not distributed
  * with this file, You can obtain one at http://mozilla.org/MPL/2.0/.

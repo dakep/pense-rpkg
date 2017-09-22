@@ -5,9 +5,9 @@
 \title{Additional Options for the Initial Estimator}
 \usage{
 initest_options(keep_solutions = 5, psc_method = c("rr", "exact"),
-  maxit = 10, eps = 1e-06, psc_keep = 0.2,
+  maxit = 10, eps = 1e-06, psc_keep = 0.5,
   resid_keep_method = c("proportion", "threshold"), resid_keep_prop = 0.6,
-  resid_keep_thresh = 2, delta = 0.5, mscale_eps = 1e-08,
+  resid_keep_thresh = 2, delta = 0.25, mscale_eps = 1e-08,
   mscale_maxit = 200, cc)
 }
 \arguments{

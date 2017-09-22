@@ -4,7 +4,7 @@
 \alias{pense_options}
 \title{Additional Options for the Penalized EN S-estimator}
 \usage{
-pense_options(delta = 0.5, maxit = 1000, eps = 1e-06,
+pense_options(delta = 0.25, maxit = 1000, eps = 1e-06,
   mscale_eps = 1e-08, mscale_maxit = 200, verbosity = 0, cc,
   en_correction = TRUE)
 }

@@ -6,6 +6,7 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
+#include "config.h"
 #include "olsreg.h"
 #include "BLAS.h"
 

@@ -1,13 +1,18 @@
 Package: pense
 Type: Package
-Title: Penalized Elastic Net S-Estimator of Regression
-Version: 1.0.0
-Date: 2017-09-20
-Author: Derek Cho [aut],
-    Gabriela Cohen Freue [aut],
-    David Kepplinger [aut],
-    Matias Salibian-Barrera [aut]
-Maintainer: David Kepplinger <david.kepplinger@gmail.com>
+Title: Penalized Elastic Net S/MM-Estimator of Regression
+Version: 1.0.2
+Date: 2017-09-21
+Authors@R: c(
+    person("David", "Kepplinger", , "david.kepplinger@gmail.com",
+        role = c("aut", "cre")),
+    person("Derek", "Cho", role = "aut"),
+    person("Matias", "Salibian-Barrera", role = c("aut")),
+    person("Gabriela", "Cohen Freue", role = "aut")
+    )
+Encoding: UTF-8
+URL: https://github.com/dakep/pense-rpkg
+BugReports: https://github.com/dakep/pense-rpkg/issues
 Description: Robust penalized elastic net S and MM estimator for linear
     regression.
 Depends:
@@ -18,7 +23,9 @@ Imports:
     robustbase,
     parallel,
     methods
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo:
+    Rcpp,
+    RcppArmadillo
 Suggests:
     testthat,
     lars

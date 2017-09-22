@@ -6,6 +6,8 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
+#include "config.h"
+
 #include <Rmath.h>
 #include <stdlib.h>
 #include <string.h>

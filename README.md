@@ -2,7 +2,7 @@
 This R package implements the Penalized Elastic Net S-Estimator (PENSE) and MM-estimator (PENSEM)
 for linear regression.
 
-## Usage
+## Overview
 The main functions in the package are
 * `pense()` … to compute a robust elastic net S-estimator for linear regression
 * `pensem()` … to compute a robust elastic net MM-estimator either directly from the data matrix or
@@ -22,6 +22,22 @@ The elastic net solution is computed either by the augmented LARS algorithm
 (`en_options_aug_lars()`) or via the Dual Augmented Lagrangian algorithm (Tomioka, et al. 2011)
 selected with `en_options_dal()` which is much faster in case of a large number of predictors
 (> 500) and a small number of observations (< 200).
+
+## Installation
+To install the latest release from CRAN, run the following R code in the R console:
+```r
+install.packages("pense")
+```
+
+The most recent stable version as well as the developing version might not yet be available on
+CRAN. These can be directly installed from github using the
+[devtools](https://cran.r-project.org/package=devtools) package:
+```r
+# Install the most recent stable version:
+install_github("dakep/pense-rpkg")
+# Install the (unstable) develop version:
+install_github("dakep/pense-rpkg", ref = "develop")
+```
 
 
 ## References

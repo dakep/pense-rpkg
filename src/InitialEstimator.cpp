@@ -6,13 +6,14 @@
 //  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
+#include "config.h"
+
 #include <RcppArmadillo.h>
 #include <cstring>
 #include <algorithm>
 #include <stdexcept>
 #include <Rmath.h>
 
-#include "config.h"
 #include "BLAS.h"
 #include "LapackException.hpp"
 #include "InitialEstimator.hpp"

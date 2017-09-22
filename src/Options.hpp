@@ -19,7 +19,11 @@ class Options
 {
 private:
     class OptionBase
-    {};
+    {
+    public:
+        virtual ~OptionBase()
+        {}
+    };
 
 public:
     template<typename T>

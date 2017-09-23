@@ -74,7 +74,7 @@ plot.elnetfit <- function(x, ...) {
     var_names <- if (is.null(rownames(x$coefficients))) {
         sprintf("%d", seq_len(nrow(x$coefficients) - 1L))
     } else {
-        rownames(x$coefficients)
+        rownames(x$coefficients)[-1L]
     }
 
     active_vars <- data.frame(

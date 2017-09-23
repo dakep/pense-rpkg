@@ -4,7 +4,7 @@
 //
 //  Created by David Kepplinger on 2016-01-31.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
-//
+//  Parts of the augmented LARS algorithm are Copyright (C) Andreas Alfons <alfons@ese.eur.nl>
 #include "config.h"
 
 #include <cfloat>
@@ -329,8 +329,8 @@ void ENLars::augmentedOLS(vec& coefs, vec& residuals, const uword nobs,
 
 
 /**
- * This algorithm is an extended version of the "fastLasso" algorithm written by
- * Andreas Alfons for the R package robustHD-0.5.1
+ * This algorithm is an extended version of the "fastLasso" algorithm from 
+ * the R package robustHD-0.5.1: Copyright (C) Andreas Alfons <alfons@ese.eur.nl>
  */
 void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const bool intercept)
 {

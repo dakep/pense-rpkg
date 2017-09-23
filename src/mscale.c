@@ -4,6 +4,14 @@
 //
 //  Created by David Kepplinger on 2016-01-30.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
+//  Copyright for the rho functions from R package robustbase_0.92-5:
+//  Peter Rousseeuw and Christophe Croux;
+//  Valentin Todorov <valentin.todorov@chello.at>,
+//  Andreas Ruckstuhl <andreas.ruckstuhl@zhaw.ch>,
+//  Matias Salibian-Barrera <matias@stat.ubc.ca>,
+//  Tobias Verbeke <tobias.verbeke@openanalytics.eu>,
+//  Manuel Koller <mkoller@ispm.unibe.ch>,
+//  Martin Maechler
 //
 
 #include "config.h"
@@ -92,6 +100,10 @@ double mscale(const double * x, const int n, const double b, const double eps, c
     return scale;
 }
 
+static double absoluteLessThan(const double a, const double b)
+{
+    return fabs(a) - fabs(b);
+}
 
 
 /**
@@ -124,9 +136,4 @@ static double rhoGaussWeight(double x, const double c)
 {
     x /= c;
     return -expm1(-(x * x) * 0.5);
-}
-
-static double absoluteLessThan(const double a, const double b)
-{
-    return fabs(a) - fabs(b);
 }

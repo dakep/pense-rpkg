@@ -10,6 +10,8 @@ Authors@R: c(
     person("Matias", "Salibian-Barrera", role = c("aut")),
     person("Gabriela", "Cohen Freue", role = "aut")
     )
+Copyright: See the file COPYRIGHTS for copyright details on some of the
+    functions and algorithms used.
 Encoding: UTF-8
 Biarch: true
 URL: https://github.com/dakep/pense-rpkg

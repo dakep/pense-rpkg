@@ -4,6 +4,7 @@
 //
 //  Created by David Kepplinger on 2016-01-30.
 //  Copyright © 2016 David Kepplinger. All rights reserved.
+//  the partial quicksort algorithm is (C) Copyright by Ariel Faigon, 1987
 //
 
 #include "config.h"

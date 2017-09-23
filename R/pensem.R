@@ -349,19 +349,7 @@ pensem.pense <- function(x,
         ## Adjust lambda for the M step
         ##
         lambda_opt_m <- pense_lambda_opt * 1.5 / mm_options$cc^2
-
         lambda_opt_m_cv <- lambda_opt_m
-        lambda_grid_m <- data.frame(
-            lambda = lambda_opt_m_cv,
-            cvavg = NA_real_,
-            cvsd = NA_real_
-        )
-
-        ##
-        ## Find maximum lambda, starting from adjusted "optimum"
-        ## in log-2 steps (i.e., always double the previous value)
-        ##
-        lambda_max <- lambda_min <- lambda_opt_m
 
         get_coef_norm <- function(...) {
             msres <- pensemstep(
@@ -373,44 +361,23 @@ pensem.pense <- function(x,
             return(sum(abs(msres$beta@x)))
         }
 
-        ##
-        ## Get largest lambda necessary
-        ##
-        moved_away <- FALSE
-        repeat {
-            check_lambdas <- c(lambda_max, (2^seq_len(cluster$ncores - 1L)) *
-                                   lambda_max)
+        if (alpha < 0.1) {
+            lambda_max <- max(penseobj$lambda) * 1.5 /
+                (mm_options$cc^2 * max(std_data$scale_x))
+        } else {
+            ##
+            ## Find maximum lambda, starting from adjusted "optimum"
+            ## in log-2 steps (i.e., always double the previous value)
+            ##
+            lambda_max <- lambda_min <- lambda_opt_m
 
-            zero_norm <- cluster$lapply(
-                check_lambdas,
-                get_coef_norm,
-                init_scale = scale_init_corr,
-                init_int = pense_int,
-                init_coef = pense_beta,
-                alpha = penseobj$alpha,
-                options = mm_options,
-                en_options = en_options
-            )
-
-            zero_norm <- which(unlist(zero_norm) < .Machine$double.eps)
-
-            if (length(zero_norm) > 0) {
-                # Check if we moved away from the initial guess
-                moved_away <- moved_away | !identical(zero_norm[1L], 1L)
-                lambda_max <- check_lambdas[zero_norm[1L]]
-                break
-            }
-
-            lambda_max <- 2 * check_lambdas[cluster$ncores]
-            moved_away <- TRUE
-        }
-
-        if (!moved_away) {
-            # If we did not move away from the initial guess, we have to check
-            # the next smallest step if this may lead to all-zeros as well
-            # check lambda_max / 2, lambda_max / 4, lambda_max / (2^...)
+            ##
+            ## Get largest lambda necessary
+            ##
+            moved_away <- FALSE
             repeat {
-                check_lambdas <- lambda_max * 0.5^seq_len(cluster$ncores)
+                check_lambdas <- c(lambda_max, (2^seq_len(cluster$ncores - 1L)) *
+                                       lambda_max)
 
                 zero_norm <- cluster$lapply(
                     check_lambdas,
@@ -423,22 +390,54 @@ pensem.pense <- function(x,
                     en_options = en_options
                 )
 
-                not_zero_norm <- which(unlist(zero_norm) > .Machine$double.eps)
+                zero_norm <- which(unlist(zero_norm) < .Machine$double.eps)
 
-                if (length(not_zero_norm) > 0L) {
-                    choose <- not_zero_norm[1L] - 1L
-                    lambda_max <- ifelse(choose < 1L, lambda_max,
-                                         check_lambdas[choose])
+                if (length(zero_norm) > 0) {
+                    # Check if we moved away from the initial guess
+                    moved_away <- moved_away | !identical(zero_norm[1L], 1L)
+                    lambda_max <- check_lambdas[zero_norm[1L]]
                     break
                 }
 
-                lambda_max <- check_lambdas[cluster$ncores] * 0.5
+                lambda_max <- 2 * check_lambdas[cluster$ncores]
+                moved_away <- TRUE
+            }
 
-                if (isTRUE(lambda_max < .Machine$double.eps)) {
-                    lambda_max <- lambda_opt_m
-                    warning("M-step results in the zero-vector for ",
-                            "all penalty values.")
-                    break
+            if (!moved_away) {
+                # If we did not move away from the initial guess, we have to check
+                # the next smallest step if this may lead to all-zeros as well
+                # check lambda_max / 2, lambda_max / 4, lambda_max / (2^...)
+                repeat {
+                    check_lambdas <- lambda_max * 0.5^seq_len(cluster$ncores)
+
+                    zero_norm <- cluster$lapply(
+                        check_lambdas,
+                        get_coef_norm,
+                        init_scale = scale_init_corr,
+                        init_int = pense_int,
+                        init_coef = pense_beta,
+                        alpha = penseobj$alpha,
+                        options = mm_options,
+                        en_options = en_options
+                    )
+
+                    not_zero_norm <- which(unlist(zero_norm) > .Machine$double.eps)
+
+                    if (length(not_zero_norm) > 0L) {
+                        choose <- not_zero_norm[1L] - 1L
+                        lambda_max <- ifelse(choose < 1L, lambda_max,
+                                             check_lambdas[choose])
+                        break
+                    }
+
+                    lambda_max <- check_lambdas[cluster$ncores] * 0.5
+
+                    if (isTRUE(lambda_max < .Machine$double.eps)) {
+                        lambda_max <- lambda_opt_m
+                        warning("M-step results in the zero-vector for ",
+                                "all penalty values.")
+                        break
+                    }
                 }
             }
         }

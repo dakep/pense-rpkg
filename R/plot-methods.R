@@ -3,10 +3,13 @@
 #' Plot the cross-validation error or the coefficient path for a fitted
 #' PENSE estimate.
 #'
-#' @param x a PENSE estimate from \code{\link{pense}} or  \code{\link{pensem}}.
-#' @param what what Plot either the cross-validated prediction error
+#' @param x a PENSE or PENSEM estimate from \code{\link{pense}} or
+#'      \code{\link{pensem}}.
+#' @param what plot either the cross-validated prediction error
 #'      (\code{"cv"}; default) or the coefficient paths.
 #' @param ... currently ignored.
+#'
+#' @example examples/pense-plot.R
 #'
 #' @method plot pense
 #' @export
@@ -26,11 +29,14 @@ plot.pense <- function(x, what = c("cv", "coef.path"), ...) {
 #' elastic net regression model.
 #'
 #' @param x a fitted, cross-validated EN model from \code{\link{elnet_cv}}.
-#' @param what what Plot either the cross-validated prediction error
+#' @param what plot either the cross-validated prediction error
 #'      (\code{"cv"}; default) or the coefficient paths.
 #' @param ... currently ignored.
 #'
+#' @example examples/elnet_cv-plot.R
+#'
 #' @method plot cv_elnetfit
+#'
 #' @export
 plot.cv_elnetfit <- function(x, what = c("cv", "coef.path"), ...) {
     what <- match.arg(what)
@@ -48,6 +54,9 @@ plot.cv_elnetfit <- function(x, what = c("cv", "coef.path"), ...) {
 #'
 #' @param x a fitted EN model from \code{\link{elnet}}.
 #' @param ... currently ignored.
+#'
+#' @example examples/elnet-plot.R
+#'
 #' @method plot elnetfit
 #' @export
 plot.elnetfit <- function(x, ...) {
@@ -101,7 +110,7 @@ plot.elnetfit <- function(x, ...) {
         with(active_vars, {
             act_values <- value[var == sel_var]
             act_lambda <- lambda[var == sel_var]
-            matching_lambdas <- match(x$lambda, act_lambda)
+            matching_lambdas <- match(act_lambda, x$lambda)
             lambda_bound <- range(matching_lambdas, na.rm = TRUE)
             pad_0s <- 0L
             if (lambda_bound[1L] > 1L) {
@@ -135,6 +144,10 @@ plot.elnetfit <- function(x, ...) {
                 col = "#4f4f4f"
             )
         })
+    }
+
+    if (!is.null(x$lambda_opt)) {
+        abline(v = x$lambda_opt, lty = 2, col = "#4f4f4f")
     }
 }
 

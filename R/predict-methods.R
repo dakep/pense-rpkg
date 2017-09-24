@@ -16,6 +16,8 @@
 #' @importFrom Matrix drop
 #' @importFrom stats coef
 #'
+#' @example examples/pense-methods.R
+#'
 #' @export
 predict.pense <- function(object, newdata, lambda, exact = FALSE,
                           correction = TRUE, ...) {
@@ -59,8 +61,11 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
 #' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
-#' @export
 #' @importFrom Matrix drop
+#'
+#' @example examples/elnet_cv-methods.R
+#'
+#' @export
 predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
                              correction = TRUE, ...) {
     if (missing(newdata)) {

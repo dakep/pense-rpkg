@@ -19,9 +19,10 @@
 #'
 #' @return the M-scale as a numeric vector of length one.
 #'
+#' @example examples/mscale.R
 #' @useDynLib pense, .registration = TRUE
 #' @export
-mscale <- function(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc,
+mscale <- function(x, b = 0.5, rho = c("bisquare", "huber"), cc,
                    eps = 1e-8, maxit = 200) {
 
     if (!is.numeric(x) || !is.null(dim(x)) || length(x) == 0) {

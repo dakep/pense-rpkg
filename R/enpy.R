@@ -1,4 +1,4 @@
-#' PY (Pena-Yohai) initial estimates for the EN S-estimator
+#' PY (Pena-Yohai) initial estimates for EN S-estimators
 #'
 #' Computes the PY initial estimates for the EN S-estimator with different
 #' strategies for computing the principal sensitivity components.
@@ -22,13 +22,15 @@
 #' @param en_options additional options for the EN algorithm. See
 #'      \code{\link{en_options}} for details.
 #'
-#' @return \item{initCoef}{A numeric matrix with one initial coefficient per column}
+#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
 #'         \item{objF}{A vector of values of the objective function for the respective coefficient}
 #'
 #' @references Pena, D., and Yohai, V.J. (1999).
 #'     A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
 #'     \emph{Journal of the American Statistical Association}, \bold{94}(446),
 #'     434-445. \url{http://doi.org/10.2307/2670164}
+#'
+#' @example examples/enpy.R
 #'
 #' @export
 enpy <- function(X, y, alpha, lambda,
@@ -84,26 +86,26 @@ enpy <- function(X, y, alpha, lambda,
 }
 
 
-#' PY (Pena-Yohai) initial estimates for EN S-Estimators
-#'
-#' Computes the PY initial estimates for EN  S-Estimators with exact
-#' principal sensitivity components.
-#'
-#' @param X data matrix with predictors -- a leading column of 1's will be
-#'      added!
-#' @param y response vector.
-#' @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
-#'      of observations in \code{X}).
-#' @param options additional options for the initial estimator. See
-#'      \code{\link{initest_options}} for details.
-#' @param en_options additional options for the EN algorithm. See
-#'      \code{\link{en_options}} for details.
-#'
-#' @return \item{coeff}{A numeric matrix with one initial coefficient per
-#'      column}
-#'      \item{objF}{A vector of values of the objective function for the
-#'      respective coefficient}
-#'
+## PY (Pena-Yohai) initial estimates for EN S-Estimators
+##
+## Computes the PY initial estimates for EN  S-Estimators with exact
+## principal sensitivity components.
+##
+## @param X data matrix with predictors -- a leading column of 1's will be
+##      added!
+## @param y response vector.
+## @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
+##      of observations in \code{X}).
+## @param options additional options for the initial estimator. See
+##      \code{\link{initest_options}} for details.
+## @param en_options additional options for the EN algorithm. See
+##      \code{\link{en_options}} for details.
+##
+## @return \item{coeff}{A numeric matrix with one initial coefficient per
+##      column}
+##      \item{objF}{A vector of values of the objective function for the
+##      respective coefficient}
+##
 #' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
@@ -120,25 +122,25 @@ enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
     ))
 }
 
-#' PY (Pena-Yohai) initial estimates for EN S-Estimators
-#'
-#' Computes the PY initial estimates for EN S-Estimators with
-#' principal sensitivity components approximated by the ridge regression
-#' solution.
-#'
-#' @param X data matrix with predictors -- a leading column of 1's will be
-#'      added!
-#' @param y response vector.
-#' @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
-#'      of observations in \code{X}).
-#' @param options additional options for the initial estimator. See
-#'      \code{\link{initest_options}} for details.
-#' @param en_options additional options for the EN algorithm. See
-#'      \code{\link{en_options}} for details.
-#'
-#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
-#'         \item{objF}{A vector of values of the objective function for the respective coefficient}
-#'
+## PY (Pena-Yohai) initial estimates for EN S-Estimators
+##
+## Computes the PY initial estimates for EN S-Estimators with
+## principal sensitivity components approximated by the ridge regression
+## solution.
+##
+## @param X data matrix with predictors -- a leading column of 1's will be
+##      added!
+## @param y response vector.
+## @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
+##      of observations in \code{X}).
+## @param options additional options for the initial estimator. See
+##      \code{\link{initest_options}} for details.
+## @param en_options additional options for the EN algorithm. See
+##      \code{\link{en_options}} for details.
+##
+## @return \item{coeff}{A numeric matrix with one initial coefficient per column}
+##         \item{objF}{A vector of values of the objective function for the respective coefficient}
+##
 #' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
@@ -174,21 +176,21 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
 }
 
 
-#' PY (Pena-Yohai) initial estimates for EN S-Estimators
-#'
-#' Computes the PY initial estimates for EN S-Estimators with
-#' principal sensitivity components approximated by the ridge regression
-#' solution.
-#'
-#' @param X data matrix with predictors -- a leading column of 1's will be
-#'      added!
-#' @param y response vector.
-#' @param options additional options for the initial estimator. See
-#'      \code{\link{initest_options}} for details.
-#'
-#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
-#'         \item{objF}{A vector of values of the objective function for the respective coefficient}
-#'
+## PY (Pena-Yohai) initial estimates for EN S-Estimators
+##
+## Computes the PY initial estimates for EN S-Estimators with
+## principal sensitivity components approximated by the ridge regression
+## solution.
+##
+## @param X data matrix with predictors -- a leading column of 1's will be
+##      added!
+## @param y response vector.
+## @param options additional options for the initial estimator. See
+##      \code{\link{initest_options}} for details.
+##
+## @return \item{coeff}{A numeric matrix with one initial coefficient per column}
+##         \item{objF}{A vector of values of the objective function for the respective coefficient}
+##
 #' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
 enpy_ols <- function(X, y, options) {

@@ -21,6 +21,8 @@
 #'     \emph{Journal of the American Statistical Association}, \bold{94}(446),
 #'     434-445. \url{http://doi.org/10.2307/2670164}
 #'
+#' @example examples/prinsens.R
+#'
 #' @useDynLib pense, .registration = TRUE
 #' @export
 prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,

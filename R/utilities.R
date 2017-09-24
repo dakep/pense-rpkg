@@ -38,12 +38,7 @@ orderOmitTies <- function(x, tol) {
 #' @importFrom stats dnorm pnorm integrate uniroot
 consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
     if (is.character(int.rho.fun)) {
-        int.rho.fun <- switch (
-            int.rho.fun,
-            huber = 0L,
-            bisquare = 1L,
-            1L
-        )
+        int.rho.fun <- .rho2IntRho(int.rho.fun)
     }
 
     integrand <- function(x, cc) {

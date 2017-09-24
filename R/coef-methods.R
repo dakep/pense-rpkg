@@ -17,6 +17,8 @@
 #' @importFrom stats weighted.mean
 #' @importClassesFrom Matrix dgCMatrix
 #'
+#' @example examples/pense-methods.R
+#'
 #' @export
 coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
@@ -79,6 +81,10 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
             if (correction) {
                 interp_c[1L, ] <- weighted.mean(
                     object$adjusted$intercept[c(interp_lambda_left, interp_lambda_right)],
+                    interp_w
+                )
+                adj_fact <- weighted.mean(
+                    object$adjusted$factor[c(interp_lambda_left, interp_lambda_right)],
                     interp_w
                 )
             }
@@ -201,21 +207,17 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
-#' @param correction should a correction factor be applied to the EN estimate?
-#'       See \code{\link{elnet}} for details on the applied correction.
 #' @param ... currently not used.
-#' @return A numeric vector of size \eqn{p + 1}.
+#' @return if \code{sparse = FALSE} a numeric vector of size \eqn{p + 1}.
+#'      Otherwise a sparse matrix with one column and \eqn{p + 1} rows.
+#'
+#' @example examples/elnet_cv-methods.R
+#'
 #' @export
 #' @importFrom stats setNames
-coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
-                          correction = TRUE, ...) {
+coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
     exact <- isTRUE(exact)
     sparse <- isTRUE(sparse)
-    correction <- isTRUE(correction) && isTRUE(object$alpha < 1)
-
-    if (correction) {
-        warning("EN correction not yet supported")
-    }
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt
@@ -282,7 +284,7 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
     init_int <- object$coefficients[1L, closests_lambda_ind]
     init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
 
-    est <- if (is.null(object$weights)) {
+    est <- if (!is.null(object$weights)) {
         .elnet.wfit(
             X = x,
             y = y,

@@ -183,8 +183,8 @@ pense <- function(X, y,
         message("Approximation of PSCs does not work well with the DAL ",
                 "algorithm for EN due to the large number of observations ",
                 "in the augmented data matrix. ",
-                'Consider using `psc_method = "exact"` or use the augmented ',
-                "LARS algorithm for EN.")
+                'Consider using `initest_options(psc_method = "exact")` or ',
+                "use the augmented LARS algorithm for EN.")
     }
 
     if (en_options$algorithm == 1L && dX[1L] > 500L && dX[2L] < 1000L) {

@@ -2,6 +2,7 @@
 ## in C++
 ##
 #' @useDynLib pense, .registration = TRUE
+#' @importFrom Rcpp evalCpp
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix

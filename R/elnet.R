@@ -77,6 +77,9 @@
 #'
 #' @importFrom stats weighted.mean
 #'
+#' @seealso \code{\link{elnet_cv}} for automatic selection of the penalty
+#'      parameter based on the cross-validated prediciton error.
+#'
 #' @references
 #' Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).
 #'     Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
@@ -88,6 +91,8 @@
 #'     Regularization and variable selection via the elastic net.
 #'     \emph{Journal of the Royal Statistical Society}.
 #'     Series B (Statistical Methodology), \bold{67}(2):301-320.
+#'
+#' @example examples/elnet-1.R
 #'
 #' @export
 elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
@@ -156,6 +161,7 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 
     ret_struct <- structure(list(
         status = 0L,
+        alpha = alpha,
         intercept = intercept,
         message = "no observations",
         coefficients = matrix(
@@ -248,6 +254,10 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
     ret_struct$coefficients <- ret_struct$coefficients[, lambda_ord, drop = FALSE]
     ret_struct$residuals <- ret_struct$residuals[, lambda_ord, drop = FALSE]
 
+    if (!is.null(ret_struct$predictions)) {
+        ret_struct$predictions <- ret_struct$predictions[, lambda_ord, drop = FALSE]
+    }
+
     return(ret_struct)
 }
 
@@ -292,6 +302,10 @@ elnet <- function(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #'      and the estimated standard deviation.}
 #'
 #' @importFrom stats weighted.mean sd
+#' @seealso \code{\link{elnet}} to compute only the solution path, without
+#'      selecting the optimal penalty parameter using CV.
+#'
+#' @example examples/elnet_cv-1.R
 #'
 #' @export
 elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
@@ -343,6 +357,7 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
     ## Define return structure
     ret_struct <- structure(list(
         status = 0L,
+        alpha = alpha,
         intercept = intercept,
         options = options,
         message = "no observations",
@@ -447,7 +462,8 @@ elnet_cv <- function(X, y, alpha, nlambda = 100, lambda, weights,
 
         if (length(cv_ind) > 0L) {
             # Only return the performance measures
-            return(cv_measure(y_test - cv_fold_res$predictions))
+            # `predictions` are ordered from smallest to largest lambda
+            return(rev(cv_measure(y_test - cv_fold_res$predictions)))
         } else {
             # Return the full EN result
             return(cv_fold_res)

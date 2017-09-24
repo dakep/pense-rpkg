@@ -4,7 +4,7 @@
 \alias{mscale}
 \title{Robust M-estimate of Scale}
 \usage{
-mscale(x, b = 0.5, rho = c("bisquare", "huber", "gauss"), cc, eps = 1e-08,
+mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc, eps = 1e-08,
   maxit = 200)
 }
 \arguments{
@@ -35,4 +35,12 @@ This solves the M-estimation equation given by
 \note{
 \code{NA} values in \code{x} are removed before calculating the
      M-scale.
+}
+\examples{
+## Estimate the M-scale of a vector of values
+set.seed(1234)
+x <- rnorm(100)
+mscale(x)
+mscale(x, b = 0.25) # For a breakdown point of 25\%
+mscale(x, rho = "huber") # Using Huber's rho function
 }

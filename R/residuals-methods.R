@@ -11,6 +11,9 @@
 #' @param ... currently ignored.
 #' @return a numeric vector of residuals for the given lambda.
 #' @importFrom Matrix drop
+#'
+#' @example examples/pense-methods.R
+#'
 #' @export
 residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
@@ -51,13 +54,15 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
 #' @param exact if the lambda is not part of the lambda grid, should the
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
-#' @param correction should a correction factor be applied to the EN estimate?
-#'       See \code{\link{elnet}} for details on the applied correction.
 #' @param ... currently ignored.
 #' @return a numeric vector of residuals for the given lambda.
+#'
 #' @importFrom Matrix drop
+#'
+#' @example examples/elnet_cv-methods.R
+#'
 #' @export
-residuals.elnetfit <- function(object, lambda, exact = FALSE, correction = TRUE, ...) {
+residuals.elnetfit <- function(object, lambda, exact = FALSE, ...) {
     exact <- isTRUE(exact)
 
     if (missing(lambda) || is.null(lambda)) {
@@ -83,8 +88,7 @@ residuals.elnetfit <- function(object, lambda, exact = FALSE, correction = TRUE,
         object,
         lambda = lambda,
         exact = exact,
-        sparse = TRUE,
-        correction = correction
+        sparse = TRUE
     )
 
     x <- data.matrix(eval(object$call$X))

@@ -176,8 +176,12 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                 interceptSpVec,
                 currentBeta * adjFactor
             );
+
+            residuals = yTrain - XtrTrain.t() * currentBeta * adjFactor;
+
             if (estimate_intercept) {
-                coefEsts(0, i) = mean(yTrain - XtrTrain.t() * currentBeta * adjFactor);
+                coefEsts(0, i) = mean(residuals);
+                residuals -= coefEsts(0, i);
             }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);
@@ -289,10 +293,12 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
                 interceptSpVec,
                 currentBeta * adjFactor
             );
+
+            residuals = yTrain - XtrTrain.t() * currentBeta * adjFactor;
+
             if (estimate_intercept) {
-                coefEsts(0, i) = accu(
-                    weights % (yTrain - XtrTrain.t() * currentBeta * adjFactor)
-                ) / accu(weights);
+                coefEsts(0, i) = accu(weights % residuals) / accu(weights);
+                residuals -= coefEsts(0, i);
             }
         } else {
             coefEsts.col(i) = join_cols(interceptSpVec, currentBeta);

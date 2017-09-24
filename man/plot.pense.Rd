@@ -37,7 +37,7 @@ y[seq_len(n_out)] <- rnorm(n_out, -100, sd = 3)
 
 # Compute the PENSE estimator
 set.seed(1234)
-est_en <- pense(x, y, alpha = 0.5, warm_reset = 1, cv_k = 3)
+est_en <- pense(x, y, alpha = 0.5, warm_reset = 1, cv_k = 3, nlambda = 25)
 
 # The `plot` method by default shows the CV prediction error
 plot(est_en)
@@ -48,7 +48,7 @@ plot(est_en, "coef.path")
 
 # Compute the LASSO solution
 set.seed(1234)
-est_lasso <- pense(x, y, alpha = 1, warm_reset = 1, cv_k = 3,
+est_lasso <- pense(x, y, alpha = 1, warm_reset = 1, cv_k = 3, nlambda = 25,
                    init_options = initest_options(psc_method = "exact"))
 plot(est_lasso)
 plot(est_lasso, "coef.path")

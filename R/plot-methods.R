@@ -78,7 +78,7 @@ plot.elnetfit <- function(x, ...) {
     )
 }
 
-#' @importFrom graphics plot lines text
+#' @importFrom graphics plot lines text abline
 .plot_coef_path <- function(x) {
     var_names <- if (is.null(rownames(x$coefficients))) {
         sprintf("%d", seq_len(nrow(x$coefficients) - 1L))

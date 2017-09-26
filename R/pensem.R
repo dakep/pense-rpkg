@@ -601,14 +601,14 @@ pensem.pense <- function(x,
         })
 
         lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
-        lambda_grid_m <- data.frame(
-            lambda = lambda_grid_m * max(std_data$scale_x),
+        cv_lambda_grid <- data.frame(
+            lambda = lambda_grid_m,
             cvavg = cv_obj
         )
     } else {
         lambda_opt_m_cv <- min(lambda_grid_m)
-        lambda_grid_m <- data.frame(
-            lambda = lambda_grid_m * max(std_data$scale_x),
+        cv_lambda_grid <- data.frame(
+            lambda = lambda_grid_m,
             cvavg = NA_real_
         )
     }
@@ -623,22 +623,26 @@ pensem.pense <- function(x,
         init_int = pense_int,
         init_coef = pense_beta,
         alpha = alpha,
-        lambda = lambda_grid_m$lambda,
+        lambda = lambda_grid_m,
         options = mm_options,
         en_options = en_options
     )
+
+    ## Adjustment factors are based on the *standardized* coefficients
+    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_grid_m)
 
     ## Un-standardize the coefficients
     if (isTRUE(standardize)) {
         msres <- std_data$unstandardize_coefs(msres)
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
+        lambda_grid_m <- lambda_grid_m * max(std_data$scale_x)
+        cv_lambda_grid$lambda <- cv_lambda_grid$lambda * max(std_data$scale_x)
     }
 
-    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_grid_m$lambda)
-
+    ## Adjusted intercepts are computed directly for the *unstandardized* coefficients
     adjusted <- list(
         factor = adj_fact,
-        intercept = unlist(lapply(seq_along(lambda_grid_m$lambda), function (i) {
+        intercept = unlist(lapply(seq_along(lambda_grid_m), function (i) {
             weighted.mean(
                 drop(y - X %*% msres$beta[ , i, drop = FALSE] * adj_fact[i]),
                 msres$weights[ , i]
@@ -653,8 +657,8 @@ pensem.pense <- function(x,
         objective = msres$objF,
         bdp = bdp_adj,
         lambda_opt = lambda_opt_m_cv,
-        lambda = lambda_grid_m$lambda,
-        cv_lambda_grid = lambda_grid_m,
+        lambda = lambda_grid_m,
+        cv_lambda_grid = cv_lambda_grid,
         init_scale = scale_init_corr,
         alpha = alpha,
         standardize = standardize,

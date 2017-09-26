@@ -43,8 +43,6 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         return(object$coefficients[, max_lambda_ind, drop = !sparse])
     }
 
-    adj_fact <- sqrt(1 + (1 - object$alpha) * lambda)
-
     lambda_diff <- object$lambda - lambda
     lambda_diff_abs <- abs(lambda_diff)
 
@@ -115,6 +113,8 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         xs <- std_data$xs
         yc <- std_data$yc
 
+        adj_fact <- sqrt(1 + (1 - object$alpha) * lambda / max(std_data$scale_x))
+
         ## is it the S- or MM-estimate
         if ("pensem" %in% class(object)) {
             ## compute the MM-estimate starting from the "best" S-estimate
@@ -168,7 +168,6 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
                 en_options = object$en_options
             )
         }
-
 
         if (isTRUE(object$standardize)) {
             estimate <- std_data$unstandardize_coefs(estimate)

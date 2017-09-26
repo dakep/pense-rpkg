@@ -232,7 +232,7 @@ pense <- function(X, y,
     ## Function returning the estimates and residuals at every lambda value
     ## (needs X, y, and scale_x available in the environment)
     pense_est_job <- function(segment, alpha, lambda, init_other,
-                              pense_options, ...) {
+                              pense_options, standardize, ...) {
         if (length(segment) == 0L) {
             X_train <- X
             y_train <- y
@@ -241,27 +241,35 @@ pense <- function(X, y,
             y_train <- y[-segment]
         }
 
+        std_train_data <- standardize_data(X_train, y_train, standardize)
+        init_other <- lapply(init_other, function(x) {
+            lapply(x, std_train_data$standardize_coefs)
+        })
+        lambda <- lambda / max(std_train_data$scale_x)
+
         # Traverse from left to right (increasing lambda)
         est_all_right <- pense_coldwarm(
-            X = X_train,
-            y = y_train,
+            X = std_train_data$xs,
+            y = std_train_data$yc,
             alpha = alpha,
             lambda_grid = lambda,
             init_other = init_other,
             start_0 = TRUE,
             pense_options = pense_options,
+            standardize = FALSE,
             ...
         )
 
         # Traverse from right to left (decreasing lambda)
         est_all_left <- rev(pense_coldwarm(
-            X = X_train,
-            y = y_train,
+            X = std_train_data$xs,
+            y = std_train_data$yc,
             alpha = alpha,
             lambda_grid = rev(lambda),
             init_other = rev(init_other),
             start_0 = TRUE,
             pense_options = pense_options,
+            standardize = FALSE,
             ...
         ))
 
@@ -282,23 +290,31 @@ pense <- function(X, y,
 
         residuals <- NULL
         weights <- NULL
-        beta <- do.call(cbind, lapply(est_all, "[[", "beta"))
-        intercept <- unlist(lapply(est_all, "[[", "intercept"))
+
+        ## Unstandardize coefficients
+        est_all <- lapply(est_all, std_train_data$unstandardize_coefs)
+
+        coef <- list(
+            intercept = unlist(lapply(est_all, "[[", "intercept")),
+            beta = do.call(cbind, lapply(est_all, "[[", "beta"))
+        )
 
         adj_est <- NULL
         if (!identical(pense_options$naiveEn, TRUE)) {
+            # adj_facts needs to be on the *standardized* lambda
             adj_facts <- sqrt(1 + (1 - alpha) * lambda)
 
             adj_est <- mapply(function (est, adj_fact) {
                 beta <- est$beta * adj_fact
                 residuals <- drop(y_train - X_train %*% beta)
                 intercept <- weighted.mean(residuals, est$weights)
-                list(
+
+                return(list(
                     beta = beta,
                     intercept = intercept,
                     adj_fact = adj_fact,
                     residuals = residuals - intercept
-                )
+                ))
             }, est_all, adj_facts, SIMPLIFY = FALSE)
         }
 
@@ -348,9 +364,9 @@ pense <- function(X, y,
 
         return(list(
             residuals = residuals,
-            intercept = intercept,
             adjusted = adjusted,
-            beta = beta,
+            intercept = coef$intercept,
+            beta = coef$beta,
             sol_stats = sol_stats
         ))
     }

@@ -1,30 +1,88 @@
-## Estimate PENSE with a cold start for the first lambda in `lambda_grid`
-## and use the parameter estimate as warm-start for the subsequent
-## values in the `lambda_grid`. The function does not care about the
-## ordering in the lambda_grid.
-##
-## @param lambda_grid a grid of lambda values NOT ADJUSTED for sample size!
-## @param start_0 should an initial estimator be computed at the first lambda
-##                value or simply initialized at the 0 vector?
-## @param init_other a list of initial estimates of length
-##      \code{length(lambda_grid)} to add to the ones computed
-##      by this function (e.g., from a similar problem)
+## Get (one or more) cold initial estimates at the given lambda.
+## @param lambda penalty parameter
 #' @importFrom stats mad median
 #' @importFrom Matrix Matrix sparseMatrix drop
 #' @importClassesFrom Matrix dgCMatrix
-pense_coldwarm <- function(X, y, alpha, lambda_grid,
-                           start_0 = FALSE,
-                           standardize, pense_options, initest_options,
-                           en_options, init_other) {
+pense_init_cold <- function(X, y, alpha, lambda, standardize,
+                            pense_options, initest_options,
+                            en_options) {
     dX <- dim(X)
-
     std_data <- standardize_data(X, y, standardize)
 
+    # Compute cold initial estimate
+    initraw <- enpy(
+        std_data$xs,
+        std_data$yc,
+        alpha,
+        lambda,
+        options = initest_options,
+        en_options = en_options
+    )
+
+    # Only do a few refinement steps
+    pense_options$maxit <- initest_options$maxitPenseRefinement
+
+    ## Compute a "short" PENSE for each candidate solution
+    initconc <- apply(initraw$coeff, 2, function(coef) {
+        conc <- pen_s_reg(
+            std_data$xs,
+            std_data$yc,
+            alpha,
+            lambda,
+            init_int = coef[1L],
+            init_coef = coef[-1L],
+            warn = FALSE,
+            options = pense_options,
+            en_options = en_options
+        )
+
+        return(conc[c("intercept", "beta", "objF")])
+    })
+
+    # Select only the best solutions
+    obj_vals <- vapply(
+        initconc,
+        "[[",
+        "objF",
+        FUN.VALUE = numeric(1L),
+        USE.NAMES = FALSE
+    )
+    objFRanking <- orderOmitTies(obj_vals, tol = initest_options$eps)
+
+    nkeep <- min(length(objFRanking$index), initest_options$keepSolutions)
+    indkeep <- objFRanking$index[seq_len(nkeep)]
+
+    return(lapply(initconc[indkeep], std_data$unstandardize_coefs))
+}
+
+
+## Compute the fully iterated PENSE solution using the solution at the previous
+## lambda value as well as any given initial estimates in `initial_ests`.
+##
+## @param lambda_grid a grid of lambda values NOT ADJUSTED for sample size!
+## @param initial_ests a list the same length as lambda_grid. If the first
+##      item is NULL, it will be replaced by a 0-start (the behavior is the same
+##      when the argument is missing)
+## @param refine_it number of iterations to refine the initial estimates
+## @param nkeep number of initial estimates kept after refining
+#' @importFrom stats mad median
+#' @importFrom Matrix Matrix sparseMatrix drop
+#' @importClassesFrom Matrix dgCMatrix
+pense_full <- function(X, y, alpha, lambda_grid, standardize,
+                       initial_ests, refine_it, nkeep,
+                       pense_options, en_options, warn = TRUE) {
+    dX <- dim(X)
+    std_data <- standardize_data(X, y, standardize)
     final_estimates <- vector("list", length(lambda_grid))
 
-    ## For the first value of lambda, we will compute a cold start or
-    ## start from the 0-vector
-    if (isTRUE(start_0)) {
+    if (missing(initial_ests)) {
+        initial_ests <- vector("list", length(lambda_grid))
+    }
+
+    init_current <- vector("list", 0L)
+
+    ## If the first initial_ests is NULL or empty, use a 0-start
+    if (is.null(initial_ests[[1L]]) || length(initial_ests[[1L]]) == 0) {
         init_current <- list(
             list(
                 intercept = median(std_data$yc),
@@ -36,59 +94,65 @@ pense_coldwarm <- function(X, y, alpha, lambda_grid,
                 )
             )
         )
-    } else {
-        init_current <- initest_cold(
-            std_data$xs,
-            std_data$yc,
-            alpha,
-            lambda_grid[1L],
-            pense_options,
-            initest_options,
-            en_options
-        )
     }
 
-    if (missing(init_other)) {
-        init_other <- vector("list", length(lambda_grid))
-    } else {
-        init_other <- lapply(init_other, function(x) {
-            lapply(x, std_data$standardize_coefs)
-        })
-    }
+    # After 5 iterations, we only keep the top 5 estimators
+    original_maxit <- pense_options$maxit
+    refine_it <- as.integer(refine_it)
+    refine_nkeep <- as.integer(nkeep)
 
     for (i in seq_along(lambda_grid)) {
-        init_current <- c(init_current, init_other[[i]])
+        init_current <- c(init_current, initial_ests[[i]])
+        pense_options$maxit <- refine_it
 
-        full_all <- lapply(init_current, function (ic) {
+        half_all <- lapply(init_current, function (ic) {
             pen_s_reg(
                 std_data$xs,
                 std_data$yc,
                 alpha = alpha,
-                lambda = lambda_grid[i],
+                lambda = lambda_grid[[i]],
                 init_int = ic$intercept,
                 init_coef = ic$beta,
                 options = pense_options,
-                en_options = en_options
+                en_options = en_options,
+                warn = FALSE
             )
         })
 
-        best_est <- which.min(sapply(full_all, function(full) {
-            full$objF
-        }))
+        half_objf <- sapply(half_all, '[[', 'objF')
+        objf_ranking <- orderOmitTies(half_objf, pense_options$eps)
+        nkeep <- min(length(objf_ranking$index), refine_nkeep)
+        indkeep <- objf_ranking$index[seq_len(nkeep)]
 
-        init_current <- list(full_all[[best_est]][c("intercept", "beta")])
+        pense_options$maxit <- original_maxit
 
-        final_estimates[[i]] <- full_all[[best_est]]
-
-        if (standardize) {
-            final_estimates[[i]] <- std_data$unstandardize_coefs(
-                final_estimates[[i]]
+        full_kept <- lapply(half_all[indkeep], function (ic) {
+            pen_s_reg(
+                std_data$xs,
+                std_data$yc,
+                alpha = alpha,
+                lambda = lambda_grid[[i]],
+                init_int = ic$intercept,
+                init_coef = ic$beta,
+                options = pense_options,
+                en_options = en_options,
+                warn = FALSE
             )
+        })
+
+        best_est <- which.min(sapply(full_kept, '[[', 'objF'))
+        init_current <- list(full_kept[[best_est]][c("intercept", "beta")])
+
+        if (!isTRUE(full_kept[[best_est]]$rel_change < pense_options$eps) && isTRUE(warn)) {
+            warning(sprintf("PENSE did not converge for lambda = %.6f", lambda_grid[[i]]))
         }
+
+        final_estimates[[i]] <- std_data$unstandardize_coefs(full_kept[[best_est]])
     }
 
     return(final_estimates)
 }
+
 
 initest_cold <- function(X, y, alpha, lambda, pense_options,
                          initest_options, en_options) {

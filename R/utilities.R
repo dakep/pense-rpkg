@@ -18,7 +18,7 @@ nameCoefVec <- function(coef, X) {
 ## Get the order of a list of values removing the duplicate
 ## entries
 ##
-orderOmitTies <- function(x, tol) {
+orderOmitTies <- function(x, tol = 1e-6) {
     ord.x <- sort.list(x, na.last = NA, method = "quick")
     sorted <- x[ord.x]
     diffs <- diff(sorted)

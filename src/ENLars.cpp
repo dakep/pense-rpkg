@@ -310,14 +310,14 @@ void ENLars::augmentedOLS(vec& coefs, vec& residuals, const uword nobs,
                           const bool intercept)
 {
     if (!intercept) {
-        this->XtrAug.row(0).zeros();
-    }
-
-    arma::solve(coefs, this->XtrAug.t(), this->yAug,
-                arma::solve_opts::fast + arma::solve_opts::no_approx);
-
-    if (!intercept) {
         coefs[0] = 0;
+        coefs.tail_rows(coefs.n_elem - 1) = arma::solve(
+            this->XtrAug.tail_rows(this->XtrAug.n_rows - 1).t(), this->yAug,
+            arma::solve_opts::fast + arma::solve_opts::no_approx
+        );
+    } else {
+        arma::solve(coefs, this->XtrAug.t(), this->yAug,
+                    arma::solve_opts::fast + arma::solve_opts::no_approx);
     }
 
     residuals = this->yAug.head_rows(nobs) - this->XtrAug.head_cols(nobs).t() * coefs;
@@ -413,7 +413,6 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
          * previous and current regression coefficients
          */
         vec previousBeta = zeros(this->XtrAug.n_rows);
-//            currentBeta = zeros(this->XtrAug.n_rows);
 
         /* previous and current penalty parameter */
         double previousLambda = R_PosInf,
@@ -753,7 +752,6 @@ void ENLars::augmentedLASSO(vec& beta, vec& residuals, const uword nobs, const b
     /*
      * Compute residuals and intercept
      */
-
     residuals = this->yAug.head_rows(nobs) - this->XtrAug.head_cols(nobs).t() * beta;
 
     if(intercept) {

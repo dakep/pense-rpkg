@@ -19,6 +19,8 @@
 #' @param psc_method The method to use for computing the principal sensitivity
 #'      components. See details for the possible choices.
 #' @param maxit maximum number of refinement iterations.
+#' @param maxit_pense_refinement maximum number of PENSE iterations to refine
+#'      initial estimator.
 #' @param eps numeric tolerance for convergence.
 #' @param psc_keep proportion of observations to keep based on the PSC scores.
 #' @param resid_keep_method How to clean the data based on large residuals.
@@ -45,6 +47,7 @@ initest_options <- function (
     keep_solutions = 5,
     psc_method = c("rr", "exact"),
     maxit = 10,
+    maxit_pense_refinement = 5,
     eps = 1e-6,
     psc_keep = 0.5,
     resid_keep_method = c("proportion", "threshold"),
@@ -68,6 +71,7 @@ initest_options <- function (
         keepSolutions = .check_arg(keep_solutions, "integer", range = 0),
         pscMethod = psc_method,
         maxit = .check_arg(maxit, "integer", range = 0),
+        maxitPenseRefinement = .check_arg(maxit_pense_refinement, "integer", range = 0),
         eps = .check_arg(eps, "numeric", range = 0),
         keepResidualsMethod = resid_keep_method,
         keepResidualsThreshold = .check_arg(

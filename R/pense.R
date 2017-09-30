@@ -574,7 +574,14 @@ pense <- function(X, y,
     adjusted <- NULL
 
     if (length(y_test) == 0L) {
-        residuals <- vapply(est_all, '[[', 'residuals', FUN.VALUE = y, USE.NAMES = FALSE)
+        residuals <- vapply(
+            est_all,
+            '[[',
+            'residuals',
+            FUN.VALUE = y_train,
+            USE.NAMES = FALSE
+        )
+
         if (isTRUE(en_correction)) {
             adjusted <- list(
                 factor = unlist(lapply(adj_est, "[[", "adj_fact")),

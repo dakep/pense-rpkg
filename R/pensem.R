@@ -8,7 +8,7 @@
 #' estimate. For "fat" datasets, the initial scale as returned by the
 #' S-estimate is adjusted according to Maronna & Yohai (2010).
 #'
-#' @param x either a numeric data matrix or a fitted PENSE estimate obtained
+#' @param X either a numeric data matrix or a fitted PENSE estimate obtained
 #'      from \code{\link{pense}}.
 #' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
 #'      \code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
@@ -57,8 +57,8 @@
 #'
 #' @rdname pensem
 #' @export
-pensem <- function(x, ...) {
-    UseMethod("pensem", x)
+pensem <- function(X, ...) {
+    UseMethod("pensem", X)
 }
 
 #' @param y numeric response vector.
@@ -85,7 +85,7 @@ pensem <- function(x, ...) {
 #' @rdname pensem
 #' @method pensem default
 #' @export
-pensem.default <- function(x, y,
+pensem.default <- function(X, y,
                            alpha = 0.5,
                            nlambda = 50,
                            lambda,
@@ -127,7 +127,7 @@ pensem.default <- function(x, y,
     }
 
     pense_est <- pense(
-        X = x,
+        X = X,
         y = y,
         alpha = alpha,
         nlambda = nlambda,
@@ -158,7 +158,7 @@ pensem.default <- function(x, y,
         cl = cl,
         mm_options = mm_options,
         en_options = en_options,
-        x_train = x,
+        x_train = X,
         y_train = y
     ))
 }
@@ -175,7 +175,7 @@ pensem.default <- function(x, y,
 #' @rdname pensem
 #' @method pensem pense
 #' @export
-pensem.pense <- function(x,
+pensem.pense <- function(X,
                          alpha,
                          scale,
                          nlambda = 50,
@@ -190,7 +190,7 @@ pensem.pense <- function(x,
                          ...
 
 ) {
-    penseobj <- x
+    penseobj <- X
 
     X <- if (missing(x_train) || is.null(x_train)) {
         data.matrix(eval(x$call$X, envir = parent.frame()))

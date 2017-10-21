@@ -38,7 +38,7 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
         correction = correction
     )
 
-    x <- data.matrix(eval(object$call$X))
+    x <- data.matrix(eval(object$call$x))
     y <- drop(eval(object$call$y))
 
     return(drop(y - coefs[1L] - x %*% coefs[-1L, , drop = FALSE]))
@@ -91,7 +91,7 @@ residuals.elnetfit <- function(object, lambda, exact = FALSE, ...) {
         sparse = TRUE
     )
 
-    x <- data.matrix(eval(object$call$X))
+    x <- data.matrix(eval(object$call$x))
     y <- drop(eval(object$call$y))
 
     return(drop(y - coefs[1L] - x %*% coefs[-1L, , drop = FALSE]))

@@ -4,12 +4,12 @@
 \alias{elnet_cv}
 \title{Cross-validate Elastic Net}
 \usage{
-elnet_cv(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
+elnet_cv(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
   cv_k = 10, cv_measure, ncores = getOption("mc.cores", 1L), cl = NULL,
   options = en_options_aug_lars(), lambda_min_ratio, ...)
 }
 \arguments{
-\item{X}{data matrix with predictors}
+\item{x}{data matrix with predictors}
 
 \item{y}{response vector}
 

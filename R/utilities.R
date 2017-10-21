@@ -1,7 +1,7 @@
 #' @importFrom methods is
-nameCoefVec <- function(coef, X) {
-    dn <- dimnames(X)
-    xnames <- paste("X", seq_len(ncol(X)), sep = "")
+nameCoefVec <- function(coef, x) {
+    dn <- dimnames(x)
+    xnames <- paste("X", seq_len(ncol(x)), sep = "")
 
     if (!is.null(dn) && !is.null(dn[[2L]])) {
         xnames <- dn[[2L]]

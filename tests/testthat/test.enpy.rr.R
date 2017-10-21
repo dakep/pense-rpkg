@@ -6,8 +6,8 @@ test_that("enpy", {
         n <- 500L
         p <- 50L
         set.seed(12345)
-        X <- matrix(rnorm(n * p), ncol = p)
-        y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+        x <- matrix(rnorm(n * p), ncol = p)
+        y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
         ##
         ## No penalization at all
@@ -16,7 +16,7 @@ test_that("enpy", {
         lambda <- 0
 
         new <- pense::enpy(
-            X,
+            x,
             y,
             alpha = alpha,
             lambda = lambda,
@@ -31,7 +31,7 @@ test_that("enpy", {
             en_options = en_options_aug_lars()
         )
 
-        target <- enpy(X, y, lambda1 = alpha * lambda, lambda2 = 0.5 * (1 - alpha) * lambda,
+        target <- enpy(x, y, lambda1 = alpha * lambda, lambda2 = 0.5 * (1 - alpha) * lambda,
                        deltaesc = 0.5, cc.scale = 1.54764, psc.method = "rr",
                        prosac = 0.8, clean.method = "proportion", prop = 0.4,
                        py.nit = 5, en.tol = 1e-8)

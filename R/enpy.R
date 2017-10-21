@@ -8,15 +8,15 @@
 #'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the
 #'          elastic net fit and the hat matrix from the ridge regression.
 #'          This method only works if \code{alpha} < 1 or
-#'          \code{ncol(X)} < \code{nrow(X)}.}
+#'          \code{ncol(x)} < \code{nrow(x)}.}
 #'      \item{\code{"exact"}}{Calculate the PSCs from the difference between the
 #'          residuals and leave-one-out residuals from elastic net.}
 #' }
 #'
-#' @param X data matrix with predictors.
+#' @param x data matrix with predictors.
 #' @param y response vector.
 #' @param alpha,lambda EN penalty parameters (NOT adjusted for the number of
-#'      observations in \code{X}).
+#'      observations in \code{x}).
 #' @param options additional options for the initial estimator. See
 #'      \code{\link{initest_options}} for details.
 #' @param en_options additional options for the EN algorithm. See
@@ -33,12 +33,12 @@
 #' @example examples/enpy.R
 #'
 #' @export
-enpy <- function(X, y, alpha, lambda,
+enpy <- function(x, y, alpha, lambda,
                  options = initest_options(),
                  en_options = en_options_aug_lars()) {
     y <- drop(y)
 
-    dX <- dim(X)
+    dx <- dim(x)
     dY <- dim(y)
     yl <- length(y)
 
@@ -46,11 +46,11 @@ enpy <- function(X, y, alpha, lambda,
         stop("`yl` must be a numeric vector")
     }
 
-    if (is.null(dX) || length(dX) != 2L || !is.numeric(X) || dX[1L] != yl) {
-        stop("`X` must be a numeric matrix with the same number of observations as `y`")
+    if (is.null(dx) || length(dx) != 2L || !is.numeric(x) || dx[1L] != yl) {
+        stop("`x` must be a numeric matrix with the same number of observations as `y`")
     }
 
-    if (anyNA(X) || anyNA(y)) {
+    if (anyNA(x) || anyNA(y)) {
         stop("Missing values are not supported")
     }
 
@@ -68,9 +68,9 @@ enpy <- function(X, y, alpha, lambda,
 
     result <- switch(
         options$pscMethod,
-        ols = enpy_ols(X, y, options),
-        rr = enpy_rr(X, y, alpha, lambda, options, en_options),
-        exact = enpy_exact(X, y, alpha, lambda, options, en_options)
+        ols = enpy_ols(x, y, options),
+        rr = enpy_rr(x, y, alpha, lambda, options, en_options),
+        exact = enpy_exact(x, y, alpha, lambda, options, en_options)
     )
 
     resorder <- sort.list(result$objF, na.last = NA, method = "quick")
@@ -91,11 +91,11 @@ enpy <- function(X, y, alpha, lambda,
 ## Computes the PY initial estimates for EN  S-Estimators with exact
 ## principal sensitivity components.
 ##
-## @param X data matrix with predictors -- a leading column of 1's will be
+## @param x data matrix with predictors -- a leading column of 1's will be
 ##      added!
 ## @param y response vector.
 ## @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
-##      of observations in \code{X}).
+##      of observations in \code{x}).
 ## @param options additional options for the initial estimator. See
 ##      \code{\link{initest_options}} for details.
 ## @param en_options additional options for the EN algorithm. See
@@ -108,16 +108,16 @@ enpy <- function(X, y, alpha, lambda,
 ##
 #' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
-enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
-    dX <- dim(X)
+enpy_exact <- function(x, y, alpha, lambda, options, en_options) {
+    dx <- dim(x)
 
-    Xtr <- .Call(C_augtrans, X)
-    dX[2L] <- dX[2L] + 1L
+    xtr <- .Call(C_augtrans, x)
+    dx[2L] <- dx[2L] + 1L
 
-    ies <- .Call(C_enpy_exact, Xtr, y, alpha, lambda, options, en_options)
+    ies <- .Call(C_enpy_exact, xtr, y, alpha, lambda, options, en_options)
 
     return(list(
-        coeff = matrix(ies[[1L]], nrow = dX[2L]),
+        coeff = matrix(ies[[1L]], nrow = dx[2L]),
         objF = ies[[2L]]
     ))
 }
@@ -128,11 +128,11 @@ enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
 ## principal sensitivity components approximated by the ridge regression
 ## solution.
 ##
-## @param X data matrix with predictors -- a leading column of 1's will be
+## @param x data matrix with predictors -- a leading column of 1's will be
 ##      added!
 ## @param y response vector.
 ## @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
-##      of observations in \code{X}).
+##      of observations in \code{x}).
 ## @param options additional options for the initial estimator. See
 ##      \code{\link{initest_options}} for details.
 ## @param en_options additional options for the EN algorithm. See
@@ -143,11 +143,11 @@ enpy_exact <- function(X, y, alpha, lambda, options, en_options) {
 ##
 #' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
-enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
-    dX <- dim(X)
+enpy_rr <- function(x, y, alpha, lambda, options, en_options) {
+    dx <- dim(x)
 
-    Xtr <- .Call(C_augtrans, X)
-    dX[2L] <- dX[2L] + 1L
+    xtr <- .Call(C_augtrans, x)
+    dx[2L] <- dx[2L] + 1L
 
     usableProp <- with(options, if(keepResidualsMethod == 1) {
         keepResidualsProportion * keepPSCProportion
@@ -156,10 +156,10 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
     })
 
     if (alpha >= 1 - .Machine$double.eps) {
-        if (dX[2L] >= dX[1L]) {
+        if (dx[2L] >= dx[1L]) {
             stop("`enpy_rr` can not be used for data with more variables than ",
                  "observations if `alpha` is 1.")
-        } else if (dX[2L] >= ceiling(usableProp * dX[1L])) {
+        } else if (dx[2L] >= ceiling(usableProp * dx[1L])) {
             stop("With the specified proportion of observations to remove, ",
                  "the number of observations will be smaller than the number ",
                  "of variables.\n",
@@ -167,10 +167,10 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
         }
     }
 
-    ies <- .Call(C_enpy_rr, Xtr, y, alpha, lambda, options, en_options)
+    ies <- .Call(C_enpy_rr, xtr, y, alpha, lambda, options, en_options)
 
     return(list(
-        coeff = matrix(ies[[1L]], nrow = dX[2L]),
+        coeff = matrix(ies[[1L]], nrow = dx[2L]),
         objF = ies[[2L]]
     ))
 }
@@ -182,7 +182,7 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
 ## principal sensitivity components approximated by the ridge regression
 ## solution.
 ##
-## @param X data matrix with predictors -- a leading column of 1's will be
+## @param x data matrix with predictors -- a leading column of 1's will be
 ##      added!
 ## @param y response vector.
 ## @param options additional options for the initial estimator. See
@@ -193,16 +193,16 @@ enpy_rr <- function(X, y, alpha, lambda, options, en_options) {
 ##
 #' @useDynLib pense, .registration = TRUE
 #' @importFrom Rcpp evalCpp
-enpy_ols <- function(X, y, options) {
-    dX <- dim(X)
+enpy_ols <- function(x, y, options) {
+    dx <- dim(x)
 
-    Xtr <- .Call(C_augtrans, X)
-    dX[2L] <- dX[2L] + 1L
+    xtr <- .Call(C_augtrans, x)
+    dx[2L] <- dx[2L] + 1L
 
-    ies <- .Call(C_py_ols, Xtr, y, options)
+    ies <- .Call(C_py_ols, xtr, y, options)
 
     return(list(
-        coeff = matrix(ies[[1L]], nrow = dX[2L]),
+        coeff = matrix(ies[[1L]], nrow = dx[2L]),
         objF = ies[[2L]]
     ))
 }

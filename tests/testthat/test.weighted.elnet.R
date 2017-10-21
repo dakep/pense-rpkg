@@ -4,17 +4,17 @@ library(testthat)
 RIDGE_TOLERANCE <- 1e-6
 en_opts <- en_options_aug_lars()
 
-.elnet.wfit.rimpl <- function(X, y, weights, alpha, lambda) {
+.elnet.wfit.rimpl <- function(x, y, weights, alpha, lambda) {
     k <- sqrt(weights)
-    Xweight <- diag(k) %*% X
+    xweight <- diag(k) %*% x
     yweight <- k * y
 
-    etat <- crossprod(k, Xweight) / sum(weights)
-    Xweightorth <- Xweight - k %*% etat
+    etat <- crossprod(k, xweight) / sum(weights)
+    xweightorth <- xweight - k %*% etat
 
-    res <- elnet(Xweightorth, yweight, alpha = alpha, lambda = lambda,
+    res <- elnet(xweightorth, yweight, alpha = alpha, lambda = lambda,
                  intercept = FALSE, options = en_opts)
-    res$residuals <- drop(y - X %*% res$coefficients[-1L])
+    res$residuals <- drop(y - x %*% res$coefficients[-1L])
     res$coefficients[1L] <- weighted.mean(res$residuals, weights)
     res$residuals <- res$residuals - res$coefficients[1L]
 
@@ -32,32 +32,32 @@ test_that("Weighted LASSO", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
     ##
-    ## A fairly simple case with large X values
+    ## A fairly simple case with large x values
     ##
     n <- 100L
     p <- 50L
 
     set.seed(1234)
-    X <- 100 * matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- 100 * matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
@@ -68,14 +68,14 @@ test_that("Weighted LASSO", {
     p <- 100L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
@@ -86,14 +86,14 @@ test_that("Weighted LASSO", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
@@ -104,14 +104,14 @@ test_that("Weighted LASSO", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 })
@@ -127,14 +127,14 @@ test_that("Weighted Ridge", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equal(enres.rimpl$coefficients, enres$coefficients,
                  tolerance = RIDGE_TOLERANCE)
@@ -146,14 +146,14 @@ test_that("Weighted Ridge", {
     p <- 100L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equal(enres.rimpl$coefficients, enres$coefficients,
                  tolerance = RIDGE_TOLERANCE)
@@ -165,14 +165,14 @@ test_that("Weighted Ridge", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equal(enres.rimpl$coefficients, enres$coefficients,
                  tolerance = RIDGE_TOLERANCE)
@@ -184,14 +184,14 @@ test_that("Weighted Ridge", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equal(enres.rimpl$coefficients, enres$coefficients,
                  tolerance = RIDGE_TOLERANCE)
@@ -209,14 +209,14 @@ test_that("Weighted EN", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
@@ -227,14 +227,14 @@ test_that("Weighted EN", {
     p <- 50L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
@@ -245,14 +245,14 @@ test_that("Weighted EN", {
     p <- 100L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 
@@ -263,14 +263,14 @@ test_that("Weighted EN", {
     p <- 150L
 
     set.seed(1234)
-    X <- matrix(rnorm(n * p), ncol = p)
-    y <- 2 + X %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
+    x <- matrix(rnorm(n * p), ncol = p)
+    y <- 2 + x %*% c(1, 1, 1, rep.int(0, p - 3L)) + rnorm(n)
 
     weights <- rchisq(n, 1)
 
-    enres <- elnet(X, y, weights = weights, alpha = alpha, lambda = lambda,
+    enres <- elnet(x, y, weights = weights, alpha = alpha, lambda = lambda,
                    options = en_opts)
-    enres.rimpl <- .elnet.wfit.rimpl(X, y, weights, alpha, lambda)
+    enres.rimpl <- .elnet.wfit.rimpl(x, y, weights, alpha, lambda)
 
     expect_equivalent(enres.rimpl$coefficients, enres$coefficients)
 })

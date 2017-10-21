@@ -4,16 +4,16 @@
 \alias{enpy}
 \title{PY (Pena-Yohai) initial estimates for EN S-estimators}
 \usage{
-enpy(X, y, alpha, lambda, options = initest_options(),
+enpy(x, y, alpha, lambda, options = initest_options(),
   en_options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{data matrix with predictors.}
+\item{x}{data matrix with predictors.}
 
 \item{y}{response vector.}
 
 \item{alpha, lambda}{EN penalty parameters (NOT adjusted for the number of
-observations in \code{X}).}
+observations in \code{x}).}
 
 \item{options}{additional options for the initial estimator. See
 \code{\link{initest_options}} for details.}
@@ -35,7 +35,7 @@ Two different methods to calculate the sensitivity components are implemented:
      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the
          elastic net fit and the hat matrix from the ridge regression.
          This method only works if \code{alpha} < 1 or
-         \code{ncol(X)} < \code{nrow(X)}.}
+         \code{ncol(x)} < \code{nrow(x)}.}
      \item{\code{"exact"}}{Calculate the PSCs from the difference between the
          residuals and leave-one-out residuals from elastic net.}
 }

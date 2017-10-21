@@ -22,7 +22,7 @@
 #' lambda value. This is equal to setting \code{warm_reset} to
 #' \code{length(lambda)}.
 #'
-#' @param X design matrix with predictors.
+#' @param x design matrix with predictors.
 #' @param y response vector.
 #' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
 #'      \code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
@@ -92,7 +92,7 @@
 #' @importFrom stats mad median weighted.mean
 #' @importFrom robustbase scaleTau2
 #' @importFrom Matrix norm drop Diagonal colSums
-pense <- function(X, y,
+pense <- function(x, y,
                   alpha = 0.5,
                   nlambda = 50, lambda, lambda_min_ratio,
                   standardize = TRUE,
@@ -110,26 +110,26 @@ pense <- function(X, y,
 
     dY <- dim(y)
     yl <- length(y)
-    dX <- dim(X)
+    dx <- dim(x)
 
-    if (is.data.frame(X)) {
-        X <- data.matrix(X)
+    if (is.data.frame(x)) {
+        x <- data.matrix(x)
     }
 
-    if (!is.matrix(X) || !is.numeric(X)) {
-        stop("`X` must be a numeric matrix")
+    if (!is.matrix(x) || !is.numeric(x)) {
+        stop("`x` must be a numeric matrix")
     }
 
     if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
         stop("`yl` must be a numeric vector")
     }
 
-    if (dX[1L] != yl) {
-        stop("The number of observations in `X` and `y` does not match")
+    if (dx[1L] != yl) {
+        stop("The number of observations in `x` and `y` does not match")
     }
 
-    if (any(!is.finite(X))) {
-        stop("`X` must not contain infinite, NA, or NaN values")
+    if (any(!is.finite(x))) {
+        stop("`x` must not contain infinite, NA, or NaN values")
     }
 
     if (any(!is.finite(y))) {
@@ -162,7 +162,7 @@ pense <- function(X, y,
     warm_reset <- min(nlambda, warm_reset)
 
     if (missing(lambda_min_ratio)) {
-        lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dX[2L] / dX[1L])))
+        lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dx[2L] / dx[1L])))
     }
 
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {
@@ -188,7 +188,7 @@ pense <- function(X, y,
                 "use the augmented LARS algorithm for EN.")
     }
 
-    if (en_options$algorithm == 1L && dX[1L] > 500L && dX[2L] < 1000L) {
+    if (en_options$algorithm == 1L && dx[1L] > 500L && dx[2L] < 1000L) {
         message("The DAL algorithm for elastic net scales with the number of ",
                 "observations. Given the number of variables, augmented LARS ",
                 "might be the faster option.")
@@ -198,15 +198,15 @@ pense <- function(X, y,
     call <- match.call()
     call[[1L]] <- as.name("pense")
 
-    std_data <- standardize_data(X, y, standardize)
-    Xs <- std_data$xs
+    std_data <- standardize_data(x, y, standardize)
+    xs <- std_data$xs
     yc <- std_data$yc
     scale_x <- std_data$scale_x
 
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
         lambda <- build_lambda_grid(
-            Xs,
+            xs,
             yc,
             alpha,
             nlambda,
@@ -224,18 +224,18 @@ pense <- function(X, y,
     cluster <- setupCluster(
         ncores,
         cl,
-        export = c("X", "y", "scale_x"),
+        export = c("x", "y", "scale_x"),
         eval = {
             library(pense)
         }
     )
 
     ## Function returning the estimates and residuals at every lambda value
-    ## (needs X, y, and scale_x available in the environment)
+    ## (needs x, y, and scale_x available in the environment)
     pense_est_job <- function(segment, ...) {
         if (length(segment) == 0L) {
             return(.pense_est_pred(
-                x_train = X,
+                x_train = x,
                 y_train = y,
                 y_test = numeric(0),
                 ...
@@ -243,9 +243,9 @@ pense <- function(X, y,
         }
 
         return(.pense_est_pred(
-            x_train = X[-segment, , drop = FALSE],
+            x_train = x[-segment, , drop = FALSE],
             y_train = y[-segment],
-            x_test = X[segment, , drop = FALSE],
+            x_test = x[segment, , drop = FALSE],
             y_test = y[segment],
             ...
         ))
@@ -258,7 +258,7 @@ pense <- function(X, y,
     short_pense_options$maxit <- 10L
 
     warm0res <- rev(pense_full(
-        X = X,
+        x = x,
         y = y,
         alpha = alpha,
         lambda_grid = rev(lambda),
@@ -286,15 +286,15 @@ pense <- function(X, y,
     ##
     get_cold_est <- function (job, ...) {
         if (length(job$segment) == 0L) {
-            X_train <- X
+            x_train <- x
             y_train <- y
         } else {
-            X_train <- X[-job$segment, , drop = FALSE]
+            x_train <- x[-job$segment, , drop = FALSE]
             y_train <- y[-job$segment]
         }
 
         pense_init_cold(
-            X = X_train,
+            x = x_train,
             y = y_train,
             lambda = job$lambda,
             ...
@@ -315,8 +315,8 @@ pense <- function(X, y,
     if((nlambda > 1L) && (cv_k > 1L))  {
         # Create CV segments
         cv_segments <- split(
-            seq_len(dX[1L]),
-            sample(rep_len(seq_len(cv_k), dX[1L]))
+            seq_len(dx[1L]),
+            sample(rep_len(seq_len(cv_k), dx[1L]))
         )
 
         jobs_cold_cv <- unlist(lapply(cv_segments, function (seg) {
@@ -472,7 +472,7 @@ pense <- function(X, y,
 
     return(structure(list(
         residuals = full_results$residuals,
-        coefficients = nameCoefVec(coef_ests, X),
+        coefficients = nameCoefVec(coef_ests, x),
         adjusted = full_results$adjusted,
         lambda = lambda * max(scale_x),
         scale = full_results$sol_stats["scale", ],
@@ -506,7 +506,7 @@ pense <- function(X, y,
 
     # Traverse from left to right (increasing lambda)
     est_all_right <- pense_full(
-        X = std_train_data$xs,
+        x = std_train_data$xs,
         y = std_train_data$yc,
         alpha = alpha,
         lambda_grid = lambda,
@@ -517,7 +517,7 @@ pense <- function(X, y,
 
     # Traverse from right to left (decreasing lambda)
     est_all_left <- rev(pense_full(
-        X = std_train_data$xs,
+        x = std_train_data$xs,
         y = std_train_data$yc,
         alpha = alpha,
         lambda_grid = rev(lambda),

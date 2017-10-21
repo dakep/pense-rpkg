@@ -3,11 +3,11 @@
 #' @importFrom stats mad median
 #' @importFrom Matrix Matrix sparseMatrix drop
 #' @importClassesFrom Matrix dgCMatrix
-pense_init_cold <- function(X, y, alpha, lambda, standardize,
+pense_init_cold <- function(x, y, alpha, lambda, standardize,
                             pense_options, initest_options,
                             en_options) {
-    dX <- dim(X)
-    std_data <- standardize_data(X, y, standardize)
+    dx <- dim(x)
+    std_data <- standardize_data(x, y, standardize)
 
     # Compute cold initial estimate
     initraw <- enpy(
@@ -68,11 +68,11 @@ pense_init_cold <- function(X, y, alpha, lambda, standardize,
 #' @importFrom stats mad median
 #' @importFrom Matrix Matrix sparseMatrix drop
 #' @importClassesFrom Matrix dgCMatrix
-pense_full <- function(X, y, alpha, lambda_grid, standardize,
+pense_full <- function(x, y, alpha, lambda_grid, standardize,
                        initial_ests, refine_it, nkeep,
                        pense_options, en_options, warn = TRUE) {
-    dX <- dim(X)
-    std_data <- standardize_data(X, y, standardize)
+    dx <- dim(x)
+    std_data <- standardize_data(x, y, standardize)
     final_estimates <- vector("list", length(lambda_grid))
 
     if (missing(initial_ests)) {
@@ -90,7 +90,7 @@ pense_full <- function(X, y, alpha, lambda_grid, standardize,
                     i = integer(0L),
                     j = integer(0L),
                     x = numeric(0L),
-                    dims = c(dX[2L], 1L)
+                    dims = c(dx[2L], 1L)
                 )
             )
         )
@@ -154,10 +154,10 @@ pense_full <- function(X, y, alpha, lambda_grid, standardize,
 }
 
 
-initest_cold <- function(X, y, alpha, lambda, pense_options,
+initest_cold <- function(x, y, alpha, lambda, pense_options,
                          initest_options, en_options) {
     initraw <- enpy(
-        X,
+        x,
         y,
         alpha,
         lambda,
@@ -171,7 +171,7 @@ initest_cold <- function(X, y, alpha, lambda, pense_options,
     ## Compute a "short" PENSE for each candidate solution
     initconc <- apply(initraw$coeff, 2, function(coef) {
         conc <- pen_s_reg(
-            X,
+            x,
             y,
             alpha,
             lambda,

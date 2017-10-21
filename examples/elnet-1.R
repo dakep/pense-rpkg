@@ -14,7 +14,7 @@ est <- elnet(
     x, y,
     alpha = 0.6,
     nlambda = 100,
-    Xtest = x_test
+    xtest = x_test
 )
 
 # Plot the RMSPE computed from the given test set
@@ -41,7 +41,7 @@ system.time(
         alpha = 0.6,
         nlambda = 100,
         options = en_options_dal(),
-        Xtest = x_test
+        xtest = x_test
     )
 )
 
@@ -54,7 +54,7 @@ system.time(
         alpha = 0.6,
         nlambda = 100,
         options = en_options_aug_lars(),
-        Xtest = x_test
+        xtest = x_test
     )
 )
 }

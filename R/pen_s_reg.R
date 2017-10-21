@@ -6,12 +6,12 @@
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix
-pen_s_reg <- function(X, y, alpha, lambda, init_int, init_coef, warn = TRUE,
+pen_s_reg <- function(x, y, alpha, lambda, init_int, init_coef, warn = TRUE,
                       options, en_options) {
-    dX <- dim(X)
+    dx <- dim(x)
 
-    Xtr <- .Call(C_augtrans, X)
-    dX[2L] <- dX[2L] + 1L
+    xtr <- .Call(C_augtrans, x)
+    dx[2L] <- dx[2L] + 1L
 
     if (!is(init_coef, "dgCMatrix")) {
         init_coef <- Matrix(init_coef, ncol = 1L, sparse = TRUE)
@@ -19,7 +19,7 @@ pen_s_reg <- function(X, y, alpha, lambda, init_int, init_coef, warn = TRUE,
 
     ret <- .Call(
         C_pen_s_reg_sp,
-        Xtr,
+        xtr,
         y,
         init_int,
         init_coef,

@@ -8,7 +8,7 @@
 #' estimate. For "fat" datasets, the initial scale as returned by the
 #' S-estimate is adjusted according to Maronna & Yohai (2010).
 #'
-#' @param X either a numeric data matrix or a fitted PENSE estimate obtained
+#' @param x either a numeric data matrix or a fitted PENSE estimate obtained
 #'      from \code{\link{pense}}.
 #' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
 #'      \code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
@@ -57,8 +57,8 @@
 #'
 #' @rdname pensem
 #' @export
-pensem <- function(X, ...) {
-    UseMethod("pensem", X)
+pensem <- function(x, ...) {
+    UseMethod("pensem", x)
 }
 
 #' @param y numeric response vector.
@@ -85,7 +85,7 @@ pensem <- function(X, ...) {
 #' @rdname pensem
 #' @method pensem default
 #' @export
-pensem.default <- function(X, y,
+pensem.default <- function(x, y,
                            alpha = 0.5,
                            nlambda = 50,
                            lambda,
@@ -127,7 +127,7 @@ pensem.default <- function(X, y,
     }
 
     pense_est <- pense(
-        X = X,
+        x = x,
         y = y,
         alpha = alpha,
         nlambda = nlambda,
@@ -158,7 +158,7 @@ pensem.default <- function(X, y,
         cl = cl,
         mm_options = mm_options,
         en_options = en_options,
-        x_train = X,
+        x_train = x,
         y_train = y
     ))
 }
@@ -175,7 +175,7 @@ pensem.default <- function(X, y,
 #' @rdname pensem
 #' @method pensem pense
 #' @export
-pensem.pense <- function(X,
+pensem.pense <- function(x,
                          alpha,
                          scale,
                          nlambda = 50,
@@ -190,10 +190,10 @@ pensem.pense <- function(X,
                          ...
 
 ) {
-    penseobj <- X
+    penseobj <- x
 
-    X <- if (missing(x_train) || is.null(x_train)) {
-        data.matrix(eval(x$call$X, envir = parent.frame()))
+    x <- if (missing(x_train) || is.null(x_train)) {
+        data.matrix(eval(x$call$x, envir = parent.frame()))
     } else {
         x_train
     }
@@ -231,7 +231,7 @@ pensem.pense <- function(X,
         lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     }
 
-    dX <- dim(X)
+    dx <- dim(x)
 
     ## store the call
     call <- match.call()
@@ -242,11 +242,11 @@ pensem.pense <- function(X,
     pense_int <- pense_coef[1L]
     pense_beta <- pense_coef[-1L, , drop = FALSE]
 
-    residuals <- drop(y - X %*% pense_beta - pense_int)
+    residuals <- drop(y - x %*% pense_beta - pense_int)
 
     ## Standardize data and coefficients
-    std_data <- standardize_data(X, y, standardize)
-    Xs <- std_data$xs
+    std_data <- standardize_data(x, y, standardize)
+    xs <- std_data$xs
     yc <- std_data$yc
 
     if (isTRUE(standardize)) {
@@ -271,8 +271,8 @@ pensem.pense <- function(X,
     edf <- if ((penseobj$alpha < 1) && (length(active_set) > 0L)) {
         # this is not the lambda_2 in the objective used for optimization
         # since the optimization uses differently scaled objective
-        lambda2 <- pense_lambda_opt * (1 - penseobj$alpha) * dX[1L]
-        xtx <- crossprod(Xs[, active_set, drop = FALSE])
+        lambda2 <- pense_lambda_opt * (1 - penseobj$alpha) * dx[1L]
+        xtx <- crossprod(xs[, active_set, drop = FALSE])
         hmat <- solve(xtx + lambda2 * diag(length(active_set)), xtx)
         sum(diag(hmat))
     } else {
@@ -298,17 +298,17 @@ pensem.pense <- function(X,
     ## Adjust the scale for "fat" datasets
     ##
     scale_init_corr <- if (adjust_scale) {
-        scale_corr_fact <- if (edf / dX[1L] > 0.5) {
+        scale_corr_fact <- if (edf / dx[1L] > 0.5) {
             # This corresponds to q_T in Maronna & Yohai (2010)
             corr_fact_a <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L)^2)
             corr_fact_b <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 2L))
             corr_fact_c <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L) *
                                     resid_scaled)
 
-            1 + edf / (2 * dX[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
-        } else if (edf / dX[1L] > 0.1) {
+            1 + edf / (2 * dx[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
+        } else if (edf / dx[1L] > 0.1) {
             ## this is q_E in Maronna & Yohai (2010)
-            1 / (1 - (1.29 - 6.02 / dX[1L]) * edf / dX[1L])
+            1 / (1 - (1.29 - 6.02 / dx[1L]) * edf / dx[1L])
         } else {
             1
         }
@@ -321,11 +321,11 @@ pensem.pense <- function(X,
     ##
     ## Select tuning constant for the M-step for "fat" datasets
     ##
-    mm_options$cc <- if (edf / dX[1L] > 0.33) {
+    mm_options$cc <- if (edf / dx[1L] > 0.33) {
         4.2
-    } else if (edf / dX[1L] > 0.2) {
+    } else if (edf / dx[1L] > 0.2) {
         4
-    } else if (edf / dX[1L] > 0.1) {
+    } else if (edf / dx[1L] > 0.1) {
         3.7
     } else {
         3.44
@@ -335,7 +335,7 @@ pensem.pense <- function(X,
     cluster <- setupCluster(
         ncores,
         cl,
-        export = c("Xs", "yc"),
+        export = c("xs", "yc"),
         eval = {
             library(pense)
         }
@@ -353,7 +353,7 @@ pensem.pense <- function(X,
 
         get_coef_norm <- function(...) {
             msres <- pensemstep(
-                Xs,
+                xs,
                 yc,
                 ...
             )
@@ -501,8 +501,8 @@ pensem.pense <- function(X,
     ##
     if (cv_k > 1L) {
         cv_segments <- split(
-            seq_len(dX[1L]),
-            sample(rep_len(seq_len(cv_k), dX[1L]))
+            seq_len(dx[1L]),
+            sample(rep_len(seq_len(cv_k), dx[1L]))
         )
 
         ## Check if there are more cores than CV segments available
@@ -537,20 +537,20 @@ pensem.pense <- function(X,
 
         ## Run all jobs (combination of all CV segments and all lambda values)
         dojobcv <- function(job, ...) {
-            X_train <- Xs[-job$segment, , drop = FALSE]
+            x_train <- xs[-job$segment, , drop = FALSE]
             y_train <- yc[-job$segment]
-            X_test <- Xs[job$segment, , drop = FALSE]
+            x_test <- xs[job$segment, , drop = FALSE]
             y_test <- yc[job$segment]
 
             msres <- pensemstep(
-                X_train,
+                x_train,
                 y_train,
                 lambda = job$lambda,
                 ...
             )
 
             return(y_test - sweep(
-                X_test %*% msres$beta,
+                x_test %*% msres$beta,
                 2,
                 msres$intercept,
                 check.margin = FALSE
@@ -617,7 +617,7 @@ pensem.pense <- function(X,
     ## Compute M-estimator for all lambda in the grid
     ##
     msres <- pensemstep(
-        Xs,
+        xs,
         yc,
         init_scale = scale_init_corr,
         init_int = pense_int,
@@ -644,7 +644,7 @@ pensem.pense <- function(X,
         factor = adj_fact,
         intercept = unlist(lapply(seq_along(lambda_grid_m), function (i) {
             weighted.mean(
-                drop(y - X %*% msres$beta[ , i, drop = FALSE] * adj_fact[i]),
+                drop(y - x %*% msres$beta[ , i, drop = FALSE] * adj_fact[i]),
                 msres$weights[ , i]
             )
         }), use.names = FALSE)
@@ -652,7 +652,7 @@ pensem.pense <- function(X,
 
     return(structure(list(
         residuals = msres$residuals,
-        coefficients = nameCoefVec(rbind(msres$intercept, msres$beta), X),
+        coefficients = nameCoefVec(rbind(msres$intercept, msres$beta), x),
         adjusted = adjusted,
         objective = msres$objF,
         bdp = bdp_adj,
@@ -676,18 +676,18 @@ pensem.pense <- function(X,
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix
-pensemstep <- function(X, y, init_scale, init_int, init_coef, alpha, lambda,
+pensemstep <- function(x, y, init_scale, init_int, init_coef, alpha, lambda,
                        options, en_options) {
-    dX <- dim(X)
+    dx <- dim(x)
 
-    Xtr <- .Call(C_augtrans, X)
-    dX[2L] <- dX[2L] + 1L
+    xtr <- .Call(C_augtrans, x)
+    dx[2L] <- dx[2L] + 1L
 
     if (!is(init_coef, "dgCMatrix")) {
         init_coef <- Matrix(init_coef, sparse = TRUE, ncol = 1L)
     }
 
-    res <- .Call(C_pen_mstep_sp, Xtr, y, init_int, init_coef, init_scale,
+    res <- .Call(C_pen_mstep_sp, xtr, y, init_int, init_coef, init_scale,
                  alpha, lambda, options, en_options)
 
     ##

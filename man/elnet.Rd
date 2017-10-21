@@ -4,12 +4,12 @@
 \alias{elnet}
 \title{Elastic Net Estimator for Regression}
 \usage{
-elnet(X, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
-  options = en_options_aug_lars(), lambda_min_ratio, Xtest,
+elnet(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
+  options = en_options_aug_lars(), lambda_min_ratio, xtest,
   correction = TRUE)
 }
 \arguments{
-\item{X}{data matrix with predictors}
+\item{x}{data matrix with predictors}
 
 \item{y}{response vector}
 
@@ -35,7 +35,7 @@ the ratio of the smallest to the largest lambda value in the grid. The
 default is \code{1e-6} if $n < p$, and
 \code{1e-5 * 10^floor(log10(p / n))} otherwise.}
 
-\item{Xtest}{data matrix with predictors used for prediction. This is useful
+\item{xtest}{data matrix with predictors used for prediction. This is useful
 for testing the prediction performance on an independent test set.}
 
 \item{correction}{should the "corrected" EN estimator be returned.
@@ -51,7 +51,7 @@ Zou & Hastie (2005) is returned.}
      index.}
  \item{residuals}{matrix of residuals. Each column corresponds to the
      residuals for the lambda value at the same index.}
- \item{predictions}{if \code{Xtest} was given, matrix of predicted values.
+ \item{predictions}{if \code{xtest} was given, matrix of predicted values.
      Each column corresponds to the predictions for the lambda value at the
      same index.}
 }
@@ -115,7 +115,7 @@ est <- elnet(
     x, y,
     alpha = 0.6,
     nlambda = 100,
-    Xtest = x_test
+    xtest = x_test
 )
 
 # Plot the RMSPE computed from the given test set
@@ -142,7 +142,7 @@ system.time(
         alpha = 0.6,
         nlambda = 100,
         options = en_options_dal(),
-        Xtest = x_test
+        xtest = x_test
     )
 )
 
@@ -155,7 +155,7 @@ system.time(
         alpha = 0.6,
         nlambda = 100,
         options = en_options_aug_lars(),
-        Xtest = x_test
+        xtest = x_test
     )
 )
 }

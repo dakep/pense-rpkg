@@ -95,10 +95,10 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         # exact solution
         x <- if (!is.null(object$call$x_train)) {
             data.matrix(eval(object$call$x_train))
-        } else if (!is.null(object$sest$call$X)) {
-            data.matrix(eval(object$sest$call$X))
+        } else if (!is.null(object$sest$call$x)) {
+            data.matrix(eval(object$sest$call$x))
         } else {
-            data.matrix(eval(object$call$X))
+            data.matrix(eval(object$call$x))
         }
 
         y <- if (!is.null(object$call$y_train)) {
@@ -277,7 +277,7 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
 
     closests_lambda_ind <- which.min(lambda_diff_abs)
 
-    x <- data.matrix(eval(object$call$X))
+    x <- data.matrix(eval(object$call$x))
     y <- drop(eval(object$call$y))
 
     init_int <- object$coefficients[1L, closests_lambda_ind]
@@ -285,7 +285,7 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
 
     est <- if (!is.null(object$weights)) {
         .elnet.wfit(
-            X = x,
+            x = x,
             y = y,
             weights = object$weights,
             alpha = object$alpha,
@@ -296,7 +296,7 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
         )
     } else {
         .elnet.fit(
-            X = x,
+            x = x,
             y = y,
             alpha = object$alpha,
             lambda = lambda,

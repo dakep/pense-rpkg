@@ -22,9 +22,9 @@
 predict.pense <- function(object, newdata, lambda, exact = FALSE,
                           correction = TRUE, ...) {
     if (missing(newdata)) {
-        newdata <- data.matrix(eval(object$call$X))
+        newdata <- data.matrix(eval(object$call$x))
     } else {
-        dX <- dim(newdata)
+        dx <- dim(newdata)
         if (is.data.frame(newdata)) {
             newdata <- data.matrix(newdata)
         }
@@ -33,7 +33,7 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
             stop("`newdata` must be a numeric matrix")
         }
 
-        if (dX[2L] != nrow(object$coefficients) - 1L) {
+        if (dx[2L] != nrow(object$coefficients) - 1L) {
             stop("`newdata` must have as many columns as the original data set")
         }
     }
@@ -69,9 +69,9 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
 predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
                              correction = TRUE, ...) {
     if (missing(newdata)) {
-        newdata <- data.matrix(eval(object$call$X))
+        newdata <- data.matrix(eval(object$call$x))
     } else {
-        dX <- dim(newdata)
+        dx <- dim(newdata)
         if (is.data.frame(newdata)) {
             newdata <- data.matrix(newdata)
         }
@@ -80,7 +80,7 @@ predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
             stop("`newdata` must be a numeric matrix")
         }
 
-        if (dX[2L] != nrow(object$coefficients) - 1L) {
+        if (dx[2L] != nrow(object$coefficients) - 1L) {
             stop("`newdata` must have as many columns as the original data set")
         }
     }

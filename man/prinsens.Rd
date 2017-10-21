@@ -4,11 +4,11 @@
 \alias{prinsens}
 \title{Principal Sensitivity Components}
 \usage{
-prinsens(X, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
+prinsens(x, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
   en_options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{data matrix with predictors}
+\item{x}{data matrix with predictors}
 
 \item{y}{response vector}
 
@@ -24,8 +24,8 @@ penalization for elastic net.}
 \code{\link{en_options}} for details.}
 }
 \value{
-A numeric matrix with as many rows as \code{X} and as many columns as
-     PSCs found (at most the number of columns in \code{X} plus one for the
+A numeric matrix with as many rows as \code{x} and as many columns as
+     PSCs found (at most the number of columns in \code{x} plus one for the
      intercept). Each column is a PSC.
 }
 \description{

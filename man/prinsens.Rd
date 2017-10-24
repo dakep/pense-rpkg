@@ -4,11 +4,11 @@
 \alias{prinsens}
 \title{Principal Sensitivity Components}
 \usage{
-prinsens(X, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
+prinsens(x, y, method = c("ols", "en"), intercept = TRUE, alpha, lambda,
   en_options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{data matrix with predictors}
+\item{x}{data matrix with predictors}
 
 \item{y}{response vector}
 
@@ -24,12 +24,39 @@ penalization for elastic net.}
 \code{\link{en_options}} for details.}
 }
 \value{
-A numeric matrix with as many rows as \code{X} and as many columns as
-     PSCs found (at most the number of columns in \code{X} plus one for the
+A numeric matrix with as many rows as \code{x} and as many columns as
+     PSCs found (at most the number of columns in \code{x} plus one for the
      intercept). Each column is a PSC.
 }
 \description{
 Compute the principal sensitivity components (PSC) for regression.
+}
+\examples{
+set.seed(12345)
+n <- 50
+n_out <- 6
+p <- 500
+beta <- c(2:5, numeric(p - 4))
+x <- 1 + matrix(rnorm(n * p), ncol = p)
+y <- x \%*\% beta  + rnorm(n)
+
+# add outliers to y
+y[seq_len(n_out)] <- rnorm(n_out, -100, 0.5)
+
+# Compute Principal Sensitivity Components
+pscs <- prinsens(
+    x, y,
+    alpha = 0.8,
+    method = "en",
+    lambda = 10
+)
+
+# The 6 outlying observations are reflected in the 15th PSC
+colors <- rep.int(c(2, 1), times = c(n_out, n - n_out))
+ord <- order(abs(pscs[, 15L]))
+plot(abs(pscs[ord, 15L]), col = colors[ord], xlab = "Sorted Index",
+     ylab = "Absolute PSC score")
+
 }
 \references{
 Pena, D., and Yohai, V.J. (1999).

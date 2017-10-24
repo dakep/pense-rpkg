@@ -85,22 +85,23 @@ pensem <- function(x, ...) {
 #' @rdname pensem
 #' @method pensem default
 #' @export
-pensem.default <- function(x, y,
-                           alpha = 0.5,
-                           nlambda = 50,
-                           lambda,
-                           lambda_s,
-                           lambda_min_ratio,
-                           standardize = TRUE,
-                           initial = c("warm", "cold"),
-                           warm_reset = 10,
-                           cv_k = 5, cv_objective,
-                           ncores = getOption("mc.cores", 1L), cl = NULL,
-                           s_options = pense_options(),
-                           mm_options = mstep_options(),
-                           init_options = initest_options(),
-                           en_options = en_options_aug_lars(),
-                           ...
+pensem.default <- function(
+    x, y,
+    alpha = 0.5,
+    nlambda = 50,
+    lambda,
+    lambda_s,
+    lambda_min_ratio,
+    standardize = TRUE,
+    initial = c("warm", "cold"),
+    warm_reset = 10,
+    cv_k = 5, cv_objective,
+    ncores = getOption("mc.cores", 1L), cl = NULL,
+    s_options = pense_options(),
+    mm_options = mstep_options(),
+    init_options = initest_options(),
+    en_options = en_options_aug_lars(),
+    ...
 ) {
     lambda_s <- if (!missing(lambda_s)) {
         lambda_s
@@ -127,7 +128,7 @@ pensem.default <- function(x, y,
     }
 
     pense_est <- pense(
-        X = x,
+        x = x,
         y = y,
         alpha = alpha,
         nlambda = nlambda,
@@ -175,25 +176,25 @@ pensem.default <- function(x, y,
 #' @rdname pensem
 #' @method pensem pense
 #' @export
-pensem.pense <- function(x,
-                         alpha,
-                         scale,
-                         nlambda = 50,
-                         lambda,
-                         lambda_min_ratio,
-                         standardize,
-                         cv_k = 5, cv_objective,
-                         ncores = getOption("mc.cores", 1L), cl = NULL,
-                         mm_options = mstep_options(),
-                         en_options,
-                         x_train, y_train,
-                         ...
-
+pensem.pense <- function(
+    x,
+    alpha,
+    scale,
+    nlambda = 50,
+    lambda,
+    lambda_min_ratio,
+    standardize,
+    cv_k = 5, cv_objective,
+    ncores = getOption("mc.cores", 1L), cl = NULL,
+    mm_options = mstep_options(),
+    en_options,
+    x_train, y_train,
+    ...
 ) {
     penseobj <- x
 
-    X <- if (missing(x_train) || is.null(x_train)) {
-        data.matrix(eval(x$call$X, envir = parent.frame()))
+    x <- if (missing(x_train) || is.null(x_train)) {
+        data.matrix(eval(x$call$x, envir = parent.frame()))
     } else {
         x_train
     }
@@ -220,7 +221,7 @@ pensem.pense <- function(x,
         lambda_min_ratio <- if (is.null(penseobj$call$lambda_min_ratio)) {
             eval(penseobj$call$lambda_min_ratio)
         } else {
-            1e-5
+            .default_lambda_min_ratio(x)
         }
     }
 
@@ -231,7 +232,7 @@ pensem.pense <- function(x,
         lambda <- .check_arg(lambda, "numeric", range = 0, length = NULL)
     }
 
-    dX <- dim(X)
+    dx <- dim(x)
 
     ## store the call
     call <- match.call()
@@ -242,11 +243,11 @@ pensem.pense <- function(x,
     pense_int <- pense_coef[1L]
     pense_beta <- pense_coef[-1L, , drop = FALSE]
 
-    residuals <- drop(y - X %*% pense_beta - pense_int)
+    residuals <- drop(y - x %*% pense_beta - pense_int)
 
     ## Standardize data and coefficients
-    std_data <- standardize_data(X, y, standardize)
-    Xs <- std_data$xs
+    std_data <- standardize_data(x, y, standardize)
+    xs <- std_data$xs
     yc <- std_data$yc
 
     if (isTRUE(standardize)) {
@@ -271,8 +272,8 @@ pensem.pense <- function(x,
     edf <- if ((penseobj$alpha < 1) && (length(active_set) > 0L)) {
         # this is not the lambda_2 in the objective used for optimization
         # since the optimization uses differently scaled objective
-        lambda2 <- pense_lambda_opt * (1 - penseobj$alpha) * dX[1L]
-        xtx <- crossprod(Xs[, active_set, drop = FALSE])
+        lambda2 <- pense_lambda_opt * (1 - penseobj$alpha) * dx[1L]
+        xtx <- crossprod(xs[, active_set, drop = FALSE])
         hmat <- solve(xtx + lambda2 * diag(length(active_set)), xtx)
         sum(diag(hmat))
     } else {
@@ -298,17 +299,17 @@ pensem.pense <- function(x,
     ## Adjust the scale for "fat" datasets
     ##
     scale_init_corr <- if (adjust_scale) {
-        scale_corr_fact <- if (edf / dX[1L] > 0.5) {
+        scale_corr_fact <- if (edf / dx[1L] > 0.5) {
             # This corresponds to q_T in Maronna & Yohai (2010)
             corr_fact_a <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L)^2)
             corr_fact_b <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 2L))
             corr_fact_c <- mean(.Mchi(resid_scaled, cc_scale, 1L, deriv = 1L) *
                                     resid_scaled)
 
-            1 + edf / (2 * dX[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
-        } else if (edf / dX[1L] > 0.1) {
+            1 + edf / (2 * dx[1L]) * (corr_fact_a / (corr_fact_b * corr_fact_c))
+        } else if (edf / dx[1L] > 0.1) {
             ## this is q_E in Maronna & Yohai (2010)
-            1 / (1 - (1.29 - 6.02 / dX[1L]) * edf / dX[1L])
+            1 / (1 - (1.29 - 6.02 / dx[1L]) * edf / dx[1L])
         } else {
             1
         }
@@ -321,11 +322,11 @@ pensem.pense <- function(x,
     ##
     ## Select tuning constant for the M-step for "fat" datasets
     ##
-    mm_options$cc <- if (edf / dX[1L] > 0.33) {
+    mm_options$cc <- if (edf / dx[1L] > 0.33) {
         4.2
-    } else if (edf / dX[1L] > 0.2) {
+    } else if (edf / dx[1L] > 0.2) {
         4
-    } else if (edf / dX[1L] > 0.1) {
+    } else if (edf / dx[1L] > 0.1) {
         3.7
     } else {
         3.44
@@ -335,7 +336,7 @@ pensem.pense <- function(x,
     cluster <- setupCluster(
         ncores,
         cl,
-        export = c("Xs", "yc"),
+        export = c("xs", "yc"),
         eval = {
             library(pense)
         }
@@ -349,23 +350,11 @@ pensem.pense <- function(x,
         ## Adjust lambda for the M step
         ##
         lambda_opt_m <- pense_lambda_opt * 1.5 / mm_options$cc^2
-
         lambda_opt_m_cv <- lambda_opt_m
-        lambda_grid_m <- data.frame(
-            lambda = lambda_opt_m_cv,
-            cvavg = NA_real_,
-            cvsd = NA_real_
-        )
-
-        ##
-        ## Find maximum lambda, starting from adjusted "optimum"
-        ## in log-2 steps (i.e., always double the previous value)
-        ##
-        lambda_max <- lambda_min <- lambda_opt_m
 
         get_coef_norm <- function(...) {
             msres <- pensemstep(
-                Xs,
+                xs,
                 yc,
                 ...
             )
@@ -373,44 +362,23 @@ pensem.pense <- function(x,
             return(sum(abs(msres$beta@x)))
         }
 
-        ##
-        ## Get largest lambda necessary
-        ##
-        moved_away <- FALSE
-        repeat {
-            check_lambdas <- c(lambda_max, (2^seq_len(cluster$ncores - 1L)) *
-                                   lambda_max)
+        if (alpha < 0.1) {
+            lambda_max <- max(penseobj$lambda) * 1.5 /
+                (mm_options$cc^2 * max(std_data$scale_x))
+        } else {
+            ##
+            ## Find maximum lambda, starting from adjusted "optimum"
+            ## in log-2 steps (i.e., always double the previous value)
+            ##
+            lambda_max <- lambda_min <- lambda_opt_m
 
-            zero_norm <- cluster$lapply(
-                check_lambdas,
-                get_coef_norm,
-                init_scale = scale_init_corr,
-                init_int = pense_int,
-                init_coef = pense_beta,
-                alpha = penseobj$alpha,
-                options = mm_options,
-                en_options = en_options
-            )
-
-            zero_norm <- which(unlist(zero_norm) < .Machine$double.eps)
-
-            if (length(zero_norm) > 0) {
-                # Check if we moved away from the initial guess
-                moved_away <- moved_away | !identical(zero_norm[1L], 1L)
-                lambda_max <- check_lambdas[zero_norm[1L]]
-                break
-            }
-
-            lambda_max <- 2 * check_lambdas[cluster$ncores]
-            moved_away <- TRUE
-        }
-
-        if (!moved_away) {
-            # If we did not move away from the initial guess, we have to check
-            # the next smallest step if this may lead to all-zeros as well
-            # check lambda_max / 2, lambda_max / 4, lambda_max / (2^...)
+            ##
+            ## Get largest lambda necessary
+            ##
+            moved_away <- FALSE
             repeat {
-                check_lambdas <- lambda_max * 0.5^seq_len(cluster$ncores)
+                check_lambdas <- c(lambda_max, (2^seq_len(cluster$ncores - 1L)) *
+                                       lambda_max)
 
                 zero_norm <- cluster$lapply(
                     check_lambdas,
@@ -418,27 +386,59 @@ pensem.pense <- function(x,
                     init_scale = scale_init_corr,
                     init_int = pense_int,
                     init_coef = pense_beta,
-                    alpha = penseobj$alpha,
+                    alpha = alpha,
                     options = mm_options,
                     en_options = en_options
                 )
 
-                not_zero_norm <- which(unlist(zero_norm) > .Machine$double.eps)
+                zero_norm <- which(unlist(zero_norm) < .Machine$double.eps)
 
-                if (length(not_zero_norm) > 0L) {
-                    choose <- not_zero_norm[1L] - 1L
-                    lambda_max <- ifelse(choose < 1L, lambda_max,
-                                         check_lambdas[choose])
+                if (length(zero_norm) > 0) {
+                    # Check if we moved away from the initial guess
+                    moved_away <- moved_away | !identical(zero_norm[1L], 1L)
+                    lambda_max <- check_lambdas[zero_norm[1L]]
                     break
                 }
 
-                lambda_max <- check_lambdas[cluster$ncores] * 0.5
+                lambda_max <- 2 * check_lambdas[cluster$ncores]
+                moved_away <- TRUE
+            }
 
-                if (isTRUE(lambda_max < .Machine$double.eps)) {
-                    lambda_max <- lambda_opt_m
-                    warning("M-step results in the zero-vector for ",
-                            "all penalty values.")
-                    break
+            if (!moved_away) {
+                # If we did not move away from the initial guess, we have to check
+                # the next smallest step if this may lead to all-zeros as well
+                # check lambda_max / 2, lambda_max / 4, lambda_max / (2^...)
+                repeat {
+                    check_lambdas <- lambda_max * 0.5^seq_len(cluster$ncores)
+
+                    zero_norm <- cluster$lapply(
+                        check_lambdas,
+                        get_coef_norm,
+                        init_scale = scale_init_corr,
+                        init_int = pense_int,
+                        init_coef = pense_beta,
+                        alpha = alpha,
+                        options = mm_options,
+                        en_options = en_options
+                    )
+
+                    not_zero_norm <- which(unlist(zero_norm) > .Machine$double.eps)
+
+                    if (length(not_zero_norm) > 0L) {
+                        choose <- not_zero_norm[1L] - 1L
+                        lambda_max <- ifelse(choose < 1L, lambda_max,
+                                             check_lambdas[choose])
+                        break
+                    }
+
+                    lambda_max <- check_lambdas[cluster$ncores] * 0.5
+
+                    if (isTRUE(lambda_max < .Machine$double.eps)) {
+                        lambda_max <- lambda_opt_m
+                        warning("M-step results in the zero-vector for ",
+                                "all penalty values.")
+                        break
+                    }
                 }
             }
         }
@@ -462,7 +462,7 @@ pensem.pense <- function(x,
                     init_scale = scale_init_corr,
                     init_int = pense_int,
                     init_coef = pense_beta,
-                    alpha = penseobj$alpha,
+                    alpha = alpha,
                     options = mm_options,
                     en_options = en_options
                 )
@@ -502,8 +502,8 @@ pensem.pense <- function(x,
     ##
     if (cv_k > 1L) {
         cv_segments <- split(
-            seq_len(dX[1L]),
-            sample(rep_len(seq_len(cv_k), dX[1L]))
+            seq_len(dx[1L]),
+            sample(rep_len(seq_len(cv_k), dx[1L]))
         )
 
         ## Check if there are more cores than CV segments available
@@ -538,20 +538,20 @@ pensem.pense <- function(x,
 
         ## Run all jobs (combination of all CV segments and all lambda values)
         dojobcv <- function(job, ...) {
-            X_train <- Xs[-job$segment, , drop = FALSE]
+            x_train <- xs[-job$segment, , drop = FALSE]
             y_train <- yc[-job$segment]
-            X_test <- Xs[job$segment, , drop = FALSE]
+            x_test <- xs[job$segment, , drop = FALSE]
             y_test <- yc[job$segment]
 
             msres <- pensemstep(
-                X_train,
+                x_train,
                 y_train,
                 lambda = job$lambda,
                 ...
             )
 
             return(y_test - sweep(
-                X_test %*% msres$beta,
+                x_test %*% msres$beta,
                 2,
                 msres$intercept,
                 check.margin = FALSE
@@ -562,7 +562,7 @@ pensem.pense <- function(x,
             pred_errors <- cluster$lapply(
                 jobgrid,
                 dojobcv,
-                alpha = penseobj$alpha,
+                alpha = alpha,
                 init_scale = scale_init_corr,
                 init_int = pense_int,
                 init_coef = pense_beta,
@@ -602,14 +602,14 @@ pensem.pense <- function(x,
         })
 
         lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
-        lambda_grid_m <- data.frame(
-            lambda = lambda_grid_m * max(std_data$scale_x),
+        cv_lambda_grid <- data.frame(
+            lambda = lambda_grid_m,
             cvavg = cv_obj
         )
     } else {
         lambda_opt_m_cv <- min(lambda_grid_m)
-        lambda_grid_m <- data.frame(
-            lambda = lambda_grid_m * max(std_data$scale_x),
+        cv_lambda_grid <- data.frame(
+            lambda = lambda_grid_m,
             cvavg = NA_real_
         )
     }
@@ -618,30 +618,34 @@ pensem.pense <- function(x,
     ## Compute M-estimator for all lambda in the grid
     ##
     msres <- pensemstep(
-        Xs,
+        xs,
         yc,
         init_scale = scale_init_corr,
         init_int = pense_int,
         init_coef = pense_beta,
-        alpha = penseobj$alpha,
-        lambda = lambda_grid_m$lambda,
+        alpha = alpha,
+        lambda = lambda_grid_m,
         options = mm_options,
         en_options = en_options
     )
+
+    ## Adjustment factors are based on the *standardized* coefficients
+    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_grid_m)
 
     ## Un-standardize the coefficients
     if (isTRUE(standardize)) {
         msres <- std_data$unstandardize_coefs(msres)
         lambda_opt_m_cv <- lambda_opt_m_cv * max(std_data$scale_x)
+        lambda_grid_m <- lambda_grid_m * max(std_data$scale_x)
+        cv_lambda_grid$lambda <- cv_lambda_grid$lambda * max(std_data$scale_x)
     }
 
-    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_grid_m$lambda)
-
+    ## Adjusted intercepts are computed directly for the *unstandardized* coefficients
     adjusted <- list(
         factor = adj_fact,
-        intercept = unlist(lapply(seq_along(lambda_grid_m$lambda), function (i) {
+        intercept = unlist(lapply(seq_along(lambda_grid_m), function (i) {
             weighted.mean(
-                drop(y - X %*% msres$beta[ , i, drop = FALSE] * adj_fact[i]),
+                drop(y - x %*% msres$beta[ , i, drop = FALSE] * adj_fact[i]),
                 msres$weights[ , i]
             )
         }), use.names = FALSE)
@@ -649,15 +653,15 @@ pensem.pense <- function(x,
 
     return(structure(list(
         residuals = msres$residuals,
-        coefficients = nameCoefVec(rbind(msres$intercept, msres$beta), X),
+        coefficients = nameCoefVec(rbind(msres$intercept, msres$beta), x),
         adjusted = adjusted,
         objective = msres$objF,
         bdp = bdp_adj,
         lambda_opt = lambda_opt_m_cv,
-        lambda = lambda_grid_m$lambda,
-        cv_lambda_grid = lambda_grid_m,
+        lambda = lambda_grid_m,
+        cv_lambda_grid = cv_lambda_grid,
         init_scale = scale_init_corr,
-        alpha = penseobj$alpha,
+        alpha = alpha,
         standardize = standardize,
         sest = penseobj,
         options = mm_options,
@@ -673,18 +677,18 @@ pensem.pense <- function(x,
 #' @importFrom methods is
 #' @importFrom Matrix Matrix
 #' @importClassesFrom Matrix dgCMatrix
-pensemstep <- function(X, y, init_scale, init_int, init_coef, alpha, lambda,
+pensemstep <- function(x, y, init_scale, init_int, init_coef, alpha, lambda,
                        options, en_options) {
-    dX <- dim(X)
+    dx <- dim(x)
 
-    Xtr <- .Call(C_augtrans, X)
-    dX[2L] <- dX[2L] + 1L
+    xtr <- .Call(C_augtrans, x)
+    dx[2L] <- dx[2L] + 1L
 
     if (!is(init_coef, "dgCMatrix")) {
         init_coef <- Matrix(init_coef, sparse = TRUE, ncol = 1L)
     }
 
-    res <- .Call(C_pen_mstep_sp, Xtr, y, init_int, init_coef, init_scale,
+    res <- .Call(C_pen_mstep_sp, xtr, y, init_int, init_coef, init_scale,
                  alpha, lambda, options, en_options)
 
     ##

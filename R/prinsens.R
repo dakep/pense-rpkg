@@ -2,7 +2,7 @@
 #'
 #' Compute the principal sensitivity components (PSC) for regression.
 #'
-#' @param X data matrix with predictors
+#' @param x data matrix with predictors
 #' @param y response vector
 #' @param method use ordinary least squares (\code{"ols"}) or elastic net
 #'      (\code{"en"}) to compute the PSCs.
@@ -12,8 +12,8 @@
 #' @param en_options additional options for the EN algorithm. See
 #'      \code{\link{en_options}} for details.
 #'
-#' @return A numeric matrix with as many rows as \code{X} and as many columns as
-#'      PSCs found (at most the number of columns in \code{X} plus one for the
+#' @return A numeric matrix with as many rows as \code{x} and as many columns as
+#'      PSCs found (at most the number of columns in \code{x} plus one for the
 #'      intercept). Each column is a PSC.
 #'
 #' @references Pena, D., and Yohai, V.J. (1999).
@@ -21,13 +21,15 @@
 #'     \emph{Journal of the American Statistical Association}, \bold{94}(446),
 #'     434-445. \url{http://doi.org/10.2307/2670164}
 #'
+#' @example examples/prinsens.R
+#'
 #' @useDynLib pense, .registration = TRUE
 #' @export
-prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
+prinsens <- function(x, y, method = c("ols", "en"), intercept = TRUE,
                      alpha, lambda, en_options = en_options_aug_lars()) {
     y <- drop(y)
 
-    dX <- dim(X)
+    dx <- dim(x)
     dY <- dim(y)
     yl <- length(y)
 
@@ -35,21 +37,21 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
         stop("`yl` must be a numeric vector")
     }
 
-    if (is.null(dX) || length(dX) != 2L || !is.numeric(X) || dX[1L] != yl) {
-        stop("`X` must be a numeric matrix with the same number of observations as `y`")
+    if (is.null(dx) || length(dx) != 2L || !is.numeric(x) || dx[1L] != yl) {
+        stop("`x` must be a numeric matrix with the same number of observations as `y`")
     }
 
-    if (anyNA(X) || anyNA(y)) {
+    if (anyNA(x) || anyNA(y)) {
         stop("Missing values are not supported")
     }
 
     intercept <- .check_arg(intercept, "logical")
 
     ## Add leading column of 1's
-    Xtr <- if (isTRUE(intercept)) {
-        .Call(C_augtrans, X)
+    xtr <- if (isTRUE(intercept)) {
+        .Call(C_augtrans, x)
     } else {
-        t(X)
+        t(x)
     }
 
     method <- match.arg(method)
@@ -61,7 +63,7 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
 
         pscres <- .Call(
             C_pscs_en,
-            Xtr,
+            xtr,
             y,
             alpha,
             lambda,
@@ -73,7 +75,7 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
             stop("Could not compute principal sensitivity components.")
         }
     } else {
-        pscres <- .Call(C_pscs_ols, Xtr, y)
+        pscres <- .Call(C_pscs_ols, xtr, y)
 
         if (is.null(pscres)) {
             stop("Could not compute principal sensitivity components. ",
@@ -86,7 +88,7 @@ prinsens <- function(X, y, method = c("ols", "en"), intercept = TRUE,
              "All eigenvalues are too small.")
     }
 
-    pscres <- matrix(pscres, nrow = dX[1L])
+    pscres <- matrix(pscres, nrow = dx[1L])
 
     return(pscres)
 }

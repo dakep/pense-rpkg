@@ -17,6 +17,8 @@
 #' @importFrom stats weighted.mean
 #' @importClassesFrom Matrix dgCMatrix
 #'
+#' @example examples/pense-methods.R
+#'
 #' @export
 coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
@@ -40,8 +42,6 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         # we can return the result of the largest lambda
         return(object$coefficients[, max_lambda_ind, drop = !sparse])
     }
-
-    adj_fact <- sqrt(1 + (1 - object$alpha) * lambda)
 
     lambda_diff <- object$lambda - lambda
     lambda_diff_abs <- abs(lambda_diff)
@@ -81,6 +81,10 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
                     object$adjusted$intercept[c(interp_lambda_left, interp_lambda_right)],
                     interp_w
                 )
+                adj_fact <- weighted.mean(
+                    object$adjusted$factor[c(interp_lambda_left, interp_lambda_right)],
+                    interp_w
+                )
             }
 
             ret_coef <- interp_c
@@ -91,10 +95,10 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         # exact solution
         x <- if (!is.null(object$call$x_train)) {
             data.matrix(eval(object$call$x_train))
-        } else if (!is.null(object$sest$call$X)) {
-            data.matrix(eval(object$sest$call$X))
+        } else if (!is.null(object$sest$call$x)) {
+            data.matrix(eval(object$sest$call$x))
         } else {
-            data.matrix(eval(object$call$X))
+            data.matrix(eval(object$call$x))
         }
 
         y <- if (!is.null(object$call$y_train)) {
@@ -108,6 +112,8 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         std_data <- standardize_data(x, y, object$standardize)
         xs <- std_data$xs
         yc <- std_data$yc
+
+        adj_fact <- sqrt(1 + (1 - object$alpha) * lambda / max(std_data$scale_x))
 
         ## is it the S- or MM-estimate
         if ("pensem" %in% class(object)) {
@@ -163,7 +169,6 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
             )
         }
 
-
         if (isTRUE(object$standardize)) {
             estimate <- std_data$unstandardize_coefs(estimate)
         }
@@ -201,21 +206,17 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
 #'      estimates be obtained by linear interpolation between the nearest
 #'      lambda values (default) or computed exactly.
 #' @param sparse return a sparse vector or a dense (base R) numeric vector
-#' @param correction should a correction factor be applied to the EN estimate?
-#'       See \code{\link{elnet}} for details on the applied correction.
 #' @param ... currently not used.
-#' @return A numeric vector of size \eqn{p + 1}.
+#' @return if \code{sparse = FALSE} a numeric vector of size \eqn{p + 1}.
+#'      Otherwise a sparse matrix with one column and \eqn{p + 1} rows.
+#'
+#' @example examples/elnet_cv-methods.R
+#'
 #' @export
 #' @importFrom stats setNames
-coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
-                          correction = TRUE, ...) {
+coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE, ...) {
     exact <- isTRUE(exact)
     sparse <- isTRUE(sparse)
-    correction <- isTRUE(correction) && isTRUE(object$alpha < 1)
-
-    if (correction) {
-        warning("EN correction not yet supported")
-    }
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt
@@ -276,15 +277,15 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
 
     closests_lambda_ind <- which.min(lambda_diff_abs)
 
-    x <- data.matrix(eval(object$call$X))
+    x <- data.matrix(eval(object$call$x))
     y <- drop(eval(object$call$y))
 
     init_int <- object$coefficients[1L, closests_lambda_ind]
     init_beta <- object$coefficients[-1L, closests_lambda_ind, drop = FALSE]
 
-    est <- if (is.null(object$weights)) {
+    est <- if (!is.null(object$weights)) {
         .elnet.wfit(
-            X = x,
+            x = x,
             y = y,
             weights = object$weights,
             alpha = object$alpha,
@@ -295,7 +296,7 @@ coef.elnetfit <- function(object, lambda, exact = FALSE, sparse = FALSE,
         )
     } else {
         .elnet.fit(
-            X = x,
+            x = x,
             y = y,
             alpha = object$alpha,
             lambda = lambda,

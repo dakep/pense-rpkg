@@ -5,7 +5,7 @@
 \title{Additional Options for the Initial Estimator}
 \usage{
 initest_options(keep_solutions = 5, psc_method = c("rr", "exact"),
-  maxit = 10, eps = 1e-06, psc_keep = 0.5,
+  maxit = 10, maxit_pense_refinement = 5, eps = 1e-06, psc_keep = 0.5,
   resid_keep_method = c("proportion", "threshold"), resid_keep_prop = 0.6,
   resid_keep_thresh = 2, delta = 0.25, mscale_eps = 1e-08,
   mscale_maxit = 200, cc)
@@ -18,6 +18,9 @@ full PENSE iterations?}
 components. See details for the possible choices.}
 
 \item{maxit}{maximum number of refinement iterations.}
+
+\item{maxit_pense_refinement}{maximum number of PENSE iterations to refine
+initial estimator.}
 
 \item{eps}{numeric tolerance for convergence.}
 
@@ -54,7 +57,7 @@ implemented:
      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the
          elastic net fit and the hat matrix from the ridge regression.
          This method only works if \code{alpha} < 1 or
-         \code{ncol(X)} < \code{nrow(X)}.}
+         \code{ncol(x)} < \code{nrow(x)}.}
      \item{\code{"exact"}}{Calculate the PSCs from the difference between the
          residuals and leave-one-out residuals from elastic net.}
 }

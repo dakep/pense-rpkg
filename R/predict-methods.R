@@ -16,13 +16,15 @@
 #' @importFrom Matrix drop
 #' @importFrom stats coef
 #'
+#' @example examples/pense-methods.R
+#'
 #' @export
 predict.pense <- function(object, newdata, lambda, exact = FALSE,
                           correction = TRUE, ...) {
     if (missing(newdata)) {
-        newdata <- data.matrix(eval(object$call$X))
+        newdata <- data.matrix(eval(object$call$x))
     } else {
-        dX <- dim(newdata)
+        dx <- dim(newdata)
         if (is.data.frame(newdata)) {
             newdata <- data.matrix(newdata)
         }
@@ -31,7 +33,7 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
             stop("`newdata` must be a numeric matrix")
         }
 
-        if (dX[2L] != nrow(object$coefficients) - 1L) {
+        if (dx[2L] != nrow(object$coefficients) - 1L) {
             stop("`newdata` must have as many columns as the original data set")
         }
     }
@@ -59,14 +61,17 @@ predict.pense <- function(object, newdata, lambda, exact = FALSE,
 #' @param correction should a correction factor be applied to the EN estimate?
 #' @param ... currently ignored.
 #' @return a numeric vector of predicted values for the given lambda.
-#' @export
 #' @importFrom Matrix drop
+#'
+#' @example examples/elnet_cv-methods.R
+#'
+#' @export
 predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
                              correction = TRUE, ...) {
     if (missing(newdata)) {
-        newdata <- data.matrix(eval(object$call$X))
+        newdata <- data.matrix(eval(object$call$x))
     } else {
-        dX <- dim(newdata)
+        dx <- dim(newdata)
         if (is.data.frame(newdata)) {
             newdata <- data.matrix(newdata)
         }
@@ -75,7 +80,7 @@ predict.elnetfit <- function(object, newdata, lambda, exact = FALSE,
             stop("`newdata` must be a numeric matrix")
         }
 
-        if (dX[2L] != nrow(object$coefficients) - 1L) {
+        if (dx[2L] != nrow(object$coefficients) - 1L) {
             stop("`newdata` must have as many columns as the original data set")
         }
     }

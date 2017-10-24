@@ -21,6 +21,8 @@ static const int DEFAULT_OPT_VERBOSITY = 0;
 static const int DEFAULT_OPT_MAXIT = 1000;
 static const double DEFAULT_OPT_EPS = 1e-6;
 
+static const double REL_CHANGE_GUARD = 5; /* If the relative change is more than this, increase tolerance */
+
 static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
 
 static const Options WARM_START_OPTION = Options::createSimple("warmStart", true);
@@ -54,10 +56,10 @@ void IRWEN::setLambda(const double lambda)
 
 void IRWEN::compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
 {
-    double oldIntercept;
-    sp_vec oldBeta(beta);
-    double normOldBeta;
+    double betaENPenalty;
+    double targetEPS = this->eps;
 
+    this->relChangeVal = this->objectiveVal = 1;
     this->iteration = 0;
     residuals = this->y - this->Xtr.tail_rows(beta.n_elem).t() * beta - intercept;
 
@@ -65,9 +67,6 @@ void IRWEN::compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
         ++this->iteration;
 
         this->updateWeights(residuals);
-
-        oldIntercept = intercept;
-        oldBeta = beta;
 
         /*
          * Perform EN using current coefficients as warm start (only applicable for the coordinate
@@ -83,44 +82,34 @@ void IRWEN::compute(double& intercept, arma::sp_vec& beta, arma::vec& residuals)
         }
 
         /*
-         * Compute relative change
+         * Compute relative change in objective
          */
-        
-        normOldBeta = norm(oldBeta);
-        normOldBeta = sqrt(normOldBeta * normOldBeta + oldIntercept * oldIntercept);
-        this->relChangeVal = norm(beta - oldBeta);
-        this->relChangeVal = sqrt(this->relChangeVal * this->relChangeVal +
-                                    (intercept - oldIntercept) * (intercept - oldIntercept));
+        betaENPenalty = norm(beta, 2);
+        betaENPenalty = this->lambda * (
+            0.5 * (1 - this->alpha) * betaENPenalty * betaENPenalty +
+            this->alpha * norm(beta, 1)
+        );
 
-        if (normOldBeta < NUMERICAL_TOLERANCE) {
-            if (this->relChangeVal < NUMERICAL_TOLERANCE) {
-                /* We barely moved away from the zero-vector --> "converged" */
-                this->relChangeVal = 0;
-            } else {
-                /* We moved away from the zero-vector --> continue */
-                this->relChangeVal = 2 * this->eps;
-            }
+        this->relChangeVal = this->objectiveVal;
+        this->updateObjective(residuals, betaENPenalty);
+        this->relChangeVal = fabs((this->objectiveVal / this->relChangeVal) - 1);
+
+        if (this->iteration > 1 && this->relChangeVal > REL_CHANGE_GUARD && targetEPS < 0.1) {
+            targetEPS *= 5;
         }
 
 #ifdef DEBUG
         if (this->verbosity > 0) {
             Rcpp::Rcout << "IRWEN [[" << this->iteration << "]] "
                 "lambda=" << this->lambda <<
-                "; norm(old coefs)=" << normOldBeta <<
+                "; objective=" << this->objectiveVal <<
+                "; norm(beta)=" << norm(beta, 2) <<
                 "; norm(weights)=" << norm(this->weights) <<
-                "; rel. change=" << this->relChangeVal / normOldBeta <<
+                "; rel. change (obj)=" << this->relChangeVal <<
+                " (>" << targetEPS << "?)" <<
             std::endl;
         }
 #endif
 
-    } while((this->iteration < this->maxIt) && (this->relChangeVal > normOldBeta * this->eps));
-
-    double betaENPenalty = norm(beta, 2);
-    betaENPenalty = this->lambda * (
-        0.5 * (1 - this->alpha) * betaENPenalty * betaENPenalty +
-        this->alpha * norm(beta, 1)
-    );
-
-    this->updateObjective(residuals, betaENPenalty);
-    this->relChangeVal /= normOldBeta;
+    } while((this->iteration < this->maxIt) && (this->relChangeVal > targetEPS));
 }

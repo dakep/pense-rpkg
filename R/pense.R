@@ -22,7 +22,7 @@
 #' lambda value. This is equal to setting \code{warm_reset} to
 #' \code{length(lambda)}.
 #'
-#' @param X design matrix with predictors.
+#' @param x design matrix with predictors.
 #' @param y response vector.
 #' @param alpha elastic net mixing parameter with \eqn{0 \le \alpha \le 1}.
 #'      \code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge
@@ -92,7 +92,7 @@
 #' @importFrom stats mad median weighted.mean
 #' @importFrom robustbase scaleTau2
 #' @importFrom Matrix norm drop Diagonal colSums
-pense <- function(X, y,
+pense <- function(x, y,
                   alpha = 0.5,
                   nlambda = 50, lambda, lambda_min_ratio,
                   standardize = TRUE,
@@ -110,26 +110,26 @@ pense <- function(X, y,
 
     dY <- dim(y)
     yl <- length(y)
-    dX <- dim(X)
+    dx <- dim(x)
 
-    if (is.data.frame(X)) {
-        X <- data.matrix(X)
+    if (is.data.frame(x)) {
+        x <- data.matrix(x)
     }
 
-    if (!is.matrix(X) || !is.numeric(X)) {
-        stop("`X` must be a numeric matrix")
+    if (!is.matrix(x) || !is.numeric(x)) {
+        stop("`x` must be a numeric matrix")
     }
 
     if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
         stop("`yl` must be a numeric vector")
     }
 
-    if (dX[1L] != yl) {
-        stop("The number of observations in `X` and `y` does not match")
+    if (dx[1L] != yl) {
+        stop("The number of observations in `x` and `y` does not match")
     }
 
-    if (any(!is.finite(X))) {
-        stop("`X` must not contain infinite, NA, or NaN values")
+    if (any(!is.finite(x))) {
+        stop("`x` must not contain infinite, NA, or NaN values")
     }
 
     if (any(!is.finite(y))) {
@@ -161,8 +161,8 @@ pense <- function(X, y,
     }
     warm_reset <- min(nlambda, warm_reset)
 
-    if (missing(lambda_min_ratio)) {
-        lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dX[2L] / dX[1L])))
+    if (missing(lambda_min_ratio) || is.null(lambda_min_ratio)) {
+        lambda_min_ratio <- .default_lambda_min_ratio(x)
     }
 
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {
@@ -178,16 +178,17 @@ pense <- function(X, y,
     ## be performing poorly.
     ##
     if (!(initial == "warm" && warm_reset == 1L) &&
-        alpha < 1 && init_options$pscMethod == "rr" &&
+        alpha > 0 && alpha < 1 &&
+        init_options$pscMethod == "rr" &&
         en_options$algorithm == 1L) {
         message("Approximation of PSCs does not work well with the DAL ",
                 "algorithm for EN due to the large number of observations ",
                 "in the augmented data matrix. ",
-                'Consider using `psc_method = "exact"` or use the augmented ',
-                "LARS algorithm for EN.")
+                'Consider using `initest_options(psc_method = "exact")` or ',
+                "use the augmented LARS algorithm for EN.")
     }
 
-    if (en_options$algorithm == 1L && dX[1L] > 500L && dX[2L] < 1000L) {
+    if (en_options$algorithm == 1L && dx[1L] > 500L && dx[2L] < 1000L) {
         message("The DAL algorithm for elastic net scales with the number of ",
                 "observations. Given the number of variables, augmented LARS ",
                 "might be the faster option.")
@@ -197,24 +198,17 @@ pense <- function(X, y,
     call <- match.call()
     call[[1L]] <- as.name("pense")
 
-    std_data <- standardize_data(X, y, standardize)
-    Xs <- std_data$xs
-    yc <- std_data$yc
-    scale_x <- std_data$scale_x
-
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
         lambda <- build_lambda_grid(
-            Xs,
-            yc,
+            x,
+            y,
             alpha,
             nlambda,
             lambda_min_ratio = lambda_min_ratio
         )
         call$lambda_min_ratio <- lambda_min_ratio
     }
-
-    lambda <- lambda / max(scale_x)
 
     ## Ensure lambda is sorted in an increasing direction
     lambda <- sort(lambda)
@@ -223,156 +217,55 @@ pense <- function(X, y,
     cluster <- setupCluster(
         ncores,
         cl,
-        export = c("X", "y", "scale_x"),
+        export = c("x", "y"),
         eval = {
             library(pense)
         }
     )
 
     ## Function returning the estimates and residuals at every lambda value
-    ## (needs X, y, and scale_x available in the environment)
-    pense_est_job <- function(segment, alpha, lambda, init_other,
-                              pense_options, ...) {
+    ## (needs x and y available in the environment)
+    pense_est_job <- function(segment, ...) {
         if (length(segment) == 0L) {
-            X_train <- X
-            y_train <- y
-        } else {
-            X_train <- X[-segment, , drop = FALSE]
-            y_train <- y[-segment]
+            return(.pense_est_pred(
+                x_train = x,
+                y_train = y,
+                y_test = numeric(0),
+                ...
+            ))
         }
 
-        # Traverse from left to right (increasing lambda)
-        est_all_right <- pense_coldwarm(
-            X = X_train,
-            y = y_train,
-            alpha = alpha,
-            lambda_grid = lambda,
-            init_other = init_other,
-            start_0 = TRUE,
-            pense_options = pense_options,
+        return(.pense_est_pred(
+            x_train = x[-segment, , drop = FALSE],
+            y_train = y[-segment],
+            x_test = x[segment, , drop = FALSE],
+            y_test = y[segment],
             ...
-        )
-
-        # Traverse from right to left (decreasing lambda)
-        est_all_left <- rev(pense_coldwarm(
-            X = X_train,
-            y = y_train,
-            alpha = alpha,
-            lambda_grid = rev(lambda),
-            init_other = rev(init_other),
-            start_0 = TRUE,
-            pense_options = pense_options,
-            ...
-        ))
-
-        est_all <- mapply(function (left, right) {
-            if (is.null(left)) {
-                return(right)
-            }
-            if (is.null(right)) {
-                return(left)
-            }
-
-            if (isTRUE(left$objF < right$objF)) {
-                return(left)
-            }
-
-            return(right)
-        }, left = est_all_left, right = est_all_right, SIMPLIFY = FALSE)
-
-        residuals <- NULL
-        weights <- NULL
-        beta <- do.call(cbind, lapply(est_all, "[[", "beta"))
-        intercept <- unlist(lapply(est_all, "[[", "intercept"))
-
-        adj_est <- NULL
-        if (!identical(pense_options$naiveEn, TRUE)) {
-            adj_facts <- sqrt(1 + (1 - alpha) * lambda)
-
-            adj_est <- mapply(function (est, adj_fact) {
-                beta <- est$beta * adj_fact
-                residuals <- drop(y_train - X_train %*% beta)
-                intercept <- weighted.mean(residuals, est$weights)
-                list(
-                    beta = beta,
-                    intercept = intercept,
-                    adj_fact = adj_fact,
-                    residuals = residuals - intercept
-                )
-            }, est_all, adj_facts, SIMPLIFY = FALSE)
-        }
-
-        adjusted <- NULL
-
-        if (length(segment) == 0L) {
-            residuals <- vapply(est_all, '[[', 'residuals', FUN.VALUE = y, USE.NAMES = FALSE)
-            if (!identical(pense_options$naiveEn, TRUE)) {
-                adjusted <- list(
-                    factor = unlist(lapply(adj_est, "[[", "adj_fact")),
-                    intercept = unlist(lapply(adj_est, "[[", "intercept"))
-                )
-            }
-        } else {
-            X_test <- X[segment, , drop = FALSE]
-            y_test <- y[segment]
-            if (!identical(pense_options$naiveEn, TRUE)) {
-                residuals <- vapply(
-                    adj_est,
-                    function(est) {
-                        drop(y_test - est$intercept - X_test %*% est$beta)
-                    },
-                    FUN.VALUE = numeric(length(segment)), USE.NAMES = FALSE
-                )
-            } else {
-                residuals <- vapply(
-                    est_all,
-                    function(est) {
-                        drop(y_test - est$intercept - X_test %*% est$beta)
-                    },
-                    FUN.VALUE = numeric(length(segment)), USE.NAMES = FALSE
-                )
-            }
-        }
-
-        sol_stats <- vapply(
-            est_all,
-            function (est) {
-                c(
-                    objF = est$objF,
-                    scale = est$scale,
-                    beta_L1 = norm(est$beta, "1"),
-                    beta_L2 = norm(est$beta, "F")
-                )
-            },
-            FUN.VALUE = numeric(4L), USE.NAMES = TRUE)
-
-        return(list(
-            residuals = residuals,
-            intercept = intercept,
-            adjusted = adjusted,
-            beta = beta,
-            sol_stats = sol_stats
         ))
     }
 
     ##
     ## Always do a warm-0 start to get a local optimum at each lambda value
     ##
-    warm0res <- rev(pense_coldwarm(
-        X = X,
+    short_pense_options <- options
+    short_pense_options$maxit <- 10L
+
+    warm0res <- rev(pense_full(
+        x = x,
         y = y,
         alpha = alpha,
         lambda_grid = rev(lambda),
-        start_0 = TRUE,
+        refine_it = 1L,
+        nkeep = 1L,
         standardize = standardize,
-        pense_options = options,
-        initest_options = init_options,
-        en_options = en_options
+        pense_options = short_pense_options,
+        en_options = en_options,
+        warn = FALSE
     ))
 
-    warm0init <- vector("list", length(warm0res))
-    for (i in seq_along(warm0init)) {
-        warm0init[[i]] <- list(
+    initial_ests <- vector("list", length(warm0res))
+    for (i in seq_along(initial_ests)) {
+        initial_ests[[i]] <- list(
             list(
                 intercept = warm0res[[i]]$intercept,
                 beta = warm0res[[i]]$beta
@@ -386,20 +279,19 @@ pense <- function(X, y,
     ##
     get_cold_est <- function (job, ...) {
         if (length(job$segment) == 0L) {
-            X_train <- X
+            x_train <- x
             y_train <- y
         } else {
-            X_train <- X[-job$segment, , drop = FALSE]
+            x_train <- x[-job$segment, , drop = FALSE]
             y_train <- y[-job$segment]
         }
 
-        pense_coldwarm(
-            X = X_train,
+        pense_init_cold(
+            x = x_train,
             y = y_train,
-            lambda_grid = job$lambda,
-            start_0 = FALSE,
+            lambda = job$lambda,
             ...
-        )[[1L]][c("intercept", "beta")]
+        )
     }
 
     lambda_cold_ind <- floor(seq(1, nlambda, length.out = warm_reset))
@@ -416,8 +308,8 @@ pense <- function(X, y,
     if((nlambda > 1L) && (cv_k > 1L))  {
         # Create CV segments
         cv_segments <- split(
-            seq_len(dX[1L]),
-            sample(rep_len(seq_len(cv_k), dX[1L]))
+            seq_len(dx[1L]),
+            sample(rep_len(seq_len(cv_k), dx[1L]))
         )
 
         jobs_cold_cv <- unlist(lapply(cv_segments, function (seg) {
@@ -456,9 +348,9 @@ pense <- function(X, y,
 
     # Prepare initial estimate list
     for (i in seq_along(lambda_cold_ind)) {
-        warm0init[[lambda_cold_ind[[i]]]] <- c(
-            warm0init[[lambda_cold_ind[[i]]]],
-            cold_inits[[i]]
+        initial_ests[[lambda_cold_ind[[i]]]] <- c(
+            initial_ests[[lambda_cold_ind[[i]]]],
+            unlist(cold_inits[[i]], recursive = FALSE, use.names = FALSE)
         )
     }
 
@@ -469,11 +361,13 @@ pense <- function(X, y,
                 cv_segments,
                 pense_est_job,
                 lambda = lambda,
-                init_other = warm0init,
+                initial_ests = initial_ests,
+                nkeep = init_options$keepSolutions,
+                refine_it = init_options$maxitPenseRefinement,
                 alpha = alpha,
                 standardize = standardize,
+                en_correction = !options$naiveEn,
                 pense_options = options,
-                initest_options = init_options,
                 en_options = en_options
             )
         }, error = function(e) {
@@ -482,14 +376,14 @@ pense <- function(X, y,
         })
 
         # Add CV estimates to initial estimate list
-        warm0init <- lapply(seq_along(lambda), function (j) {
+        initial_ests <- lapply(seq_along(lambda), function (j) {
             cv_ests <- lapply(cv_results, function (cvr) {
                 list(
                     intercept = cvr$intercept[[j]],
                     beta = cvr$beta[ , j, drop = FALSE]
                 )
             })
-            c(cv_ests, warm0init[[j]])
+            c(cv_ests, initial_ests[[j]])
         })
 
         cv_objective_fun <- if (missing(cv_objective) || is.null(cv_objective)) {
@@ -532,7 +426,7 @@ pense <- function(X, y,
         cv_stats <- apply(cv_stats, 1L, rowMeans, na.rm = TRUE)
 
         cv_lambda_grid <- data.frame(
-            lambda = lambda * max(scale_x),
+            lambda = lambda,
             cvavg = cv_obj,
             s_scale = cv_scales,
             cv_stats
@@ -554,11 +448,13 @@ pense <- function(X, y,
     full_results <- pense_est_job(
         integer(0L),
         lambda = lambda,
-        init_other = warm0init,
+        initial_ests = initial_ests,
+        nkeep = init_options$keepSolutions,
+        refine_it = init_options$maxitPenseRefinement,
         alpha = alpha,
         standardize = standardize,
+        en_correction = !options$naiveEn,
         pense_options = options,
-        initest_options = init_options,
         en_options = en_options
     )
 
@@ -569,13 +465,13 @@ pense <- function(X, y,
 
     return(structure(list(
         residuals = full_results$residuals,
-        coefficients = nameCoefVec(coef_ests, X),
+        coefficients = nameCoefVec(coef_ests, x),
         adjusted = full_results$adjusted,
-        lambda = lambda * max(scale_x),
+        lambda = lambda,
         scale = full_results$sol_stats["scale", ],
         objective = full_results$sol_stats["objF", ],
         cv_lambda_grid = cv_lambda_grid,
-        lambda_opt = lambda_opt * max(scale_x),
+        lambda_opt = lambda_opt,
         alpha = alpha,
         standardize = standardize,
         pense_options = options,
@@ -583,4 +479,153 @@ pense <- function(X, y,
         en_options = en_options,
         call = call
     ), class = "pense"))
+}
+
+
+##
+## @param x_train,y_train training data
+## @param x_test,y_test test data
+## @param alpha,lambda penalty parameters
+## @param initial_ests initial estimates for every lambda in the grid
+## @param pense_options
+## @param ... further arguments passed to pense_full
+.pense_est_pred <- function(
+    x_train,
+    y_train,
+    x_test,
+    y_test,
+    alpha,
+    lambda,
+    initial_ests,
+    en_correction,
+    standardize,
+    ...
+) {
+    std_train_data <- standardize_data(x_train, y_train, standardize)
+    lambda <- lambda / max(std_train_data$scale_x)
+    initial_ests <- lapply(initial_ests, function(x) {
+        lapply(x, std_train_data$standardize_coefs)
+    })
+
+    # Traverse from left to right (increasing lambda)
+    est_all_right <- pense_full(
+        x = std_train_data$xs,
+        y = std_train_data$yc,
+        alpha = alpha,
+        lambda_grid = lambda,
+        initial_ests = initial_ests,
+        standardize = FALSE,
+        ...
+    )
+
+    # Traverse from right to left (decreasing lambda)
+    est_all_left <- rev(pense_full(
+        x = std_train_data$xs,
+        y = std_train_data$yc,
+        alpha = alpha,
+        lambda_grid = rev(lambda),
+        initial_ests = rev(initial_ests),
+        standardize = FALSE,
+        ...
+    ))
+
+    est_all <- mapply(function (left, right) {
+        if (is.null(left)) {
+            return(right)
+        }
+        if (is.null(right)) {
+            return(left)
+        }
+
+        if (isTRUE(left$objF < right$objF)) {
+            return(left)
+        }
+
+        return(right)
+    }, left = est_all_left, right = est_all_right, SIMPLIFY = FALSE)
+
+    residuals <- NULL
+    weights <- NULL
+
+    ## Unstandardize coefficients
+    est_all <- lapply(est_all, std_train_data$unstandardize_coefs)
+
+    coef <- list(
+        intercept = unlist(lapply(est_all, "[[", "intercept")),
+        beta = do.call(cbind, lapply(est_all, "[[", "beta"))
+    )
+
+    adj_est <- NULL
+    if (isTRUE(en_correction)) {
+        # adj_facts needs to be on the *standardized* lambda
+        adj_facts <- sqrt(1 + (1 - alpha) * lambda)
+
+        adj_est <- mapply(function (est, adj_fact) {
+            beta <- est$beta * adj_fact
+            residuals <- drop(y_train - x_train %*% beta)
+            intercept <- weighted.mean(residuals, est$weights)
+
+            return(list(
+                beta = beta,
+                intercept = intercept,
+                adj_fact = adj_fact,
+                residuals = residuals - intercept
+            ))
+        }, est_all, adj_facts, SIMPLIFY = FALSE)
+    }
+
+    adjusted <- NULL
+
+    if (length(y_test) == 0L) {
+        residuals <- vapply(
+            est_all,
+            '[[',
+            'residuals',
+            FUN.VALUE = y_train,
+            USE.NAMES = FALSE
+        )
+
+        if (isTRUE(en_correction)) {
+            adjusted <- list(
+                factor = unlist(lapply(adj_est, "[[", "adj_fact")),
+                intercept = unlist(lapply(adj_est, "[[", "intercept"))
+            )
+        }
+    } else {
+        est_for_resid <- if (isTRUE(en_correction)) {
+            adj_est
+        } else {
+            est_all
+        }
+        residuals <- vapply(
+            est_for_resid,
+            function(est) {
+                drop(y_test - est$intercept - x_test %*% est$beta)
+            },
+            FUN.VALUE = y_test,
+            USE.NAMES = FALSE
+        )
+    }
+
+    sol_stats <- vapply(
+        est_all,
+        function (est) {
+            c(
+                objF = est$objF,
+                scale = est$scale,
+                beta_L1 = norm(est$beta, "1"),
+                beta_L2 = norm(est$beta, "F")
+            )
+        },
+        FUN.VALUE = numeric(4L),
+        USE.NAMES = TRUE
+    )
+
+    return(list(
+        residuals = residuals,
+        adjusted = adjusted,
+        intercept = coef$intercept,
+        beta = coef$beta,
+        sol_stats = sol_stats
+    ))
 }

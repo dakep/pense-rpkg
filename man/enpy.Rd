@@ -2,18 +2,18 @@
 % Please edit documentation in R/enpy.R
 \name{enpy}
 \alias{enpy}
-\title{PY (Pena-Yohai) initial estimates for the EN S-estimator}
+\title{PY (Pena-Yohai) initial estimates for EN S-estimators}
 \usage{
-enpy(X, y, alpha, lambda, options = initest_options(),
+enpy(x, y, alpha, lambda, options = initest_options(),
   en_options = en_options_aug_lars())
 }
 \arguments{
-\item{X}{data matrix with predictors.}
+\item{x}{data matrix with predictors.}
 
 \item{y}{response vector.}
 
 \item{alpha, lambda}{EN penalty parameters (NOT adjusted for the number of
-observations in \code{X}).}
+observations in \code{x}).}
 
 \item{options}{additional options for the initial estimator. See
 \code{\link{initest_options}} for details.}
@@ -22,7 +22,7 @@ observations in \code{X}).}
 \code{\link{en_options}} for details.}
 }
 \value{
-\item{initCoef}{A numeric matrix with one initial coefficient per column}
+\item{coeff}{A numeric matrix with one initial coefficient per column}
         \item{objF}{A vector of values of the objective function for the respective coefficient}
 }
 \description{
@@ -35,10 +35,64 @@ Two different methods to calculate the sensitivity components are implemented:
      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the
          elastic net fit and the hat matrix from the ridge regression.
          This method only works if \code{alpha} < 1 or
-         \code{ncol(X)} < \code{nrow(X)}.}
+         \code{ncol(x)} < \code{nrow(x)}.}
      \item{\code{"exact"}}{Calculate the PSCs from the difference between the
          residuals and leave-one-out residuals from elastic net.}
 }
+}
+\examples{
+set.seed(12345)
+n <- 50
+p <- 15
+beta <- c(2:5, numeric(p - 4))
+x <- 1 + matrix(rnorm(n * p), ncol = p)
+y <- x \%*\% beta  + rnorm(n)
+
+# add outliers to y
+y[1:5] <- rnorm(5, -100, 0.5)
+
+x_test <- matrix(rnorm(10 * n * p), ncol = p)
+y_test <- drop(x_test \%*\% beta + rnorm(n))
+
+# Compute the PY using the "exact" solutions. Here, the LOO residuals
+# are computed using the EN estimator directly. For this method,
+# the DAL algorithm is usually faster since it naturally supports
+# "warm" starts from a nearby solution vector.
+init_exact <- enpy(
+    x, y,
+    alpha = 0.8,
+    lambda = 0.1,
+    options = initest_options(
+        psc_method = "exact"
+    ),
+    en_options = en_options_dal()
+)
+
+# Compute the PY using the approximate ("rr") solutions. Here, the LOO residuals
+# are approximated by ridge regression, where all the LOO residuals can be
+# computed at once using linear algebra.
+init_approx <- enpy(
+    x, y,
+    alpha = 0.8,
+    lambda = 0.1,
+    options = initest_options(
+        psc_method = "rr"
+    ),
+    en_options = en_options_aug_lars()
+)
+
+# How do they objective functions of the initial estimates compare?
+min(init_exact$objF)
+min(init_approx$objF)
+# The "exact" method finds slightly estimates with slightly lower objective.
+
+# How do the initial estimates perform on an external test set?
+rmspe_exact <- colMeans((y_test - cbind(1, x_test) \%*\% init_exact$coeff)^2)
+rmspe_approx <- colMeans((y_test - cbind(1, x_test) \%*\% init_approx$coeff)^2)
+
+min(rmspe_exact)
+min(rmspe_approx)
+# The "exact" method also has better predictive power
 }
 \references{
 Pena, D., and Yohai, V.J. (1999).

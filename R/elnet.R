@@ -496,6 +496,8 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         cluster$stopCluster()
     })
 
+    names(cv_results) <- names(cv_segments)
+
     # Merge the full result into the return structure
     for (ri in names(cv_results$full)) {
         ret_struct[[ri]] <- cv_results$full[[ri]]

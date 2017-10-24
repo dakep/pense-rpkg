@@ -123,7 +123,7 @@ consistency.rho <- function(delta, int.rho.fun) {
 ## as well as functions to (un)standardize regression coefficients
 ##
 #' @importFrom Matrix drop
-standardize_data <- function (x, y, standardize) {
+standardize_data <- function (x, y, standardize, robust = TRUE) {
     ret_list <- list(
         scale_x = 1,
         mux = 0,
@@ -134,9 +134,15 @@ standardize_data <- function (x, y, standardize) {
 
     ## standardize data
     if (isTRUE(standardize)) {
-        ret_list$scale_x <- apply(x, 2, mad)
-        ret_list$mux <- apply(x, 2, median)
-        ret_list$muy <- median(y)
+        if (!isTRUE(robust)) {
+            ret_list$scale_x <- apply(x, 2, sd)
+            ret_list$mux <- colMeans(x)
+            ret_list$muy <- mean(y)
+        } else {
+            ret_list$scale_x <- apply(x, 2, mad)
+            ret_list$mux <- apply(x, 2, median)
+            ret_list$muy <- median(y)
+        }
 
         ret_list$xs <- scale(x, center = ret_list$mux, scale = ret_list$scale_x)
         ret_list$yc <- y - ret_list$muy

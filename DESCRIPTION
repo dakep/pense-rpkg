@@ -1,7 +1,7 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 1.0.5
+Version: 1.0.6
 Date: 2017-10-24
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
@@ -17,7 +17,9 @@ Biarch: true
 URL: https://github.com/dakep/pense-rpkg
 BugReports: https://github.com/dakep/pense-rpkg/issues
 Description: Robust penalized elastic net S and MM estimator for linear
-    regression.
+    regression. The method is described in detail in
+    Cohen Freue, G. V., Kepplinger, D., Salibian-Barrera, M., and Smucler, E.
+    (2017) <https://gcohenfr.github.io/pdfs/PENSE_manuscript.pdf>.
 Depends:
     R (>= 3.1.0),
     Matrix

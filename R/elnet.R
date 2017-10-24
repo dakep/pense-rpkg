@@ -78,7 +78,7 @@
 #' @importFrom stats weighted.mean
 #'
 #' @seealso \code{\link{elnet_cv}} for automatic selection of the penalty
-#'      parameter based on the cross-validated prediciton error.
+#'      parameter based on the cross-validated prediction error.
 #'
 #' @references
 #' Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).

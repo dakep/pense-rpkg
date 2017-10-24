@@ -162,7 +162,7 @@ pense <- function(x, y,
     warm_reset <- min(nlambda, warm_reset)
 
     if (missing(lambda_min_ratio) || is.null(lambda_min_ratio)) {
-        lambda_min_ratio <- 1e-4
+        lambda_min_ratio <- .default_lambda_min_ratio(x)
     }
 
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {

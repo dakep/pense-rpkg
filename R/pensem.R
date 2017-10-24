@@ -221,7 +221,7 @@ pensem.pense <- function(
         lambda_min_ratio <- if (is.null(penseobj$call$lambda_min_ratio)) {
             eval(penseobj$call$lambda_min_ratio)
         } else {
-            1e-4
+            .default_lambda_min_ratio(x)
         }
     }
 

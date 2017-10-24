@@ -36,18 +36,55 @@ orderOmitTies <- function(x, tol = 1e-6) {
 ## and the given rho function
 #' @importFrom robustbase .Mchi
 #' @importFrom stats dnorm pnorm integrate uniroot
-consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
+consistency.rho <- function(delta, int.rho.fun) {
     if (is.character(int.rho.fun)) {
         int.rho.fun <- .rho2IntRho(int.rho.fun)
     }
 
-    integrand <- function(x, cc) {
-        dnorm(x) * .Mchi(x, cc, int.rho.fun)
+    ##
+    ## Pre-computed values for some delta values
+    ##
+    if (abs(delta - 0.5) < sqrt(.Machine$double.eps)) {
+        return(switch(
+            as.character(int.rho.fun),
+            "0" = 1.3684820, # huber
+            "1" = 1.5476450, # bisquare
+            "5" = 0.5773503 # gauss
+        ))
+    } else if (abs(delta - 0.25) < sqrt(.Machine$double.eps)) {
+        return(switch(
+            as.character(int.rho.fun),
+            "0" = 1.988013, # huber
+            "1" = 2.937015, # bisquare
+            "5" = 1.133893  # gauss
+        ))
+    } else if (abs(delta - 0.1) < sqrt(.Machine$double.eps)) {
+        return(switch(
+            as.character(int.rho.fun),
+            "0" = 3.161931, # huber
+            "1" = 5.182361, # bisquare
+            "5" = 2.064742  # gauss
+        ))
+    } else if (delta < 0.005) {
+        return(50) # ~.1% bdp for bisquare, 9.6e-5% for huber, 0.02% for gauss
     }
 
-    expectation <- if (int.rho.fun == 1L) {
+    integrand_huber <- function(x, cc) {
+        dnorm(x) * .Mchi(x, cc, 0L) / (0.5 * cc * cc)
+    }
+    integrand_gauss <- function(x, cc) {
+        dnorm(x) * -expm1(-((x * x) / (cc * cc)) * 0.5)
+    }
+
+    if (int.rho.fun == 1L) {
+        integral_interval <- if (delta > 0.1) {
+            c(1.5, 5.5)
+        } else {
+            c(5, 25)
+        }
+
         # For bisquare we have the closed form solution to the expectation
-        function(cc, delta) {
+        expectation <- function(cc, delta) {
             pnorm.mcc <- 2 * pnorm(-cc)
             1/cc^6 * exp(-(cc^2/2)) * (
                 -cc * (15 - 4 * cc^2 + cc^4) * sqrt(2 / pi) +
@@ -55,13 +92,28 @@ consistency.rho <- function(delta, int.rho.fun, interval = c(0.3, 10)) {
                     cc^6 * exp(cc^2/2) * pnorm.mcc
             ) - delta
         }
-    } else {
-        function(cc, delta) {
-            integrate(integrand, lower = -Inf, upper = Inf, cc)$value - delta
+    } else if (int.rho.fun == 0L) {
+        integral_interval <- if (delta > 0.1) {
+            c(.1, 7)
+        } else {
+            c(3, 30)
+        }
+        expectation <- function(cc, delta) {
+            integrate(integrand_huber, lower = -Inf, upper = Inf, cc)$value - delta
+        }
+    } else if (int.rho.fun == 5L) {
+        integral_interval <- if (delta > 0.1) {
+            c(.5, 2.5)
+        } else {
+            c(2, 10)
+        }
+
+        expectation <- function(cc, delta) {
+            integrate(integrand_gauss, lower = -Inf, upper = Inf, cc)$value - delta
         }
     }
 
-    uniroot(expectation, interval = interval, delta)$root
+    uniroot(expectation, interval = integral_interval, delta)$root
 }
 
 
@@ -211,5 +263,21 @@ setupCluster <- function(ncores = 1L, cl = NULL, eval, export, envir = parent.fr
     }, finally = {})
 
     return(ret)
+}
+
+##
+## Get the default lambda min ratio, depending on the dimensions of `x`
+##
+.default_lambda_min_ratio <- function(x) {
+    lambda_min_ratio <- tryCatch({
+        if (ncol(x) < nrow(x)) {
+            1e-4
+        } else {
+            1e-3
+        }
+    },
+    error = function(...) {
+        return(1e-4)
+    })
 }
 

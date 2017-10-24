@@ -174,5 +174,5 @@ Zou, H. and Hastie, T. (2005).
 }
 \seealso{
 \code{\link{elnet_cv}} for automatic selection of the penalty
-     parameter based on the cross-validated prediciton error.
+     parameter based on the cross-validated prediction error.
 }

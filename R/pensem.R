@@ -85,22 +85,23 @@ pensem <- function(x, ...) {
 #' @rdname pensem
 #' @method pensem default
 #' @export
-pensem.default <- function(x, y,
-                           alpha = 0.5,
-                           nlambda = 50,
-                           lambda,
-                           lambda_s,
-                           lambda_min_ratio,
-                           standardize = TRUE,
-                           initial = c("warm", "cold"),
-                           warm_reset = 10,
-                           cv_k = 5, cv_objective,
-                           ncores = getOption("mc.cores", 1L), cl = NULL,
-                           s_options = pense_options(),
-                           mm_options = mstep_options(),
-                           init_options = initest_options(),
-                           en_options = en_options_aug_lars(),
-                           ...
+pensem.default <- function(
+    x, y,
+    alpha = 0.5,
+    nlambda = 50,
+    lambda,
+    lambda_s,
+    lambda_min_ratio,
+    standardize = TRUE,
+    initial = c("warm", "cold"),
+    warm_reset = 10,
+    cv_k = 5, cv_objective,
+    ncores = getOption("mc.cores", 1L), cl = NULL,
+    s_options = pense_options(),
+    mm_options = mstep_options(),
+    init_options = initest_options(),
+    en_options = en_options_aug_lars(),
+    ...
 ) {
     lambda_s <- if (!missing(lambda_s)) {
         lambda_s
@@ -175,20 +176,20 @@ pensem.default <- function(x, y,
 #' @rdname pensem
 #' @method pensem pense
 #' @export
-pensem.pense <- function(x,
-                         alpha,
-                         scale,
-                         nlambda = 50,
-                         lambda,
-                         lambda_min_ratio,
-                         standardize,
-                         cv_k = 5, cv_objective,
-                         ncores = getOption("mc.cores", 1L), cl = NULL,
-                         mm_options = mstep_options(),
-                         en_options,
-                         x_train, y_train,
-                         ...
-
+pensem.pense <- function(
+    x,
+    alpha,
+    scale,
+    nlambda = 50,
+    lambda,
+    lambda_min_ratio,
+    standardize,
+    cv_k = 5, cv_objective,
+    ncores = getOption("mc.cores", 1L), cl = NULL,
+    mm_options = mstep_options(),
+    en_options,
+    x_train, y_train,
+    ...
 ) {
     penseobj <- x
 
@@ -220,7 +221,7 @@ pensem.pense <- function(x,
         lambda_min_ratio <- if (is.null(penseobj$call$lambda_min_ratio)) {
             eval(penseobj$call$lambda_min_ratio)
         } else {
-            1e-5
+            1e-4
         }
     }
 

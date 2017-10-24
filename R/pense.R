@@ -161,8 +161,8 @@ pense <- function(x, y,
     }
     warm_reset <- min(nlambda, warm_reset)
 
-    if (missing(lambda_min_ratio)) {
-        lambda_min_ratio <- min(1e-5, 1e-5 * 10^floor(log10(dx[2L] / dx[1L])))
+    if (missing(lambda_min_ratio) || is.null(lambda_min_ratio)) {
+        lambda_min_ratio <- 1e-4
     }
 
     if (is.null(lambda) && !is.null(lambda_min_ratio)) {
@@ -198,24 +198,17 @@ pense <- function(x, y,
     call <- match.call()
     call[[1L]] <- as.name("pense")
 
-    std_data <- standardize_data(x, y, standardize)
-    xs <- std_data$xs
-    yc <- std_data$yc
-    scale_x <- std_data$scale_x
-
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
         lambda <- build_lambda_grid(
-            xs,
-            yc,
+            x,
+            y,
             alpha,
             nlambda,
             lambda_min_ratio = lambda_min_ratio
         )
         call$lambda_min_ratio <- lambda_min_ratio
     }
-
-    lambda <- lambda / max(scale_x)
 
     ## Ensure lambda is sorted in an increasing direction
     lambda <- sort(lambda)
@@ -224,14 +217,14 @@ pense <- function(x, y,
     cluster <- setupCluster(
         ncores,
         cl,
-        export = c("x", "y", "scale_x"),
+        export = c("x", "y"),
         eval = {
             library(pense)
         }
     )
 
     ## Function returning the estimates and residuals at every lambda value
-    ## (needs x, y, and scale_x available in the environment)
+    ## (needs x and y available in the environment)
     pense_est_job <- function(segment, ...) {
         if (length(segment) == 0L) {
             return(.pense_est_pred(
@@ -433,7 +426,7 @@ pense <- function(x, y,
         cv_stats <- apply(cv_stats, 1L, rowMeans, na.rm = TRUE)
 
         cv_lambda_grid <- data.frame(
-            lambda = lambda * max(scale_x),
+            lambda = lambda,
             cvavg = cv_obj,
             s_scale = cv_scales,
             cv_stats
@@ -474,11 +467,11 @@ pense <- function(x, y,
         residuals = full_results$residuals,
         coefficients = nameCoefVec(coef_ests, x),
         adjusted = full_results$adjusted,
-        lambda = lambda * max(scale_x),
+        lambda = lambda,
         scale = full_results$sol_stats["scale", ],
         objective = full_results$sol_stats["objF", ],
         cv_lambda_grid = cv_lambda_grid,
-        lambda_opt = lambda_opt * max(scale_x),
+        lambda_opt = lambda_opt,
         alpha = alpha,
         standardize = standardize,
         pense_options = options,
@@ -496,13 +489,23 @@ pense <- function(x, y,
 ## @param initial_ests initial estimates for every lambda in the grid
 ## @param pense_options
 ## @param ... further arguments passed to pense_full
-.pense_est_pred <- function(x_train, y_train, x_test, y_test, alpha, lambda,
-                            initial_ests, en_correction, standardize, ...) {
+.pense_est_pred <- function(
+    x_train,
+    y_train,
+    x_test,
+    y_test,
+    alpha,
+    lambda,
+    initial_ests,
+    en_correction,
+    standardize,
+    ...
+) {
     std_train_data <- standardize_data(x_train, y_train, standardize)
+    lambda <- lambda / max(std_train_data$scale_x)
     initial_ests <- lapply(initial_ests, function(x) {
         lapply(x, std_train_data$standardize_coefs)
     })
-    lambda <- lambda / max(std_train_data$scale_x)
 
     # Traverse from left to right (increasing lambda)
     est_all_right <- pense_full(

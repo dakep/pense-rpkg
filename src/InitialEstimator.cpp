@@ -42,7 +42,7 @@ static const int DEFAULT_OPT_MSCALE_MAXIT = 100;
 static const double DEFAULT_OPT_MSCALE_EPS = 1e-9;
 
 
-static const Options WARM_START_OPTION = Options::createSimple("warmStart", true);
+static const Options WARM_START_OPTION("warmStart", true);
 
 /**
  * BLAS constants definitions

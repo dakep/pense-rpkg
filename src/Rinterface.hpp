@@ -27,6 +27,14 @@ extern "C" void R_init_pense(DllInfo *dll);
 RcppExport SEXP C_augtrans(SEXP X);
 
 /**
+ * Compute the robust *size* of the vector x
+ *
+ * @param x numeric vector
+ * @return numeric scalar robust size of vector x
+ */
+RcppExport SEXP C_tau_size(SEXP x);
+
+/**
  * Calculate the M-Scale of a vector of numbers
  *
  * @param Rvalues numeric The vector of REAL's

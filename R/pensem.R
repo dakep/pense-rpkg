@@ -191,18 +191,24 @@ pensem.pense <- function(
     x_train, y_train,
     ...
 ) {
+    ## store the call
+    call <- match.call()
+    call[[1L]] <- as.name("pensem")
+
     penseobj <- x
 
-    x <- if (missing(x_train) || is.null(x_train)) {
-        data.matrix(eval(x$call$x, envir = parent.frame()))
+    if (missing(x_train) || is.null(x_train)) {
+        call$x_train <- penseobj$call$x
+        x <- data.matrix(eval(call$x_train, envir = parent.frame()))
     } else {
-        x_train
+        x <- x_train
     }
 
-    y <- if (missing(y_train) || is.null(y_train)) {
-        eval(penseobj$call$y, envir = parent.frame())
+    if (missing(y_train) || is.null(y_train)) {
+        call$y_train <- penseobj$call$y
+        y <- eval(call$y_train, envir = parent.frame())
     } else {
-        y_train
+        y <- y_train
     }
 
     if (missing(alpha) || is.null(alpha)) {
@@ -233,10 +239,6 @@ pensem.pense <- function(
     }
 
     dx <- dim(x)
-
-    ## store the call
-    call <- match.call()
-    call[[1L]] <- as.name("mstep")
 
     pense_coef <- coef(penseobj, lambda = pense_lambda_opt, exact = TRUE,
                        sparse = TRUE, correction = FALSE)

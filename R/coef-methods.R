@@ -95,16 +95,16 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         # exact solution
         x <- if (!is.null(object$call$x_train)) {
             data.matrix(eval(object$call$x_train))
-        } else if (!is.null(object$sest$call$x)) {
-            data.matrix(eval(object$sest$call$x))
+        # } else if (!is.null(object$sest$call$x)) {
+        #     data.matrix(eval(object$sest$call$x))
         } else {
             data.matrix(eval(object$call$x))
         }
 
         y <- if (!is.null(object$call$y_train)) {
             data.matrix(eval(object$call$y_train))
-        } else if (!is.null(object$sest$call$y)) {
-            data.matrix(eval(object$sest$call$y))
+        # } else if (!is.null(object$sest$call$y)) {
+        #     data.matrix(eval(object$sest$call$y))
         } else {
             data.matrix(eval(object$call$y))
         }

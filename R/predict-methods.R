@@ -22,7 +22,11 @@
 predict.pense <- function(object, newdata, lambda, exact = FALSE,
                           correction = TRUE, ...) {
     if (missing(newdata)) {
-        newdata <- data.matrix(eval(object$call$x))
+        newdata <- if (!is.null(object$call$x_train)) {
+            data.matrix(eval(object$call$x_train))
+        } else {
+            data.matrix(eval(object$call$x))
+        }
     } else {
         dx <- dim(newdata)
         if (is.data.frame(newdata)) {

@@ -600,17 +600,22 @@ pensem.pense <- function(
         cv_obj <- apply(cv_pred_errors, 2, function (r) {
             cv_objective_fun(r[is.finite(r)])
         })
+        cv_resid_size <- apply(cv_pred_errors, 2, function (r) {
+            .Call(C_tau_size, r[is.finite(r)])
+        })
 
         lambda_opt_m_cv <- lambda_grid_m[which.min(cv_obj)]
         cv_lambda_grid <- data.frame(
             lambda = lambda_grid_m,
-            cvavg = cv_obj
+            cvavg = cv_obj,
+            resid_size = cv_resid_size
         )
     } else {
         lambda_opt_m_cv <- min(lambda_grid_m)
         cv_lambda_grid <- data.frame(
             lambda = lambda_grid_m,
-            cvavg = NA_real_
+            cvavg = NA_real_,
+            resid_size = NA_real_
         )
     }
 

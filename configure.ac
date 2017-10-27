@@ -1,4 +1,4 @@
-AC_INIT(pense, 1.0.6)
+AC_INIT(pense, 1.0.7)
 
 : ${R_HOME=`R RHOME`}
 if test -z "${R_HOME}"; then

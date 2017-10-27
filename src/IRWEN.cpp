@@ -23,8 +23,6 @@ static const double DEFAULT_OPT_EPS = 1e-6;
 
 static const double REL_CHANGE_GUARD = 5; /* If the relative change is more than this, increase tolerance */
 
-static const double NUMERICAL_TOLERANCE = NUMERIC_EPS;
-
 static const Options WARM_START_OPTION("warmStart", true);
 
 IRWEN::IRWEN(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :

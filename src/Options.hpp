@@ -101,9 +101,7 @@ public:
     {
         map_type::const_iterator optIt = this->optMap.find(name);
         if (optIt != this->optMap.end()) {
-            if (optIt->second.type() == typeid(def)) {
-                return optIt->second.get(def);
-            }
+            return optIt->second.get(def);
         }
 
         return def;

@@ -4,11 +4,10 @@
 \alias{initest_options}
 \title{Additional Options for the Initial Estimator}
 \usage{
-initest_options(keep_solutions = 5, psc_method = c("rr", "exact"),
+initest_options(keep_solutions = 5, psc_method = c("exact", "rr"),
   maxit = 10, maxit_pense_refinement = 5, eps = 1e-06, psc_keep = 0.5,
   resid_keep_method = c("proportion", "threshold"), resid_keep_prop = 0.6,
-  resid_keep_thresh = 2, delta = 0.25, mscale_eps = 1e-08,
-  mscale_maxit = 200, cc)
+  resid_keep_thresh = 2, mscale_eps = 1e-08, mscale_maxit = 200)
 }
 \arguments{
 \item{keep_solutions}{how many initial estimates should be kept to perform
@@ -35,13 +34,8 @@ than the threshold \code{resid_keep_thresh} will be retained.}
 \item{resid_keep_prop, resid_keep_thresh}{proportion or threshold for
 observations to keep based on their residual.}
 
-\item{delta}{desired breakdown point of the S-estimator.}
-
 \item{mscale_eps, mscale_maxit}{maximum number of iterations and numeric
 tolerance for the M-scale.}
-
-\item{cc}{tuning constant for the S-estimator. Default is to chosen based
-on the breakdown point \code{delta}. Should never have to be changed.}
 }
 \value{
 a checked options list.

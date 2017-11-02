@@ -20,13 +20,13 @@ test_that("enpy", {
             y,
             alpha = alpha,
             lambda = lambda,
+            delta = 0.5,
             options = initest_options(
                 psc_method = "rr",
                 maxit = 5,
                 psc_keep = 0.2,
                 resid_keep_method = "proportion",
-                resid_keep_prop = 0.6,
-                delta = 0.5
+                resid_keep_prop = 0.6
             ),
             en_options = en_options_aug_lars()
         )

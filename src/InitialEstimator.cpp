@@ -127,14 +127,14 @@ InitialEstimator::InitialEstimator(const Data& originalData, const Options& opts
 
     this->residuals = new double[this->originalData.numObs()];
 
-    this->rhoFun = getRhoFunctionByName(opts.get("rhoFunction", DEFAULT_OPT_RHO_FUNCTION));
+    this->rhoFun = getRhoFunctionByName((RhoFunctionName) opts.get("rhoFunction", (int) DEFAULT_OPT_RHO_FUNCTION));
 }
 
 InitialEstimator::IEControl InitialEstimator::initIEControl(const Options& opts)
 {
     IEControl ctrl = {
         opts.get("maxit", DEFAULT_OPT_MAXIT),
-        opts.get("keepResidualsMethod", DEFAULT_OPT_KEEP_METHOD),
+        (KeepResidualsMethod) opts.get("keepResidualsMethod", (int) DEFAULT_OPT_KEEP_METHOD),
         opts.get("keepResidualsThreshold",DEFAULT_OPT_KEEP_RESID_THRESHOLD),
         opts.get("keepResidualsProportion", DEFAULT_OPT_KEEP_RESID_PROPORTION),
         opts.get("keepPSCProportion", DEFAULT_OPT_KEEP_PSC_PROPORTION),

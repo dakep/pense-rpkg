@@ -13,7 +13,7 @@ build_lambda_grid <- function(x, y, alpha, nlambda, lambda_min_ratio) {
     ys <- y / scale_y
 
     ## Pairwise robust covariances
-    covxy <- apply(x, 2, covGK, ys, sigmamu = scaleTau2)
+    covxy <- apply(x, 2, covGK, ys, scalefn = scaleTau2)
 
     lmax <- max(abs(covxy)) * 2 * scale_y / (max_scale_x * max(0.01, alpha))
     lmin <- lambda_min_ratio * lmax

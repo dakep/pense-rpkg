@@ -7,6 +7,7 @@
 //
 #include "config.h"
 #include <RcppArmadillo.h>
+#include <R_ext/Rdynload.h>
 
 #include <stdexcept>
 #include <string>

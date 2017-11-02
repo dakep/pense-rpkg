@@ -140,10 +140,6 @@ pense <- function(x, y,
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
 
-    init_options$mscaleDelta <- options$bdp
-    init_options$mscaleCC <- options$cc
-
-
     standardize <- .check_arg(standardize, "logical")
     cv_k <- .check_arg(cv_k, "integer", range = 0)
 

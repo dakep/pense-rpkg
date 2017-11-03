@@ -1,9 +1,5 @@
-Addressing issues raised by the previous submission of v. 1.0.4:
- * added a reference in the DESCRIPTION file to the manuscript for more details
- * added a COPYRIGHTS file to list copyright holders of some code parts
- * added examples for all functions in the package
-
-Fixed some smaller bugs and made the interface more consistent.
+This release addresses (and hopefully resolves) the build error on Solaris (x86).
+It also fixes a bug which breaks the package with the latest version of robustbase (0.92-8) as reported by Martin Maechler.
 
 ## Test environments
 

@@ -140,7 +140,7 @@ void ENDal::setOptions(const Options& options)
     this->etaStart = options.get("etaStart", this->etaStart);
     this->etaStartNumerator = options.get("etaStartNumerator", this->etaStartNumerator);
     this->etaMultiplier = options.get("etaMultiplier", this->etaMultiplier);
-    this->precondType = options.get("preconditioner", this->precondType);
+    this->precondType = (Preconditioner) options.get("preconditioner", (int) this->precondType);
 }
 
 void ENDal::setLambdas(const double lambda1, const double lambda2)

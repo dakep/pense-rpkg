@@ -19,6 +19,7 @@ init_exact <- enpy(
     x, y,
     alpha = 0.8,
     lambda = 0.1,
+    delta = 0.25,
     options = initest_options(
         psc_method = "exact"
     ),
@@ -32,6 +33,7 @@ init_approx <- enpy(
     x, y,
     alpha = 0.8,
     lambda = 0.1,
+    delta = 0.25,
     options = initest_options(
         psc_method = "rr"
     ),

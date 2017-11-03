@@ -22,7 +22,7 @@ static const ENAlgorithm DEFAULT_OPT_EN_ALGORITHM = AUGMENTED_LARS;
 ElasticNet* getElasticNetImpl(const Options& options, const bool intercept)
 {
     ElasticNet* en = NULL;
-    ENAlgorithm enAlgorithm = options.get("algorithm", DEFAULT_OPT_EN_ALGORITHM);
+    ENAlgorithm enAlgorithm = (ENAlgorithm) options.get("algorithm", (int) DEFAULT_OPT_EN_ALGORITHM);
 
     switch (enAlgorithm) {
         case DAL:

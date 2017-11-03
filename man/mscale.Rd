@@ -4,19 +4,19 @@
 \alias{mscale}
 \title{Robust M-estimate of Scale}
 \usage{
-mscale(x, b = 0.5, rho = c("bisquare", "huber"), cc, eps = 1e-08,
+mscale(x, delta = 0.5, rho = c("bisquare", "huber"), cc, eps = 1e-08,
   maxit = 200)
 }
 \arguments{
 \item{x}{numeric vector of observations.}
 
-\item{b}{target value of the M-estimation equation.}
+\item{delta}{target value of the M-estimation equation.}
 
 \item{rho}{rho function to use in the M-estimation equation.}
 
 \item{cc}{non-negative constant for the chosen rho function. If missing,
 it will be chosen such that the expected value of the rho function
-under the normal model is equal to \code{b}.}
+under the normal model is equal to \code{delta}.}
 
 \item{eps}{threshold for convergence.}
 
@@ -30,7 +30,7 @@ Compute the M-estimate of scale with MAD as initial estimate.
 }
 \details{
 This solves the M-estimation equation given by
-\deqn{\sum_{i=1}^n \rho( x_i / s_n; cc ) = n b}
+\deqn{\sum_{i=1}^n \rho( x_i / s_n; cc ) = n \delta}
 }
 \note{
 \code{NA} values in \code{x} are removed before calculating the
@@ -41,6 +41,6 @@ This solves the M-estimation equation given by
 set.seed(1234)
 x <- rnorm(100)
 mscale(x)
-mscale(x, b = 0.25) # For a breakdown point of 25\%
+mscale(x, delta = 0.25) # For a breakdown point of 25\%
 mscale(x, rho = "huber") # Using Huber's rho function
 }

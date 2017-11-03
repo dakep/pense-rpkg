@@ -30,11 +30,8 @@
 #'      than the threshold \code{resid_keep_thresh} will be retained.
 #' @param resid_keep_prop,resid_keep_thresh proportion or threshold for
 #'      observations to keep based on their residual.
-#' @param delta desired breakdown point of the S-estimator.
 #' @param mscale_eps,mscale_maxit maximum number of iterations and numeric
 #'      tolerance for the M-scale.
-#' @param cc tuning constant for the S-estimator. Default is to chosen based
-#'      on the breakdown point \code{delta}. Should never have to be changed.
 #' @return a checked options list.
 #' @export
 #' @family specifying additional options
@@ -45,7 +42,7 @@
 #' \url{http://doi.org/10.2307/2670164}
 initest_options <- function (
     keep_solutions = 5,
-    psc_method = c("rr", "exact"),
+    psc_method = c("exact", "rr"),
     maxit = 10,
     maxit_pense_refinement = 5,
     eps = 1e-6,
@@ -53,19 +50,13 @@ initest_options <- function (
     resid_keep_method = c("proportion", "threshold"),
     resid_keep_prop = 0.6,
     resid_keep_thresh = 2,
-    delta = 0.25,
     mscale_eps = 1e-8,
-    mscale_maxit = 200,
-    cc
+    mscale_maxit = 200
 ) {
     psc_method <- match.arg(psc_method)
     resid_keep_method <- match.arg(resid_keep_method)
     resid_keep_method <- as.integer(pmatch(resid_keep_method,
                                            c("proportion", "threshold"))) - 1L
-
-    if (missing(cc)) {
-        cc <- consistency.rho(delta, 1L)
-    }
 
     return(list(
         keepSolutions = .check_arg(keep_solutions, "integer", range = 0),
@@ -85,13 +76,6 @@ initest_options <- function (
             range = c(0, 1)
         ),
         keepPSCProportion = .check_arg(psc_keep, "numeric", range = c(0, 1)),
-        mscaleDelta = .check_arg(
-            delta,
-            "numeric",
-            range = c(0, 0.5),
-            range_test_upper = "<="
-        ),
-        mscaleCC = .check_arg(cc, "numeric", range = 0),
         mscaleEps = .check_arg(mscale_eps, "numeric", range = 0),
         mscaleMaxit = .check_arg(mscale_maxit, "integer", range = 0)
     ))

@@ -38,8 +38,16 @@ residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ..
         correction = correction
     )
 
-    x <- data.matrix(eval(object$call$x))
-    y <- drop(eval(object$call$y))
+    x <- if (!is.null(object$call$x_train)) {
+        data.matrix(eval(object$call$x_train))
+    } else {
+        data.matrix(eval(object$call$x))
+    }
+    y <- if (!is.null(object$call$y_train)) {
+        data.matrix(eval(object$call$y_train))
+    } else {
+        data.matrix(eval(object$call$y))
+    }
 
     return(drop(y - coefs[1L] - x %*% coefs[-1L, , drop = FALSE]))
 }

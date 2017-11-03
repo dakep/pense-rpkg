@@ -7,6 +7,7 @@
 //
 #include "config.h"
 #include <RcppArmadillo.h>
+#include <R_ext/Rdynload.h>
 
 #include <stdexcept>
 #include <string>
@@ -33,6 +34,7 @@ static inline void getMatDims(SEXP matrix, int* nrows, int* ncols);
  */
 static const R_CallMethodDef exportedCallMethods[] = {
     {"C_augtrans", (DL_FUNC) &C_augtrans, 1},
+    {"C_tau_size", (DL_FUNC) &C_tau_size, 1},
     {"C_elnet_sp", (DL_FUNC) &C_elnet_sp, 8},
     {"C_elnet_weighted_sp", (DL_FUNC) &C_elnet_weighted_sp, 9},
     {"C_pscs_ols", (DL_FUNC) &C_pscs_ols, 2},
@@ -80,6 +82,59 @@ RcppExport SEXP C_augtrans(SEXP RX)
     UNPROTECT(1);
 
     return RXaug;
+}
+
+RcppExport SEXP C_tau_size(SEXP Rx)
+{
+    SEXP Rtau_size = PROTECT(Rf_allocVector(REALSXP, 1));
+    double *tau_size = REAL(Rtau_size);
+    *tau_size = 0;
+
+    BEGIN_RCPP
+
+    static const double c2_squared = 9;
+    static const double consistency_constant_inv = 1 / 0.961;
+    const vec x(REAL(Rx), Rf_length(Rx), false, true);
+    vec x_abs(abs(x));
+    const double sigma0 = median(x_abs);
+    double *tmp = x_abs.memptr();
+    uword i = 0;
+
+    while (i < x.n_elem - 1) {
+        *tmp = *tmp / sigma0;
+        *tmp *= *tmp;
+        if (*tmp > c2_squared) {
+            *tmp = c2_squared;
+        }
+        *tau_size += *tmp;
+        ++tmp;
+        ++i;
+
+        *tmp = *tmp / sigma0;
+        *tmp *= *tmp;
+        if (*tmp > c2_squared) {
+            *tmp = c2_squared;
+        }
+        *tau_size += *tmp;
+        ++tmp;
+        ++i;
+    }
+
+    if (i < x.n_elem) {
+        *tmp = *tmp / sigma0;
+        *tmp *= *tmp;
+        if (*tmp > c2_squared) {
+            *tmp = c2_squared;
+        }
+        *tau_size += *tmp;
+    }
+
+    *tau_size = sigma0 * consistency_constant_inv * sqrt(*tau_size / x.n_elem);
+
+    VOID_END_RCPP
+
+    UNPROTECT(1);
+    return Rtau_size;
 }
 
 /**

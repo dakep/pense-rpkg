@@ -17,6 +17,9 @@
 #' @param y response vector.
 #' @param alpha,lambda EN penalty parameters (NOT adjusted for the number of
 #'      observations in \code{x}).
+#' @param delta desired breakdown point of the resulting estimator.
+#' @param cc tuning constant for the S-estimator. Default is to chosen based
+#'      on the breakdown point \code{delta}. Should never have to be changed.
 #' @param options additional options for the initial estimator. See
 #'      \code{\link{initest_options}} for details.
 #' @param en_options additional options for the EN algorithm. See
@@ -33,7 +36,7 @@
 #' @example examples/enpy.R
 #'
 #' @export
-enpy <- function(x, y, alpha, lambda,
+enpy <- function(x, y, alpha, lambda, delta, cc,
                  options = initest_options(),
                  en_options = en_options_aug_lars()) {
     y <- drop(y)
@@ -64,6 +67,23 @@ enpy <- function(x, y, alpha, lambda,
 
     if (lambda == 0) {
         options$pscMethod <- "ols"
+    }
+
+    options$mscaleDelta <- .check_arg(
+        delta,
+        "numeric",
+        range = c(0, 0.5),
+        range_test_upper = "<="
+    )
+
+    options$mscaleCC <- if (missing(cc)) {
+        consistency.rho(options$mscaleDelta, 1L)
+    } else {
+        .check_arg(
+            cc,
+            "numeric",
+            range = 0
+        )
     }
 
     result <- switch(

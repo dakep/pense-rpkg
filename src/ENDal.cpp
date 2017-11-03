@@ -140,7 +140,7 @@ void ENDal::setOptions(const Options& options)
     this->etaStart = options.get("etaStart", this->etaStart);
     this->etaStartNumerator = options.get("etaStartNumerator", this->etaStartNumerator);
     this->etaMultiplier = options.get("etaMultiplier", this->etaMultiplier);
-    this->precondType = options.get("preconditioner", this->precondType);
+    this->precondType = (Preconditioner) options.get("preconditioner", (int) this->precondType);
 }
 
 void ENDal::setLambdas(const double lambda1, const double lambda2)
@@ -1051,12 +1051,12 @@ static inline void vecSoftThresholdInplaceSmallSparse(sp_vec& zsoft, const sp_ve
 static inline void vecSoftThresholdInplaceLargeSparse(sp_vec& zsoft, const sp_vec& z1, const double c, const vec&z2, const double gamma)
 {
     double tmp;
-    vector<uword> ind;
-    vector<double> val;
+    std::vector<uword> ind;
+    std::vector<double> val;
     uword i = 0;
     uword upper_bound = 0;
 
-    ind.reserve(min(z1.n_elem, (uword) 1.4 * z1.n_nonzero));
+    ind.reserve(std::min(z1.n_elem, (uword) 1.4 * z1.n_nonzero));
     val.reserve(ind.capacity());
 
     sp_vec::const_iterator z1Iter = z1.begin();

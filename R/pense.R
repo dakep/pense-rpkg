@@ -92,6 +92,7 @@
 #' @importFrom stats mad median weighted.mean
 #' @importFrom robustbase scaleTau2
 #' @importFrom Matrix norm drop Diagonal colSums
+#' @useDynLib pense, .registration = TRUE
 pense <- function(x, y,
                   alpha = 0.5,
                   nlambda = 50, lambda, lambda_min_ratio,
@@ -402,11 +403,14 @@ pense <- function(x, y,
         cv_obj <- apply(all_cv_resids, 2, function (r) {
             cv_objective_fun(r[is.finite(r)])
         })
+        cv_resid_size <- apply(all_cv_resids, 2, function (r) {
+            .Call(C_tau_size, r[is.finite(r)])
+        })
 
         cv_scales <- apply(all_cv_resids, 2, function (r) {
             mscale(
                 r - mean(r),
-                b = options$bdp,
+                delta = options$bdp,
                 rho = "bisquare",
                 cc = options$cc,
                 eps = options$mscaleEps,
@@ -428,6 +432,7 @@ pense <- function(x, y,
         cv_lambda_grid <- data.frame(
             lambda = lambda,
             cvavg = cv_obj,
+            resid_size = cv_resid_size,
             s_scale = cv_scales,
             cv_stats
         )

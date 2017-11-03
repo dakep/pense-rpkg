@@ -9,80 +9,105 @@
 #ifndef Options_hpp
 #define Options_hpp
 
+#include <typeinfo>
 #include <utility>
-#include <string>
 #include <map>
-
-using namespace std;
 
 class Options
 {
 private:
-    class OptionBase
+    class OptionValue
     {
+    private:
+        class ValueBase {
+        public:
+            virtual ValueBase * clone() const = 0;
+            virtual ~ValueBase() {}
+            virtual const std::type_info& type() const = 0;
+        };
+
+        template <typename T>
+        class ValueImpl : public ValueBase
+        {
+        public:
+            ValueImpl(const T value) : value(value)
+            {}
+
+            const std::type_info& type() const
+            {
+                return typeid(this->value);
+            }
+
+            ValueBase* clone() const
+            {
+                return new ValueImpl(this->value);
+            }
+
+            T operator*() const
+            {
+                return this->value;
+            }
+        private:
+            const T value;
+        };
+
+        ValueBase* value;
     public:
-        virtual ~OptionBase()
+        OptionValue(const OptionValue& other) : value(other.value->clone())
         {}
+
+        template <typename T>
+        OptionValue(const T value) : value(new ValueImpl<T>(value))
+        {}
+
+        template <typename T>
+        T get(T def) const {
+            return **dynamic_cast< ValueImpl<T>* >(this->value);
+        }
+
+        const std::type_info& type() const
+        {
+            return this->value->type();
+        }
+
+        ~OptionValue()
+        {
+            delete this->value;
+        }
     };
 
 public:
-    template<typename T>
-    class Option : public OptionBase
-    {
-    public:
-        Option(const T& value) : OptionBase(), value_val(value)
-        {}
-
-        const T value() const
-        {
-            return this->value_val;
-        }
-    private:
-        const T value_val;
-    };
-
-    typedef map<std::string, OptionBase*> map_type;
+    typedef std::map<std::string, OptionValue> map_type;
 
     Options()
     {}
 
-    template<typename T>
-    static Options createSimple(const std::string& name, const T& value)
+    template <typename T>
+    Options(const std::string& name, const T& value)
     {
-        Options tmp;
-        tmp.set(name, value);
-        return tmp;
-    }
-
-    ~Options()
-    {
-        map_type::iterator it = this->optMap.begin();
-        for(; it != this->optMap.end(); ++it) {
-            delete it->second;
-        }
+        this->set(name, value);
     }
 
     template <typename T>
     void set(const std::string& name, const T& value)
     {
-        Option<T>* opt = new Option<T>(value);
+        OptionValue optval(value);
         this->optMap.erase(name);
-        this->optMap.insert(pair<std::string, OptionBase*>(name, opt));
+        this->optMap.insert(std::pair<std::string, OptionValue>(name, optval));
     }
 
     template <typename T>
     T get(const std::string& name, const T& def) const
     {
         map_type::const_iterator optIt = this->optMap.find(name);
-        if (optIt == this->optMap.end()) {
-            return def;
+        if (optIt != this->optMap.end()) {
+            return optIt->second.get(def);
         }
 
-        return (static_cast< const Option<T>* >(optIt->second))->value();
+        return def;
     }
 private:
     map_type optMap;
 };
-
 
 #endif /* Options_hpp */

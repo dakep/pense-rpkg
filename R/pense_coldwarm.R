@@ -16,6 +16,8 @@ pense_init_cold <- function(x, y, alpha, lambda, standardize,
         std_data$yc,
         alpha,
         lambda,
+        delta = pense_options$bdp,
+        cc = pense_options$cc,
         options = initest_options,
         en_options = en_options
     )
@@ -163,6 +165,8 @@ initest_cold <- function(x, y, alpha, lambda, pense_options,
         y,
         alpha,
         lambda,
+        delta = pense_options$bdp,
+        cc = pense_options$cc,
         options = initest_options,
         en_options = en_options
     )

@@ -4,7 +4,7 @@
 \alias{enpy}
 \title{PY (Pena-Yohai) initial estimates for EN S-estimators}
 \usage{
-enpy(x, y, alpha, lambda, options = initest_options(),
+enpy(x, y, alpha, lambda, delta, cc, options = initest_options(),
   en_options = en_options_aug_lars())
 }
 \arguments{
@@ -14,6 +14,11 @@ enpy(x, y, alpha, lambda, options = initest_options(),
 
 \item{alpha, lambda}{EN penalty parameters (NOT adjusted for the number of
 observations in \code{x}).}
+
+\item{delta}{desired breakdown point of the resulting estimator.}
+
+\item{cc}{tuning constant for the S-estimator. Default is to chosen based
+on the breakdown point \code{delta}. Should never have to be changed.}
 
 \item{options}{additional options for the initial estimator. See
 \code{\link{initest_options}} for details.}
@@ -62,6 +67,7 @@ init_exact <- enpy(
     x, y,
     alpha = 0.8,
     lambda = 0.1,
+    delta = 0.25,
     options = initest_options(
         psc_method = "exact"
     ),
@@ -75,6 +81,7 @@ init_approx <- enpy(
     x, y,
     alpha = 0.8,
     lambda = 0.1,
+    delta = 0.25,
     options = initest_options(
         psc_method = "rr"
     ),

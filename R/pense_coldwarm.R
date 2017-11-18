@@ -8,7 +8,6 @@ pense_init_cold <- function(x, y, alpha, lambda, standardize,
                             en_options) {
     dx <- dim(x)
     std_data <- standardize_data(x, y, standardize)
-    lambda <- lambda / max(std_data$scale_x)
 
     # Compute cold initial estimate
     initraw <- enpy(
@@ -76,7 +75,6 @@ pense_full <- function(x, y, alpha, lambda_grid, standardize,
                        pense_options, en_options, warn = TRUE) {
     dx <- dim(x)
     std_data <- standardize_data(x, y, standardize)
-    lambda_grid <- lambda_grid / max(std_data$scale_x)
     final_estimates <- vector("list", length(lambda_grid))
 
     if (missing(initial_ests)) {

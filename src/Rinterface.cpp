@@ -28,12 +28,20 @@ using namespace arma;
 
 static inline Options listToOptions(SEXP list);
 static inline void getMatDims(SEXP matrix, int* nrows, int* ncols);
+static inline void getENCorrectionFactor(
+        double *correctionFactors,
+        const int correction,
+        const double alpha,
+        const double* lambda,
+        const int nlambda
+);
 
 /**
  * .C entry point definitions for R
  */
 static const R_CallMethodDef exportedCallMethods[] = {
     {"C_augtrans", (DL_FUNC) &C_augtrans, 1},
+    {"C_en_correction_factor", (DL_FUNC) &C_en_correction_factor, 3},
     {"C_tau_size", (DL_FUNC) &C_tau_size, 1},
     {"C_elnet_sp", (DL_FUNC) &C_elnet_sp, 8},
     {"C_elnet_weighted_sp", (DL_FUNC) &C_elnet_weighted_sp, 9},
@@ -54,6 +62,24 @@ void R_init_pense(DllInfo *dll)
     R_registerRoutines(dll, NULL, exportedCallMethods, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
     R_forceSymbols(dll, TRUE);
+}
+
+RcppExport SEXP C_en_correction_factor(SEXP Rcorrection, SEXP Ralpha, SEXP Rlambda)
+{
+    int nlambda = Rf_length(Rlambda);
+    SEXP Rret = PROTECT(Rf_allocVector(REALSXP, nlambda));
+
+    getENCorrectionFactor(
+        REAL(Rret),
+        *INTEGER(Rcorrection),
+        *REAL(Ralpha),
+        REAL(Rlambda),
+        nlambda
+    );
+
+    UNPROTECT(1);
+
+    return Rret;
 }
 
 RcppExport SEXP C_augtrans(SEXP RX)
@@ -183,7 +209,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
     const bool estimate_intercept = (bool) *INTEGER(Rintercept);
-    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
+    const int applyENCorrection = opts.get("correction", 1) * (alpha < 1);
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
@@ -225,8 +251,8 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (applyENCorrection) {
-            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
+        if (applyENCorrection > 0) {
+            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1);
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -300,7 +326,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
     const bool estimate_intercept = (bool) *INTEGER(Rintercept);
-    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
+    const int applyENCorrection = opts.get("correction", 1) * (alpha < 1);
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
@@ -342,8 +368,8 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (applyENCorrection) {
-            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
+        if (applyENCorrection > 0) {
+            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1);
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -766,4 +792,33 @@ static inline void getMatDims(SEXP matrix, int* nrows, int* ncols)
     *nrows = dims[0];
     *ncols = dims[1];
     UNPROTECT(1);
+}
+
+
+static inline void getENCorrectionFactor(
+        double *correctionFactors,
+        const int correction,
+        const double alpha,
+        const double* lambda,
+        const int nlambda
+)
+{
+    switch (correction)
+    {
+    case 1:
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = 1. + (1. - alpha) * lambda[i];
+        }
+        break;
+    case 2:
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = sqrt(1. + (1. - alpha) * lambda[i]);
+        }
+        break;
+    default:
+    case 0:
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = 1.;
+        }
+    }
 }

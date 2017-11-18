@@ -144,7 +144,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
     }
 
     intercept <- isTRUE(intercept)
-    correction <- !identical(correction, FALSE)
+    correction <- as.integer(correction)
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
 
@@ -531,7 +531,9 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
                                        range = c(0, 1))
     }
-    lambda_max <- max(abs(apply(x, 2, cov, y))) / max(0.01, alpha)
+    n <- length(y)
+
+    lambda_max <- ((n - 1) / n) * max(abs(cov(x, y))) / max(0.001, alpha)
 
     exp(rev(seq(log(lambda_max), log(lambda_min_ratio * lambda_max),
                 length.out = nlambda)))
@@ -570,10 +572,10 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         options$warmStart <- TRUE
     }
 
-    if (isTRUE(correction)) {
-        options$naive <- FALSE
-    } else {
-        options$naive <- TRUE
+    correction <- as.integer(correction)
+    options$correction <- 1L
+    if (isTRUE(correction >= 0L && correction <= 2L)) {
+        options$correction <- correction
     }
 
     elnetres <- .Call(
@@ -627,10 +629,10 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         options$warmStart <- TRUE
     }
 
-    if (isTRUE(correction)) {
-        options$naive <- FALSE
-    } else {
-        options$naive <- TRUE
+    correction <- as.integer(correction)
+    options$correction <- 1L
+    if (isTRUE(correction >= 0L && correction <= 2L)) {
+        options$correction <- correction
     }
 
     elnetres <- .Call(

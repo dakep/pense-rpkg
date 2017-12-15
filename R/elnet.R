@@ -372,7 +372,11 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
             ncol = length(lambda)
         ),
         lambda = lambda,
-        cvres = data.frame(lambda = lambda, avg = NA_real_, sd = NA_real_),
+        cvres = data.frame(
+            lambda = lambda,
+            cvavg = NA_real_,
+            resid_var = NA_real_
+        ),
         call = call,
         lambda_opt = NA_real_
     ), class = c("cv_elnetfit", "elnetfit"))
@@ -461,9 +465,10 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         )
 
         if (length(cv_ind) > 0L) {
-            # Only return the performance measures
-            # `predictions` are ordered from smallest to largest lambda
-            return(rev(cv_measure(y_test - cv_fold_res$predictions)))
+            # Return all residuals
+            # `residuals` are ordered from smallest to largest lambda
+            cv_resids <- y_test - cv_fold_res$predictions
+            return(cv_resids[ , rev(seq_len(ncol(cv_resids))), drop = FALSE])
         } else {
             # Return the full EN result
             return(cv_fold_res)
@@ -503,16 +508,16 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         ret_struct[[ri]] <- cv_results$full[[ri]]
     }
 
-    # Add the CV results
-    cv_results_mat <- matrix(
-        unlist(cv_results[-1L]),
-        ncol = cv_k
+    # Gather the CV results
+    cv_results_mat <- do.call(
+        rbind,
+        cv_results[-1L]
     )
 
     ret_struct$cvres <- data.frame(
         lambda = lambda,
-        cvavg = rowMeans(cv_results_mat),
-        cvsd = apply(cv_results_mat, 1, sd)
+        cvavg = cv_measure(cv_results_mat),
+        resid_var = apply(cv_results_mat, 2, var)
     )
 
     ret_struct$lambda_opt <- with(ret_struct$cvres, lambda[which.min(cvavg)])

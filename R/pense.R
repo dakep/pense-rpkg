@@ -411,7 +411,7 @@ pense <- function(x, y,
 
         cv_scales <- apply(all_cv_resids, 2, function (r) {
             mscale(
-                r - mean(r),
+                r - median(r),
                 delta = options$bdp,
                 rho = "bisquare",
                 cc = options$cc,

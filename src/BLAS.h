@@ -75,6 +75,12 @@
                const double *x, const int *incx,
                double *a, const int *lda);
 
+    /* DSYRK - perform the symmetric rank k operation C := alpha*A*A' + beta*C */
+    BLAS_extern void
+    F77_NAME(dsyrk)(const char *uplo, const char *trans, const int *n, const int *k,
+                    const double *alpha, const double *a, const int *lda,
+                    const double *beta, double *c, const int *ldc);
+
     BLAS_extern void
     F77_NAME(dtrsv)(const char *uplo, const char *trans,
             const char *diag, const int *n,
@@ -143,6 +149,9 @@
 
 #define BLAS_DSYR(uplo, n, alpha, x, incx, a, lda)												\
 	BLAS_R_NAME(dsyr)(uplo, &n, &alpha, x, &incx, a, &lda)
+
+#define BLAS_DSYRK(uplo, trans, n, k, alpha, a, lda, beta, c, ldc)                        \
+  BLAS_R_NAME(dsyrk)(uplo, trans, &n, &k, &alpha, a, &lda, &beta, c, &ldc)
 
 #define BLAS_DTRSM(side, uplo, transa, diag, m, n, alpha, a, lda, b, ldb)                       \
     BLAS_R_NAME(dtrsm)(side, uplo, transa, diag, &m, &n, &alpha, a, &lda, b, &ldb)

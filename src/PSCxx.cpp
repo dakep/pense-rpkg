@@ -347,11 +347,9 @@ int PSC_EN::computePSC() {
     double *RESTRICT iterY;
     double *RESTRICT lastCol = this->data.getXtr() + nvar * (nobs - 1);
     double *RESTRICT lastResponse = this->data.getY() + (nobs - 1);
-    double *RESTRICT M = this->Z;
     int nevalues = 0;
     int accuStatus = 0;
 
-    memset(M, 0, nobs * nobs * sizeof(double));
     memset(coefs, 0, nvar * sizeof(double));
 
     this->data.setNumObs(nobs - 1);
@@ -412,9 +410,6 @@ int PSC_EN::computePSC() {
         residualsOmitted[i] = *swapbuffer;
 
         iterX += nvar;
-
-        /* Calculate outer product and add to M */
-        BLAS_DSYR(BLAS_UPLO_UPPER, nobs, BLAS_1F, residualsOmitted, BLAS_1L, M, nobs);
     }
 
     /*
@@ -435,13 +430,14 @@ int PSC_EN::computePSC() {
         residualsOmitted[nobs - 1] -= coefs[j] * lastCol[j];
     }
 
-    /* Calculate outer product and add to M */
-    BLAS_DSYR(BLAS_UPLO_UPPER, nobs, BLAS_1F, residualsOmitted, BLAS_1L, M, nobs);
-
     /* Reset the number of observations for data */
     this->data.setNumObs(nobs);
 
-    nevalues = this->doEigenDecomposition(BLAS_UPLO_UPPER, M, nobs);
+    /* Calculate matrix product Z = R'*R */
+    BLAS_DSYRK(BLAS_UPLO_UPPER, BLAS_TRANS_TRANS, nobs, nobs,
+               BLAS_1F, this->residMat, nobs, BLAS_0F, this->Z, nobs);
+
+    nevalues = this->doEigenDecomposition(BLAS_UPLO_UPPER, this->Z, nobs);
 
     if (nevalues > 0) {
         BLAS_DGEMM(BLAS_TRANS_NO, BLAS_TRANS_NO, nobs, nevalues, nobs,

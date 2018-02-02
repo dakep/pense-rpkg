@@ -373,6 +373,10 @@ pensem.pense <- function(
             cc = mm_options$cc
         )
 
+        if (lambda_max < .Machine$double.eps) {
+            lambda_max <- lambda_opt_m
+        }
+
         # We have found a good lambda_max, now let's look for a good lambda_min
         lambda_min_break <- lambda_min_ratio * lambda_max
         lambda_min_break <- ifelse(
@@ -382,34 +386,32 @@ pensem.pense <- function(
         )
 
         lambda_min <- min(lambda_max, lambda_opt_m)
-        if (lambda_max > .Machine$double.eps) {
-            repeat {
-                check_lambdas <- lambda_min * 0.5^seq_len(max(5L, cluster$ncores))
+        repeat {
+            check_lambdas <- lambda_min * 0.5^seq_len(max(5L, cluster$ncores))
 
-                coef_norm <- cluster$lapply(
-                    check_lambdas,
-                    get_coef_norm,
-                    init_scale = scale_init_corr,
-                    init_int = pense_int,
-                    init_coef = pense_beta,
-                    alpha = alpha,
-                    options = mm_options,
-                    en_options = en_options
-                )
+            coef_norm <- cluster$lapply(
+                check_lambdas,
+                get_coef_norm,
+                init_scale = scale_init_corr,
+                init_int = pense_int,
+                init_coef = pense_beta,
+                alpha = alpha,
+                options = mm_options,
+                en_options = en_options
+            )
 
-                coef_norm <- unlist(coef_norm)
-                coef_norm_diff <- coef_norm[-length(coef_norm)] / coef_norm[-1L]
-                const_norm <- which(abs(coef_norm_diff - 1) < mm_options$eps)
-                if (length(const_norm) > 0L) {
-                    lambda_min <- check_lambdas[[const_norm[[1L]]]]
-                    break
-                }
+            coef_norm <- unlist(coef_norm)
+            coef_norm_diff <- coef_norm[-length(coef_norm)] / coef_norm[-1L]
+            const_norm <- which(abs(coef_norm_diff - 1) < mm_options$eps)
+            if (length(const_norm) > 0L) {
+                lambda_min <- check_lambdas[[const_norm[[1L]]]]
+                break
+            }
 
-                lambda_min <- min(check_lambdas)
-                if (lambda_min < lambda_min_break) {
-                    lambda_min <- lambda_min_break
-                    break
-                }
+            lambda_min <- min(check_lambdas)
+            if (lambda_min < lambda_min_break) {
+                lambda_min <- lambda_min_break
+                break
             }
         }
 

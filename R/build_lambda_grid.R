@@ -125,6 +125,10 @@
         w <- Mwgt(x - loc, c1, "bisquare")
         prev_loc <- loc
         loc <- weighted.mean(x, w)
+        if (is.na(loc)) {
+            # All weights are 0
+            loc <- prev_loc
+        }
         if (abs(prev_loc - loc) < conv_tol) {
             break
         }

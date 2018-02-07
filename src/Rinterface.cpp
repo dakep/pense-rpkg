@@ -89,47 +89,56 @@ RcppExport SEXP C_tau_size(SEXP Rx)
     SEXP Rtau_size = PROTECT(Rf_allocVector(REALSXP, 1));
     double *tau_size = REAL(Rtau_size);
     *tau_size = 0;
+    const R_len_t nelem = Rf_length(Rx);
+
+    if (nelem == 0) {
+        *tau_size = NA_REAL;
+        UNPROTECT(1);
+        return Rtau_size;
+    }
 
     BEGIN_RCPP
 
     static const double c2_squared = 9;
     static const double consistency_constant_inv = 1 / 0.961;
-    const vec x(REAL(Rx), Rf_length(Rx), false, true);
+    const vec x(REAL(Rx), nelem, false, true);
     vec x_abs(abs(x));
     const double sigma0 = median(x_abs);
     double *tmp = x_abs.memptr();
     uword i = 0;
 
-    while (i < x.n_elem - 1) {
-        *tmp = *tmp / sigma0;
-        *tmp *= *tmp;
-        if (*tmp > c2_squared) {
-            *tmp = c2_squared;
-        }
-        *tau_size += *tmp;
-        ++tmp;
-        ++i;
+    if (sigma0 > 0) {
+        while (i < x.n_elem - 1) {
+            *tmp = *tmp / sigma0;
+            *tmp *= *tmp;
+            if (*tmp > c2_squared) {
+                *tmp = c2_squared;
+            }
+            *tau_size += *tmp;
+            ++tmp;
+            ++i;
 
-        *tmp = *tmp / sigma0;
-        *tmp *= *tmp;
-        if (*tmp > c2_squared) {
-            *tmp = c2_squared;
+            *tmp = *tmp / sigma0;
+            *tmp *= *tmp;
+            if (*tmp > c2_squared) {
+                *tmp = c2_squared;
+            }
+            *tau_size += *tmp;
+            ++tmp;
+            ++i;
         }
-        *tau_size += *tmp;
-        ++tmp;
-        ++i;
+
+        if (i < x.n_elem) {
+            *tmp = *tmp / sigma0;
+            *tmp *= *tmp;
+            if (*tmp > c2_squared) {
+                *tmp = c2_squared;
+            }
+            *tau_size += *tmp;
+        }
+
+        *tau_size = sigma0 * consistency_constant_inv * sqrt(*tau_size / x.n_elem);
     }
-
-    if (i < x.n_elem) {
-        *tmp = *tmp / sigma0;
-        *tmp *= *tmp;
-        if (*tmp > c2_squared) {
-            *tmp = c2_squared;
-        }
-        *tau_size += *tmp;
-    }
-
-    *tau_size = sigma0 * consistency_constant_inv * sqrt(*tau_size / x.n_elem);
 
     VOID_END_RCPP
 

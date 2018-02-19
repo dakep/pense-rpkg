@@ -426,6 +426,8 @@ pensem.pense <- function(
             by = ld)
         )
         lambda_grid_m <- sort(c(lambda_grid_m, lambda_opt_m))
+    } else if (isTRUE(standardize)) {
+        lambda_grid_m <- sort(lambda) / max(std_data$scale_x)
     } else {
         lambda_grid_m <- sort(lambda)
     }

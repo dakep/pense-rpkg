@@ -33,7 +33,8 @@ static inline void getENCorrectionFactor(
         const int correction,
         const double alpha,
         const double* lambda,
-        const int nlambda
+        const int nlambda,
+        const double lambda_mult
 );
 
 /**
@@ -74,7 +75,8 @@ RcppExport SEXP C_en_correction_factor(SEXP Rcorrection, SEXP Ralpha, SEXP Rlamb
         *INTEGER(Rcorrection),
         *REAL(Ralpha),
         REAL(Rlambda),
-        nlambda
+        nlambda,
+        1.0
     );
 
     UNPROTECT(1);
@@ -261,7 +263,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
         }
 
         if (applyENCorrection > 0) {
-            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1);
+            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1, 2.);
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -378,7 +380,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
         }
 
         if (applyENCorrection > 0) {
-            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1);
+            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1, 2.);
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -809,19 +811,20 @@ static inline void getENCorrectionFactor(
         const int correction,
         const double alpha,
         const double* lambda,
-        const int nlambda
+        const int nlambda,
+        const double lambda_mult
 )
 {
     switch (correction)
     {
     case 1:
         for (int i = 0; i < nlambda; ++i) {
-            correctionFactors[i] = 1. + (1. - alpha) * lambda[i];
+            correctionFactors[i] = 1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i];
         }
         break;
     case 2:
         for (int i = 0; i < nlambda; ++i) {
-            correctionFactors[i] = sqrt(1. + (1. - alpha) * lambda[i]);
+            correctionFactors[i] = sqrt(1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i]);
         }
         break;
     default:

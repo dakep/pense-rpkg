@@ -22,7 +22,7 @@ using namespace arma;
 static const double DEFAULT_OPT_CC = 3.44;
 static const RhoFunction rhoBisquare2 = getRhoFunctionByName(BISQUARE);
 
-static inline double wgtBisquare2(double x, double c);
+static inline double wgtBisquareSTD2(double x, const double c);
 
 MStep::MStep(const Data& data, const double alpha, const double lambda, const double scale, const Options& opts, const Options &enOpts) :
     IRWEN(data, alpha, lambda, opts, enOpts),
@@ -40,23 +40,21 @@ void MStep::updateObjective(const vec& residuals, const double betaENPenalty)
     for (uword i = 0; i < residuals.n_elem; ++i) {
         this->objectiveVal += rhoBisquare2(residuals[i], this->ccScaled);
     }
+    this->objectiveVal /= residuals.n_elem;
 }
 
 void MStep::updateWeights(const vec& residuals)
 {
-    double tmp = 0;
     for (uword i = 0; i < residuals.n_elem; ++i) {
-        this->weights[i] = wgtBisquare2(residuals[i], this->ccScaled);
-        tmp += this->weights[i];
+        this->weights[i] = wgtBisquareSTD2(residuals[i], this->ccScaled);
     }
-
-    /*
-     * Normalize weights to sum to n --> just as in the unweighted case
-     */
-    this->weights *= residuals.n_elem / tmp;
 }
 
-static inline double wgtBisquare2(double x, double c)
+/**
+ * Weight function rho'(x, c) / x for the STANDARDIZED bisquare rho function.
+ * This means, that rho(inf, c) == 1 and thus wgt(x, s*c) == wgt(x/s, c) / s^2!
+ */
+static inline double wgtBisquareSTD2(double x, const double c)
 {
     if (fabs(x) > (c)) {
         return(0.);
@@ -64,6 +62,5 @@ static inline double wgtBisquare2(double x, double c)
 
     x /= c;
     x = (1 - x) * (1 + x);
-    return x * x; // * 6 / (c * c);
+    return x * x * 6 / (c * c);
 }
-

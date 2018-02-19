@@ -15,6 +15,16 @@
 extern "C" void R_init_pense(DllInfo *dll);
 
 /**
+* Compute the EN correction factor
+*
+* @param correction int what correction to do (0 ... no correction, 1 ... true correction)
+* @param alpha,lambda EN parameters
+*
+* @return numeric the correction factor >= 1
+*/
+RcppExport SEXP C_en_correction_factor(SEXP correction, SEXP alpha, SEXP lambda);
+
+/**
  * Add a column of 1's to the matrix X and transpose the augmented
  * matrix
  *

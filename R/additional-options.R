@@ -120,7 +120,14 @@ pense_options <- function (
         cc = .check_arg(cc, "numeric", range = 0),
         mscaleEps = .check_arg(mscale_eps, "numeric", range = 0),
         mscaleMaxit = .check_arg(mscale_maxit, "integer", range = 0),
-        naiveEn = !.check_arg(en_correction, "logical"),
+        # enCorrection = .check_arg(en_correction, "logical"),
+        enCorrection = .check_arg(
+            as.integer(en_correction),
+            "integer",
+            range = c(0L, 2L),
+            range_test_lower = ">=",
+            range_test_upper = "<="
+        ),
         verbosity = .check_arg(verbosity, "integer", range = 0,
                          range_test_lower = ">=")
     ))
@@ -153,7 +160,14 @@ mstep_options <- function (
         eps = .check_arg(eps, "numeric", range = 0),
         cc = .check_arg(cc, "numeric", range = 0),
         adjustBdp = .check_arg(adjust_bdp, "logical"),
-        naiveEn = !.check_arg(en_correction, "logical"),
+        # enCorrection = .check_arg(en_correction, "logical"),
+        enCorrection = .check_arg(
+            as.integer(en_correction),
+            "integer",
+            range = c(0L, 2L),
+            range_test_lower = ">=",
+            range_test_upper = "<="
+        ),
         verbosity = .check_arg(verbosity, "integer", range = 0,
                                range_test_lower = ">=")
     ))

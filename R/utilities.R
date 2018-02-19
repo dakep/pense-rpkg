@@ -287,3 +287,17 @@ setupCluster <- function(ncores = 1L, cl = NULL, eval, export, envir = parent.fr
     })
 }
 
+##
+## Get the EN correction factor
+##
+#' @useDynLib pense, .registration = TRUE
+.en_correction_factor <- function(correction, alpha, lambda) {
+    .Call(
+        C_en_correction_factor,
+        as.integer(correction),
+        as.numeric(alpha),
+        as.numeric(lambda)
+    )
+}
+
+

@@ -815,20 +815,18 @@ static inline void getENCorrectionFactor(
         const double lambda_mult
 )
 {
-    switch (correction)
-    {
-    case 1:
-        for (int i = 0; i < nlambda; ++i) {
-            correctionFactors[i] = 1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i];
-        }
-        break;
-    case 2:
+    if (correction > 0) {
+        // "Default" EN correction using the square root
         for (int i = 0; i < nlambda; ++i) {
             correctionFactors[i] = sqrt(1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i]);
         }
-        break;
-    default:
-    case 0:
+    } else if (correction < 0) {
+        // "Testing" EN correction not using the square root
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = 1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i];
+        }
+    } else {
+        // No EN correction
         for (int i = 0; i < nlambda; ++i) {
             correctionFactors[i] = 1.;
         }

@@ -111,7 +111,6 @@ pense_options <- function (
     if (missing(cc)) {
         cc <- consistency.rho(delta, 1L)
     }
-    if (en_correction())
 
     return(list(
         bdp = .check_arg(delta, "numeric", range = c(0, 0.5),

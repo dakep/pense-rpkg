@@ -577,11 +577,7 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         options$warmStart <- TRUE
     }
 
-    correction <- as.integer(correction)
-    options$correction <- 1L
-    if (isTRUE(correction >= 0L && correction <= 2L)) {
-        options$correction <- correction
-    }
+    options$correction <- as.integer(correction)
 
     elnetres <- .Call(
         C_elnet_sp,
@@ -634,11 +630,7 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         options$warmStart <- TRUE
     }
 
-    correction <- as.integer(correction)
-    options$correction <- 1L
-    if (isTRUE(correction >= 0L && correction <= 2L)) {
-        options$correction <- correction
-    }
+    options$correction <- as.integer(correction)
 
     elnetres <- .Call(
         C_elnet_weighted_sp,

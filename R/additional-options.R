@@ -111,6 +111,7 @@ pense_options <- function (
     if (missing(cc)) {
         cc <- consistency.rho(delta, 1L)
     }
+    if (en_correction())
 
     return(list(
         bdp = .check_arg(delta, "numeric", range = c(0, 0.5),
@@ -120,14 +121,7 @@ pense_options <- function (
         cc = .check_arg(cc, "numeric", range = 0),
         mscaleEps = .check_arg(mscale_eps, "numeric", range = 0),
         mscaleMaxit = .check_arg(mscale_maxit, "integer", range = 0),
-        # enCorrection = .check_arg(en_correction, "logical"),
-        enCorrection = .check_arg(
-            as.integer(en_correction),
-            "integer",
-            range = c(0L, 2L),
-            range_test_lower = ">=",
-            range_test_upper = "<="
-        ),
+        enCorrection = .check_arg(as.integer(en_correction), "integer"),
         verbosity = .check_arg(verbosity, "integer", range = 0,
                          range_test_lower = ">=")
     ))
@@ -161,13 +155,7 @@ mstep_options <- function (
         cc = .check_arg(cc, "numeric", range = 0),
         adjustBdp = .check_arg(adjust_bdp, "logical"),
         # enCorrection = .check_arg(en_correction, "logical"),
-        enCorrection = .check_arg(
-            as.integer(en_correction),
-            "integer",
-            range = c(0L, 2L),
-            range_test_lower = ">=",
-            range_test_upper = "<="
-        ),
+        enCorrection = .check_arg(as.integer(en_correction), "integer"),
         verbosity = .check_arg(verbosity, "integer", range = 0,
                                range_test_lower = ">=")
     ))

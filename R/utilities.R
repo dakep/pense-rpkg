@@ -144,6 +144,11 @@ standardize_data <- function (x, y, standardize, robust = TRUE) {
             ret_list$muy <- median(y)
         }
 
+        if (!isTRUE(all(ret_list$scale_x > 0))) {
+            stop("One or more variables in x have a MAD of 0. Can not use ",
+                 "`standardize = TRUE`!")
+        }
+
         ret_list$xs <- scale(x, center = ret_list$mux, scale = ret_list$scale_x)
         ret_list$yc <- y - ret_list$muy
     }

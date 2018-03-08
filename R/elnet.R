@@ -301,7 +301,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #'  \item{cvres}{data frame with lambda, average cross-validated performance
 #'      and the estimated standard deviation.}
 #'
-#' @importFrom stats weighted.mean sd
+#' @importFrom stats weighted.mean sd var
 #' @seealso \code{\link{elnet}} to compute only the solution path, without
 #'      selecting the optimal penalty parameter using CV.
 #'

@@ -1,3 +1,9 @@
+# pense 1.2.0
+    * Changed the internal scaling of the regularization parameter for `pense` and `pensem`.
+      **Note**: The _lambda_ values in this release are not the same as in previous releases!
+    * Fixed a bug when standardizing predictor variables with a MAD of 0 (thanks @hadjipantelis for reporting).
+    * The maximum value for the regularization parameter lambda is now chosen exactly.
+    * Fixed a bug when computing "exact" principal sensitivity components.
 # pense 1.0.8
     * Fix error with robustbase-0.92-8 as reported by Martin Maechler.
     * Fix undefined behaviour in C++ code resulting in build error on Solaris (x86).

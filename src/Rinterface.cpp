@@ -28,12 +28,21 @@ using namespace arma;
 
 static inline Options listToOptions(SEXP list);
 static inline void getMatDims(SEXP matrix, int* nrows, int* ncols);
+static inline void getENCorrectionFactor(
+        double *correctionFactors,
+        const int correction,
+        const double alpha,
+        const double* lambda,
+        const int nlambda,
+        const double lambda_mult
+);
 
 /**
  * .C entry point definitions for R
  */
 static const R_CallMethodDef exportedCallMethods[] = {
     {"C_augtrans", (DL_FUNC) &C_augtrans, 1},
+    {"C_en_correction_factor", (DL_FUNC) &C_en_correction_factor, 3},
     {"C_tau_size", (DL_FUNC) &C_tau_size, 1},
     {"C_elnet_sp", (DL_FUNC) &C_elnet_sp, 8},
     {"C_elnet_weighted_sp", (DL_FUNC) &C_elnet_weighted_sp, 9},
@@ -54,6 +63,25 @@ void R_init_pense(DllInfo *dll)
     R_registerRoutines(dll, NULL, exportedCallMethods, NULL, NULL);
     R_useDynamicSymbols(dll, FALSE);
     R_forceSymbols(dll, TRUE);
+}
+
+RcppExport SEXP C_en_correction_factor(SEXP Rcorrection, SEXP Ralpha, SEXP Rlambda)
+{
+    int nlambda = Rf_length(Rlambda);
+    SEXP Rret = PROTECT(Rf_allocVector(REALSXP, nlambda));
+
+    getENCorrectionFactor(
+        REAL(Rret),
+        *INTEGER(Rcorrection),
+        *REAL(Ralpha),
+        REAL(Rlambda),
+        nlambda,
+        1.0
+    );
+
+    UNPROTECT(1);
+
+    return Rret;
 }
 
 RcppExport SEXP C_augtrans(SEXP RX)
@@ -89,47 +117,56 @@ RcppExport SEXP C_tau_size(SEXP Rx)
     SEXP Rtau_size = PROTECT(Rf_allocVector(REALSXP, 1));
     double *tau_size = REAL(Rtau_size);
     *tau_size = 0;
+    const R_len_t nelem = Rf_length(Rx);
+
+    if (nelem == 0) {
+        *tau_size = NA_REAL;
+        UNPROTECT(1);
+        return Rtau_size;
+    }
 
     BEGIN_RCPP
 
     static const double c2_squared = 9;
     static const double consistency_constant_inv = 1 / 0.961;
-    const vec x(REAL(Rx), Rf_length(Rx), false, true);
+    const vec x(REAL(Rx), nelem, false, true);
     vec x_abs(abs(x));
     const double sigma0 = median(x_abs);
     double *tmp = x_abs.memptr();
     uword i = 0;
 
-    while (i < x.n_elem - 1) {
-        *tmp = *tmp / sigma0;
-        *tmp *= *tmp;
-        if (*tmp > c2_squared) {
-            *tmp = c2_squared;
-        }
-        *tau_size += *tmp;
-        ++tmp;
-        ++i;
+    if (sigma0 > 0) {
+        while (i < x.n_elem - 1) {
+            *tmp = *tmp / sigma0;
+            *tmp *= *tmp;
+            if (*tmp > c2_squared) {
+                *tmp = c2_squared;
+            }
+            *tau_size += *tmp;
+            ++tmp;
+            ++i;
 
-        *tmp = *tmp / sigma0;
-        *tmp *= *tmp;
-        if (*tmp > c2_squared) {
-            *tmp = c2_squared;
+            *tmp = *tmp / sigma0;
+            *tmp *= *tmp;
+            if (*tmp > c2_squared) {
+                *tmp = c2_squared;
+            }
+            *tau_size += *tmp;
+            ++tmp;
+            ++i;
         }
-        *tau_size += *tmp;
-        ++tmp;
-        ++i;
+
+        if (i < x.n_elem) {
+            *tmp = *tmp / sigma0;
+            *tmp *= *tmp;
+            if (*tmp > c2_squared) {
+                *tmp = c2_squared;
+            }
+            *tau_size += *tmp;
+        }
+
+        *tau_size = sigma0 * consistency_constant_inv * sqrt(*tau_size / x.n_elem);
     }
-
-    if (i < x.n_elem) {
-        *tmp = *tmp / sigma0;
-        *tmp *= *tmp;
-        if (*tmp > c2_squared) {
-            *tmp = c2_squared;
-        }
-        *tau_size += *tmp;
-    }
-
-    *tau_size = sigma0 * consistency_constant_inv * sqrt(*tau_size / x.n_elem);
 
     VOID_END_RCPP
 
@@ -183,7 +220,7 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
     const bool estimate_intercept = (bool) *INTEGER(Rintercept);
-    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
+    const int applyENCorrection = opts.get("correction", 1) * (alpha < 1);
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
@@ -225,8 +262,8 @@ RcppExport SEXP C_elnet_sp(SEXP RXtr, SEXP Ry, SEXP Rcoefs, SEXP Ralpha,
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (applyENCorrection) {
-            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
+        if (applyENCorrection > 0) {
+            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1, 2.);
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -300,7 +337,7 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
     const double alpha = *REAL(Ralpha);
     const bool generatePredictions = Rf_isReal(RXtest);
     const bool estimate_intercept = (bool) *INTEGER(Rintercept);
-    const bool applyENCorrection = !opts.get("naive", false) && alpha < 1;
+    const int applyENCorrection = opts.get("correction", 1) * (alpha < 1);
 
     BEGIN_RCPP
     const mat Xtest = (generatePredictions ? as<mat>(RXtest) : mat());
@@ -342,8 +379,8 @@ RcppExport SEXP C_elnet_weighted_sp(SEXP RXtr, SEXP Ry, SEXP Rweights, SEXP Rcoe
                           *currentLambda, en->getStatusMessage());
         }
 
-        if (applyENCorrection) {
-            adjFactor = sqrt(1.0 + (1 - alpha) * (*currentLambda));
+        if (applyENCorrection > 0) {
+            getENCorrectionFactor(&adjFactor, applyENCorrection, alpha, currentLambda, 1, 2.);
             coefEsts.col(i) = join_cols(
                 interceptSpVec,
                 currentBeta * adjFactor
@@ -766,4 +803,32 @@ static inline void getMatDims(SEXP matrix, int* nrows, int* ncols)
     *nrows = dims[0];
     *ncols = dims[1];
     UNPROTECT(1);
+}
+
+
+static inline void getENCorrectionFactor(
+        double *correctionFactors,
+        const int correction,
+        const double alpha,
+        const double* lambda,
+        const int nlambda,
+        const double lambda_mult
+)
+{
+    if (correction > 0) {
+        // "Default" EN correction using the square root
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = sqrt(1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i]);
+        }
+    } else if (correction < 0) {
+        // "Testing" EN correction not using the square root
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = 1. + 0.5 * (1. - alpha) * lambda_mult * lambda[i];
+        }
+    } else {
+        // No EN correction
+        for (int i = 0; i < nlambda; ++i) {
+            correctionFactors[i] = 1.;
+        }
+    }
 }

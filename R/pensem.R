@@ -261,7 +261,7 @@ pensem.pense <- function(
         pense_beta <- pense_coefs$beta
     }
 
-    pense_lambda_opt <- pense_lambda_opt / max(std_data$scale_x)
+    pense_lambda_opt <- pense_lambda_opt
 
     ##
     ## Compute effective degrees of freedom
@@ -364,85 +364,17 @@ pensem.pense <- function(
             return(sum(abs(msres$beta@x)))
         }
 
-        if (alpha < 0.1) {
-            lambda_max <- max(penseobj$lambda) * 1.5 /
-                (mm_options$cc^2 * max(std_data$scale_x))
-        } else {
-            ##
-            ## Find maximum lambda, starting from adjusted "optimum"
-            ## in log-2 steps (i.e., always double the previous value)
-            ##
-            lambda_max <- lambda_min <- lambda_opt_m
+        lambda_max <- .lambda_max_m(
+            x = xs,
+            y = yc,
+            alpha = alpha,
+            scale_init = scale_init_corr,
+            bdp = bdp_adj,
+            cc = mm_options$cc
+        )
 
-            ##
-            ## Get largest lambda necessary
-            ##
-            moved_away <- FALSE
-            repeat {
-                check_lambdas <- c(lambda_max, (2^seq_len(cluster$ncores - 1L)) *
-                                       lambda_max)
-
-                zero_norm <- cluster$lapply(
-                    check_lambdas,
-                    get_coef_norm,
-                    init_scale = scale_init_corr,
-                    init_int = pense_int,
-                    init_coef = pense_beta,
-                    alpha = alpha,
-                    options = mm_options,
-                    en_options = en_options
-                )
-
-                zero_norm <- which(unlist(zero_norm) < .Machine$double.eps)
-
-                if (length(zero_norm) > 0) {
-                    # Check if we moved away from the initial guess
-                    moved_away <- moved_away | !identical(zero_norm[1L], 1L)
-                    lambda_max <- check_lambdas[zero_norm[1L]]
-                    break
-                }
-
-                lambda_max <- 2 * check_lambdas[cluster$ncores]
-                moved_away <- TRUE
-            }
-
-            if (!moved_away) {
-                # If we did not move away from the initial guess, we have to check
-                # the next smallest step if this may lead to all-zeros as well
-                # check lambda_max / 2, lambda_max / 4, lambda_max / (2^...)
-                repeat {
-                    check_lambdas <- lambda_max * 0.5^seq_len(cluster$ncores)
-
-                    zero_norm <- cluster$lapply(
-                        check_lambdas,
-                        get_coef_norm,
-                        init_scale = scale_init_corr,
-                        init_int = pense_int,
-                        init_coef = pense_beta,
-                        alpha = alpha,
-                        options = mm_options,
-                        en_options = en_options
-                    )
-
-                    not_zero_norm <- which(unlist(zero_norm) > .Machine$double.eps)
-
-                    if (length(not_zero_norm) > 0L) {
-                        choose <- not_zero_norm[1L] - 1L
-                        lambda_max <- ifelse(choose < 1L, lambda_max,
-                                             check_lambdas[choose])
-                        break
-                    }
-
-                    lambda_max <- check_lambdas[cluster$ncores] * 0.5
-
-                    if (isTRUE(lambda_max < .Machine$double.eps)) {
-                        lambda_max <- lambda_opt_m
-                        warning("M-step results in the zero-vector for ",
-                                "all penalty values.")
-                        break
-                    }
-                }
-            }
+        if (lambda_max < .Machine$double.eps) {
+            lambda_max <- lambda_opt_m
         }
 
         # We have found a good lambda_max, now let's look for a good lambda_min
@@ -454,34 +386,32 @@ pensem.pense <- function(
         )
 
         lambda_min <- min(lambda_max, lambda_opt_m)
-        if (lambda_max > .Machine$double.eps) {
-            repeat {
-                check_lambdas <- lambda_min * 0.5^seq_len(max(5L, cluster$ncores))
+        repeat {
+            check_lambdas <- lambda_min * 0.5^seq_len(max(5L, cluster$ncores))
 
-                coef_norm <- cluster$lapply(
-                    check_lambdas,
-                    get_coef_norm,
-                    init_scale = scale_init_corr,
-                    init_int = pense_int,
-                    init_coef = pense_beta,
-                    alpha = alpha,
-                    options = mm_options,
-                    en_options = en_options
-                )
+            coef_norm <- cluster$lapply(
+                check_lambdas,
+                get_coef_norm,
+                init_scale = scale_init_corr,
+                init_int = pense_int,
+                init_coef = pense_beta,
+                alpha = alpha,
+                options = mm_options,
+                en_options = en_options
+            )
 
-                coef_norm <- unlist(coef_norm)
-                coef_norm_diff <- coef_norm[-length(coef_norm)] / coef_norm[-1L]
-                const_norm <- which(abs(coef_norm_diff - 1) < mm_options$eps)
-                if (length(const_norm) > 0L) {
-                    lambda_min <- check_lambdas[[const_norm[[1L]]]]
-                    break
-                }
+            coef_norm <- unlist(coef_norm)
+            coef_norm_diff <- coef_norm[-length(coef_norm)] / coef_norm[-1L]
+            const_norm <- which(abs(coef_norm_diff - 1) < mm_options$eps)
+            if (length(const_norm) > 0L) {
+                lambda_min <- check_lambdas[[const_norm[[1L]]]]
+                break
+            }
 
-                lambda_min <- min(check_lambdas)
-                if (lambda_min < lambda_min_break) {
-                    lambda_min <- lambda_min_break
-                    break
-                }
+            lambda_min <- min(check_lambdas)
+            if (lambda_min < lambda_min_break) {
+                lambda_min <- lambda_min_break
+                break
             }
         }
 
@@ -489,14 +419,17 @@ pensem.pense <- function(
         ## Create grid of nlambda values in [lambda.min; lambda.max]
         ## where lambda.min is the adjusted minimum of the grid for the S-estimator
         ##
+        ld <- diff(log(c(lambda_min, lambda_max))) / (nlambda - 2L)
         lambda_grid_m <- exp(seq(
-            from = log(lambda_min),
-            to = log(lambda_max),
-            length = nlambda
-        ))
+            log(lambda_min),
+            log(lambda_max) + ld,
+            by = ld)
+        )
         lambda_grid_m <- sort(c(lambda_grid_m, lambda_opt_m))
+    } else if (isTRUE(standardize)) {
+        lambda_grid_m <- sort(lambda) / max(std_data$scale_x)
     } else {
-        lambda_grid_m <- sort(lambda / max(std_data$scale_x))
+        lambda_grid_m <- sort(lambda)
     }
 
     ##
@@ -637,7 +570,7 @@ pensem.pense <- function(
     )
 
     ## Adjustment factors are based on the *standardized* coefficients
-    adj_fact <- sqrt(1 + (1 - penseobj$alpha) * lambda_grid_m)
+    adj_fact <- .en_correction_factor(mm_options$enCorrection, penseobj$alpha, lambda_grid_m)
 
     ## Un-standardize the coefficients
     if (isTRUE(standardize)) {

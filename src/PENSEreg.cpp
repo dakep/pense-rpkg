@@ -25,7 +25,7 @@ static const double DEFAULT_OPT_CC = 1.5476445356;
 static const double DEFAULT_OPT_MSCALE_EPS = 1e-8;
 static const int DEFAULT_OPT_MSCALE_MAX_IT = 200;
 
-static inline double wgtBisquare2(double x, double c);
+static inline double wgtBisquare2(double x, const double c);
 
 PENSEReg::PENSEReg(const Data& data, const double alpha, const double lambda, const Options& opts, const Options &enOpts) :
         IRWEN(data, alpha, lambda, opts, enOpts),
@@ -48,23 +48,36 @@ void PENSEReg::updateObjective(const vec& residuals, const double betaENPenalty)
 
 void PENSEReg::updateWeights(const vec& residuals)
 {
-    double tmp;
-    this->scale = mscale(residuals.memptr(), residuals.n_elem, this->bdp, this->mscaleEps,
-                         this->mscaleMaxIt, rhoBisquare2, this->cc);
+    /*
+     * The weights computed result in a quadratic majorizer for the true objective
+     * at the current estimates.
+     */
+    double accu = 0;
+    this->scale = mscale(
+        residuals.memptr(),
+        residuals.n_elem,
+        this->bdp,
+        this->mscaleEps,
+        this->mscaleMaxIt,
+        rhoBisquare2,
+        this->cc
+    );
 
-    tmp = 0;
+    const double cc_scaled = this->scale * this->cc;
+
     for (uword i = 0; i < residuals.n_elem; ++i) {
-        this->weights[i] = wgtBisquare2(residuals[i], this->scale * this->cc);
-        tmp += this->weights[i];
+        this->weights[i] = wgtBisquare2(residuals[i], cc_scaled);
+        accu += this->weights[i] * residuals[i] * residuals[i];
     }
 
-    /*
-     * Normalize weights to sum to n --> just as in the unweighted case
-     */
-    this->weights *= residuals.n_elem / tmp;
+    this->weights *= 2 * residuals.n_elem * this->scale * this->scale / accu;
 }
 
-static inline double wgtBisquare2(double x, double c)
+/**
+ * Weight function rho'(x, c) / x for the UNSTANDARDIZED bisquare rho function.
+ * This means, that rho(inf, c) != 1
+ */
+static inline double wgtBisquare2(double x, const double c)
 {
     if (fabs(x) > (c)) {
         return(0.);
@@ -72,5 +85,5 @@ static inline double wgtBisquare2(double x, double c)
 
     x /= c;
     x = (1 - x) * (1 + x);
-    return x * x; // * 6 / (c * c);
+    return x * x; /* this is missing the "* 6 / (c * c)" part which would be for the standardized rho function */
 }

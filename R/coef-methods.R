@@ -23,8 +23,8 @@
 coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction = TRUE, ...) {
     exact <- isTRUE(exact)
     sparse <- isTRUE(sparse)
-    correction <- isTRUE(correction) && (object$alpha < 1) &&
-        !is.null(object$adjusted)
+    correction <- as.integer(correction)
+    correction <- correction * ((object$alpha < 1) && !is.null(object$adjusted))
 
     if (missing(lambda) || is.null(lambda)) {
         lambda <- object$lambda_opt
@@ -50,7 +50,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         # the requested lambda value is alrady in the grid
         sel_lambda_index <- which.min(lambda_diff_abs)
         ret_coef <- object$coefficients[, sel_lambda_index, drop = FALSE]
-        if (correction) {
+        if (correction > 0L) {
             ret_coef[1L, ] <- object$adjusted$intercept[sel_lambda_index]
             adj_fact <- object$adjusted$factor[sel_lambda_index]
         }
@@ -76,7 +76,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
                              object$coefficients[, interp_lambda_right, drop = FALSE]) /
                 sum(interp_w)
 
-            if (correction) {
+            if (correction > 0L) {
                 interp_c[1L, ] <- weighted.mean(
                     object$adjusted$intercept[c(interp_lambda_left, interp_lambda_right)],
                     interp_w
@@ -113,7 +113,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         xs <- std_data$xs
         yc <- std_data$yc
 
-        adj_fact <- sqrt(1 + (1 - object$alpha) * lambda / max(std_data$scale_x))
+        adj_fact <- .en_correction_factor(correction, object$alpha, lambda)
 
         ## is it the S- or MM-estimate
         if ("pensem" %in% class(object)) {
@@ -138,7 +138,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
                 init_int = init_int,
                 init_coef = init_beta,
                 alpha = object$alpha,
-                lambda = lambda / max(std_data$scale_x),
+                lambda = lambda,
                 options = object$options,
                 en_options = object$en_options
             )
@@ -161,7 +161,7 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
                 xs,
                 yc,
                 alpha = object$alpha,
-                lambda = lambda / max(std_data$scale_x),
+                lambda = lambda,
                 init_int = init_int,
                 init_coef = init_beta,
                 options = object$pense_options,
@@ -176,15 +176,15 @@ coef.pense <- function(object, lambda, exact = FALSE, sparse = FALSE, correction
         ret_coef <- rbind(estimate$intercept, estimate$beta)
         rownames(ret_coef) <- rownames(object$coefficients)
 
-        if (correction) {
+        if (correction > 0L) {
             ret_coef[-1L, ] <- ret_coef[-1L, , drop = FALSE] * adj_fact
             residuals <- drop(y - x %*% ret_coef[-1L, , drop = FALSE])
             ret_coef[1L, ] <- weighted.mean(residuals, estimate$weights)
-            correction <- FALSE
+            correction <- 0L
         }
     }
 
-    if (correction) {
+    if (correction > 0L) {
         # The intercept was already adjusted before!
         ret_coef[-1L, ] <- ret_coef[-1L, , drop = FALSE] * adj_fact
     }

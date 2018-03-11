@@ -144,7 +144,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
     }
 
     intercept <- isTRUE(intercept)
-    correction <- !identical(correction, FALSE)
+    correction <- as.integer(correction)
     alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
                         range_test_lower = ">=", range_test_upper = "<=")
 
@@ -301,7 +301,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
 #'  \item{cvres}{data frame with lambda, average cross-validated performance
 #'      and the estimated standard deviation.}
 #'
-#' @importFrom stats weighted.mean sd
+#' @importFrom stats weighted.mean sd var
 #' @seealso \code{\link{elnet}} to compute only the solution path, without
 #'      selecting the optimal penalty parameter using CV.
 #'
@@ -372,7 +372,11 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
             ncol = length(lambda)
         ),
         lambda = lambda,
-        cvres = data.frame(lambda = lambda, avg = NA_real_, sd = NA_real_),
+        cvres = data.frame(
+            lambda = lambda,
+            cvavg = NA_real_,
+            resid_var = NA_real_
+        ),
         call = call,
         lambda_opt = NA_real_
     ), class = c("cv_elnetfit", "elnetfit"))
@@ -461,9 +465,10 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         )
 
         if (length(cv_ind) > 0L) {
-            # Only return the performance measures
-            # `predictions` are ordered from smallest to largest lambda
-            return(rev(cv_measure(y_test - cv_fold_res$predictions)))
+            # Return all residuals
+            # `residuals` are ordered from smallest to largest lambda
+            cv_resids <- y_test - cv_fold_res$predictions
+            return(cv_resids[ , rev(seq_len(ncol(cv_resids))), drop = FALSE])
         } else {
             # Return the full EN result
             return(cv_fold_res)
@@ -503,16 +508,16 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         ret_struct[[ri]] <- cv_results$full[[ri]]
     }
 
-    # Add the CV results
-    cv_results_mat <- matrix(
-        unlist(cv_results[-1L]),
-        ncol = cv_k
+    # Gather the CV results
+    cv_results_mat <- do.call(
+        rbind,
+        cv_results[-1L]
     )
 
     ret_struct$cvres <- data.frame(
         lambda = lambda,
-        cvavg = rowMeans(cv_results_mat),
-        cvsd = apply(cv_results_mat, 1, sd)
+        cvavg = cv_measure(cv_results_mat),
+        resid_var = apply(cv_results_mat, 2, var)
     )
 
     ret_struct$lambda_opt <- with(ret_struct$cvres, lambda[which.min(cvavg)])
@@ -531,7 +536,9 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         lambda_min_ratio <- .check_arg(lambda_min_ratio, "numeric",
                                        range = c(0, 1))
     }
-    lambda_max <- max(abs(apply(x, 2, cov, y))) / max(0.01, alpha)
+    n <- length(y)
+
+    lambda_max <- ((n - 1) / n) * max(abs(cov(x, y))) / max(0.001, alpha)
 
     exp(rev(seq(log(lambda_max), log(lambda_min_ratio * lambda_max),
                 length.out = nlambda)))
@@ -570,11 +577,7 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         options$warmStart <- TRUE
     }
 
-    if (isTRUE(correction)) {
-        options$naive <- FALSE
-    } else {
-        options$naive <- TRUE
-    }
+    options$correction <- as.integer(correction)
 
     elnetres <- .Call(
         C_elnet_sp,
@@ -627,11 +630,7 @@ elnet_cv <- function(x, y, alpha, nlambda = 100, lambda, weights,
         options$warmStart <- TRUE
     }
 
-    if (isTRUE(correction)) {
-        options$naive <- FALSE
-    } else {
-        options$naive <- TRUE
-    }
+    options$correction <- as.integer(correction)
 
     elnetres <- .Call(
         C_elnet_weighted_sp,

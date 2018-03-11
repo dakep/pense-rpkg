@@ -144,6 +144,11 @@ standardize_data <- function (x, y, standardize, robust = TRUE) {
             ret_list$muy <- median(y)
         }
 
+        if (!isTRUE(all(ret_list$scale_x > 0))) {
+            stop("One or more variables in x have a MAD of 0. Can not use ",
+                 "`standardize = TRUE`!")
+        }
+
         ret_list$xs <- scale(x, center = ret_list$mux, scale = ret_list$scale_x)
         ret_list$yc <- y - ret_list$muy
     }
@@ -286,4 +291,18 @@ setupCluster <- function(ncores = 1L, cl = NULL, eval, export, envir = parent.fr
         return(1e-4)
     })
 }
+
+##
+## Get the EN correction factor
+##
+#' @useDynLib pense, .registration = TRUE
+.en_correction_factor <- function(correction, alpha, lambda) {
+    .Call(
+        C_en_correction_factor,
+        as.integer(correction),
+        as.numeric(alpha),
+        as.numeric(lambda)
+    )
+}
+
 

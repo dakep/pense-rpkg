@@ -201,12 +201,14 @@ pense <- function(x, y,
 
     ## Generate grid of lambda-values
     if (is.null(lambda)) {
-        lambda <- build_lambda_grid(
-            x,
-            y,
+        std_data <- standardize_data(x, y, standardize)
+        lambda <- .build_lambda_grid_s(
+            std_data$xs,
+            std_data$yc,
             alpha,
             nlambda,
-            lambda_min_ratio = lambda_min_ratio
+            lambda_min_ratio = lambda_min_ratio,
+            options = options
         )
         call$lambda_min_ratio <- lambda_min_ratio
     }
@@ -367,7 +369,7 @@ pense <- function(x, y,
                 refine_it = init_options$maxitPenseRefinement,
                 alpha = alpha,
                 standardize = standardize,
-                en_correction = !options$naiveEn,
+                en_correction = options$enCorrection,
                 pense_options = options,
                 en_options = en_options
             )
@@ -409,7 +411,7 @@ pense <- function(x, y,
 
         cv_scales <- apply(all_cv_resids, 2, function (r) {
             mscale(
-                r - mean(r),
+                r - median(r),
                 delta = options$bdp,
                 rho = "bisquare",
                 cc = options$cc,
@@ -458,7 +460,7 @@ pense <- function(x, y,
         refine_it = init_options$maxitPenseRefinement,
         alpha = alpha,
         standardize = standardize,
-        en_correction = !options$naiveEn,
+        en_correction = options$enCorrection,
         pense_options = options,
         en_options = en_options
     )
@@ -507,7 +509,6 @@ pense <- function(x, y,
     ...
 ) {
     std_train_data <- standardize_data(x_train, y_train, standardize)
-    lambda <- lambda / max(std_train_data$scale_x)
     initial_ests <- lapply(initial_ests, function(x) {
         lapply(x, std_train_data$standardize_coefs)
     })
@@ -561,9 +562,9 @@ pense <- function(x, y,
     )
 
     adj_est <- NULL
-    if (isTRUE(en_correction)) {
+    if (en_correction > 0L) {
         # adj_facts needs to be on the *standardized* lambda
-        adj_facts <- sqrt(1 + (1 - alpha) * lambda)
+        adj_facts <- .en_correction_factor(en_correction, alpha, lambda)
 
         adj_est <- mapply(function (est, adj_fact) {
             beta <- est$beta * adj_fact
@@ -590,14 +591,14 @@ pense <- function(x, y,
             USE.NAMES = FALSE
         )
 
-        if (isTRUE(en_correction)) {
+        if (en_correction > 0L) {
             adjusted <- list(
                 factor = unlist(lapply(adj_est, "[[", "adj_fact")),
                 intercept = unlist(lapply(adj_est, "[[", "intercept"))
             )
         }
     } else {
-        est_for_resid <- if (isTRUE(en_correction)) {
+        est_for_resid <- if (en_correction > 0L) {
             adj_est
         } else {
             est_all

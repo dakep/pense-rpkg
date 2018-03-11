@@ -839,7 +839,7 @@ void ENLars::augmentData()
      * Set the diagonal to the penalty
      */
     if (this->sqrtLambda2 > 0) {
-        tmp = sqrt(this->yOrig.n_elem) * this->sqrtLambda2;
+        tmp = sqrt((double) this->yOrig.n_elem) * this->sqrtLambda2;
 
         XtrAugIter = this->XtrAug.memptr() + this->yOrig.n_elem * this->XtrAug.n_rows + 1;
         for (uword i = 1; i < this->XtrAug.n_rows; ++i) {

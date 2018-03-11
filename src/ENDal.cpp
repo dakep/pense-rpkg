@@ -251,6 +251,7 @@ void ENDal::computeCoefsWeighted(double *RESTRICT coefs, double *RESTRICT resids
 void ENDal::computeCoefsWeighted(double& intercept, sp_vec& beta, vec& residuals,
                                  const vec& weights)
 {
+    double meanWgts = mean(weights);
     /* First check the data if something has to be done at all */
     if (this->bufferSizeNvar == 0) {
         if (this->bufferSizeNobs > 0) {
@@ -260,7 +261,7 @@ void ENDal::computeCoefsWeighted(double& intercept, sp_vec& beta, vec& residuals
     }
 
     if (this->bufferSizeNobs > 0) {
-        this->sqrtWeights = sqrt(weights);
+        this->sqrtWeights = sqrt(weights / meanWgts);
     }
 
     if (this->bufferSizeNvar == 1 || this->bufferSizeNobs == 0) {
@@ -300,7 +301,7 @@ void ENDal::computeCoefsWeighted(double& intercept, sp_vec& beta, vec& residuals
      * However, if the data does not change than the old one might still
      * be useful
      */
-
+    this->nLambda = this->bufferSizeNobs * this->lambda / meanWgts;
     this->dal(intercept, beta);
 
     if (this->intercept) {
@@ -366,6 +367,7 @@ void ENDal::computeCoefs(double& intercept, arma::sp_vec& beta, arma::vec& resid
 
     this->useWeights = false;
 
+    this->nLambda = this->bufferSizeNobs * this->lambda;
     this->dal(intercept, beta);
 
     if (this->intercept) {
@@ -386,7 +388,6 @@ void ENDal::computeCoefs(double& intercept, arma::sp_vec& beta, arma::vec& resid
 inline void ENDal::dal(double& intercept, arma::sp_vec& beta)
 {
     const int nobs = this->y->n_elem;
-    this->nLambda = nobs * this->lambda;
     const double la = (this->nLambda * this->alpha);
     const double updateDenomMult = 1 / (this->nLambda * (1 - this->alpha));
 
@@ -819,9 +820,9 @@ static inline void vecSoftThreshold(vec& z, const double gamma)
 static inline double lossDual(const vec& a, const vec& y, const bool aNeg)
 {
     if (aNeg) {
-        return as_scalar(0.5 * dot(a, a) - dot(a, y));
+        return as_scalar(0.5 * squaredL2Norm(a) - dot(a, y));
     } else {
-        return as_scalar(0.5 * dot(a, a) + dot(a, y));
+        return as_scalar(0.5 * squaredL2Norm(a) + dot(a, y));
     }
 }
 

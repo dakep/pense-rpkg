@@ -415,7 +415,7 @@ int PSC_EN::computePSC() {
     /*
      * For the last observation, we don't need to swap anything
      */
-    /* Do we need to adjust lambda here?? */
+    this->en.setData(this->data);
     this->en.computeCoefs(coefs, residualsOmitted);
     accuStatus += this->en.getStatus();
 

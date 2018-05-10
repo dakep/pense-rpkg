@@ -46,6 +46,7 @@
 
 #' @importFrom robustbase Mwgt MrhoInf
 .lambda_max_m <- function(x, y, alpha, scale_init, bdp, cc) {
+    y <- as.numeric(y)
     # Compute intercept and scale estimate in intercept-only model
     loc_scale_est <- .mloc(
         y,
@@ -65,10 +66,11 @@
         psi = "bisquare"
     ) / MrhoInf(scale_init * cc, "bisquare")
 
-    if (is.null(dim(x))) {
-        abs_grad <- abs(mean(x * resid * ws_0))
+    abs_grad <- if (is.null(dim(x))) {
+        abs(mean(x * resid * ws_0))
+    } else {
+        abs(colMeans(x * resid * ws_0))
     }
-    abs_grad <- abs(colMeans(x * resid * ws_0))
 
     first_var <- which.max(abs_grad)
     first_var_grad <- abs_grad[[first_var]]
@@ -140,7 +142,7 @@
     }
 
     structure(
-        c(location = loc, scale = mscale(x - loc, delta = delta)),
+        c(location = loc, scale = mscale(as.numeric(x - loc), delta = delta)),
         it = it
     )
 }

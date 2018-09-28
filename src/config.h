@@ -49,6 +49,8 @@
 #   define ARMA_DONT_USE_OPENMP
 #endif
 
+#define STRICT_R_HEADERS
+
 #define NUMERIC_EPS 1e-32
 #define LAPACK_EV_MIN 1e-12
 

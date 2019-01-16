@@ -1,10 +1,10 @@
-This release addresses bugs that have been reported by users and the build error on Solaris (x86).
-We also improved the internal algorithm and the way we determine the maximum value of the regularization parameter.
+This release includes the following minor changes:
+* prepare for the upcoming changes to Rcpp (using `STRICT_R_HEADERS`)
+* fix a bug when computing PSCs with the augmented LARS algorithm for EN
 
 ## Test environments
 
-* local OS X 10.13.3, R 3.4.3
-* CentOS 7, R 3.4.3, icc, ifort
+* local OS X 10.14.2, R 3.5.2
 * win-builder (devel and release)
 * Rhub
   * Debian Linux, R-release, GCC

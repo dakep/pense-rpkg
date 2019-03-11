@@ -1,10 +1,9 @@
-This release includes the following minor changes:
-* prepare for the upcoming changes to Rcpp (using `STRICT_R_HEADERS`)
-* fix a bug when computing PSCs with the augmented LARS algorithm for EN
+This release fixes the warnings on `r-devel-linux-x86_64-fedora-clang` and
+`r-devel-linux-x86_64-fedora-gcc` about missing autoconf templates.
 
 ## Test environments
 
-* local OS X 10.14.2, R 3.5.2
+* local OS X 10.14.3, R 3.5.2
 * win-builder (devel and release)
 * Rhub
   * Debian Linux, R-release, GCC

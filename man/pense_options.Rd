@@ -38,3 +38,4 @@ Other specifying additional options: \code{\link{en_options_aug_lars}},
   \code{\link{initest_options}},
   \code{\link{mstep_options}}
 }
+\concept{specifying additional options}

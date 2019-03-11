@@ -12,6 +12,7 @@
 #include <cstring>
 #include <algorithm>
 #include <stdexcept>
+#include <limits>
 #include <Rmath.h>
 
 #include "BLAS.h"
@@ -182,7 +183,7 @@ int InitialEstimator::compute()
 
     bestCoefEst = this->allCoefEstimates;
     this->coefEst = this->allCoefEstimates + origNvar;
-    *minObjective = DBL_MAX;
+    *minObjective = std::numeric_limits<double>::max();
 
     while(1) {
         tmpObjective = this->coefObjFunScore + 1;

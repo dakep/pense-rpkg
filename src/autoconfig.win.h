@@ -1,8 +1,8 @@
 /* confdefs.h */
 #define PACKAGE_NAME "pense"
 #define PACKAGE_TARNAME "pense"
-#define PACKAGE_VERSION "1.2.1"
-#define PACKAGE_STRING "pense 1.2.1"
+#define PACKAGE_VERSION "1.2.4"
+#define PACKAGE_STRING "pense 1.2.4"
 #define PACKAGE_BUGREPORT ""
 #define PACKAGE_URL ""
 #define STDC_HEADERS 1

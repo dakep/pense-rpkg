@@ -1,6 +1,7 @@
+Updated Date field after submission of v1.2.3 was stalled for over a month.
 This release fixes the warnings on `r-devel-linux-x86_64-fedora-clang` and
 `r-devel-linux-x86_64-fedora-gcc` about missing autoconf templates.
-The previous submission of pense_1.2.2 triggered 2 NOTEs on the incoming checks.
+The previous submission of pense_1.2.3 triggered 2 NOTEs on the incoming checks.
 After deliberations on the r-package-devel list (https://hypatia.math.ethz.ch/pipermail/r-package-devel/2019q1/003680.html) it appears this is a bug on the win-builder service and out of my control.
 
 ## Test environments

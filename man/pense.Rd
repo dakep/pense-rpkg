@@ -6,9 +6,9 @@
 \usage{
 pense(x, y, alpha = 0.5, nlambda = 50, lambda, lambda_min_ratio,
   standardize = TRUE, initial = c("warm", "cold"), warm_reset = 10,
-  cv_k = 5, cv_objective, ncores = getOption("mc.cores", 1L), cl = NULL,
-  options = pense_options(), init_options = initest_options(),
-  en_options = en_options_aug_lars())
+  cv_k = 5, cv_objective, ncores = getOption("mc.cores", 1L),
+  cl = NULL, options = pense_options(),
+  init_options = initest_options(), en_options = en_options_aug_lars())
 }
 \arguments{
 \item{x}{design matrix with predictors.}

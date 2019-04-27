@@ -4,8 +4,8 @@
 \alias{mstep_options}
 \title{Additional Options for the Penalized EN MM-estimator}
 \usage{
-mstep_options(cc = 3.44, maxit = 1000, eps = 1e-06, adjust_bdp = FALSE,
-  verbosity = 0, en_correction = TRUE)
+mstep_options(cc = 3.44, maxit = 1000, eps = 1e-06,
+  adjust_bdp = FALSE, verbosity = 0, en_correction = TRUE)
 }
 \arguments{
 \item{cc}{tuning constant for the M-estimator.}
@@ -34,3 +34,4 @@ Other specifying additional options: \code{\link{en_options_aug_lars}},
   \code{\link{initest_options}},
   \code{\link{pense_options}}
 }
+\concept{specifying additional options}

@@ -1,6 +1,9 @@
+# pense 1.2.2
+  * Fix autoconf script.
+
 # pense 1.2.1
-  * prepare for changes to the upcoming _Rcpp_ (make compatible with `STRICT_R_HEADERS`)
-  * fix a bug in computing PSCs when using the augmented ridge algorithm for EN.
+  * Prepare for changes to the upcoming _Rcpp_ (make compatible with `STRICT_R_HEADERS`)
+  * Fix a bug in computing PSCs when using the augmented ridge algorithm for EN.
 
 # pense 1.2.0
   * Changed the internal scaling of the regularization parameter for `pense` and `pensem`.

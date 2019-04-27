@@ -43,3 +43,4 @@ to solve the EN problem.
 Other specifying additional options: \code{\link{initest_options}},
   \code{\link{mstep_options}}, \code{\link{pense_options}}
 }
+\concept{specifying additional options}

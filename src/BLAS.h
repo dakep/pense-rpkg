@@ -29,7 +29,7 @@
 
 #ifdef __cplusplus
 #   ifdef RcppArmadillo__RcppArmadilloForward__h
-#       error "BLAS.h" must be included before RcppArmadillo.h!
+#       error "BLAS.h must be included before RcppArmadillo.h!"
 #   endif
 #   define ARMA_DONT_USE_FORTRAN_HIDDEN_ARGS  // Don't use hidden args in calls to BLAS/LAPACK
 #   include <RcppArmadillo.h>

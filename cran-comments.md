@@ -1,12 +1,8 @@
-Updated Date field after submission of v1.2.3 was stalled for over a month.
-This release fixes the warnings on `r-devel-linux-x86_64-fedora-clang` and
-`r-devel-linux-x86_64-fedora-gcc` about missing autoconf templates.
-The previous submission of pense_1.2.3 triggered 2 NOTEs on the incoming checks.
-After deliberations on the r-package-devel list (https://hypatia.math.ethz.ch/pipermail/r-package-devel/2019q1/003680.html) it appears this is a bug on the win-builder service and out of my control.
+Fix issue with incorrect BLAS/LAPACK prototypes to restore compatibility with the upcoming release of RcppArmadillo 0.9.500.
 
 ## Test environments
 
-* local OS X 10.14.3, R 3.5.3
+* local OS X 10.14.5, R 3.6.0
 * win-builder (devel and release)
 * Rhub
   * Debian Linux, R-release, GCC
@@ -21,5 +17,5 @@ After deliberations on the r-package-devel list (https://hypatia.math.ethz.ch/pi
 
 * on some systems the size of the shared library is > 5MB.
   This is due to the compiler and linker on these systems and beyond our control.
-* on R-devel win-builder, the checks emit a note that the package is using non-staged installation for x64.
+* on R-release win-builder, the checks emit a note that the package is using non-staged installation for x64.
   This seems to be a bug in the checks performed on win-builder.

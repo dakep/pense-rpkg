@@ -8,6 +8,8 @@
 
 #include "config.h"
 
+
+#include "BLAS.h"
 #include <RcppArmadillo.h>
 #include <cstring>
 #include <algorithm>
@@ -15,7 +17,6 @@
 #include <limits>
 #include <Rmath.h>
 
-#include "BLAS.h"
 #include "LapackException.hpp"
 #include "InitialEstimator.hpp"
 #include "PartialSort.h"

@@ -8,10 +8,11 @@
 
 #include "config.h"
 
+#include "BLAS.h"
+
 #include <cstring>
 #include <cfloat>
 
-#include "BLAS.h"
 #include <RcppArmadillo.h>
 
 #include "PSCxx.hpp"

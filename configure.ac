@@ -8,9 +8,9 @@ fi
 
 RBIN="${R_HOME}/bin/R"
 CC=`"${RBIN}" CMD config CC`
-CPP=`"${RBIN}" CMD config CPP`
+CPP="$CC -E"
 CXX=`"${RBIN}" CMD config CXX`
-CXXCPP=`"${RBIN}" CMD config CXXCPP`
+CXXCPP="$CXX -E"
 CXXFLAGS=`"${RBIN}" CMD config CXXFLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 

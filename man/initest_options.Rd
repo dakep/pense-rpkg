@@ -4,11 +4,19 @@
 \alias{initest_options}
 \title{Additional Options for the Initial Estimator}
 \usage{
-initest_options(keep_solutions = 5, psc_method = c("exact", "rr"),
-  maxit = 10, maxit_pense_refinement = 5, eps = 1e-06,
-  psc_keep = 0.5, resid_keep_method = c("proportion", "threshold"),
-  resid_keep_prop = 0.6, resid_keep_thresh = 2, mscale_eps = 1e-08,
-  mscale_maxit = 200)
+initest_options(
+  keep_solutions = 5,
+  psc_method = c("exact", "rr"),
+  maxit = 10,
+  maxit_pense_refinement = 5,
+  eps = 1e-06,
+  psc_keep = 0.5,
+  resid_keep_method = c("proportion", "threshold"),
+  resid_keep_prop = 0.6,
+  resid_keep_thresh = 2,
+  mscale_eps = 1e-08,
+  mscale_maxit = 200
+)
 }
 \arguments{
 \item{keep_solutions}{how many initial estimates should be kept to perform
@@ -64,7 +72,9 @@ Statistical Association}, 94(446), 434-445.
 \url{http://doi.org/10.2307/2670164}
 }
 \seealso{
-Other specifying additional options: \code{\link{en_options_aug_lars}},
-  \code{\link{mstep_options}}, \code{\link{pense_options}}
+Other specifying additional options: 
+\code{\link{en_options_aug_lars}()},
+\code{\link{mstep_options}()},
+\code{\link{pense_options}()}
 }
 \concept{specifying additional options}

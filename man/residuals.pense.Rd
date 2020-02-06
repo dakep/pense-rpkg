@@ -4,8 +4,7 @@
 \alias{residuals.pense}
 \title{Extract Residuals from a Fitted Penalized Elastic-Net S/MM-estimator}
 \usage{
-\method{residuals}{pense}(object, lambda, exact = FALSE,
-  correction = TRUE, ...)
+\method{residuals}{pense}(object, lambda, exact = FALSE, correction = TRUE, ...)
 }
 \arguments{
 \item{object}{a PENSE or PENSEM estimate to extract the residuals from.}

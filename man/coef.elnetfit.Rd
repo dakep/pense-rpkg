@@ -4,8 +4,7 @@
 \alias{coef.elnetfit}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{elnetfit}(object, lambda, exact = FALSE, sparse = FALSE,
-  ...)
+\method{coef}{elnetfit}(object, lambda, exact = FALSE, sparse = FALSE, ...)
 }
 \arguments{
 \item{object}{object of type \code{elnetfit} to extract coefficients from.}

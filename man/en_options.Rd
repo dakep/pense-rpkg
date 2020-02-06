@@ -8,9 +8,15 @@
 \usage{
 en_options_aug_lars(use_gram = c("auto", "yes", "no"), eps = 1e-12)
 
-en_options_dal(maxit = 100, eps = 1e-08, eta_mult = 2,
-  eta_start_numerator = 0.01, eta_start, preconditioner = c("approx",
-  "none", "diagonal"), verbosity = 0)
+en_options_dal(
+  maxit = 100,
+  eps = 1e-08,
+  eta_mult = 2,
+  eta_start_numerator = 0.01,
+  eta_start,
+  preconditioner = c("approx", "none", "diagonal"),
+  verbosity = 0
+)
 }
 \arguments{
 \item{use_gram}{should the Gram matrix be pre-computed.}
@@ -40,7 +46,9 @@ Specify additional options for the augmented LARS and the DAL algorithm
 to solve the EN problem.
 }
 \seealso{
-Other specifying additional options: \code{\link{initest_options}},
-  \code{\link{mstep_options}}, \code{\link{pense_options}}
+Other specifying additional options: 
+\code{\link{initest_options}()},
+\code{\link{mstep_options}()},
+\code{\link{pense_options}()}
 }
 \concept{specifying additional options}

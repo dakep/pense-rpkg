@@ -4,8 +4,16 @@
 \alias{enpy}
 \title{PY (Pena-Yohai) initial estimates for EN S-estimators}
 \usage{
-enpy(x, y, alpha, lambda, delta, cc, options = initest_options(),
-  en_options = en_options_aug_lars())
+enpy(
+  x,
+  y,
+  alpha,
+  lambda,
+  delta,
+  cc,
+  options = initest_options(),
+  en_options = en_options_aug_lars()
+)
 }
 \arguments{
 \item{x}{data matrix with predictors.}

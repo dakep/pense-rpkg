@@ -4,9 +4,19 @@
 \alias{elnet}
 \title{Elastic Net Estimator for Regression}
 \usage{
-elnet(x, y, alpha, nlambda = 100, lambda, weights, intercept = TRUE,
-  options = en_options_aug_lars(), lambda_min_ratio, xtest,
-  correction = TRUE)
+elnet(
+  x,
+  y,
+  alpha,
+  nlambda = 100,
+  lambda,
+  weights,
+  intercept = TRUE,
+  options = en_options_aug_lars(),
+  lambda_min_ratio,
+  xtest,
+  correction = TRUE
+)
 }
 \arguments{
 \item{x}{data matrix with predictors}

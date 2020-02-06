@@ -4,9 +4,16 @@
 \alias{pense_options}
 \title{Additional Options for the Penalized EN S-estimator}
 \usage{
-pense_options(delta = 0.25, maxit = 1000, eps = 1e-06,
-  mscale_eps = 1e-08, mscale_maxit = 200, verbosity = 0, cc,
-  en_correction = TRUE)
+pense_options(
+  delta = 0.25,
+  maxit = 1000,
+  eps = 1e-06,
+  mscale_eps = 1e-08,
+  mscale_maxit = 200,
+  verbosity = 0,
+  cc,
+  en_correction = TRUE
+)
 }
 \arguments{
 \item{delta}{desired breakdown point of the resulting estimator.}
@@ -34,8 +41,9 @@ a checked options list.
 Additional Options for the Penalized EN S-estimator
 }
 \seealso{
-Other specifying additional options: \code{\link{en_options_aug_lars}},
-  \code{\link{initest_options}},
-  \code{\link{mstep_options}}
+Other specifying additional options: 
+\code{\link{en_options_aug_lars}()},
+\code{\link{initest_options}()},
+\code{\link{mstep_options}()}
 }
 \concept{specifying additional options}

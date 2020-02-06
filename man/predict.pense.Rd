@@ -4,8 +4,7 @@
 \alias{predict.pense}
 \title{Predict Method for Penalized Elastic Net S- and MM-estimators}
 \usage{
-\method{predict}{pense}(object, newdata, lambda, exact = FALSE,
-  correction = TRUE, ...)
+\method{predict}{pense}(object, newdata, lambda, exact = FALSE, correction = TRUE, ...)
 }
 \arguments{
 \item{object}{an object of type \code{pense} or \code{pensem} to use for

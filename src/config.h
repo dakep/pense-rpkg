@@ -41,11 +41,15 @@
 #   define RESTRICT
 #endif
 
-#ifndef DEBUG
+#ifndef ARMA_DONT_USE_FORTRAN_HIDDEN_ARGS
+#   define ARMA_DONT_USE_FORTRAN_HIDDEN_ARGS
+#endif
+
+#if !defined DEBUG && !defined ARMA_NO_DEBUG
 #   define ARMA_NO_DEBUG
 #endif
 
-#ifndef HAVE_OPENMP_CXX
+#if !defined HAVE_OPENMP_CXX && !defined ARMA_DONT_USE_OPENMP
 #   define ARMA_DONT_USE_OPENMP
 #endif
 

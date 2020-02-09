@@ -4,8 +4,7 @@
 \alias{coef.pense}
 \title{Extract Model Coefficients}
 \usage{
-\method{coef}{pense}(object, lambda, exact = FALSE, sparse = FALSE,
-  correction = TRUE, ...)
+\method{coef}{pense}(object, lambda, exact = FALSE, sparse = FALSE, correction = TRUE, ...)
 }
 \arguments{
 \item{object}{a PENSE or PENSEM estimate to extract coefficients from.}

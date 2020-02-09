@@ -24,6 +24,11 @@
 #ifndef pense_BLAS_h
 #define pense_BLAS_h
 
+
+#ifndef ARMA_DONT_USE_FORTRAN_HIDDEN_ARGS
+#   define ARMA_DONT_USE_FORTRAN_HIDDEN_ARGS
+#endif
+
 #define BLAS_CHAR const char * const
 #define BLAS_INT const int
 
@@ -31,7 +36,6 @@
 #   ifdef RcppArmadillo__RcppArmadilloForward__h
 #       error "BLAS.h must be included before RcppArmadillo.h!"
 #   endif
-#   define ARMA_DONT_USE_FORTRAN_HIDDEN_ARGS  // Don't use hidden args in calls to BLAS/LAPACK
 #   include <RcppArmadillo.h>
 #   include <R_ext/RS.h>
 #   define F77_R_NAME(x) F77_CALL(x)
@@ -58,7 +62,7 @@
 #define ARMA_TOKENPASTE(x) arma::x
 #define ARMA_TOKENPASTE2(x) ARMA_TOKENPASTE(x)
 
-#ifdef ARMA_USE_BLAS
+#if defined ARMA_USE_BLAS && defined __cplusplus
 #   define BLAS_ARMA_NAME(x) ARMA_TOKENPASTE2(F77_NAME(x))
 
     extern "C" {
@@ -105,7 +109,7 @@
 
 
 
-#ifdef ARMA_USE_LAPACK
+#if defined ARMA_USE_LAPACK && defined __cplusplus
 #   define LAPACK_ARMA_NAME(x) ARMA_TOKENPASTE2(F77_NAME(x))
 #   define LAPACK_ARMA_WRAP_CHAR(x) (char *) x
 #   define LAPACK_ARMA_WRAP_INT_PTR(x) (int *) &x
@@ -113,7 +117,7 @@
     extern "C" {
 
     /* DSYEVR - compute all eigenvalues and, optionally, eigenvectors   */
-    /* of a real symmetric matrix A					   */
+    /* of a real symmetric matrix A             */
     La_extern void
     F77_NAME(dsyevr)(const char *jobz, const char *range, const char *uplo,
              const int *n, double *a, const int *lda,
@@ -133,26 +137,26 @@
 
 
 
-#define BLAS_DGEMV(trans, m, n, alpha, a, lda, x, incx, beta, y, incy)							\
-	BLAS_ARMA_NAME(dgemv)(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
+#define BLAS_DGEMV(trans, m, n, alpha, a, lda, x, incx, beta, y, incy)              \
+  BLAS_ARMA_NAME(dgemv)(trans, &m, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
 
-#define BLAS_DSYMV(uplo, n, alpha, a, lda, x, incx, beta, y, incy)								\
-	BLAS_ARMA_NAME(dsymv)(uplo, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
+#define BLAS_DSYMV(uplo, n, alpha, a, lda, x, incx, beta, y, incy)                \
+  BLAS_ARMA_NAME(dsymv)(uplo, &n, &alpha, a, &lda, x, &incx, &beta, y, &incy)
 
 #define BLAS_DTRSV(uplo, trans, diag, n, a, lda, x, incx)                                       \
     BLAS_R_NAME(dtrsv)(uplo, trans, diag, &n, a, &lda, x, &incx)
 
-#define BLAS_DGEMM(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)				\
-	BLAS_R_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, c, &ldc)
+#define BLAS_DGEMM(transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c, ldc)        \
+  BLAS_R_NAME(dgemm)(transa, transb, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, c, &ldc)
 
-#define BLAS_DDOT(n, x, incx, y, incy)															\
-	BLAS_ARMA_NAME(ddot)(&n, x, &incx, y, &incy)
+#define BLAS_DDOT(n, x, incx, y, incy)                              \
+  BLAS_ARMA_NAME(ddot)(&n, x, &incx, y, &incy)
 
-#define BLAS_DSCAL(n, alpha, x, incx)															\
-	BLAS_ARMA_NAME(dscal)(&n, &alpha, x, &incx)
+#define BLAS_DSCAL(n, alpha, x, incx)                              \
+  BLAS_ARMA_NAME(dscal)(&n, &alpha, x, &incx)
 
-#define BLAS_DSYR(uplo, n, alpha, x, incx, a, lda)												\
-	BLAS_R_NAME(dsyr)(uplo, &n, &alpha, x, &incx, a, &lda)
+#define BLAS_DSYR(uplo, n, alpha, x, incx, a, lda)                        \
+  BLAS_R_NAME(dsyr)(uplo, &n, &alpha, x, &incx, a, &lda)
 
 #define BLAS_DSYRK(uplo, trans, n, k, alpha, a, lda, beta, c, ldc)                        \
   BLAS_R_NAME(dsyrk)(uplo, trans, &n, &k, &alpha, a, &lda, &beta, c, &ldc)

@@ -4,8 +4,15 @@
 \alias{prinsens}
 \title{Principal Sensitivity Components}
 \usage{
-prinsens(x, y, method = c("ols", "en"), intercept = TRUE, alpha,
-  lambda, en_options = en_options_aug_lars())
+prinsens(
+  x,
+  y,
+  method = c("ols", "en"),
+  intercept = TRUE,
+  alpha,
+  lambda,
+  en_options = en_options_aug_lars()
+)
 }
 \arguments{
 \item{x}{data matrix with predictors}

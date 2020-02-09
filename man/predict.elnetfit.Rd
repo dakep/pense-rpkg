@@ -4,8 +4,7 @@
 \alias{predict.elnetfit}
 \title{Predict Method for the classical Elastic Net Estimator}
 \usage{
-\method{predict}{elnetfit}(object, newdata, lambda, exact = FALSE,
-  correction = TRUE, ...)
+\method{predict}{elnetfit}(object, newdata, lambda, exact = FALSE, correction = TRUE, ...)
 }
 \arguments{
 \item{object}{an object of type \code{elnetfit} to use for prediction.}

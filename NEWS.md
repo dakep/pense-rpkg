@@ -1,3 +1,7 @@
+# pense 1.2.8
+  * Fix LTO warnings reported in CRAN checks
+  * Update autoconf script to address deprecation warnings in r-devel.
+
 # pense 1.2.5
   * Fix compatibility of BLAS/LAPACK prototypes with RcppArmadillo 0.9.500.
 

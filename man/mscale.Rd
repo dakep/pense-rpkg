@@ -4,8 +4,14 @@
 \alias{mscale}
 \title{Robust M-estimate of Scale}
 \usage{
-mscale(x, delta = 0.5, rho = c("bisquare", "huber"), cc, eps = 1e-08,
-  maxit = 200)
+mscale(
+  x,
+  delta = 0.5,
+  rho = c("bisquare", "huber"),
+  cc,
+  eps = 1e-08,
+  maxit = 200
+)
 }
 \arguments{
 \item{x}{numeric vector of observations.}

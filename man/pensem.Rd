@@ -8,18 +8,46 @@
 \usage{
 pensem(x, ...)
 
-\method{pensem}{default}(x, y, alpha = 0.5, nlambda = 50, lambda,
-  lambda_s, lambda_min_ratio, standardize = TRUE, initial = c("warm",
-  "cold"), warm_reset = 10, cv_k = 5, cv_objective,
-  ncores = getOption("mc.cores", 1L), cl = NULL,
-  s_options = pense_options(), mm_options = mstep_options(),
-  init_options = initest_options(), en_options = en_options_aug_lars(),
-  ...)
+\method{pensem}{default}(
+  x,
+  y,
+  alpha = 0.5,
+  nlambda = 50,
+  lambda,
+  lambda_s,
+  lambda_min_ratio,
+  standardize = TRUE,
+  initial = c("warm", "cold"),
+  warm_reset = 10,
+  cv_k = 5,
+  cv_objective,
+  ncores = getOption("mc.cores", 1L),
+  cl = NULL,
+  s_options = pense_options(),
+  mm_options = mstep_options(),
+  init_options = initest_options(),
+  en_options = en_options_aug_lars(),
+  ...
+)
 
-\method{pensem}{pense}(x, alpha, scale, nlambda = 50, lambda,
-  lambda_min_ratio, standardize, cv_k = 5, cv_objective,
-  ncores = getOption("mc.cores", 1L), cl = NULL,
-  mm_options = mstep_options(), en_options, x_train, y_train, ...)
+\method{pensem}{pense}(
+  x,
+  alpha,
+  scale,
+  nlambda = 50,
+  lambda,
+  lambda_min_ratio,
+  standardize,
+  cv_k = 5,
+  cv_objective,
+  ncores = getOption("mc.cores", 1L),
+  cl = NULL,
+  mm_options = mstep_options(),
+  en_options,
+  x_train,
+  y_train,
+  ...
+)
 }
 \arguments{
 \item{x}{either a numeric data matrix or a fitted PENSE estimate obtained

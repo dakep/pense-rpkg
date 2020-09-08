@@ -12,3 +12,4 @@ config.status
 *.Rproj
 .Rbuildignore
 rstudio-build.sh
+run-checks

@@ -5,12 +5,12 @@
 //  Created by David Kepplinger on 2019-05-01.
 //  Copyright © 2019 David Kepplinger. All rights reserved.
 //
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 #include "rcpp_parse_config.hpp"
 #include "rcpp_utils.hpp"
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 namespace {
 constexpr int kAdmmMaxIt = 1000;

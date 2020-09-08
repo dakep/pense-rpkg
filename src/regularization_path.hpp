@@ -13,7 +13,7 @@
 #include <tuple>
 #include <type_traits>
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 #include "alias.hpp"
 #include "m_loss.hpp"

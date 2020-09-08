@@ -11,7 +11,7 @@
 
 #include <type_traits>
 #include <utility>
-#include "nsoptim/traits/sfinae_types.hpp"
+#include "sfinae_types.hpp"
 
 namespace nsoptim {
 namespace traits {

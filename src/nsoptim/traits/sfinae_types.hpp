@@ -11,7 +11,7 @@
 
 #include <type_traits>
 
-#include "nsoptim/armadillo.hpp"
+#include "../armadillo.hpp"
 
 namespace nsoptim {
 namespace traits {

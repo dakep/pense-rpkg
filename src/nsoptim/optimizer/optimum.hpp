@@ -14,7 +14,7 @@
 #include <memory>
 #include <type_traits>
 
-#include "nsoptim/container/metrics.hpp"
+#include "../container/metrics.hpp"
 
 namespace nsoptim {
 

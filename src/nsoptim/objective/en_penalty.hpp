@@ -11,10 +11,10 @@
 
 #include <memory>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/container/regression_coefficients.hpp"
-#include "nsoptim/objective/penalty.hpp"
-#include "nsoptim/objective/adaptive_en_penalty.hpp"
+#include "../armadillo.hpp"
+#include "../container/regression_coefficients.hpp"
+#include "penalty.hpp"
+#include "adaptive_en_penalty.hpp"
 
 namespace nsoptim {
 //! The EN penalty function with hyper-parameters *alpha* and *lambda*.

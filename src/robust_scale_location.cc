@@ -7,7 +7,7 @@
 //
 
 #include <string>
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 #include "rcpp_utils.hpp"
 #include "robust_scale_location.hpp"
 #include "constants.hpp"

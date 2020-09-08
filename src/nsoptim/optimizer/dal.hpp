@@ -14,16 +14,16 @@
 #include <memory>
 #include <algorithm>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/traits/traits.hpp"
-#include "nsoptim/optimizer/optimizer_base.hpp"
-#include "nsoptim/optimizer/optimum.hpp"
-#include "nsoptim/objective/ls_regression_loss.hpp"
-#include "nsoptim/container/metrics.hpp"
-#include "nsoptim/container/data.hpp"
-#include "nsoptim/container/regression_coefficients.hpp"
-#include "nsoptim/optimizer/dal_helper.hpp"
-#include "nsoptim/optimizer/soft_threshold.hpp"
+#include "../armadillo.hpp"
+#include "../traits/traits.hpp"
+#include "optimizer_base.hpp"
+#include "optimum.hpp"
+#include "../objective/ls_regression_loss.hpp"
+#include "../container/metrics.hpp"
+#include "../container/data.hpp"
+#include "../container/regression_coefficients.hpp"
+#include "dal_helper.hpp"
+#include "soft_threshold.hpp"
 
 namespace nsoptim {
 

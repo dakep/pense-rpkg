@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <limits>
 
-#include "nsoptim/armadillo.hpp"
+#include "../armadillo.hpp"
 
 #if !defined(ARMA_BLAS_CAPITALS)
 #  define nsoptim_dtpsv dtpsv_

@@ -15,16 +15,16 @@
 #include <algorithm>
 #include <limits>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/container/regression_coefficients.hpp"
-#include "nsoptim/container/data.hpp"
-#include "nsoptim/optimizer/optimizer_base.hpp"
-#include "nsoptim/optimizer/optimum.hpp"
-#include "nsoptim/objective/ls_regression_loss.hpp"
-#include "nsoptim/objective/en_penalty.hpp"
-#include "nsoptim/traits/traits.hpp"
-#include "nsoptim/optimizer/soft_threshold.hpp"
-#include "nsoptim/optimizer/linear_algebra_utilities.hpp"
+#include "../armadillo.hpp"
+#include "../container/regression_coefficients.hpp"
+#include "../container/data.hpp"
+#include "optimizer_base.hpp"
+#include "optimum.hpp"
+#include "../objective/ls_regression_loss.hpp"
+#include "../objective/en_penalty.hpp"
+#include "../traits/traits.hpp"
+#include "soft_threshold.hpp"
+#include "linear_algebra_utilities.hpp"
 
 namespace nsoptim {
 

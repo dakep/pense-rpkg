@@ -13,7 +13,7 @@
 #include <memory>
 #include <type_traits>
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 #include "constants.hpp"
 #include "enpy_types.hpp"
 

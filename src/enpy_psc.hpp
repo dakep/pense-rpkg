@@ -15,7 +15,7 @@
 #include <string>
 #include <utility>
 #include <type_traits>
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 #include "alias.hpp"
 #include "omp_utils.hpp"

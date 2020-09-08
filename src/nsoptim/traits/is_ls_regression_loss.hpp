@@ -10,8 +10,8 @@
 #define NSOPTIM_TRAITS_IS_LS_REGRESSION_LOSS_HPP_
 
 #include <utility>
-#include "nsoptim/traits/sfinae_types.hpp"
-#include "nsoptim/traits/is_loss_function.hpp"
+#include "sfinae_types.hpp"
+#include "is_loss_function.hpp"
 
 namespace nsoptim {
 namespace traits {

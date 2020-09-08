@@ -9,7 +9,7 @@
 #ifndef RHO_HPP_
 #define RHO_HPP_
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 namespace pense {
 //! Implementation of Huber's unbounded rho function defined by

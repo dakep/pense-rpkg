@@ -12,9 +12,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "nsoptim/traits/sfinae_types.hpp"
-#include "nsoptim/traits/can_evaluate.hpp"
-#include "nsoptim/objective/loss.hpp"
+#include "sfinae_types.hpp"
+#include "can_evaluate.hpp"
+#include "../objective/loss.hpp"
 
 namespace nsoptim {
 namespace traits {

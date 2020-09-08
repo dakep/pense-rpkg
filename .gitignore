@@ -13,3 +13,4 @@ config.status
 .Rbuildignore
 rstudio-build.sh
 run-checks
+.vscode

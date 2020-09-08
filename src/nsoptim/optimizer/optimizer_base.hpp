@@ -9,8 +9,8 @@
 #ifndef NSOPTIM_OPTIMIZER_OPTIMIZER_BASE_HPP_
 #define NSOPTIM_OPTIMIZER_OPTIMIZER_BASE_HPP_
 
-#include "nsoptim/optimizer/optimum.hpp"
-#include "nsoptim/traits/traits.hpp"
+#include "optimum.hpp"
+#include "../traits/traits.hpp"
 
 namespace nsoptim {
 //! Base class for all optimizer using loss function type `T`, penalty function type `U` and coefficient type `V`.

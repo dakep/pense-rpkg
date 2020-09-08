@@ -17,7 +17,7 @@
 #include <unordered_set>
 #include <functional>
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 #include "alias.hpp"
 #include "robust_scale_location.hpp"
 #include "s_loss.hpp"

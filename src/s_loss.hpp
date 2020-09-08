@@ -11,7 +11,7 @@
 
 #include <memory>
 #include <algorithm>
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 #include "constants.hpp"
 #include "robust_scale_location.hpp"

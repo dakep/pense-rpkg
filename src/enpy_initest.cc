@@ -8,7 +8,7 @@
 
 #include <algorithm>
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 #include "alias.hpp"
 #include "constants.hpp"
 #include "rcpp_utils.hpp"

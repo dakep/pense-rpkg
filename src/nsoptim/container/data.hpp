@@ -11,7 +11,7 @@
 
 #include <iostream>
 
-#include "nsoptim/armadillo.hpp"
+#include "../armadillo.hpp"
 
 namespace nsoptim {
 

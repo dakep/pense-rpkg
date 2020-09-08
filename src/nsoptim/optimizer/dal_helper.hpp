@@ -14,11 +14,11 @@
 #include <algorithm>
 #include <limits>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/traits/traits.hpp"
-#include "nsoptim/objective/ls_regression_loss.hpp"
-#include "nsoptim/container/metrics.hpp"
-#include "nsoptim/container/data.hpp"
+#include "../armadillo.hpp"
+#include "../traits/traits.hpp"
+#include "../objective/ls_regression_loss.hpp"
+#include "../container/metrics.hpp"
+#include "../container/data.hpp"
 
 namespace nsoptim {
 namespace _optim_dal_internal {

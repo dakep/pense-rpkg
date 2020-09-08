@@ -11,7 +11,7 @@
 
 #include <algorithm>
 
-#include "nsoptim/armadillo.hpp"
+#include "../armadillo.hpp"
 
 namespace nsoptim {
 //! Soft-thresholding sign(z) * max(0, |z| - gamma) for a scalar.

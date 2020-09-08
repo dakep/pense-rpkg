@@ -11,11 +11,11 @@
 
 #include <algorithm>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/objective/convex.hpp"
-#include "nsoptim/container/data.hpp"
-#include "nsoptim/container/regression_coefficients.hpp"
-#include "nsoptim/objective/loss.hpp"
+#include "../armadillo.hpp"
+#include "convex.hpp"
+#include "../container/data.hpp"
+#include "../container/regression_coefficients.hpp"
+#include "loss.hpp"
 
 namespace nsoptim {
 namespace ls_regression_loss {

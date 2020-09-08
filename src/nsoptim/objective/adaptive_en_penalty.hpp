@@ -11,10 +11,10 @@
 
 #include <memory>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/objective/convex.hpp"
-#include "nsoptim/container/regression_coefficients.hpp"
-#include "nsoptim/objective/penalty.hpp"
+#include "../armadillo.hpp"
+#include "convex.hpp"
+#include "../container/regression_coefficients.hpp"
+#include "penalty.hpp"
 
 
 namespace nsoptim {

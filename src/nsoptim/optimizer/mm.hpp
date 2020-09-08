@@ -14,11 +14,11 @@
 #include <type_traits>
 #include <algorithm>
 
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/traits/traits.hpp"
-#include "nsoptim/container/metrics.hpp"
-#include "nsoptim/optimizer/optimizer_base.hpp"
-#include "nsoptim/optimizer/optimum.hpp"
+#include "../armadillo.hpp"
+#include "../traits/traits.hpp"
+#include "../container/metrics.hpp"
+#include "optimizer_base.hpp"
+#include "optimum.hpp"
 
 namespace nsoptim {
 

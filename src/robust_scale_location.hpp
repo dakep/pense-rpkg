@@ -12,7 +12,7 @@
 #include <exception>
 #include <string>
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 #include "rho.hpp"
 #include "constants.hpp"
 #include "rcpp_utils.hpp"

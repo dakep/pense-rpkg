@@ -7,7 +7,7 @@
 //
 
 #include <cmath>
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 #include "rho.hpp"
 

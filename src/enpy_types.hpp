@@ -9,7 +9,7 @@
 #ifndef ENPY_TYPES_HPP_
 #define ENPY_TYPES_HPP_
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 #include "alias.hpp"
 
 namespace pense {

@@ -11,7 +11,7 @@
 
 #include "rcpp_utils_forward.hpp"
 
-#include <nsoptim.hpp>
+#include "nsoptim.hpp"
 
 #include "rcpp_utils.hpp"
 #include "rcpp_parse_config.hpp"

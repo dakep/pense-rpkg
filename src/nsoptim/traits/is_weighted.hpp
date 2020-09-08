@@ -10,8 +10,8 @@
 #define NSOPTIM_TRAITS_IS_WEIGHTED_HPP_
 
 #include <utility>
-#include "nsoptim/armadillo.hpp"
-#include "nsoptim/traits/sfinae_types.hpp"
+#include "../armadillo.hpp"
+#include "sfinae_types.hpp"
 
 namespace nsoptim {
 namespace traits {

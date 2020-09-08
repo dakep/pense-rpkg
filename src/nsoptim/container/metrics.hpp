@@ -13,7 +13,7 @@
 #include <string>
 #include <forward_list>
 
-#include "nsoptim/config.hpp"
+#include "../config.hpp"
 
 namespace nsoptim {
 //! A named metric object.

@@ -9,8 +9,8 @@
 #ifndef NSOPTIM_CONTAINER_FORWARD_HPP_
 #define NSOPTIM_CONTAINER_FORWARD_HPP_
 
-#include "nsoptim/config.hpp"
-#include "nsoptim/armadillo_forward.hpp"
+#include "../config.hpp"
+#include "../armadillo_forward.hpp"
 
 namespace nsoptim {
 //! Full definition at nsoptim/container/regression_coefficients.hpp

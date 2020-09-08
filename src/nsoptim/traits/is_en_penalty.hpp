@@ -10,7 +10,7 @@
 #define NSOPTIM_TRAITS_IS_EN_PENALTY_HPP_
 
 #include <utility>
-#include "nsoptim/traits/sfinae_types.hpp"
+#include "sfinae_types.hpp"
 
 namespace nsoptim {
 namespace traits {

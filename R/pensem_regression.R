@@ -40,7 +40,7 @@ pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50, lambda_min_ratio
                                sparse = FALSE, eps = 1e-6, cc = 4.7, cv_k = 5, cv_repl = 1, cl = NULL,
                                cv_metric = c('tau_size', 'mape', 'rmspe'), add_zero_based = TRUE,
                                explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
-                               comparison_tol = sqrt(eps), algorithm_opts = mm_algorithm_options(),
+                               fit_all = TRUE, comparison_tol = sqrt(eps), algorithm_opts = mm_algorithm_options(),
                                mscale_opts = mscale_algorithm_options(), nlambda_enpy = 10, enpy_opts = enpy_options(),
                                ...) {
   if (is(x, 'pense_fit')) {
@@ -71,7 +71,7 @@ pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50, lambda_min_ratio
 
   regmest_call <- cl
   regmest_call[[1L]] <- quote(pense::regmest_cv)
-  regmest_call$fit_all <- TRUE
+  regmest_call$fit_all <- fit_all
   regmest_call$starting_points <- as_starting_point(pense_fit, lambda = 'min')
   regmest_call$scale <- resid_scale
   regmest_call$mscale_bdp <- bdp
@@ -102,7 +102,7 @@ pensem_cv.pense_cvfit <- function (x, scale, alpha, nlambda = 50, lambda_min_rat
                                    sparse = FALSE, eps = 1e-6, cc = 4.7, cv_k = 5, cv_repl = 1, cl = NULL,
                                    cv_metric = c('tau_size', 'mape', 'rmspe'), add_zero_based = TRUE,
                                    explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
-                                   comparison_tol = sqrt(eps), algorithm_opts = mm_algorithm_options(),
+                                   fit_all = TRUE, comparison_tol = sqrt(eps), algorithm_opts = mm_algorithm_options(),
                                    mscale_opts = mscale_algorithm_options(), x_train, y_train, ...) {
   cl <- match.call(expand.dots = TRUE)
 
@@ -132,7 +132,6 @@ pensem_cv.pense_cvfit <- function (x, scale, alpha, nlambda = 50, lambda_min_rat
 
   regmest_call <- cl
   regmest_call[[1L]] <- quote(pense::regmest_cv)
-  regmest_call$fit_all <- TRUE
   regmest_call$x <- x_train
   regmest_call$y <- y_train
   regmest_call$alpha <- alpha

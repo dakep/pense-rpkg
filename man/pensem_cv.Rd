@@ -35,6 +35,7 @@ pensem(x, ...)
   explore_solutions = 10,
   explore_tol = 0.1,
   max_solutions = 10,
+  fit_all = TRUE,
   comparison_tol = sqrt(eps),
   algorithm_opts = mm_algorithm_options(),
   mscale_opts = mscale_algorithm_options(),
@@ -66,6 +67,7 @@ pensem(x, ...)
   explore_solutions = 10,
   explore_tol = 0.1,
   max_solutions = 10,
+  fit_all = TRUE,
   comparison_tol = sqrt(eps),
   algorithm_opts = mm_algorithm_options(),
   mscale_opts = mscale_algorithm_options(),
@@ -135,6 +137,9 @@ be useful.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
+\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
+level with smallest average CV performance.}
+
 \item{comparison_tol}{numeric tolerance to determine if two solutions are equal. The comparison is first done
 on the absolute difference in the value of the objective function at the solution
 If this is less than \code{comparison_tol}, two solutions are deemed equal if the squared difference
@@ -155,9 +160,6 @@ details.}
 
 \item{x_train, y_train}{override arguments \code{x} and \code{y} as provided in the call to \code{pense_cv()}. This is useful if
 the arguments in the \code{pense_cv()} call are not available in the current environment.}
-
-\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
-level with smallest average CV performance.}
 }
 \value{
 an object of cross-validated regularized M-estimates as returned from \code{\link[=regmest_cv]{regmest_cv()}}.

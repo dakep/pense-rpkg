@@ -31,10 +31,9 @@ grad_en <- function (est, x, y, weights, intercept = TRUE, penalty_loadings,
   # + subgradient
   al <- est$alpha * lambda * penalty_loadings
 
-  nnz_betas <- abs(est$beta) > 0
+  nnz_betas <- as.vector(abs(est$beta) > 0)
   if (!is.logical(nnz_betas)) {
-    rlang::warn("Cannot determine non-zero coefficients!")
-    str(est$beta)
+    fail("Cannot determine indices of non-zero coefficient")
     return(0)
   }
 

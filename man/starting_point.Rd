@@ -40,6 +40,8 @@ are ignored with a warning. If \code{NULL}, all estimates in \code{object} are e
 \item{specific}{whether the estimates should be used as starting points only at the penalization level they
 are computed for. Defaults to using the estimates as starting points for all penalization levels.}
 
+\item{...}{further arguments passed to or from other methods.}
+
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
 }
 \value{

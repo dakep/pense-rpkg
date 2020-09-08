@@ -15,6 +15,8 @@ prediction_performance(..., lambda = c("min", "se"), se_mult = 1)
 \item{lambda}{a string specifying which penalty level to use (\code{"min"} or \code{"se"}) . See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
+
+\item{x}{an object with information on prediction performance created with \code{prediction_performance()}.}
 }
 \value{
 a data frame with details about the prediction performance of the given PENSE fits. The data frame

@@ -217,6 +217,7 @@ starting_point <- function (beta, intercept, lambda) {
 #' @param object an object with estimates to use as starting points.
 #' @param specific whether the estimates should be used as starting points only at the penalization level they
 #'   are computed for. Defaults to using the estimates as starting points for all penalization levels.
+#' @param ... further arguments passed to or from other methods.
 #' @export
 as_starting_point <- function (object, specific = FALSE, ...) {
   UseMethod('as_starting_point')

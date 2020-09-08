@@ -151,6 +151,7 @@ prediction_performance <- function (..., lambda = c('min', 'se'), se_mult = 1) {
 }
 
 #' @rdname prediction_performance
+#' @param x an object with information on prediction performance created with `prediction_performance()`.
 #' @export
 #' @method print pense_pred_perf
 print.pense_pred_perf <- function (x, ...) {

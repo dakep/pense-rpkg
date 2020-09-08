@@ -30,7 +30,15 @@ grad_en <- function (est, x, y, weights, intercept = TRUE, penalty_loadings,
   }
   # + subgradient
   al <- est$alpha * lambda * penalty_loadings
-  nzind <- intercept + which(abs(est$beta) > 0)
+
+  nnz_betas <- abs(est$beta) > 0
+  if (!is.logical(nnz_betas)) {
+    rlang::warn("Cannot determine non-zero coefficients!")
+    str(est$beta)
+    return(0)
+  }
+
+  nzind <- intercept + which(nnz_betas)
   zind <- intercept + which(abs(est$beta) == 0)
   if (length(nzind) > 0L) {
     grad[nzind] <- grad[nzind] + al[nzind - intercept] * sign(est$beta[nzind - intercept])

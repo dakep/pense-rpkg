@@ -63,6 +63,6 @@ coef(cv_results)
 coef(cv_results, lambda = 'se')
 }
 \seealso{
-\code{\link[=coef.cv_pensefit]{coef.cv_pensefit()}} for extracting coefficients from a PENSE fit with hyper-parameters chosen by
+\code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficients from a PENSE fit with hyper-parameters chosen by
 cross-validation
 }

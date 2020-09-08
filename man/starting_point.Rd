@@ -35,6 +35,11 @@ as_starting_point(object, specific = FALSE, ...)
 vector of the penalty levels to extract from \code{object}. Penalization levels not present in \code{object}
 are ignored with a warning. If \code{NULL}, all estimates in \code{object} are extracted.}
 
+\item{object}{an object with estimates to use as starting points.}
+
+\item{specific}{whether the estimates should be used as starting points only at the penalization level they
+are computed for. Defaults to using the estimates as starting points for all penalization levels.}
+
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
 }
 \value{

@@ -2,6 +2,7 @@
 ## @param delta desired breakdown point (between 0 and 0.5)
 ##
 ## @return consistency constant
+#' @importFrom stats pnorm uniroot
 .bisquare_consistency_const <- function (delta) {
   ##
   ## Pre-computed values for some delta values
@@ -139,6 +140,7 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom Matrix drop
 #' @importFrom methods is
 #' @importFrom rlang abort
+#' @importFrom stats sd
 .standardize_data <- function (x, y, intercept, standardize, robust, sparse, mscale_opts, location_rho = 'bisquare',
                                location_cc = 4.5, target_scale_x = NULL, ...) {
   if (is.list(x) && !is.null(x$x) && !is.null(x$y)) {
@@ -271,6 +273,7 @@ extract_metric <- function (metrics, attr, node) {
   return(ret_list)
 }
 
+#' @importFrom stats median
 .cv_mape <- function (r) {
   median(abs(r))
 }

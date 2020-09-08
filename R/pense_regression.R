@@ -78,10 +78,12 @@
 #' @param ncores number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
 #'    on your platform, in which case a warning is given.
 #' @param algorithm_opts options for the MM algorithm to compute the estimates. See [mm_algorithm_options()] for
-#'   details.
+#'    details.
 #' @param mscale_opts options for the M-scale estimation. See [mscale_algorithm_options()] for details.
 #' @param enpy_opts options for the ENPY initial estimates, created with the
 #'    [enpy_options()] function. See [enpy_initial_estimates()] for details.
+#' @param cv_k,cv_objective deprecated and ignored. See [pense_cv()] for estimating prediction performance
+#'    via cross-validation.
 #' @param ... ignored. See the section on deprecated parameters below.
 #'
 #' @return a list-like object with the following items
@@ -182,6 +184,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #' @aliases adapense_cv
 #' @export
 #' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom stats sd
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_metric = c('tau_size', 'mape', 'rmspe'),
                      fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
@@ -275,6 +278,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_met
 #'
 #' @rdname pense_cv
 #' @export
+#' @importFrom stats coef
 adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
   call <- match.call(expand.dots = TRUE)
   if (!is.null(call$penalty_loadings)) {
@@ -380,6 +384,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
 #' @importFrom lifecycle deprecated is_present deprecate_stop
 #' @importFrom rlang warn abort
 #' @importFrom methods is
+#' @importFrom stats runif
 .pense_args <- function (x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio, enpy_lambda,
                          penalty_loadings, intercept = TRUE, bdp = 0.25, add_zero_based = TRUE, enpy_specific = FALSE,
                          other_starts, eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,

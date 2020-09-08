@@ -5,7 +5,6 @@
 #' S-estimate.
 #'
 #' @param x either a numeric matrix of predictor values, or a cross-validated PENSE fit from [pense_cv()].
-#' @importFrom lifecycle deprecate_warn
 #' @export
 pensem_cv <- function (x, ...) {
   UseMethod('pensem_cv')
@@ -35,6 +34,7 @@ pensem <- function (x, ...) {
 #' @rdname pensem_cv
 #' @importFrom rlang abort
 #' @importFrom methods is
+#' @importFrom stats coef
 pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50, lambda_min_ratio, lambda_m, lambda_s,
                                standardize = TRUE, penalty_loadings, intercept = TRUE, bdp = 0.25, ncores = 1,
                                sparse = FALSE, eps = 1e-6, cc = 4.7, cv_k = 5, cv_repl = 1, cl = NULL,
@@ -92,6 +92,8 @@ pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50, lambda_min_ratio
 #' @param scale initial scale estimate to use in the M-estimation. By default the S-scale from the PENSE fit is used.
 #' @param x_train,y_train override arguments `x` and `y` as provided in the call to `pense_cv()`. This is useful if
 #'    the arguments in the `pense_cv()` call are not available in the current environment.
+#'
+#' @importFrom stats coef
 #' @export
 #'
 #' @seealso [pense_cv()] to compute the starting S-estimate.

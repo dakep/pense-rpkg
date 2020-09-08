@@ -48,6 +48,8 @@ smallest value for which all coefficients are zero). The default depends on the 
 size relative to the number of variables and \code{alpha}. If more observations than variables
 are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
 
+\item{scale}{fixed scale of the residuals.}
+
 \item{starting_points}{a list of staring points, created by \code{\link[=starting_point]{starting_point()}}. The starting points are shared
 among all penalization levels.}
 

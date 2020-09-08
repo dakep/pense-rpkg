@@ -6,6 +6,7 @@
 #' @return the \eqn{\tau} estimate of scale of centered values.
 #' @export
 #' @importFrom rlang warn
+#' @importFrom stats na.omit
 tau_size <- function (x) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
@@ -33,6 +34,7 @@ tau_size <- function (x) {
 #'
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang warn
+#' @importFrom stats na.omit
 mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
                     opts = mscale_algorithm_options(), delta = deprecated(), rho = deprecated(), eps = deprecated(),
                     maxit = deprecated()) {
@@ -81,6 +83,7 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
 #' @importFrom stats mad
 #' @export
 #' @importFrom rlang warn
+#' @importFrom stats na.omit
 mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
@@ -115,6 +118,7 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
 #' @return a vector with 2 elements, the M-estimate of location and the M-scale estimate.
 #' @export
 #' @importFrom rlang warn
+#' @importFrom stats na.omit
 mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquare'), location_rho,
                        location_cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
@@ -210,6 +214,9 @@ starting_point <- function (beta, intercept, lambda) {
 }
 
 #' @rdname starting_point
+#' @param object an object with estimates to use as starting points.
+#' @param specific whether the estimates should be used as starting points only at the penalization level they
+#'   are computed for. Defaults to using the estimates as starting points for all penalization levels.
 #' @export
 as_starting_point <- function (object, specific = FALSE, ...) {
   UseMethod('as_starting_point')

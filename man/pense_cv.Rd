@@ -92,6 +92,8 @@ details.}
     \item{\code{mscale_opts}}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
     \item{\code{enpy_opts}}{options for the ENPY initial estimates, created with the
 \code{\link[=enpy_options]{enpy_options()}} function. See \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} for details.}
+    \item{\code{cv_objective}}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating prediction performance
+via cross-validation.}
   }}
 
 \item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,

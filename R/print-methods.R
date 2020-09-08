@@ -4,31 +4,33 @@
 #' coefficients of the most parsimonious model with prediction performance statistically indistinguishable from the best
 #' model. This is determined to be the model with prediction performance within `se_mult * cv_se` from the best model.
 #'
-#' @param x an (adaptive) PENSE fit with cross-validation information.
+#' @param object an (adaptive) PENSE fit with cross-validation information.
 #' @param lambda either a string specifying which penalty level to use (`"min"` or `"se"`) or a a single numeric
 #'    value of the penalty parameter. See details.
 #' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
 #'
 #' @seealso [prediction_performance()] for information about the estimated prediction performance.
-#' @seealso [coef.cv_pensefit()] for extracting only the estimated coefficients.
+#' @seealso [coef.pense_cvfit()] for extracting only the estimated coefficients.
 #'
 #' @importFrom methods is
+#' @importFrom stats coef
+#'
 #' @export
 #' @method summary pense_cvfit
-summary.pense_cvfit <- function (x, lambda = c('min', 'se'), se_mult = 1, ...) {
-  coef_est <- eval.parent(coef(x, lambda, se_mult, sparse = FALSE, add_lambda = TRUE))
-  method_name <- if (is(x, 'adapense')) {
+summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, ...) {
+  coef_est <- eval.parent(coef(object, lambda, se_mult, sparse = FALSE, add_lambda = TRUE))
+  method_name <- if (is(object, 'adapense')) {
     "Adaptive PENSE"
-  } else if (is(x, 'pense')) {
+  } else if (is(object, 'pense')) {
     "PENSE"
-  } else if (is(x, 'pense_en')) {
+  } else if (is(object, 'pense_en')) {
     "EN"
-  } else if (is(x, 'mest')) {
+  } else if (is(object, 'mest')) {
     "Regularized M"
   }
   tryCatch({
-    cat(method_name, "fit", "with", "prediction", "performance", "estimated", "by", x$call$cv_repl, "replications",
-        "of", sprintf("%d-fold", x$call$cv_k), "cross-validation.\n", sep = " ", fill = TRUE)
+    cat(method_name, "fit", "with", "prediction", "performance", "estimated", "by", object$call$cv_repl, "replications",
+        "of", sprintf("%d-fold", object$call$cv_k), "cross-validation.\n", sep = " ", fill = TRUE)
   }, error = function(...) {
     cat(method_name, "fit", "with", "prediction", "performance", "estimated", "via", "cross-validation.\n",
         sep = " ", fill = TRUE)
@@ -41,19 +43,19 @@ summary.pense_cvfit <- function (x, lambda = c('min', 'se'), se_mult = 1, ...) {
   cat("---\n\n")
 
   if (is.character(lambda)) {
-    lambda_ind <- .lambda_index_cvfit(x, lambda, se_mult)
-    lambda <- x$lambda[[lambda_ind]]
-    pred_perf <- x$cvres$cvavg[[lambda_ind]]
+    lambda_ind <- .lambda_index_cvfit(object, lambda, se_mult)
+    lambda <- object$lambda[[lambda_ind]]
+    pred_perf <- object$cvres$cvavg[[lambda_ind]]
   } else {
     pred_perf <- NULL
   }
 
   cat(sprintf("Hyper-parameters: lambda=%s", format(lambda)))
-  if (!is.null(x$call$alpha)) {
-    cat(sprintf(", alpha=%s", format(x$call$alpha)))
+  if (!is.null(object$call$alpha)) {
+    cat(sprintf(", alpha=%s", format(object$call$alpha)))
   }
-  if (!is.null(x$exponent)) {
-    cat(sprintf(", exponent=%s", format(x$exponent)))
+  if (!is.null(object$exponent)) {
+    cat(sprintf(", exponent=%s", format(object$exponent)))
   }
   cat("\n")
   if (!is.null(pred_perf)) {
@@ -87,7 +89,7 @@ print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
 #' @return a data frame with details about the prediction performance of the given PENSE fits. The data frame
 #'    has a custom print method summarizing the prediction performances.
 #'
-#' @seealso [summarize.pense_cvfit()] for a summary of the fitted model.
+#' @seealso [summary.pense_cvfit()] for a summary of the fitted model.
 #'
 #' @importFrom methods is
 #' @importFrom rlang abort

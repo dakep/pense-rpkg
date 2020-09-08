@@ -52,6 +52,7 @@ can not be used in parallel R sessions on the same host.}
 \item{...}{
   Arguments passed on to \code{\link[=regmest]{regmest}}
   \describe{
+    \item{\code{scale}}{fixed scale of the residuals.}
     \item{\code{nlambda}}{number of penalization levels.}
     \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
 smallest value for which all coefficients are zero). The default depends on the sample

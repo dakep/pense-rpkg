@@ -32,6 +32,9 @@ and \code{alpha = 0} the Ridge penalty.}
 
 \item{bdp}{desired breakdown point of the estimator, between 0 and 0.5.}
 
+\item{cc}{cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
+Normal distribution.}
+
 \item{intercept}{include an intercept in the model.}
 
 \item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
@@ -55,7 +58,7 @@ Compute initial estimates for the EN S-estimator using the EN-PY procedure.
 If these manually computed initial estimates are intended as starting points for \code{\link[=pense]{pense()}}, they are by default
 \emph{shared} for all penalization levels.
 To restrict the use of the initial estimates to the penalty level they were computed for, use
-\code{enpy_starting_point(..., specific = TRUE)}. See \code{\link[=enpy_starting_point]{enpy_starting_point()}} for details.
+\code{as_starting_point(..., specific = TRUE)}. See \code{\link[=as_starting_point]{as_starting_point()}} for details.
 }
 \references{
 Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.

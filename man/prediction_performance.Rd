@@ -28,5 +28,5 @@ If \code{lambda = "se"} and the cross-validation was performed with multiple rep
 prediction performance within \code{se_mult} of the best prediction performance.
 }
 \seealso{
-\code{\link[=summarize.pense_cvfit]{summarize.pense_cvfit()}} for a summary of the fitted model.
+\code{\link[=summary.pense_cvfit]{summary.pense_cvfit()}} for a summary of the fitted model.
 }

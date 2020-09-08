@@ -7,6 +7,7 @@
 #' @param y vector of response values of length `n`.
 #' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. `alpha = 1` is the LASSO penalty,
 #'    and `alpha = 0` the Ridge penalty.
+#' @param scale fixed scale of the residuals.
 #' @param nlambda number of penalization levels.
 #' @param lambda_min_ratio Smallest value of the penalization level as a fraction of the largest level (i.e., the
 #'    smallest value for which all coefficients are zero). The default depends on the sample
@@ -127,6 +128,7 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
 #' @example examples/adapense_fit.R
 #' @seealso [coef.pense_cvfit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_cvfit()] for plotting the CV performance or the regularization path.
+#' @importFrom stats sd
 #' @export
 regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_metric = c('tau_size', 'mape', 'rmspe'),
                        fit_all = TRUE, cl = NULL, ...) {
@@ -220,6 +222,7 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_m
 #'
 #' @rdname regmest_cv
 #' @export
+#' @importFrom stats coef
 adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
   call <- match.call(expand.dots = TRUE)
   if (!is.null(call$penalty_loadings)) {
@@ -280,6 +283,7 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
 #' @importFrom rlang warn abort
 #' @importFrom methods is
 #' @importFrom Matrix sparseVector
+#' @importFrom stats runif
 .regmest_args <- function (x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, starting_points,
                            penalty_loadings, intercept = TRUE, cc = 4.7, eps = 1e-6, explore_solutions = 10,
                            explore_tol = 0.1, max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,

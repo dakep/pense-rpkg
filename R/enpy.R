@@ -5,11 +5,13 @@
 #' If these manually computed initial estimates are intended as starting points for [pense()], they are by default
 #' *shared* for all penalization levels.
 #' To restrict the use of the initial estimates to the penalty level they were computed for, use
-#' `enpy_starting_point(..., specific = TRUE)`. See [enpy_starting_point()] for details.
+#' `as_starting_point(..., specific = TRUE)`. See [as_starting_point()] for details.
 #'
 #' @inheritParams pense
 #' @param enpy_opts options for the EN-PY algorithm, created with the [enpy_options()] function.
 #' @param lambda a vector of positive values of penalization levels.
+#' @param cc cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
+#'    Normal distribution.
 #' @export
 #'
 #' @references Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.

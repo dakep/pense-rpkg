@@ -32,7 +32,7 @@
 #' @param en_algorithm_opts options for the EN algorithm. See [en_algorithm_options]
 #'    for details.
 #' @param eps numerical tolerance.
-#' @param xtest deprecated. Instead, extract coefficients with [coef.elnet_est()] and compute predictions manually.
+#' @param xtest deprecated. Instead, extract coefficients with [coef.pense_fit()] and compute predictions manually.
 #' @param options deprecated. Use `en_algorithm_opts` instead.
 #' @param correction defunct. Correction for EN estimates is not supported anymore.
 #'
@@ -109,6 +109,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @inheritParams elnet
 #' @template cv_params
 #' @inheritDotParams elnet
+#' @param ncores deprecated and not used anymore.
 #'
 #' @seealso [elnet()] for computing the LS-EN regularization path without cross-validation.
 #' @seealso [pense_cv()] for cross-validation of S-estimates of regression with elastic net penalty.
@@ -128,6 +129,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @example examples/ls_elnet.R
 #'
 #' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom stats sd
 #' @export
 elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 'tau_size', 'mape'),
                       fit_all = TRUE, cl = NULL, ncores = deprecated(), ...) {
@@ -214,6 +216,7 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
 ## Check and parse user-supplied arguments
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang warn abort
+#' @importFrom stats runif
 .elnet_args <- function (x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights,
                          intercept = TRUE, en_algorithm_opts, sparse = FALSE, eps = 1e-6, standardize = TRUE,
                          correction = deprecated(), xtest = deprecated(), options = deprecated(), ...) {
@@ -324,6 +327,7 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
               restore_coef_length = restore_coef_length))
 }
 
+#' @importFrom stats cov
 .elnet_max_lambda <- function (x, y, alpha, weights, penalty_loadings) {
   max_cov <- if (is.null(weights)) {
     if (is.null(penalty_loadings)) {

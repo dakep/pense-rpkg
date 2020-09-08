@@ -14,6 +14,7 @@
 #' @importFrom Matrix drop
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang abort
+#' @importFrom stats coef
 #'
 #' @example examples/residuals.R
 #' @export
@@ -64,6 +65,7 @@ predict.pense_fit <- function(object, newdata, lambda, exact = deprecated(), cor
 #' @importFrom Matrix drop
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang warn
+#' @importFrom stats coef
 #'
 #' @example examples/residuals.R
 #' @export

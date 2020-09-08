@@ -11,3 +11,4 @@ config.status
 .Rproj.user
 *.Rproj
 .Rbuildignore
+rstudio-build.sh

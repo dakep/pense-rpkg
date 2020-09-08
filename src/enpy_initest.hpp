@@ -311,7 +311,7 @@ PyResult<Optimizer> PYIterations(SLoss loss, const typename Optimizer::PenaltyFu
     // No need to initialize the following two variables. They will be assigned if a new best candidate is found.
     // If there is no new best candidate, the PY iterations stop right after and the variables are never used.
     arma::vec best_candidate_residuals;
-    double best_candidate_mscale;
+    double best_candidate_mscale = 1.;
 
     // Skip the first element since this is the `best_candidate_it` and already evaluated and iterate just after the
     // last inserted element.

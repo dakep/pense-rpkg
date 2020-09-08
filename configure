@@ -3213,35 +3213,35 @@ $as_echo_n "checking OpenMP support for tasks... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                                    #include <omp.h>
-                                    class Foo {
-                                    public:
-                                      Foo(const int x) : x_(x) {}
-                                      int Test(const int y) {
-                                        int sum = 0;
-                                        #pragma omp parallel num_threads(2) default(none) shared(sum)
-                                        {
-                                          #pragma omp single nowait
-                                          for (int i = 0; i < y; ++i) {
-                                            #pragma omp task default(none) firstprivate(i) shared(sum)
-                                            {
-                                              sum += x_ * i;
-                                            }
-                                          }
-                                        }
-                                        return sum;
-                                      }
-                                    private:
-                                      const int x_;
-                                    };
+    #include <omp.h>
+    class Foo {
+    public:
+      Foo(const int x) : x_(x) {}
+      int Test(const int y) {
+        int sum = 0;
+        #pragma omp parallel num_threads(2) default(none) shared(sum)
+        {
+          #pragma omp single nowait
+          for (int i = 0; i < y; ++i) {
+            #pragma omp task default(none) firstprivate(i) shared(sum)
+            {
+              sum += x_ * i;
+            }
+          }
+        }
+        return sum;
+      }
+    private:
+      const int x_;
+    };
 
 int
 main ()
 {
 
-                                    const int mult = omp_get_num_threads();
-                                    Foo f(mult);
-                                    return f.Test(2 * mult);
+    const int mult = omp_get_num_threads();
+    Foo f(mult);
+    return f.Test(2 * mult);
 
   ;
   return 0;
@@ -3249,11 +3249,11 @@ main ()
 _ACEOF
 if ac_fn_cxx_try_link "$LINENO"; then :
 
-                   ac_pkg_openmp_cxx_tasks=yes
+    ac_pkg_openmp_cxx_tasks=yes
 
 else
 
-                   ac_pkg_openmp_cxx_tasks=no
+    ac_pkg_openmp_cxx_tasks=no
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
@@ -3264,35 +3264,35 @@ rm -f core conftest.err conftest.$ac_objext \
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                                      #include <omp.h>
-                                      class Foo {
-                                      public:
-                                        Foo(const int x) : x_(x) {}
-                                        int Test(const int y) {
-                                          int sum = 0;
-                                          #pragma omp parallel num_threads(2) default(none) shared(sum)
-                                          {
-                                            #pragma omp single nowait
-                                            for (int i = 0; i < y; ++i) {
-                                              #pragma omp task default(none) firstprivate(i) shared(sum, x_)
-                                              {
-                                                sum += x_ * i;
-                                              }
-                                            }
-                                          }
-                                          return sum;
-                                        }
-                                      private:
-                                        const int x_;
-                                      };
+      #include <omp.h>
+      class Foo {
+      public:
+        Foo(const int x) : x_(x) {}
+        int Test(const int y) {
+          int sum = 0;
+          #pragma omp parallel num_threads(2) default(none) shared(sum)
+          {
+            #pragma omp single nowait
+            for (int i = 0; i < y; ++i) {
+              #pragma omp task default(none) firstprivate(i) shared(sum, x_)
+              {
+                sum += x_ * i;
+              }
+            }
+          }
+          return sum;
+        }
+      private:
+        const int x_;
+      };
 
 int
 main ()
 {
 
-                                      const int mult = omp_get_num_threads();
-                                      Foo f(mult);
-                                      return f.Test(2 * mult);
+      const int mult = omp_get_num_threads();
+      Foo f(mult);
+      return f.Test(2 * mult);
 
   ;
   return 0;
@@ -3303,17 +3303,16 @@ if ac_fn_cxx_try_link "$LINENO"; then :
 
 $as_echo "#define PENSE_OPENMP_ADD_CONST_SHARED 1" >>confdefs.h
 
-                    ac_pkg_openmp_cxx_tasks="yes, with shared constant members"
+      ac_pkg_openmp_cxx_tasks="yes, with shared constant members"
 
 else
 
-                    ac_pkg_openmp_cxx_tasks=no
-                    ac_pkg_openmp_cxx=no
+      ac_pkg_openmp_cxx_tasks=no
+      ac_pkg_openmp_cxx=no
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-
   fi
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_pkg_openmp_cxx_tasks" >&5
@@ -3326,23 +3325,65 @@ $as_echo_n "checking OpenMP support for custom reductions... " >&6; }
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
-                                    #include <omp.h>
-                                    void CustomReduction(int* single, int* combined) { *combined += *single; }
+    #include <omp.h>
+    #include <forward_list>
+    #include <type_traits>
+
+    namespace omp_reductions {
+    template<typename T>
+    using FwdList = std::forward_list<T>;
+
+    class Foo {
+    public:
+      explicit Foo(const int x) : x_(x) {}
+      int x() const {
+        return x_;
+      }
+    private:
+      int x_;
+    };
+
+    void CustomReduction(FwdList<Foo>* single, FwdList<Foo>* combined) {
+      combined->splice_after(combined->before_begin(), *single);
+    }
+
+    template<typename T, typename = typename std::enable_if<!std::is_arithmetic<T>::value>::type>
+    T ComputeWithReduction(const T mult, const Foo & y) {
+      return Foo(mult.x() * y.x());
+    }
+
+    template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+    T ComputeWithReduction(const T mult, const int y) {
+      using FooList = FwdList<Foo>;
+
+      #pragma omp declare reduction(c:FwdList<Foo>:CustomReduction(&omp_in, &omp_out))
+
+      FooList combined;
+      int num_threads = omp_get_num_threads();
+      #pragma omp parallel num_threads(num_threads) default(none) firstprivate(y) shared(combined)
+      {
+        #pragma omp for reduction(c:combined)
+        for (int i = 0; i < y; ++i) {
+          combined.emplace_front(i);
+        }
+      }
+
+      int sum = 0;
+      for (auto&& f : combined) {
+        sum += f.x();
+      }
+      return mult * sum;
+    }
+    }  // namespace omp_reductions
 
 int
 main ()
 {
 
-                                    #pragma omp declare reduction(c:int:CustomReduction(&omp_in, &omp_out))
-                                    int sum = 0;
-                                    const int y = omp_get_num_threads();
-                                    #pragma omp parallel num_threads(2) default(none) firstprivate(y) shared(sum)
-                                    {
-                                      #pragma omp for reduction(c:sum)
-                                      for (int i = 0; i < y; ++i) {
-                                        sum = i * y;
-                                      }
-                                    }
+      using omp_reductions::Foo;
+      double sum = omp_reductions::ComputeWithReduction(2.3, 12);
+      Foo sumfoo = omp_reductions::ComputeWithReduction(Foo(5), Foo(12));
+      return sum + sumfoo.x();
 
   ;
   return 0;

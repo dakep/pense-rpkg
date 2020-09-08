@@ -220,7 +220,7 @@ alias::FwdList<pense::PscResult<Optimizer>> ComputePscs(
   using LooStatusList = FwdList<LooStatus>;
 
   // Note: the initializer for the following reduction uses the default constructor!
-  #pragma omp declare reduction(c:LooStatusList:ConcatenateLooStatus(&omp_in, &omp_out))
+  #pragma omp declare reduction(c:FwdList<LooStatus>:ConcatenateLooStatus(&omp_in, &omp_out))
 
   const nsoptim::PredictorResponseData& data = loss.data();
   // A list of PscResult objects and the sensitivity matrices, i.e., matrices `R` in the paper, one tuple for each

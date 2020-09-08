@@ -64,81 +64,80 @@ if test "${ac_pkg_openmp_cxx}" = yes; then
 
   # Check if tasks are supported with constant member not shared
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-                                    #include <omp.h>
-                                    class Foo {
-                                    public:
-                                      Foo(const int x) : x_(x) {}
-                                      int Test(const int y) {
-                                        int sum = 0;
-                                        #pragma omp parallel num_threads(2) default(none) shared(sum)
-                                        {
-                                          #pragma omp single nowait
-                                          for (int i = 0; i < y; ++i) {
-                                            #pragma omp task default(none) firstprivate(i) shared(sum)
-                                            {
-                                              sum += x_ * i;
-                                            }
-                                          }
-                                        }
-                                        return sum;
-                                      }
-                                    private:
-                                      const int x_;
-                                    };
-                                  ]],
-                                  [[
-                                    const int mult = omp_get_num_threads();
-                                    Foo f(mult);
-                                    return f.Test(2 * mult);
-                                  ]])],
-                 [
-                   ac_pkg_openmp_cxx_tasks=yes
-                 ],
-                 [
-                   ac_pkg_openmp_cxx_tasks=no
-                 ])
+    #include <omp.h>
+    class Foo {
+    public:
+      Foo(const int x) : x_(x) {}
+      int Test(const int y) {
+        int sum = 0;
+        #pragma omp parallel num_threads(2) default(none) shared(sum)
+        {
+          #pragma omp single nowait
+          for (int i = 0; i < y; ++i) {
+            #pragma omp task default(none) firstprivate(i) shared(sum)
+            {
+              sum += x_ * i;
+            }
+          }
+        }
+        return sum;
+      }
+    private:
+      const int x_;
+    };
+  ]],
+  [[
+    const int mult = omp_get_num_threads();
+    Foo f(mult);
+    return f.Test(2 * mult);
+  ]])],
+  [
+    ac_pkg_openmp_cxx_tasks=yes
+  ],
+  [
+    ac_pkg_openmp_cxx_tasks=no
+  ])
 
   if test "${ac_pkg_openmp_cxx_tasks}" = no; then
     # Maybe constant member variables need to be shared
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-                                      #include <omp.h>
-                                      class Foo {
-                                      public:
-                                        Foo(const int x) : x_(x) {}
-                                        int Test(const int y) {
-                                          int sum = 0;
-                                          #pragma omp parallel num_threads(2) default(none) shared(sum)
-                                          {
-                                            #pragma omp single nowait
-                                            for (int i = 0; i < y; ++i) {
-                                              #pragma omp task default(none) firstprivate(i) shared(sum, x_)
-                                              {
-                                                sum += x_ * i;
-                                              }
-                                            }
-                                          }
-                                          return sum;
-                                        }
-                                      private:
-                                        const int x_;
-                                      };
-                                    ]],
-                                    [[
-                                      const int mult = omp_get_num_threads();
-                                      Foo f(mult);
-                                      return f.Test(2 * mult);
-                                    ]])],
-                  [
-                    AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED], [1], [
-                      Set to 1 if OpenMP requires constant class members to be shared
-                    ])
-                    ac_pkg_openmp_cxx_tasks="yes, with shared constant members"
-                  ],
-                  [
-                    ac_pkg_openmp_cxx_tasks=no
-                    ac_pkg_openmp_cxx=no
-                  ])
-
+      #include <omp.h>
+      class Foo {
+      public:
+        Foo(const int x) : x_(x) {}
+        int Test(const int y) {
+          int sum = 0;
+          #pragma omp parallel num_threads(2) default(none) shared(sum)
+          {
+            #pragma omp single nowait
+            for (int i = 0; i < y; ++i) {
+              #pragma omp task default(none) firstprivate(i) shared(sum, x_)
+              {
+                sum += x_ * i;
+              }
+            }
+          }
+          return sum;
+        }
+      private:
+        const int x_;
+      };
+    ]],
+    [[
+      const int mult = omp_get_num_threads();
+      Foo f(mult);
+      return f.Test(2 * mult);
+    ]])],
+    [
+      AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED], [1], [
+        Set to 1 if OpenMP requires constant class members to be shared
+      ])
+      ac_pkg_openmp_cxx_tasks="yes, with shared constant members"
+    ],
+    [
+      ac_pkg_openmp_cxx_tasks=no
+      ac_pkg_openmp_cxx=no
+    ])
   fi
 
   AC_MSG_RESULT([$ac_pkg_openmp_cxx_tasks])
@@ -147,23 +146,65 @@ fi
 if test "${ac_pkg_openmp_cxx}" = yes; then
   AC_MSG_CHECKING([OpenMP support for custom reductions])
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
-                                    #include <omp.h>
-                                    void CustomReduction(int* single, int* combined) { *combined += *single; }
-                                  ]],
-                                  [[
-                                    #pragma omp declare reduction(c:int:CustomReduction(&omp_in, &omp_out))
-                                    int sum = 0;
-                                    const int y = omp_get_num_threads();
-                                    #pragma omp parallel num_threads(2) default(none) firstprivate(y) shared(sum)
-                                    {
-                                      #pragma omp for reduction(c:sum)
-                                      for (int i = 0; i < y; ++i) {
-                                        sum = i * y;
-                                      }
-                                    }
-                                  ]])],
-                [ac_pkg_openmp_cxx=yes],
-                [ac_pkg_openmp_cxx=no])
+    #include <omp.h>
+    #include <forward_list>
+    #include <type_traits>
+
+    namespace omp_reductions {
+    template<typename T>
+    using FwdList = std::forward_list<T>;
+
+    class Foo {
+    public:
+      explicit Foo(const int x) : x_(x) {}
+      int x() const {
+        return x_;
+      }
+    private:
+      int x_;
+    };
+
+    void CustomReduction(FwdList<Foo>* single, FwdList<Foo>* combined) {
+      combined->splice_after(combined->before_begin(), *single);
+    }
+
+    template<typename T, typename = typename std::enable_if<!std::is_arithmetic<T>::value>::type>
+    T ComputeWithReduction(const T mult, const Foo & y) {
+      return Foo(mult.x() * y.x());
+    }
+
+    template<typename T, typename = typename std::enable_if<std::is_arithmetic<T>::value>::type>
+    T ComputeWithReduction(const T mult, const int y) {
+      using FooList = FwdList<Foo>;
+
+      #pragma omp declare reduction(c:FwdList<Foo>:CustomReduction(&omp_in, &omp_out))
+
+      FooList combined;
+      int num_threads = omp_get_num_threads();
+      #pragma omp parallel num_threads(num_threads) default(none) firstprivate(y) shared(combined)
+      {
+        #pragma omp for reduction(c:combined)
+        for (int i = 0; i < y; ++i) {
+          combined.emplace_front(i);
+        }
+      }
+
+      int sum = 0;
+      for (auto&& f : combined) {
+        sum += f.x();
+      }
+      return mult * sum;
+    }
+    }  // namespace omp_reductions
+    ]],
+    [[
+      using omp_reductions::Foo;
+      double sum = omp_reductions::ComputeWithReduction(2.3, 12);
+      Foo sumfoo = omp_reductions::ComputeWithReduction(Foo(5), Foo(12));
+      return sum + sumfoo.x();
+    ]])],
+    [ac_pkg_openmp_cxx=yes],
+    [ac_pkg_openmp_cxx=no])
   AC_MSG_RESULT([$ac_pkg_openmp_cxx])
 fi
 LDFLAGS=$ax_check_save_flags

@@ -1,4 +1,5 @@
 Major refactoring of code and new functionality.
+This also fixes the segfault error on Solaris.
 
 ## Test environments
 * local OS X 10.15.6, R version 4.0.2 Patched

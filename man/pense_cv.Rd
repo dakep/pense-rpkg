@@ -60,7 +60,7 @@ are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}
     \item{\code{nlambda_enpy}}{number of penalization levels where the EN-PY initial estimate is computed.}
     \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
 coefficient. Only allowed for \code{alpha} > 0.}
-    \item{\code{enpy_lambda}}{optional user-supplied sequence of penalization levels at which EN-PY inbitial estimates are
+    \item{\code{enpy_lambda}}{optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
 computed. If given and not \code{NULL}, \code{nlambda_enpy} is ignored.}
     \item{\code{other_starts}}{a list of other staring points, created by \code{\link[=starting_point]{starting_point()}}.
 If the output of \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} is given, the starting points will be \emph{shared}

@@ -56,7 +56,7 @@ smallest value for which all coefficients are zero). The default depends on the 
 size relative to the number of variables and \code{alpha}. If more observations than variables
 are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
 
-\item{enpy_lambda}{optional user-supplied sequence of penalization levels at which EN-PY inbitial estimates are
+\item{enpy_lambda}{optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
 computed. If given and not \code{NULL}, \code{nlambda_enpy} is ignored.}
 
 \item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each

@@ -46,7 +46,7 @@
 #'    coefficient. Only allowed for `alpha` > 0.
 #' @param lambda optional user-supplied sequence of penalization levels. If given and not `NULL`, `nlambda` and
 #'    `lambda_min_ratio` are ignored.
-#' @param enpy_lambda optional user-supplied sequence of penalization levels at which EN-PY inbitial estimates are
+#' @param enpy_lambda optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
 #'    computed. If given and not `NULL`, `nlambda_enpy` is ignored.
 #' @param other_starts a list of other staring points, created by [starting_point()].
 #'    If the output of [enpy_initial_estimates()] is given, the starting points will be *shared*

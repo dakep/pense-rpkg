@@ -27,7 +27,7 @@ undefined or too far away.}
 \item{eta_start_aggressive}{aggressive initial barrier parameter. This is used if the previous penalty is close.}
 
 \item{lambda_relchange_aggressive}{how close must the lambda parameter from the previous penalty term be to use
-an aggressive initial barrier parameter (i.e., what constitues "too far").}
+an aggressive initial barrier parameter (i.e., what constitutes "too far").}
 }
 \value{
 options for the DAL EN algorithm.

@@ -142,7 +142,7 @@ en_admm_options <- function (max_it = 1000, step_size, acceleration = 1) {
 #'    undefined or too far away.
 #' @param eta_start_aggressive aggressive initial barrier parameter. This is used if the previous penalty is close.
 #' @param lambda_relchange_aggressive how close must the lambda parameter from the previous penalty term be to use
-#'    an aggressive initial barrier parameter (i.e., what constitues "too far").
+#'    an aggressive initial barrier parameter (i.e., what constitutes "too far").
 #'
 #' @return options for the DAL EN algorithm.
 #' @family EN algorithms

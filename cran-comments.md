@@ -23,7 +23,7 @@ Major refactoring of code and new functionality.
 > ‘.__cluster_exported_objects__’ ‘.cluster_export_object’ ‘.cluster_unexport_object’ ‘.elnet_args’ ‘.pense_args’
 > ‘.regmest_args’ ‘predict.pense_cvfit’ ‘predict.pense_fit
 
-Method implementing repeated cross-validation allow the user to provide a parallel cluster (set-up by the user).
+Methods implementing repeated cross-validation allow the user to provide a parallel cluster (set-up by the user).
 These methods run R code on the clusters and access package-internal functions using `:::`.
 
 > installed size is > 5MB

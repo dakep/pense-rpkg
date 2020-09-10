@@ -1,7 +1,7 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 2.0.0-6
+Version: 2.0.0-8
 Date: 2020-09-08
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
@@ -9,17 +9,19 @@ Authors@R: c(
     person("Matias", "Salibian-Barrera", role = c("aut")),
     person("Gabriela", "Cohen Freue", role = "aut")
     )
-Copyright: See the file COPYRIGHTS for copyright details on some of the
+Copyright: See the file COPYRIGHT for copyright details on some of the
     functions and algorithms used.
 Encoding: UTF-8
 Biarch: true
 SystemRequirements: C++11
 URL: https://gitlab.math.ubc.ca/dakep/pense
 BugReports: https://gitlab.math.ubc.ca/dakep/pense/issues
-Description: Robust penalized elastic net S and MM estimator for linear
-    regression. The method is described in detail in
+Description: Robust penalized (adaptive) elastic net S and M estimators for
+    linear regression. The methods are proposed in
     Cohen Freue, G. V., Kepplinger, D., Salibian-Barrera, M., and Smucler, E.
     (2019) <https://projecteuclid.org/euclid.aoas/1574910036>.
+    The package implements the extensions and algorithms described in
+    Kepplinger, D. (2020) <doi:10.14288/1.0392915>.
 Depends:
     R (>= 3.5.0),
     Matrix

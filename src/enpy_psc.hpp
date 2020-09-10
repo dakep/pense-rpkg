@@ -263,7 +263,7 @@ alias::FwdList<pense::PscResult<Optimizer>> ComputePscs(
 
   const uword block_size = data.n_obs() / num_threads + static_cast<uword>(data.n_obs() % num_threads > 0);
   LooStatusList loo_statuses;
-  #pragma omp parallel num_threads(num_threads) default(none) firstprivate(optimizer) \
+  #pragma omp parallel num_threads(num_threads) default(none) firstprivate(optimizer, block_size) \
     shared(data, loss, penalties, loo_statuses, sensitivity_matrices, psc_results)
   {
     #pragma omp for reduction(c:loo_statuses)

@@ -10,9 +10,14 @@ fi
 RBIN="${R_HOME}/bin/R"
 CC=`"${RBIN}" CMD config CC`
 CPP="$CC -E"
-CXX=`"${RBIN}" CMD config CXX`
-CXXCPP="$CXX -E"
-CXXFLAGS=`"${RBIN}" CMD config CXXFLAGS`
+
+CXX11=`"${RBIN}" CMD config CXX11`
+if test -z "$CXX11"; then
+  AC_MSG_ERROR([No C++11 compiler is available])
+fi
+CXX11STD=`"${RBIN}" CMD config CXX11STD`
+CXX="${CXX11} ${CXX11STD}"
+CXXFLAGS=`"${RBIN}" CMD config CXX11FLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 LDFLAGS=`"${RBIN}" CMD config LDFLAGS`
 
@@ -70,7 +75,7 @@ if test "${ac_pkg_openmp_cxx}" = yes; then
       Foo(const int x) : x_(x) {}
       int Test(const int y) {
         int sum = 0;
-        #pragma omp parallel num_threads(2) default(none) shared(sum)
+        #pragma omp parallel num_threads(2) default(none) firstprivate(y) shared(sum)
         {
           #pragma omp single nowait
           for (int i = 0; i < y; ++i) {

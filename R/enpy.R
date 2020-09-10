@@ -16,7 +16,7 @@
 #'
 #' @references Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
 #'    Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
-#'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 <https://doi.org/10.1214/19-AOAS1269>
+#'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
 #'
 #' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
 #' @importFrom rlang abort
@@ -98,10 +98,10 @@ enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, interce
 #'
 #' @references Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
 #'    Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
-#'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 <https://doi.org/10.1214/19-AOAS1269>
+#'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
 #' @references Pena, D., and Yohai, V.J.
 #'    A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
-#'    *J. Amer. Statist. Assoc.* **94** (1999). no. 446, 434--445. <https://doi.org/10.2307/2670164>
+#'    *J. Amer. Statist. Assoc.* **94** (1999). no. 446, 434--445. \doi{10.2307/2670164}
 #'
 #' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
 #' @importFrom rlang abort

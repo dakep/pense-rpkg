@@ -118,6 +118,13 @@ class DataProxy {
     return *data_;
   }
 
+  //! Get the pointer to the data set.
+  //!
+  //! @return a reference to the data set.
+  PredictorResponseData const * get() const {
+    return data_;
+  }
+
   //! Get the average weight.
   //!
   //! @return average weight.
@@ -219,6 +226,13 @@ class DataProxy<LossFunction, std::true_type> {
     return weighted_data_;
   }
 
+  //! Get the pointer to the data set.
+  //!
+  //! @return a reference to the data set.
+  PredictorResponseData const * get() const {
+    return &weighted_data_;
+  }
+
   //! Access the weighted data set.
   //!
   //! @return a pointer to the weighted data set.
@@ -248,7 +262,7 @@ class Hessian {
 
   // //! Copy the other Hessian, but replace the data pointer.
   Hessian(const Hessian& other, const DataProxy<LossFunction>& data) noexcept :
-    data_(&(*data)), pcg_convergence_tol_(other.pcg_convergence_tol_),
+    data_(data.get()), pcg_convergence_tol_(other.pcg_convergence_tol_),
     sqrt_weights_outer_(other.sqrt_weights_outer_), outer_product_(other.outer_product_),
     preconditioner_(other.preconditioner_), active_(other.active_) {}
 

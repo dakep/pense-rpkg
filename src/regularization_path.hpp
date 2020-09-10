@@ -249,7 +249,7 @@ class OptimizerList {
     {
       #pragma omp single
       for (auto start_it = starts.begin(), start_end = starts.end(); start_it != start_end; ++start_it) {
-        #pragma omp task firstprivate(start_it) shared(optimizer, cold_items) default(none)
+        #pragma omp task default(none) firstprivate(start_it) shared(optimizer, cold_items)
         {
           auto tmp_optimizer = *optimizer;
           auto cold_optimum = tmp_optimizer.Optimize(*start_it);
@@ -265,7 +265,7 @@ class OptimizerList {
         // Fully iterate the best cold candidates and retain those that are better than the updated optima.
         for (auto cand_it = cold_items.Elements().begin(), cand_end = cold_items.Elements().end();
             cand_it != cand_end; ++cand_it) {
-          #pragma omp task default(none) shared(cold_optima) firstprivate(cand_it)
+          #pragma omp task default(none) shared(cold_optima) firstprivate(cand_it, original_tol)
           {
             auto&& optimizer = std::get<1>(*cand_it);
             optimizer.convergence_tolerance(original_tol);

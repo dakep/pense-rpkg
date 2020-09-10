@@ -45,15 +45,15 @@ alias::FwdList<pense::PscResult<DirectRidgeOptimizer>> ComputeRidgePscs(const ns
     ridge_gram = data.cx().t() * data.cx();
   }
 
-  // Computing PSCs can be done in parallel for each penalty.
-  #pragma omp parallel num_threads(num_threads) default(none) \
-    shared(psc_results, penalties, loss, data, x, optim, ridge_gram) firstprivate(gram_diag_int)
+  // Computing PSCs can be done in parallel for each penalty. (default(none) does not work in gcc 9 and up)
+  #pragma omp parallel num_threads(num_threads) \
+    shared(psc_results, penalties, loss, data, x, optim) firstprivate(gram_diag_int, ridge_gram)
   {
     #pragma omp single nowait
     {
       for (auto pen_it = penalties.cbegin(), pen_end = penalties.cend(); pen_it != pen_end; ++pen_it) {
         // Compute optimum on full data.
-        #pragma omp task default(none) firstprivate(pen_it, ridge_gram, gram_diag_int) \
+        #pragma omp task firstprivate(pen_it, ridge_gram, gram_diag_int) \
           shared(psc_results, loss, data, x, optim)
         {
           auto optimizer = optim;

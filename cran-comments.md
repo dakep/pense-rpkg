@@ -8,11 +8,9 @@ Major refactoring of code and new functionality.
   * Ubuntu 16.04.7 LTS, R-release
   * Ubuntu 16.04.7 LTS, R-devel
 * Rhub
-  * Debian Linux, R-release, GCC
   * Ubuntu Linux 16.04 LTS, R-devel with rchk
   * Debian Linux, R-devel, GCC ASAN/UBSAN
-  * Fedora Linux, R-devel, GCC
-  * Fedora Linux, R-devel, clang, gfortran
+  * Fedora Linux, R-devel, clang, gfortran (with VALGRIND)
   * Oracle Solaris 10, x86, 32 bit, R-release
   * Windows Server 2008 R2 SP1, R-oldrel, 32/64 bit
   * Windows Server 2008 R2 SP1, R-patched, 32/64 bit

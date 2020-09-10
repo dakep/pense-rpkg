@@ -1,0 +1,17 @@
+^CRAN-RELEASE$
+^.*\.Rproj$
+^\.Rproj\.user$
+^README.R?md$
+^cran-comments\.md$
+^builds$
+^run-checks$
+^prepare-bundle$
+^.*Makevars\.dbg$
+^examples$
+^TODO$
+^rstudio\-build\.sh$
+^man\-roxygen$
+^.vscode$
+^.*autoconfig\.R$
+^.*autoconfig\.hpp$
+^\.travis\.yml$

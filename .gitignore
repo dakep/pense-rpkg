@@ -10,7 +10,6 @@ config.log
 config.status
 .Rproj.user
 *.Rproj
-.Rbuildignore
 rstudio-build.sh
 run-checks
 .vscode

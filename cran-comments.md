@@ -3,9 +3,12 @@ Major refactoring of code and new functionality.
 ## Test environments
 * local OS X 10.15.6, R version 4.0.2 Patched
 * win-builder (devel and release)
+* Travis
+  * Ubuntu 16.04.7 LTS, R-oldrel
+  * Ubuntu 16.04.7 LTS, R-release
+  * Ubuntu 16.04.7 LTS, R-devel
 * Rhub
   * Debian Linux, R-release, GCC
-  * Ubuntu Linux 16.04 LTS, R-release, GCC
   * Ubuntu Linux 16.04 LTS, R-devel with rchk
   * Debian Linux, R-devel, GCC ASAN/UBSAN
   * Fedora Linux, R-devel, GCC

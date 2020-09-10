@@ -56,9 +56,9 @@ Compute Principal Sensitivity Components for Elastic Net Regression
 \references{
 Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
 Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
-\emph{Ann. Appl. Stat.} \strong{13} (2019), no. 4, 2065--2090 \url{https://doi.org/10.1214/19-AOAS1269}
+\emph{Ann. Appl. Stat.} \strong{13} (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
 
 Pena, D., and Yohai, V.J.
 A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
-\emph{J. Amer. Statist. Assoc.} \strong{94} (1999). no. 446, 434--445. \url{https://doi.org/10.2307/2670164}
+\emph{J. Amer. Statist. Assoc.} \strong{94} (1999). no. 446, 434--445. \doi{10.2307/2670164}
 }

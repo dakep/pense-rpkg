@@ -111,7 +111,7 @@ plot(regpath)
 coef(regpath, lambda = regpath$lambda[5])
 
 # What penalization level leads to good prediction performance?
-cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 25,
+cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 10,
                        cv_k = 4, cv_measure = 'tau')
 plot(cv_results, se_mult = 1)
 plot(cv_results, se_mult = 1, what = 'coef.path')

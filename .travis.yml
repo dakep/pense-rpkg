@@ -15,7 +15,6 @@ branches:
     - master
     - develop
     - /^release\/v?[\d\.]+$/
-    - newdocs
 
 r_packages:
   - pkgdown
@@ -32,6 +31,4 @@ deploy:
     keep_history: true
     local_dir: docs
     on:
-      branch:
-       - master
-       - newdocs
+      branch: master

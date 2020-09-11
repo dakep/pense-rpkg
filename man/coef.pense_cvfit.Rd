@@ -71,3 +71,12 @@ coef(cv_results)
 # statistically indistinguishable from the minimum.
 coef(cv_results, lambda = 'se')
 }
+\seealso{
+Other functions for extracting components: 
+\code{\link{coef.pense_fit}()},
+\code{\link{predict.pense_cvfit}()},
+\code{\link{predict.pense_fit}()},
+\code{\link{residuals.pense_cvfit}()},
+\code{\link{residuals.pense_fit}()}
+}
+\concept{functions for extracting components}

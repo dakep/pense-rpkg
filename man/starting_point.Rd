@@ -70,3 +70,9 @@ CV performance (\code{lambda = "min"}), or the estimate with CV performance stat
 best performance (\code{lambda = "se"}). This is determined to be the estimate with prediction performance
 within \code{se_mult * cv_se} from the best model.
 }
+\seealso{
+Other functions for initial estimates: 
+\code{\link{enpy_initial_estimates}()},
+\code{\link{prinsens}()}
+}
+\concept{functions for initial estimates}

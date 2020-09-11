@@ -12,11 +12,15 @@
 #' @param lambda a vector of positive values of penalization levels.
 #' @param cc cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
 #'    Normal distribution.
+#'
+#' @family functions for initial estimates
+#'
 #' @export
 #'
 #' @references Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
 #'    Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
 #'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
+#'
 #'
 #' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
 #' @importFrom rlang abort
@@ -93,6 +97,8 @@ enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, interce
 #'
 #' @return a list of principal sensitivity components, one per element in `lambda`. Each PSC is itself a list
 #'    with items `lambda`, `alpha`, and `pscs`.
+#'
+#' @family functions for initial estimates
 #'
 #' @export
 #'

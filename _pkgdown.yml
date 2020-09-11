@@ -1,0 +1,39 @@
+reference:
+- title: Robust fitting of linear regression models
+- subtitle: Fitting and estimating prediction performance
+  desc: Fit linear regression models for a set of penalization levels and estimate the prediction performance via cross-validation.
+  contents:
+  - has_concept("functions to compute robust estimates with CV")
+- subtitle: Fitting only
+  contents:
+  - has_concept("functions to compute robust estimates")
+- title: Plotting and printing
+  desc: Methods for plotting and summarizing fits.
+  contents:
+  - has_concept("functions for plotting and printing")
+- title: Extracting information
+  desc: Methods for extracting coefficient estimates and predicting values.
+  contents:
+  - has_concept("functions for extracting components")
+- title: Robust location and scale
+  desc: Compute robust location and scale estimates.
+  contents:
+  - has_concept("functions to compute robust estimates of location and scale")
+- title: Non-robust methods
+  desc: Non-robust methods for fitting linear regression models.
+  contents:
+  - has_concept("functions for computing non-robust estimates")
+- title: Advanced functionality
+- subtitle: Control options
+  contents:
+  - ends_with("_options")
+- subtitle: Initial estimates
+  desc: Manually compute and alter initial estimates.
+  contents:
+  - has_concept("functions for initial estimates")
+- subtitle: Miscellaneous
+  contents:
+  - has_concept("miscellaneous functions")
+- title: Deprecated functions
+  contents:
+  - has_concept("deprecated functions")

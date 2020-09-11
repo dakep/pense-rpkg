@@ -202,4 +202,8 @@ coef(cv_results, lambda = 'se')
 \code{\link[=coef.pense_fit]{coef.pense_fit()}} for extracting coefficient estimates.
 
 \code{\link[=plot.pense_fit]{plot.pense_fit()}} for plotting the regularization path.
+
+Other functions to compute robust estimates: 
+\code{\link{regmest}()}
 }
+\concept{functions to compute robust estimates}

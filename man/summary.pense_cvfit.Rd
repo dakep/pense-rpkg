@@ -10,7 +10,7 @@
 \method{print}{pense_cvfit}(x, lambda = c("min", "se"), se_mult = 1, ...)
 }
 \arguments{
-\item{object}{an (adaptive) PENSE fit with cross-validation information.}
+\item{object, x}{an (adaptive) PENSE fit with cross-validation information.}
 
 \item{lambda}{either a string specifying which penalty level to use (\code{"min"} or \code{"se"}) or a a single numeric
 value of the penalty parameter. See details.}
@@ -26,5 +26,10 @@ model. This is determined to be the model with prediction performance within \co
 \code{\link[=prediction_performance]{prediction_performance()}} for information about the estimated prediction performance.
 
 \code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting only the estimated coefficients.
+
+Other functions for plotting and printing: 
+\code{\link{plot.pense_cvfit}()},
+\code{\link{plot.pense_fit}()},
+\code{\link{prediction_performance}()}
 }
-\keyword{internal}
+\concept{functions for plotting and printing}

@@ -19,4 +19,12 @@ mstep_options(
 \details{
 Superseded by \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} and options supplied directly to \code{\link[=pense]{pense()}}.
 }
-\keyword{internal}
+\seealso{
+Other deprecated functions: 
+\code{\link{deprecated_en_options}},
+\code{\link{enpy}()},
+\code{\link{initest_options}()},
+\code{\link{pense_options}()},
+\code{\link{pensem}()}
+}
+\concept{deprecated functions}

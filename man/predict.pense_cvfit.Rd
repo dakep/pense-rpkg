@@ -70,3 +70,12 @@ residuals(cv_results)^2
 # Extract the residuals at a more parsimonious penalization level
 residuals(cv_results, lambda = 'se')
 }
+\seealso{
+Other functions for extracting components: 
+\code{\link{coef.pense_cvfit}()},
+\code{\link{coef.pense_fit}()},
+\code{\link{predict.pense_fit}()},
+\code{\link{residuals.pense_cvfit}()},
+\code{\link{residuals.pense_fit}()}
+}
+\concept{functions for extracting components}

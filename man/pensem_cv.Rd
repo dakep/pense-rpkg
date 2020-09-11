@@ -2,14 +2,11 @@
 % Please edit documentation in R/pensem_regression.R
 \name{pensem_cv}
 \alias{pensem_cv}
-\alias{pensem}
 \alias{pensem_cv.default}
 \alias{pensem_cv.pense_cvfit}
 \title{Compute Penalized Elastic Net M-Estimates from PENSE}
 \usage{
 pensem_cv(x, ...)
-
-pensem(x, ...)
 
 \method{pensem_cv}{default}(
   x,
@@ -168,9 +165,12 @@ an object of cross-validated regularized M-estimates as returned from \code{\lin
 This is a convenience wrapper around \code{\link[=pense_cv]{pense_cv()}} and \code{\link[=regmest_cv]{regmest_cv()}}, for the common use-case of computing
 a highly-robust S-estimate followed by a more efficient M-estimate using the scale of the residuals from the
 S-estimate.
-
-\code{\link[=pensem]{pensem()}} is a deprecated alias for \code{pensem_cv()}.
 }
 \seealso{
 \code{\link[=pense_cv]{pense_cv()}} to compute the starting S-estimate.
+
+Other functions to compute robust estimates with CV: 
+\code{\link{pense_cv}()},
+\code{\link{regmest_cv}()}
 }
+\concept{functions to compute robust estimates with CV}

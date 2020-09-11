@@ -120,4 +120,8 @@ coef(cv_results, lambda = 'se')
 \code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficient estimates.
 
 \code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the regularization path.
+
+Other functions for computing non-robust estimates: 
+\code{\link{elnet}()}
 }
+\concept{functions for computing non-robust estimates}

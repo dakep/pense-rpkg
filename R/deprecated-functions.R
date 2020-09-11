@@ -4,8 +4,10 @@
 #'
 #' Superseded by [enpy_options()].
 #'
+#' @family deprecated functions
+#'
 #' @export
-#' @keywords internal
+#'
 #' @importFrom lifecycle deprecate_warn
 initest_options <- function (keep_solutions = 5, psc_method = c("exact", "rr"), maxit = 10, maxit_pense_refinement = 5,
                              eps = 1e-6, psc_keep = 0.5, resid_keep_method = c("proportion", "threshold"),
@@ -26,7 +28,7 @@ initest_options <- function (keep_solutions = 5, psc_method = c("exact", "rr"), 
 #' \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
 #'
 #' @name deprecated_en_options
-#' @keywords internal
+#' @family deprecated functions
 NULL
 
 
@@ -55,8 +57,10 @@ en_options_dal <- function (maxit = 100, eps = 1e-8, eta_mult = 2, eta_start_num
 #'
 #' Superseded by [mm_algorithm_options()] and options supplied directly to [pense()].
 #'
+#' @family deprecated functions
+#'
 #' @export
-#' @keywords internal
+#'
 #' @importFrom lifecycle deprecate_warn
 pense_options <- function (delta = 0.25, maxit = 1000, eps = 1e-6, mscale_eps = 1e-8, mscale_maxit = 200,
                            verbosity = 0, cc = NULL, en_correction = TRUE) {
@@ -71,8 +75,10 @@ pense_options <- function (delta = 0.25, maxit = 1000, eps = 1e-6, mscale_eps = 
 #'
 #' Superseded by [mm_algorithm_options()] and options supplied directly to [pense()].
 #'
+#' @family deprecated functions
+#'
 #' @export
-#' @keywords internal
+#'
 #' @importFrom lifecycle deprecate_warn
 mstep_options <- function (cc = 3.44, maxit = 1000, eps = 1e-6, adjust_bdp = FALSE, verbosity = 0,
                            en_correction = TRUE) {
@@ -86,8 +92,9 @@ mstep_options <- function (cc = 3.44, maxit = 1000, eps = 1e-6, adjust_bdp = FAL
 #'
 #' Superseded by [enpy_initial_estimates()].
 #'
+#' @family deprecated functions
+#'
 #' @export
-#' @keywords internal
 #' @importFrom lifecycle deprecate_warn
 enpy <- function(x, y, alpha, lambda, delta, cc, options, en_options) {
   deprecate_warn('2.0.0', 'enpy()', with = 'enpy_initial_estimates()')

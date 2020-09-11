@@ -5,6 +5,8 @@
 #' @param x fitted estimates.
 #' @param ... currently ignored.
 #'
+#' @family functions for plotting and printing
+#'
 #' @example examples/pense_fit.R
 #' @export
 plot.pense_fit <- function (x, ...) {
@@ -21,6 +23,7 @@ plot.pense_fit <- function (x, ...) {
 #' @param se_mult if plotting CV performance, multiplier of the estimated SE.
 #' @param ... currently ignored.
 #'
+#' @family functions for plotting and printing
 #' @example examples/pense_fit.R
 #' @export
 plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), se_mult = 1, ...) {

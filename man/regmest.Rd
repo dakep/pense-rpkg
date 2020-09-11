@@ -121,4 +121,8 @@ penalty loadings for adaptive elastic net.
 \code{\link[=coef.pense_fit]{coef.pense_fit()}} for extracting coefficient estimates.
 
 \code{\link[=plot.pense_fit]{plot.pense_fit()}} for plotting the regularization path.
+
+Other functions to compute robust estimates: 
+\code{\link{pense}()}
 }
+\concept{functions to compute robust estimates}

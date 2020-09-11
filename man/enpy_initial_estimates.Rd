@@ -65,3 +65,9 @@ Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
 Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
 \emph{Ann. Appl. Stat.} \strong{13} (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
 }
+\seealso{
+Other functions for initial estimates: 
+\code{\link{prinsens}()},
+\code{\link{starting_point}()}
+}
+\concept{functions for initial estimates}

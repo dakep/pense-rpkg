@@ -12,4 +12,12 @@ enpy(x, y, alpha, lambda, delta, cc, options, en_options)
 \details{
 Superseded by \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}}.
 }
-\keyword{internal}
+\seealso{
+Other deprecated functions: 
+\code{\link{deprecated_en_options}},
+\code{\link{initest_options}()},
+\code{\link{mstep_options}()},
+\code{\link{pense_options}()},
+\code{\link{pensem}()}
+}
+\concept{deprecated functions}

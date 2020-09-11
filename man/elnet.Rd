@@ -124,11 +124,13 @@ coef(cv_results)
 coef(cv_results, lambda = 'se')
 }
 \seealso{
-\code{\link[=elnet_cv]{elnet_cv()}} for cross-validating prediction performance of the estimates.
-
 \code{\link[=pense]{pense()}} for an S-estimate of regression with elastic net penalty.
 
 \code{\link[=coef.pense_fit]{coef.pense_fit()}} for extracting coefficient estimates.
 
 \code{\link[=plot.pense_fit]{plot.pense_fit()}} for plotting the regularization path.
+
+Other functions for computing non-robust estimates: 
+\code{\link{elnet_cv}()}
 }
+\concept{functions for computing non-robust estimates}

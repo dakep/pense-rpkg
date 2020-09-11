@@ -1,6 +1,22 @@
-# PENSE R package
+---
+output: github_document
+---
+```{r setup, echo = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = '#>')
+```
 
+# pense R package
+
+<!-- begin badges -->
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
+```{r, results='asis', eval=TRUE}
+branch_name <- tryCatch(system('git rev-parse --abbrev-ref HEAD', intern = TRUE),
+                        error = function (...) { return('master') },
+                        warning = function (...) { return('master') })
+                        
+cat(sprintf('[![Build Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=master)](https://travis-ci.com/dakep/pense-rpkg)', branch_name))
+```
+<!-- end badges -->
 
 This R package implements the penalized elastic net S-estimator (PENSE) and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et al. (2019)](https://projecteuclid.org/euclid.aoas/1574910036) as well as the adaptive extensions developed in [Kepplinger (2020)](https://hdl.handle.net/2429/75637).
 

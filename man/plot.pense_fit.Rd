@@ -38,3 +38,10 @@ coef(cv_results)
 # statistically indistinguishable from the minimum.
 coef(cv_results, lambda = 'se')
 }
+\seealso{
+Other functions for plotting and printing: 
+\code{\link{plot.pense_cvfit}()},
+\code{\link{prediction_performance}()},
+\code{\link{summary.pense_cvfit}()}
+}
+\concept{functions for plotting and printing}

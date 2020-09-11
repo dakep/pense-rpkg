@@ -33,3 +33,10 @@ a vector with 2 elements, the M-estimate of location and the M-scale estimate.
 \description{
 Simultaneous estimation of the location and scale by means of M-estimates.
 }
+\seealso{
+Other functions to compute robust estimates of location and scale: 
+\code{\link{mloc}()},
+\code{\link{mscale}()},
+\code{\link{tau_size}()}
+}
+\concept{functions to compute robust estimates of location and scale}

@@ -17,3 +17,8 @@ consistency constant
 \description{
 Get the Constant for Consistency for the M-Scale
 }
+\seealso{
+Other miscellaneous functions: 
+\code{\link{rho_function}()}
+}
+\concept{miscellaneous functions}

@@ -183,4 +183,13 @@ par(def.par)
 \code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficient estimates.
 
 \code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the regularization path.
+
+Other functions to compute robust estimates with CV: 
+\code{\link{pensem_cv}()},
+\code{\link{regmest_cv}()}
+
+Other functions to compute robust estimates with CV: 
+\code{\link{pensem_cv}()},
+\code{\link{regmest_cv}()}
 }
+\concept{functions to compute robust estimates with CV}

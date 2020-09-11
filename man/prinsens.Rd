@@ -62,3 +62,9 @@ Pena, D., and Yohai, V.J.
 A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
 \emph{J. Amer. Statist. Assoc.} \strong{94} (1999). no. 446, 434--445. \doi{10.2307/2670164}
 }
+\seealso{
+Other functions for initial estimates: 
+\code{\link{enpy_initial_estimates}()},
+\code{\link{starting_point}()}
+}
+\concept{functions for initial estimates}

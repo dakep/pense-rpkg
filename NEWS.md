@@ -17,7 +17,7 @@
     - `enpy()` is replaced by `enpy_initial_estimates()` which has different default argument values.
   * Deprecated functions can still be used (for now) with a warning.
 
-# pense 1.2.8
+# pense 1.2.9
   * Fix LTO warnings reported in CRAN checks
   * Update autoconf script to address deprecation warnings in r-devel.
 

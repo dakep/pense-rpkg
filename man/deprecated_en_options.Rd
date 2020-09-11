@@ -28,4 +28,12 @@ en_options_dal(
 \item \code{en_options_dal}: Superseded by \code{\link[=en_dal_options]{en_dal_options()}}
 }}
 
-\keyword{internal}
+\seealso{
+Other deprecated functions: 
+\code{\link{enpy}()},
+\code{\link{initest_options}()},
+\code{\link{mstep_options}()},
+\code{\link{pense_options}()},
+\code{\link{pensem}()}
+}
+\concept{deprecated functions}

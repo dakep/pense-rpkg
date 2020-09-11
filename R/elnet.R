@@ -56,13 +56,13 @@
 #'
 #' @example examples/ls_elnet.R
 #'
-#' @seealso [elnet_cv()] for cross-validating prediction performance of the estimates.
+#' @aliases adaelnet adaen
+#' @family functions for computing non-robust estimates
 #' @seealso [pense()] for an S-estimate of regression with elastic net penalty.
 #' @seealso [coef.pense_fit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_fit()] for plotting the regularization path.
 #'
 #' @export
-#' @aliases adaelnet adaen
 #' @importFrom lifecycle deprecated
 elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights, intercept = TRUE,
                   en_algorithm_opts, sparse = FALSE, eps = 1e-6, standardize = TRUE,
@@ -124,6 +124,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #'      \item{`estimates`}{the estimates fitted on the full data. Same format as returned by [elnet()].}
 #'    }
 #'
+#' @family functions for computing non-robust estimates
 #' @seealso [coef.pense_cvfit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_cvfit()] for plotting the CV performance or the regularization path.
 #' @example examples/ls_elnet.R

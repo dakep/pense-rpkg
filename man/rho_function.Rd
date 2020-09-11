@@ -16,3 +16,8 @@ the internal integer representation of the \eqn{\rho} function.
 \description{
 List Available Rho Functions
 }
+\seealso{
+Other miscellaneous functions: 
+\code{\link{consistency_const}()}
+}
+\concept{miscellaneous functions}

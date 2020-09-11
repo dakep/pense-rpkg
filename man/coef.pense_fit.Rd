@@ -65,4 +65,12 @@ coef(cv_results, lambda = 'se')
 \seealso{
 \code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficients from a PENSE fit with hyper-parameters chosen by
 cross-validation
+
+Other functions for extracting components: 
+\code{\link{coef.pense_cvfit}()},
+\code{\link{predict.pense_cvfit}()},
+\code{\link{predict.pense_fit}()},
+\code{\link{residuals.pense_cvfit}()},
+\code{\link{residuals.pense_fit}()}
 }
+\concept{functions for extracting components}

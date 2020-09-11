@@ -61,6 +61,7 @@
 #'      \item{`call`}{the original call.}
 #'    }
 #'
+#' @family functions to compute robust estimates
 #' @seealso [regmest_cv()] for selecting hyper-parameters via cross-validation.
 #' @seealso [coef.pense_fit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_fit()] for plotting the regularization path.
@@ -126,10 +127,12 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
 #'    }
 #'
 #' @example examples/adapense_fit.R
+#'
+#' @family functions to compute robust estimates with CV
 #' @seealso [coef.pense_cvfit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_cvfit()] for plotting the CV performance or the regularization path.
-#' @importFrom stats sd
 #' @export
+#' @importFrom stats sd
 regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_metric = c('tau_size', 'mape', 'rmspe'),
                        fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
@@ -221,6 +224,7 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_m
 #'    }
 #'
 #' @rdname regmest_cv
+#' @family functions to compute robust estimates with CV
 #' @export
 #' @importFrom stats coef
 adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {

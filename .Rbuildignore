@@ -4,6 +4,8 @@
 ^README.R?md$
 ^cran-comments\.md$
 ^builds$
+^docs$
+^_pkgdown\.yml$
 ^run-checks$
 ^prepare-bundle$
 ^.*Makevars\.dbg$
@@ -12,6 +14,7 @@
 ^rstudio\-build\.sh$
 ^man\-roxygen$
 ^.vscode$
+^.github$
 ^.*autoconfig\.R$
 ^.*autoconfig\.hpp$
 ^\.travis\.yml$

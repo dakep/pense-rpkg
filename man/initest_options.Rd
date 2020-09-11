@@ -24,4 +24,12 @@ initest_options(
 \details{
 Superseded by \code{\link[=enpy_options]{enpy_options()}}.
 }
-\keyword{internal}
+\seealso{
+Other deprecated functions: 
+\code{\link{deprecated_en_options}},
+\code{\link{enpy}()},
+\code{\link{mstep_options}()},
+\code{\link{pense_options}()},
+\code{\link{pensem}()}
+}
+\concept{deprecated functions}

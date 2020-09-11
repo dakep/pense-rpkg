@@ -5,22 +5,27 @@
 #' S-estimate.
 #'
 #' @param x either a numeric matrix of predictor values, or a cross-validated PENSE fit from [pense_cv()].
+#' @family functions to compute robust estimates with CV
 #' @export
 pensem_cv <- function (x, ...) {
   UseMethod('pensem_cv')
 }
 
-#' @description
+#' Deprecated Alias of pensem_cv
+#'
 #' [pensem()] is a deprecated alias for `pensem_cv()`.
 #'
-#' @rdname pensem_cv
+#' @inheritParams pensem_cv
+#'
+#' @family deprecated functions
+#'
 #' @export
 pensem <- function (x, ...) {
   deprecate_warn('2.0.0', 'pensem()', 'pensem_cv()')
   UseMethod('pensem_cv')
 }
 
-#'
+
 #' @inheritParams pense
 #' @param cc cutoff constant for Tukey's bisquare \eqn{\rho} function in the M-estimation objective function.
 #' @param lambda_m,lambda_s optional user-supplied sequence of penalization levels for the S- and M-estimates.

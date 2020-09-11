@@ -4,6 +4,9 @@
 #'
 #' @param x numeric values. Missing values are verbosely ignored.
 #' @return the \eqn{\tau} estimate of scale of centered values.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
 #' @export
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
@@ -30,6 +33,9 @@ tau_size <- function (x) {
 #' @param delta deprecated. Use `bpd` instead.
 #' @param rho,eps,maxit deprecated. Instead set control options for the algorithm with the `opts` arguments.
 #' @return the M-estimate of scale.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
 #' @export
 #'
 #' @importFrom lifecycle deprecate_warn deprecated is_present
@@ -80,8 +86,12 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
 #' @param opts a list of options for the M-estimating algorithm, see
 #'    [mscale_algorithm_options()] for details.
 #' @return a single numeric value, the M-estimate of location.
-#' @importFrom stats mad
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
 #' @export
+#'
+#' @importFrom stats mad
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
 mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
@@ -116,7 +126,11 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
 #' @param opts a list of options for the M-estimating equation,
 #'    see [mscale_algorithm_options()] for details.
 #' @return a vector with 2 elements, the M-estimate of location and the M-scale estimate.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
 #' @export
+#'
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
 mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquare'), location_rho,
@@ -142,7 +156,11 @@ mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquar
 #' @param rho the name of the chosen \eqn{\rho} function.
 #'
 #' @return consistency constant
+#'
+#' @family miscellaneous functions
+#'
 #' @export
+#'
 #' @importFrom rlang abort
 consistency_const <- function (delta, rho) {
   return(switch(rho_function(rho),
@@ -155,6 +173,9 @@ consistency_const <- function (delta, rho) {
 #' @param rho the name of the \eqn{\rho} function to check for existence.
 #' @return if `rho` is missing returns a vector of supported \eqn{\rho} function names, otherwise
 #'    the internal integer representation of the \eqn{\rho} function.
+#'
+#' @family miscellaneous functions
+#'
 #' @export
 rho_function <- function (rho) {
   available <- c('bisquare', 'huber')
@@ -189,7 +210,11 @@ rho_function <- function (rho) {
 #' @param lambda optional penalization level. If missing, the starting point is used at *every* penalization level,
 #'    otherwise, only at this penalization level.
 #' @return an object of type `starting_points` to be used as starting point for [pense()].
+#'
+#' @family functions for initial estimates
+#'
 #' @export
+#'
 #' @importFrom methods is
 #' @importFrom Matrix sparseVector
 #' @importFrom rlang abort

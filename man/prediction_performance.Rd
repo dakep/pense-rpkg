@@ -31,4 +31,10 @@ prediction performance within \code{se_mult} of the best prediction performance.
 }
 \seealso{
 \code{\link[=summary.pense_cvfit]{summary.pense_cvfit()}} for a summary of the fitted model.
+
+Other functions for plotting and printing: 
+\code{\link{plot.pense_cvfit}()},
+\code{\link{plot.pense_fit}()},
+\code{\link{summary.pense_cvfit}()}
 }
+\concept{functions for plotting and printing}

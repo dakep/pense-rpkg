@@ -16,6 +16,7 @@
 #'    Note: prior to version 2.0.0 sparse coefficients were returned as sparse matrix of type *dgCMatrix*.
 #'    To get a sparse matrix, use `sparse = 'matrix'`.
 #'
+#' @family functions for extracting components
 #' @seealso [coef.pense_cvfit()] for extracting coefficients from a PENSE fit with hyper-parameters chosen by
 #'    cross-validation
 #' @example examples/pense_fit.R
@@ -77,6 +78,7 @@ coef.pense_fit <- function (object, lambda, sparse = NULL, exact = deprecated(),
 #'    Note: prior to version 2.0.0 sparse coefficients were returned as sparse matrix of type *dgCMatrix*.
 #'    To get a sparse matrix, use `sparse = 'matrix'`.
 #'
+#' @family functions for extracting components
 #' @example examples/pense_fit.R
 #' @export
 coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, sparse = NULL, exact = deprecated(),

@@ -103,6 +103,7 @@
 #'      \item{`call`}{the original call.}
 #'    }
 #'
+#' @family functions to compute robust estimates
 #' @seealso [pense_cv()] for selecting hyper-parameters via cross-validation.
 #' @seealso [coef.pense_fit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_fit()] for plotting the regularization path.
@@ -179,6 +180,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #'    }
 #'
 #' @example examples/adapense_fit.R
+#' @family functions to compute robust estimates with CV
 #' @seealso [coef.pense_cvfit()] for extracting coefficient estimates.
 #' @seealso [plot.pense_cvfit()] for plotting the CV performance or the regularization path.
 #' @aliases adapense_cv
@@ -276,6 +278,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_met
 #'      \item{`penalty_loadings`}{the penalty loadings used for the adaptive PENSE estimate.}
 #'    }
 #'
+#' @family functions to compute robust estimates with CV
 #' @rdname pense_cv
 #' @export
 #' @importFrom stats coef

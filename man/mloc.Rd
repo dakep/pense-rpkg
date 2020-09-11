@@ -25,3 +25,10 @@ a single numeric value, the M-estimate of location.
 \description{
 Compute the M-estimate of location using an auxiliary estimate of the scale.
 }
+\seealso{
+Other functions to compute robust estimates of location and scale: 
+\code{\link{mlocscale}()},
+\code{\link{mscale}()},
+\code{\link{tau_size}()}
+}
+\concept{functions to compute robust estimates of location and scale}

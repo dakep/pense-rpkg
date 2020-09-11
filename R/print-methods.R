@@ -4,19 +4,20 @@
 #' coefficients of the most parsimonious model with prediction performance statistically indistinguishable from the best
 #' model. This is determined to be the model with prediction performance within `se_mult * cv_se` from the best model.
 #'
-#' @param object an (adaptive) PENSE fit with cross-validation information.
+#' @param object,x an (adaptive) PENSE fit with cross-validation information.
 #' @param lambda either a string specifying which penalty level to use (`"min"` or `"se"`) or a a single numeric
 #'    value of the penalty parameter. See details.
 #' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
 #'
+#' @family functions for plotting and printing
 #' @seealso [prediction_performance()] for information about the estimated prediction performance.
 #' @seealso [coef.pense_cvfit()] for extracting only the estimated coefficients.
 #'
-#' @importFrom methods is
-#' @importFrom stats coef
-#'
 #' @export
 #' @method summary pense_cvfit
+#'
+#' @importFrom methods is
+#' @importFrom stats coef
 summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, ...) {
   coef_est <- eval.parent(coef(object, lambda, se_mult, sparse = FALSE, add_lambda = TRUE))
   method_name <- if (is(object, 'adapense')) {
@@ -65,7 +66,6 @@ summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, .
 }
 
 #' @rdname summary.pense_cvfit
-#' @keywords internal
 #' @export
 #' @method print pense_cvfit
 print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
@@ -89,11 +89,13 @@ print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
 #' @return a data frame with details about the prediction performance of the given PENSE fits. The data frame
 #'    has a custom print method summarizing the prediction performances.
 #'
+#' @family functions for plotting and printing
 #' @seealso [summary.pense_cvfit()] for a summary of the fitted model.
+#'
+#' @export
 #'
 #' @importFrom methods is
 #' @importFrom rlang abort
-#' @export
 prediction_performance <- function (..., lambda = c('min', 'se'), se_mult = 1) {
   se_mult <- if (match.arg(lambda) == 'se') {
     .as(se_mult[[1L]], 'numeric')

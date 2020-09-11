@@ -11,13 +11,16 @@
 #' @param ... currently not used.
 #' @return a numeric vector of residuals for the given penalization level.
 #'
+#' @family functions for extracting components
+#'
+#' @example examples/residuals.R
+#' @export
+#'
 #' @importFrom Matrix drop
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang abort
 #' @importFrom stats coef
 #'
-#' @example examples/residuals.R
-#' @export
 predict.pense_fit <- function(object, newdata, lambda, exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
     deprecate_warn('2.0.0', 'residuals(exact=)')
@@ -62,13 +65,16 @@ predict.pense_fit <- function(object, newdata, lambda, exact = deprecated(), cor
 #' @param ... currently not used.
 #' @return a numeric vector of residuals for the given penalization level.
 #'
+#' @family functions for extracting components
+#'
+#' @example examples/residuals.R
+#' @export
+#'
 #' @importFrom Matrix drop
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang warn
 #' @importFrom stats coef
 #'
-#' @example examples/residuals.R
-#' @export
 predict.pense_cvfit <- function(object, newdata, lambda = c('min', 'se'), se_mult = 1, exact = deprecated(),
                                 correction = deprecated(), ...) {
   if (is_present(exact)) {
@@ -109,6 +115,8 @@ predict.pense_cvfit <- function(object, newdata, lambda = c('min', 'se'), se_mul
 #' @param ... currently not used.
 #' @return a numeric vector of residuals for the given penalization level.
 #'
+#' @family functions for extracting components
+#'
 #' @example examples/residuals.R
 #' @export
 residuals.pense_fit <- function(object, lambda, exact = deprecated(), correction = deprecated(), ...) {
@@ -135,6 +143,8 @@ residuals.pense_fit <- function(object, lambda, exact = deprecated(), correction
 #' @param correction defunct.
 #' @param ... currently not used.
 #' @return a numeric vector of residuals for the given penalization level.
+#'
+#' @family functions for extracting components
 #'
 #' @example examples/residuals.R
 #' @export

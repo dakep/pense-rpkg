@@ -1,7 +1,7 @@
 ---
 output: github_document
 ---
-```{r setup, echo = FALSE}
+```{r setup, echo=FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = '#>')
 ```
 
@@ -9,7 +9,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = '#>')
 
 <!-- begin badges -->
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
-```{r, results='asis', eval=TRUE}
+```{r, results='asis', echo=FALSE, eval=TRUE}
 branch_name <- tryCatch(system('git rev-parse --abbrev-ref HEAD', intern = TRUE),
                         error = function (...) { return('master') },
                         warning = function (...) { return('master') })

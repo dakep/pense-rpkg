@@ -5,6 +5,9 @@ on:
 
 name: Render README
 
+env:
+  MAKE: "make -j 2"
+
 jobs:
   render:
     name: Render README

@@ -1,46 +1,60 @@
 language: r
 cache: packages
 r:
-  - release
-
+- release
 warnings_are_errors: true
 r_packages:
-  - pkgdown
+- pkgdown
+- rmarkdown
 
 env:
   global:
-    - MAKE="make -j 2"
+  - MAKE="make -j 2"
+  - GIT_BRANCH="${TRAVIS_BRANCH}"
+  - secure: RJgjQUwDMQSU+qlmP2XZTiS1bB0fj7cTMU7kEZ7IRiMlRasqk5waFg1x9ypV79/LGULvDxBUEc8bV7eEhDy3PfjS/GiedySQTY+hZArtk4QMNnRvsKgoib2RA275kLo3Yb7jc7YhMhoooOCLmKleRy5GT4yY0KX0/riBmF7ia7Sh1dd4BhD07ytHH5cIARxmqa7plyyx3NwZbEFQTAxdfIXROwDvlSiQWF5PoFMkBARGnhIpmF2TgLITgSKpYnAkthG1Bpyn4FJCtoxihXr0upFNeALsRKiLQ8fPaHcIsAdiOkhNKC/Aoo4I65Vrcu4FTIdywSfmTP18nTo4NK+UaN55pvjVBqb9gvpOPhZQPnNuetm43jz/SO4yQ/nL8iQNGSBpY0VBSC/HYibiEDIjZrfdXduW/e81gk7W974B1MoxDNN7BqpLRg+DXSVg1/Ua1uGzMON7rOpvUzQNDcMaFXRdN5DcFOeVJapcAxPxsK/TsDw7akuihYO7RJbn7fBjICLokwFviI664NDcnKQy9vPUn8igOWGg/8IgqVPS2VQd4jUTr1dM++EF3Q2kHOQaH3vwKZBDs7c6VGKrZvXAclkPl7Jdi9tSA4u7NLJOY18NLtL5oJlq1wX6F5j8LjaAzKUiYrRgKT+RiThzYtaiOfxQsXbqTsU1XPLEep3rjWk=
 
 branches:
   only:
-    - master
-    - /^release\/v?[\d\.]+$/
+  - master
+  - "/^release\\/v?[\\d\\.]+$/"
 
 stages:
- - name: check
-   if: commit_message != "Re-build README.Rmd"
- - name: extendedcheck
-   if: branch = master AND commit_message != "Re-build README.Rmd"
- - name: pkgdown
-   if: commit_message != "Re-build README.Rmd"
-   #if: branch = master AND commit_message != "Re-build README.Rmd"
+- name: check
+  if: commit_message != "Re-build README.Rmd"
+- name: extendedcheck
+  if: branch = master AND commit_message != "Re-build README.Rmd"
+- name: pkgdown
+  if: commit_message != "Re-build README.Rmd"
 
 jobs:
-  - stage: check
-  - stage: extendedcheck
-    name: R-devel
-    r: devel
-  - stage: extendedcheck
-    name: R-oldrel
-    r: oldrel
-  - stage: pkgdown
-    script: Rscript -e 'pkgdown::build_site()'
-    deploy:
-      edge: true
-      provider: pages
-      token:
-        secure: FlT61HEHPClWDHNdP0AVhXtaG/yw6ffaBQJxHTZRozss7lD3jho9Uew/lFKyrtYzSFI5h3hez32JO3gahnGvXtAQkVSeZoKYH6JiUm2EMuNUDkB9QmdGAxoF7o9aNSKUNSfYGDqc4+UlW7p+3C8uhdAC8FgH3jqUjCWFYLToN68ifPBNXMKODpJdBMcznXT5otIYI9RpM+Mu+F60pOZXgYQglo/VkCseyAY1sIL8jtbL7YhgzKUOJtlxLDVDslsXNRoUX7uUj02kp4D6kGz59bQMZfC1LM4RR9+JE1K0yTpVBBFgbG/UMVAi2f70vGqlFcMLvQE2ECrb9pHt/H7pM533cCEppq+Iao9DLJRueS1IafUvuuHMtZRixRe276dj1MNWRsRzItTlf1g/Oqh91jSRGOTm7dN6weW1IABmy8QeR76j9GGZX0MTYhIqpIAY+EWlET0/luINeXUNH7ld55dvPlGmdlOwVnzu7080Op0zqWW7F0FXVTOHVixyk6Rg3s5fqXH8AcI+meQ132OSxHqPwiAb54Z74KXfNd5lMp4uPLRLuR/9fgaBnvwp4SshSgILjD7Ryn4nNsVYpl4Me2aEAPGn3J8rPPGdaEPGyd0nJ5eDOLzm9YoFxvD5som+E9OZ7DU1wN/nBHQhHuGa0v3rqGUhjJzoVFJwaUD6gxk=
-      keep_history: true
-      local_dir: docs
-      on:
-        branch: true
+- stage: check
+  script:
+  - R CMD build .
+  - R CMD check *tar.gz
+  after_success:
+  - R CMD INSTALL *tar.gz
+  - Rscript -e 'rmarkdown::render("README.Rmd")'
+  - git config --local user.email "ci@travis-ci.com"
+  - git config --local user.name "Travis CI"
+  - git add README.md || echo "README.md not created"
+  - git commit README.md -m 'Re-build README.Rmd' || echo "No changes to README.md
+    to commit"
+  - git remote add originpush "https://${GITHUB_PAK}@github.com/${TRAVIS_REPO_SLUG}"
+    || echo "Cannot setup remote"
+  - git push --quiet --set-upstream originpush "${TRAVIS_BRANCH}" || echo "No changes to commit"
+- stage: extendedcheck
+  name: R-devel
+  r: devel
+- stage: extendedcheck
+  name: R-oldrel
+  r: oldrel
+- stage: pkgdown
+  script: Rscript -e 'pkgdown::build_site()'
+  deploy:
+    edge: true
+    provider: pages
+    token: ${GITHUB_PAK}
+    keep_history: true
+    local_dir: docs
+    on:
+      all_branches: true

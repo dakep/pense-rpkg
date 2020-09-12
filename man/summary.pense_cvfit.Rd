@@ -16,6 +16,8 @@
 value of the penalty parameter. See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
+
+\item{...}{ignored.}
 }
 \description{
 If \code{lambda = "se"} and \code{object} contains fitted estimates for every penalization level in the sequence, extract the

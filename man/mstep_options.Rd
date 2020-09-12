@@ -13,10 +13,24 @@ mstep_options(
   en_correction = TRUE
 )
 }
+\arguments{
+\item{cc}{\strong{ignored.} Tuning constant for the M-estimator.}
+
+\item{maxit}{maximum number of iterations allowed.}
+
+\item{eps}{\strong{ignored.} Numeric tolerance for convergence.}
+
+\item{adjust_bdp}{\strong{ignored.} Should the breakdown point be adjusted based on the
+effective degrees of freedom?}
+
+\item{verbosity}{\strong{ignored.} Verbosity of the algorithm.}
+
+\item{en_correction}{\strong{ignored.} Should the corrected EN estimator be used to choose
+the optimal lambda with CV.
+If \code{TRUE}, as by default, the estimator is "bias corrected".}
+}
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
-}
-\details{
 Superseded by \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} and options supplied directly to \code{\link[=pense]{pense()}}.
 }
 \seealso{

@@ -18,6 +18,26 @@ en_options_dal(
   verbosity = 0
 )
 }
+\arguments{
+\item{use_gram}{\strong{ignored.} Should the Gram matrix be pre-computed.}
+
+\item{eps}{\strong{ignored.} Numeric tolerance for convergence.}
+
+\item{maxit}{maximum number of iterations allowed.}
+
+\item{eta_mult}{multiplier to increase eta at each iteration.}
+
+\item{eta_start_numerator}{if \code{eta_start} is missing, it is defined
+by \code{eta_start = eta_start_numerator / lambda}.}
+
+\item{eta_start}{\strong{ignored.} The start value for eta.}
+
+\item{preconditioner}{\strong{ignored.} Preconditioner for the numerical solver. If none,
+a standard solver will be used, otherwise the faster preconditioned
+conjugate gradient is used.}
+
+\item{verbosity}{\strong{ignored.}}
+}
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
 }

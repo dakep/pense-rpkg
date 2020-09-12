@@ -18,10 +18,36 @@ initest_options(
   mscale_maxit = 200
 )
 }
+\arguments{
+\item{keep_solutions}{how many initial estimates should be kept to perform
+full PENSE iterations?}
+
+\item{psc_method}{The method to use for computing the principal sensitivity
+components. See details for the possible choices.}
+
+\item{maxit}{maximum number of refinement iterations.}
+
+\item{maxit_pense_refinement}{\strong{ignored.} Maximum number of PENSE iterations to refine
+initial estimator.}
+
+\item{eps}{\strong{ignored.} Numeric tolerance for convergence.}
+
+\item{psc_keep}{proportion of observations to keep based on the PSC scores.}
+
+\item{resid_keep_method}{How to clean the data based on large residuals.
+If \code{"proportion"}, observations with the smallest
+\code{resid_keep_prop} residuals will be retained.
+If \code{"threshold"}, all observations with scaled residuals smaller
+than the threshold \code{resid_keep_thresh} will be retained.}
+
+\item{resid_keep_prop, resid_keep_thresh}{proportion or threshold for
+observations to keep based on their residual.}
+
+\item{mscale_eps, mscale_maxit}{\strong{ignored.} Maximum number of iterations and numeric
+tolerance for the M-scale.}
+}
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
-}
-\details{
 Superseded by \code{\link[=enpy_options]{enpy_options()}}.
 }
 \seealso{

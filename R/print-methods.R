@@ -8,6 +8,7 @@
 #' @param lambda either a string specifying which penalty level to use (`"min"` or `"se"`) or a a single numeric
 #'    value of the penalty parameter. See details.
 #' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
+#' @param ... ignored.
 #'
 #' @family functions for plotting and printing
 #' @seealso [prediction_performance()] for information about the estimated prediction performance.

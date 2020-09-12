@@ -14,7 +14,7 @@
 ^rstudio\-build\.sh$
 ^man\-roxygen$
 ^.vscode$
-^.github$
+^\.github$
 ^.*autoconfig\.R$
 ^.*autoconfig\.hpp$
 ^\.travis\.yml$

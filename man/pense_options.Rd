@@ -15,10 +15,27 @@ pense_options(
   en_correction = TRUE
 )
 }
+\arguments{
+\item{delta}{desired breakdown point of the resulting estimator.}
+
+\item{maxit}{maximum number of iterations allowed.}
+
+\item{eps}{numeric tolerance for convergence.}
+
+\item{mscale_eps, mscale_maxit}{maximum number of iterations and numeric
+tolerance for the M-scale.}
+
+\item{verbosity}{\strong{ignored.} Verbosity of the algorithm.}
+
+\item{cc}{\strong{ignored.} Tuning constant for the S-estimator. Default is to chosen based
+on the breakdown point \code{delta}. Should never have to be changed.}
+
+\item{en_correction}{\strong{ignored.} Should the corrected EN estimator be used to choose
+the optimal lambda with CV.
+If \code{TRUE}, as by default, the estimator is "bias corrected".}
+}
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
-}
-\details{
 Superseded by \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} and options supplied directly to \code{\link[=pense]{pense()}}.
 }
 \seealso{

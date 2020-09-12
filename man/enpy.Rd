@@ -6,10 +6,29 @@
 \usage{
 enpy(x, y, alpha, lambda, delta, cc, options, en_options)
 }
+\arguments{
+\item{x}{data matrix with predictors.}
+
+\item{y}{response vector.}
+
+\item{alpha, lambda}{EN penalty parameters (NOT adjusted for the number of
+observations in \code{x}).}
+
+\item{delta}{desired breakdown point of the resulting estimator.}
+
+\item{cc}{tuning constant for the S-estimator. Default is to chosen based
+on the breakdown point \code{delta}. Should never have to be changed.}
+
+\item{options}{\strong{ignored.} Additional options for the initial estimator.}
+
+\item{en_options}{\strong{ignored.} Additional options for the EN algorithm.}
+}
+\value{
+\item{coeff}{A numeric matrix with one initial coefficient per column}
+\item{objF}{A vector of values of the objective function for the respective coefficient}
+}
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
-}
-\details{
 Superseded by \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}}.
 }
 \seealso{

@@ -18,12 +18,12 @@ branches:
 
 stages:
  - name: check
-   if: commit_message =~ /README\.Rmd/
+   if: commit_message != "Re-build README.Rmd"
  - name: extendedcheck
-   if: branch = master AND commit_message =~ /README\.Rmd/
+   if: branch = master AND commit_message != "Re-build README.Rmd"
  - name: pkgdown
-   if: commit_message =~ /README\.Rmd/
-   #if: branch = master commit_message =~ /README\.Rmd/
+   if: commit_message != "Re-build README.Rmd"
+   #if: branch = master AND commit_message != "Re-build README.Rmd"
 
 jobs:
   - stage: check

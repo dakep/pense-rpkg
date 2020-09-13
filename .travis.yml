@@ -45,10 +45,10 @@ jobs:
   - Rscript -e 'rmarkdown::render("README.Rmd"); pkgdown::build_site()'
   - git config --local user.email "ci@travis-ci.com"
   - git config --local user.name "Travis CI"
-  - git add README.md
-  - git commit README.md -m 'Re-build README.Rmd'
+  - git add README.md || echo "Nothing added"
+  - git commit README.md -m 'Re-build README.Rmd' || echo "No changes to commit"
   - git remote add originpush "https://${GITHUB_PAK}@github.com/${TRAVIS_REPO_SLUG}"
-  - git push --set-upstream originpush ${TRAVIS_BRANCH}
+  - git push --set-upstream originpush ${TRAVIS_BRANCH} || echo "No changes to push"
   deploy:
     edge: true
     provider: pages

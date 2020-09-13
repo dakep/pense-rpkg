@@ -72,29 +72,7 @@
 <a href="#pense-r-package" class="anchor"></a>pense R package</h1></div>
 <!-- begin badges -->
 
-<div class="sourceCode" id="cb1"><pre class="downlit">
-<span class="kw">github_ref</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/Sys.getenv.html">Sys.getenv</a></span>(<span class="st">'GITHUB_REF'</span>, <span class="st">''</span>)
-<span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="st">"&lt;!-- github ref:"</span>, <span class="kw">github_ref</span>, <span class="st">"--&gt;\n"</span>)
-</pre></div>
-<!-- github ref: refs/heads/release/2.0 -->
-<div class="sourceCode" id="cb2"><pre class="downlit">
-<span class="kw">branch_name</span> <span class="op">&lt;-</span> <span class="co">if</span> (<span class="fu"><a href="https://rdrr.io/r/base/Logic.html">isTRUE</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span>(<span class="kw">github_ref</span>, <span class="fl">1</span>, <span class="fl">11</span>) <span class="op">==</span> <span class="st">'refs/heads/'</span>)) {
-  <span class="fu"><a href="https://rdrr.io/r/base/substr.html">substr</a></span>(<span class="kw">github_ref</span>, <span class="fl">12</span>, <span class="fu"><a href="https://rdrr.io/r/base/nchar.html">nchar</a></span>(<span class="kw">github_ref</span>))
-} <span class="co">else</span> {
-  <span class="fu"><a href="https://rdrr.io/r/base/conditions.html">tryCatch</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/system.html">system</a></span>(<span class="st">'git rev-parse --abbrev-ref HEAD'</span>, intern = <span class="fl">TRUE</span>),
-           error = <span class="fu">function</span> (<span class="kw">e</span>) { <span class="fu"><a href="https://rdrr.io/r/base/warning.html">warning</a></span>(<span class="st">"error: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="kw">e</span>));  <span class="fu"><a href="https://rdrr.io/r/base/function.html">return</a></span>(<span class="st">'master'</span>) },
-           warning = <span class="fu">function</span> (<span class="kw">w</span>) { <span class="fu"><a href="https://rdrr.io/r/base/warning.html">warning</a></span>(<span class="st">"warning: "</span>, <span class="fu"><a href="https://rdrr.io/r/base/character.html">as.character</a></span>(<span class="kw">w</span>)); <span class="fu"><a href="https://rdrr.io/r/base/function.html">return</a></span>(<span class="st">'master'</span>) })
-}
-<span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="st">"&lt;!-- branch name:"</span>, <span class="kw">branch_name</span>, <span class="st">"--&gt;\n"</span>)
-</pre></div>
-<!-- branch name: release/2.0 -->
-<div class="sourceCode" id="cb3"><pre class="downlit">
-                        
-<span class="fu"><a href="https://rdrr.io/r/base/cat.html">cat</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/sprintf.html">sprintf</a></span>(<span class="st">'[![Build Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=master)](https://travis-ci.com/dakep/pense-rpkg)'</span>,
-            <span class="kw">branch_name</span>))
-</pre></div>
-<p><a href="https://travis-ci.com/dakep/pense-rpkg"><img src="https://travis-ci.com/dakep/pense-rpkg.svg?branch=master" alt="Build Status"></a> <!-- end badges --></p>
-<p>This R package implements the penalized elastic net S-estimator (PENSE) and the penalized M-step (PENSEM) as proposed in <a href="https://projecteuclid.org/euclid.aoas/1574910036">Cohen Freue, et al. (2019)</a> as well as the adaptive extensions developed in <a href="https://hdl.handle.net/2429/75637">Kepplinger (2020)</a>.</p>
+<p>This R package implements the penalized elastic net S-estimator (PENSE) and the penalized M-step (PENSEM) as proposed in <a href="https://projecteuclid.org/euclid.aoas/1574910036">Cohen Freue, et al. (2019)</a> as well as the adaptive extensions developed in <a href="https://hdl.handle.net/2429/75637">Kepplinger (2020)</a>.</p>
 <div id="usage" class="section level2">
 <h2 class="hasAnchor">
 <a href="#usage" class="anchor"></a>Usage</h2>
@@ -102,7 +80,7 @@
 <div id="example" class="section level3">
 <h3 class="hasAnchor">
 <a href="#example" class="anchor"></a>Example</h3>
-<div class="sourceCode" id="cb4"><pre class="downlit">
+<div class="sourceCode" id="cb1"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw"><a href="https://gitlab.math.ubc.ca/dakep/pense">pense</a></span>)
 
 <span class="co"># Generate dummy data with n=50 observations and p=25 possible predictors</span>
@@ -139,7 +117,7 @@
 <a href="#using-a-parallel-cluster" class="anchor"></a>Using a parallel cluster</h3>
 <p>The cross-validation functions in the pense package (those ending in <code>_cv()</code>) also accept a parallel cluster instead of the <code>ncores=</code> argument. Setting the seed ensures the results are reproducible and the same as if not using a cluster!</p>
 <p>Continuing the example above, this could look like</p>
-<div class="sourceCode" id="cb5"><pre class="downlit">
+<div class="sourceCode" id="cb2"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">parallel</span>)
 
 <span class="co"># Set up the cluster using 3 CPUs on the local machine:</span>
@@ -158,11 +136,11 @@
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
 <p>To install the latest release from CRAN, run the following R code in the R console:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit">
+<div class="sourceCode" id="cb3"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"pense"</span>)
 </pre></div>
 <p>The most recent stable version as well as the developing version might not yet be available on CRAN. These can be directly installed from github using the <a href="https://cran.r-project.org/package=devtools">devtools</a> package:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit">
+<div class="sourceCode" id="cb4"><pre class="downlit">
 <span class="co"># Install the most recent stable version:</span>
 <span class="kw">devtools</span>::<span class="fu">install_github</span>(<span class="st">"dakep/pense-rpkg"</span>)
 <span class="co"># Install the (unstable) develop version:</span>
@@ -211,6 +189,7 @@
 <h2>Dev status</h2>
 <ul class="list-unstyled">
 <li><a href="https://CRAN.R-project.org/package=pense"><img src="https://www.r-pkg.org/badges/version/pense" alt="CRAN_Status_Badge"></a></li>
+<li><a href="https://travis-ci.com/dakep/pense-rpkg"><img src="https://travis-ci.com/dakep/pense-rpkg.svg?branch=release/2.0" alt="Build Status"></a></li>
 </ul>
 </div>
 </div>

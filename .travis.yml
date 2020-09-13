@@ -32,16 +32,16 @@ jobs:
   - R CMD build .
   - R CMD check *tar.gz
   after_success:
-  - R CMD INSTALL *tar.gz
+  - R CMD INSTALL *.Rcheck/00_pkg_src/*
   - Rscript -e 'rmarkdown::render("README.Rmd")'
   - git config --local user.email "ci@travis-ci.com"
   - git config --local user.name "Travis CI"
-  - git add README.md || echo "README.md not created"
-  - git commit README.md -m 'Re-build README.Rmd' || echo "No changes to README.md
-    to commit"
+  - git pull
+  - git checkout ${TRAVIS_BRANCH}
+  - git add README.md
+  - git commit README.md -m 'Re-build README.Rmd'
   - git remote add originpush "https://${GITHUB_PAK}@github.com/${TRAVIS_REPO_SLUG}"
-    || echo "Cannot setup remote"
-  - git push --quiet --set-upstream originpush "${TRAVIS_BRANCH}" || echo "No changes to commit"
+  - git push --set-upstream originpush ${TRAVIS_BRANCH}
 - stage: extendedcheck
   name: R-devel
   r: devel

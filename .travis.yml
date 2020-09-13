@@ -39,7 +39,7 @@ jobs:
   r: oldrel
 - stage: Deploy
   script:
-  - R CMD INSTALL *.Rcheck/00_pkg_src/*
+  - R CMD INSTALL .
   - git pull
   - git checkout ${TRAVIS_BRANCH}
   - Rscript -e 'rmarkdown::render("README.Rmd"); pkgdown::build_site()'

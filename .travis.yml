@@ -24,13 +24,10 @@ stages:
 - name: "Extended checks"
   if: branch = master AND commit_message != "Re-build README.Rmd"
 - name: Deploy
-  if: commit_message != "Re-build README.Rmd"
+  if: branch = master AND commit_message != "Re-build README.Rmd"
 
 jobs:
 - stage: Check
-  script:
-  - R CMD build .
-  - R CMD check *tar.gz
 - stage: "Extended checks"
   name: R-devel
   r: devel

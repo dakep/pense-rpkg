@@ -6,7 +6,7 @@ Date: 2020-09-08
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),
-    person("Matias", "Salibián-Barrera", role = c("aut")),
+    person("Matías", "Salibián-Barrera", role = c("aut")),
     person("Gabriela", "Cohen Freue", role = "aut")
     )
 Copyright: See the file COPYRIGHT for copyright details on some of the
@@ -14,8 +14,9 @@ Copyright: See the file COPYRIGHT for copyright details on some of the
 Encoding: UTF-8
 Biarch: true
 SystemRequirements: C++11
-URL: https://gitlab.math.ubc.ca/dakep/pense
-BugReports: https://gitlab.math.ubc.ca/dakep/pense/issues
+URL: https://dakep.github.io/pense-rpkg,
+    https://github.com/dakep/pense-rpkg
+BugReports: https://github.com/dakep/pense-rpkg/issues
 Description: Robust penalized (adaptive) elastic net S and M estimators for
     linear regression. The methods are proposed in
     Cohen Freue, G. V., Kepplinger, D., Salibián-Barrera, M., and Smucler, E.

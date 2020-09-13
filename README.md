@@ -4,7 +4,7 @@
 <!-- begin badges -->
 
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
-<!-- branch name from env: release/2.0 --> [![Build
+[![Build
 Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=release/2.0)](https://travis-ci.com/dakep/pense-rpkg)
 <!-- end badges -->
 

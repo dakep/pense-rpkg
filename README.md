@@ -4,41 +4,14 @@
 <!-- begin badges -->
 
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
-
-``` r
-github_ref <- Sys.getenv('GITHUB_REF', '')
-cat("<!-- github ref:", github_ref, "-->\n")
-```
-
-<!-- github ref: refs/heads/release/2.0 -->
-
-``` r
-branch_name <- if (isTRUE(substr(github_ref, 1, 11) == 'refs/heads/')) {
-  substr(github_ref, 12, nchar(github_ref))
-} else {
-  tryCatch(system('git rev-parse --abbrev-ref HEAD', intern = TRUE),
-           error = function (e) { warning("error: ", as.character(e));  return('master') },
-           warning = function (w) { warning("warning: ", as.character(w)); return('master') })
-}
-cat("<!-- branch name:", branch_name, "-->\n")
-```
-
-<!-- branch name: release/2.0 -->
-
-``` r
-                        
-cat(sprintf('[![Build Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=master)](https://travis-ci.com/dakep/pense-rpkg)',
-            branch_name))
-```
-
-[![Build
-Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=master)](https://travis-ci.com/dakep/pense-rpkg)
+<!-- branch name from env: release/2.0 --> [![Build
+Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=release/2.0)](https://travis-ci.com/dakep/pense-rpkg)
 <!-- end badges -->
 
 This R package implements the penalized elastic net S-estimator (PENSE)
-and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et
-al. (2019)](https://projecteuclid.org/euclid.aoas/1574910036) as well
-as the adaptive extensions developed in [Kepplinger
+and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et al.
+(2019)](https://projecteuclid.org/euclid.aoas/1574910036) as well as the
+adaptive extensions developed in [Kepplinger
 (2020)](https://hdl.handle.net/2429/75637).
 
 ## Usage

@@ -19,37 +19,36 @@ branches:
   - "/^release\\/v?[\\d\\.]+$/"
 
 stages:
-- name: check
+- name: Check
   if: commit_message != "Re-build README.Rmd"
-- name: extendedcheck
+- name: "Extended checks"
   if: branch = master AND commit_message != "Re-build README.Rmd"
-- name: pkgdown
+- name: Deploy
   if: commit_message != "Re-build README.Rmd"
 
 jobs:
-- stage: check
+- stage: Check
   script:
   - R CMD build .
   - R CMD check *tar.gz
-  after_success:
+- stage: "Extended checks"
+  name: R-devel
+  r: devel
+- stage: "Extended checks"
+  name: R-oldrel
+  r: oldrel
+- stage: Deploy
+  script:
   - R CMD INSTALL *.Rcheck/00_pkg_src/*
-  - Rscript -e 'rmarkdown::render("README.Rmd")'
-  - git config --local user.email "ci@travis-ci.com"
-  - git config --local user.name "Travis CI"
   - git pull
   - git checkout ${TRAVIS_BRANCH}
+  - Rscript -e 'rmarkdown::render("README.Rmd"); pkgdown::build_site()'
+  - git config --local user.email "ci@travis-ci.com"
+  - git config --local user.name "Travis CI"
   - git add README.md
   - git commit README.md -m 'Re-build README.Rmd'
   - git remote add originpush "https://${GITHUB_PAK}@github.com/${TRAVIS_REPO_SLUG}"
   - git push --set-upstream originpush ${TRAVIS_BRANCH}
-- stage: extendedcheck
-  name: R-devel
-  r: devel
-- stage: extendedcheck
-  name: R-oldrel
-  r: oldrel
-- stage: pkgdown
-  script: Rscript -e 'pkgdown::build_site()'
   deploy:
     edge: true
     provider: pages

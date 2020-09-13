@@ -11,7 +11,6 @@ knitr::opts_chunk$set(collapse = TRUE, comment = '#>')
 [![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
 ```{r, results='asis', echo=FALSE, eval=TRUE}
 branch_name <- Sys.getenv('GIT_BRANCH', '')
-cat("<!-- branch name from env:", branch_name, "-->\n")
 if (nchar(branch_name) == 0L) {
   branch_name <- tryCatch(system('git rev-parse --abbrev-ref HEAD', intern = TRUE),
                           error = function (e) { warning("error: ", as.character(e));  return('master') },

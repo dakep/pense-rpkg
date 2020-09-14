@@ -1,18 +1,25 @@
-Update autoconf script to work with r-devel and fix LTO warnings in CRAN checks.
+- Update to remove the use of `:::` to access internal functions.
+- Major refactoring of code and new functionality.
+- Fixes the segfault error on Solaris.
 
 ## Test environments
-
-* local OS X 10.14.6, R 3.6.1
+* local OS X 10.15.6, R version 4.0.2 Patched
 * win-builder (devel and release)
+* Travis
+  * Ubuntu 16.04.7 LTS, R-oldrel
+  * Ubuntu 16.04.7 LTS, R-release
+  * Ubuntu 16.04.7 LTS, R-devel
 * Rhub
-  * Debian Linux, R-release, GCC
+  * Ubuntu Linux 16.04 LTS, R-devel with rchk
   * Debian Linux, R-devel, GCC ASAN/UBSAN
-  * Fedora Linux, R-devel, GCC
-  * Fedora Linux, R-devel, clang, gfortran
+  * Fedora Linux, R-devel, clang, gfortran (with VALGRIND)
+  * Oracle Solaris 10, x86, 32 bit, R-release
   * Windows Server 2008 R2 SP1, R-oldrel, 32/64 bit
   * Windows Server 2008 R2 SP1, R-patched, 32/64 bit
-  * Windows Server 2008 R2 SP1, R-devel, 32/64 bit
+## R CMD check results
 
-0 ERRORs | 0 WARNINGs | 1 NOTE.
+0 ERRORs | 0 WARNINGs | 1 NOTEs.
 
-* on some systems the size of the shared library is > 5MB.
+> installed size is > 5MB
+
+The package uses heavily-templated code (both internal and from RcppArmadillo), bloating the size of the library.

@@ -7,7 +7,12 @@ bundle
 autoconfig.h
 Makevars
 config.log
+docs
 config.status
 .Rproj.user
 *.Rproj
-.Rbuildignore
+rstudio-build.sh
+run-checks
+.vscode
+autoconfig.R
+autoconfig.hpp

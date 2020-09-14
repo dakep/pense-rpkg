@@ -1,45 +1,114 @@
-# PENSE R package
-This R package implements the Penalized Elastic Net S-Estimator (PENSE) and MM-estimator (PENSEM)
-for linear regression.
 
-## Overview
-The main functions in the package are
-* `pense()` … to compute a robust elastic net S-estimator for linear regression
-* `pensem()` … to compute a robust elastic net MM-estimator either directly from the data matrix or
-    from an S-estimator previously computed with `pense()`.
+# pense R package
 
-Both of these functions perform k-fold cross-validation to choose the optimal penalty level
-`lambda`, but the optimal balance between the L1 and the L2 penalties (the `alpha` parameter) needs
-to be pre-specified by the user.
+<!-- begin badges -->
 
-The default breakdown point is set to 25%. If the user needs an estimator with a higher breakdown
-point, the `delta` argument in the `pense_options()` and `initest_options()` can be set to the
-desired breakdown point (.e.g, `delta = 0.5`).
+[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
+[![Build
+Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=release/2.0)](https://travis-ci.com/dakep/pense-rpkg)
+<!-- end badges -->
 
-The package also exports an efficient classical elastic net algorithm available via the functions
-`elnet()` and `elnet_cv()` which chooses an optimal penalty parameter based on cross-validation.
-The elastic net solution is computed either by the augmented LARS algorithm
-(`en_options_aug_lars()`) or via the Dual Augmented Lagrangian algorithm (Tomioka, et al. 2011)
-selected with `en_options_dal()` which is much faster in case of a large number of predictors
-(> 500) and a small number of observations (< 200).
+This R package implements the penalized elastic net S-estimator (PENSE)
+and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et al.
+(2019)](https://projecteuclid.org/euclid.aoas/1574910036) as well as the
+adaptive extensions developed in [Kepplinger
+(2020)](https://hdl.handle.net/2429/75637).
+
+## Usage
+
+The main function for most users is `adapense_cv()`, which computes an
+adaptive PENSE fit and estimates prediction performance for many values
+of the penalization level.
+
+### Example
+
+``` r
+library(pense)
+
+# Generate dummy data with n=50 observations and p=25 possible predictors
+# (of which only the first 3 are truly relevant).
+n <- 50
+p <- 25
+set.seed(123)
+x <- matrix(rt(n * p, df = 5), ncol = p)
+y <- x[, 1] + 0.5 * x[, 2] + 2 * x[, 3] + rt(n, df = 2)
+
+# Compute an adaptive PENSE fit with hyper-parameters alpha=0.8, exponent=2,
+# and 50 different values for the penalization level.
+# Prediction performance of the 50 fits for different penalization levels
+# is estimated with 5-fold cross-validation,
+# repeated 10 times (the more the better!).
+# On selected platforms use 2 CPU cores.
+set.seed(123) # Setting the seed is suggested for reproducibility of the CV results.
+fit <- adapense_cv(x, y, alpha = 0.9, cv_k = 5, cv_repl = 10, ncores = 2)
+
+# Visualize the estimated prediction performance using plot()
+plot(fit)
+
+# Summarize the model with best prediction performance using summary()
+summary(fit)
+
+# Summarize the model with "almost as-good prediction performance" as the best
+# model using summary(lambda = "se")
+summary(fit, lambda = "se")
+```
+
+The user can also compute a non-adaptive PENSE fit by using `pense_cv()`
+in place of `adapense_cv()` or a PENSEM fit by using `pensem_cv()`.
+
+### Using a parallel cluster
+
+The cross-validation functions in the pense package (those ending in
+`_cv()`) also accept a parallel cluster instead of the `ncores=`
+argument. Setting the seed ensures the results are reproducible and the
+same as if not using a cluster\!
+
+Continuing the example above, this could look like
+
+``` r
+library(parallel)
+
+# Set up the cluster using 3 CPUs on the local machine:
+par_clust <- makeCluster(3)
+
+set.seed(123) # Setting the seed is suggested for reproducibility of the CV results.
+fit_with_cluster <- adapense_cv(x, y, alpha = 0.9, cv_k = 5, cv_repl = 10,
+                                cl = par_clust)
+
+stopCluster(par_clust)
+```
+
+Note that the `cl=` argument cannot be mixed with the `ncores=`
+argument. Only one of them can be specified\!
 
 ## Installation
-To install the latest release from CRAN, run the following R code in the R console:
-```r
+
+To install the latest release from CRAN, run the following R code in the
+R console:
+
+``` r
 install.packages("pense")
 ```
 
-The most recent stable version as well as the developing version might not yet be available on
-CRAN. These can be directly installed from github using the
-[devtools](https://cran.r-project.org/package=devtools) package:
-```r
+The most recent stable version as well as the developing version might
+not yet be available on CRAN. These can be directly installed from
+github using the [devtools](https://cran.r-project.org/package=devtools)
+package:
+
+``` r
 # Install the most recent stable version:
-install_github("dakep/pense-rpkg")
+devtools::install_github("dakep/pense-rpkg")
 # Install the (unstable) develop version:
-install_github("dakep/pense-rpkg", ref = "develop")
+devtools::install_github("dakep/pense-rpkg", ref = "develop")
 ```
 
-
 ## References
-Tomioka, R., Suzuki, T., and Sugiyama, M. (2011). Super-linear convergence of dual augmented lagrangian
-algorithm for sparsity regularized estimation. _The Journal of Machine Learning Research_, **12**:1537–1586.
+
+  - Kepplinger, D. (2020). *Robust estimation and variable selection in
+    high-dimensional linear regression models.* University of British
+    Columbia. [available online](https://hdl.handle.net/2429/75637).
+  - Cohen Freue, GV. Kepplinger D, Salibián-Barrera M, Smucler E.
+    (2019). Robust elastic net estimators for variable selection and
+    identification of proteomic biomarkers. *Annals of Applied
+    Statistics*. 13(4). [available
+    online](https://projecteuclid.org/euclid.aoas/1574910036).

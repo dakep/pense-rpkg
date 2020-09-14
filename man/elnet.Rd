@@ -2,187 +2,135 @@
 % Please edit documentation in R/elnet.R
 \name{elnet}
 \alias{elnet}
-\title{Elastic Net Estimator for Regression}
+\alias{adaelnet}
+\alias{adaen}
+\title{Compute the Least Squares (Adaptive) Elastic Net Regularization Path}
 \usage{
 elnet(
   x,
   y,
   alpha,
   nlambda = 100,
+  lambda_min_ratio,
   lambda,
+  penalty_loadings,
   weights,
   intercept = TRUE,
-  options = en_options_aug_lars(),
-  lambda_min_ratio,
-  xtest,
-  correction = TRUE
+  en_algorithm_opts,
+  sparse = FALSE,
+  eps = 1e-06,
+  standardize = TRUE,
+  correction = deprecated(),
+  xtest = deprecated(),
+  options = deprecated()
 )
 }
 \arguments{
-\item{x}{data matrix with predictors}
+\item{x}{\code{n} by \code{p} matrix of numeric predictors.}
 
-\item{y}{response vector}
+\item{y}{vector of response values of length \code{n}.}
 
-\item{alpha}{controls the balance between the L1 and the L2 penalty.
-\code{alpha = 0} is the ridge (L2) penalty, \code{alpha = 1} is
-the lasso.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
+and \code{alpha = 0} the Ridge penalty.}
 
-\item{nlambda}{size of the lambda grid if \code{lambda} is not specified.}
+\item{nlambda}{number of penalization levels.}
 
-\item{lambda}{a grid of decreasing lambda values.}
+\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
+smallest value for which all coefficients are zero). The default depends on the sample
+size relative to the number of variables and \code{alpha}. If more observations than variables
+are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
 
-\item{weights}{an optional vector of weights to be used in the fitting
-process. Should be \code{NULL} or a numeric vector. If non-NULL,
-weighted EN is used with weights \code{weights}. See also 'Details'.}
+\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
+\code{lambda_min_ratio} are ignored.}
 
-\item{intercept}{should an intercept be estimated?}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
+coefficient.}
 
-\item{options}{additional options for the EN algorithm. See
-\code{\link{en_options}} for details.}
+\item{weights}{a vector of positive observation weights.}
 
-\item{lambda_min_ratio}{if the lambda grid should be automatically defined,
-the ratio of the smallest to the largest lambda value in the grid. The
-default is \code{1e-6} if $n < p$, and
-\code{1e-5 * 10^floor(log10(p / n))} otherwise.}
+\item{intercept}{include an intercept in the model.}
 
-\item{xtest}{data matrix with predictors used for prediction. This is useful
-for testing the prediction performance on an independent test set.}
+\item{en_algorithm_opts}{options for the EN algorithm. See \link{en_algorithm_options}
+for details.}
 
-\item{correction}{should the "corrected" EN estimator be returned.
-If \code{TRUE}, as by default, the corrected estimator as defined in
-Zou & Hastie (2005) is returned.}
+\item{sparse}{use sparse coefficient vectors.}
+
+\item{eps}{numerical tolerance.}
+
+\item{standardize}{standardize variables to have unit variance. Coefficients are always returned in original scale.}
+
+\item{correction}{defunct. Correction for EN estimates is not supported anymore.}
+
+\item{xtest}{deprecated. Instead, extract coefficients with \code{\link[=coef.pense_fit]{coef.pense_fit()}} and compute predictions manually.}
+
+\item{options}{deprecated. Use \code{en_algorithm_opts} instead.}
 }
 \value{
-\item{lambda}{vector of lambda values.}
- \item{status}{integer specifying the exit status of the EN algorithm.}
- \item{message}{explanation of the exit status.}
- \item{coefficients}{matrix of regression coefficients. Each
-     column corresponds to the estimate for the lambda value at the same
-     index.}
- \item{residuals}{matrix of residuals. Each column corresponds to the
-     residuals for the lambda value at the same index.}
- \item{predictions}{if \code{xtest} was given, matrix of predicted values.
-     Each column corresponds to the predictions for the lambda value at the
-     same index.}
+a list-like object with the following items
+\describe{
+\item{\code{lambda}}{the sequence of penalization parameters.}
+\item{\code{estimates}}{a list of estimates. Each estimate contains the following information:
+\describe{
+\item{\code{intercept}}{intercept estimate.}
+\item{\code{beta}}{beta (slope) estimate.}
+\item{\code{lambda}}{penalization level at which the estimate is computed.}
+\item{\code{alpha}}{\emph{alpha} hyper-parameter at which the estimate is computed.}
+\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when computing the estimate.}
+\item{\code{status}}{optional status message from the algorithm.}
+}
+}
+\item{\code{call}}{the original call.}
+\item{\code{predictions}}{if \code{xtest} was given, a matrix of predicted values. Each column corresponds to the
+predictions from the estimate at the \code{lambda} value at the same index.}
+}
 }
 \description{
-Estimate the elastic net regression coefficients.
+Compute least squares EN estimates for linear regression with optional observation
+weights and penalty loadings.
 }
 \details{
-This solves the minimization problem
-\deqn{\frac{1}{2 N} RSS + \lambda \left(
-        \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
- \right)}{
-     (1/2N) RSS + \lambda * (
-         (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
- )}
+The elastic net estimator for the linear regression model solves
+the optimization problem
 
-If weights are supplied, the minimization problem becomes
-\deqn{\frac{1}{2 N} \sum_{i = 1}^n w_i r_i^2 + \lambda \left(
-        \frac{(1 - \alpha)} {2} \| \beta \|_2^2 + \alpha \| \beta \|_1
-  \right)}{
-     (1/2N) \sum(w * (y - r^2)) + \lambda * (
-         (1 - \alpha) / 2 * L2(\beta)^2 + \alpha * L1(\beta)
-  )}
+\deqn{argmin_{\mu, \beta}
+  (1/2n) \sum_i w_i (y_i - \mu - x_i' \beta)^2 +
+  \lambda \sum_j 0.5 (1 - \alpha) \beta_j^2 + \alpha l_j |\beta_j|  }
+
+with observation weights \eqn{w_i} and penalty loadings \eqn{l_j}.
 }
-\section{Algorithms}{
-
-Currently this function can compute the elastic net estimator using either
-augmented LARS or the Dual Augmented Lagrangian (DAL) algorithm
-(Tomioka 2011).
-Augmented LARS performs LASSO via the LARS algorithm (or OLS if
-\code{alpha = 0}) on the data matrix augmented with the L2 penalty term.
-The time complexity of this algorithm increases fast with an increasing
-number of predictors. The algorithm currently can not leverage a previous or
-an approximate solution to speed up computations. However, it is always
-guaranteed to find the solution.
-
-DAL is an iterative algorithm directly minimizing the Elastic Net objective.
-The algorithm can take an approximate solution to the problem to speed
-up convergence. In the case of very small lambda values and a bad starting
-point, DAL may not converge to the solution and hence give wrong
-results. This would be indicated in the returned status code. Time complexity
-of this algorithm is dominated by the number of observations.
-
-DAL is much faster for a small number of observations (< 200) and a large
-number of predictors, especially if an approximate solution is available.
-}
-
 \examples{
-# Generate some dummy data
-set.seed(12345)
-n <- 30
-p <- 15
-x <- 1 + matrix(rnorm(n * p), ncol = p)
-y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+# Compute the LS-EN regularization path for Freeny's revenue data
+# (see ?freeny)
+data(freeny)
+x <- as.matrix(freeny[ , 2:5])
 
-x_test <- matrix(rnorm(10 * n * p), ncol = p)
-y_test <- drop(x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n))
+regpath <- elnet(x, freeny$y, alpha = 0.75)
+plot(regpath)
 
-# Compute the classical EN with predictions for x_test
-set.seed(1234)
-est <- elnet(
-    x, y,
-    alpha = 0.6,
-    nlambda = 100,
-    xtest = x_test
-)
+# Extract the coefficients at a certain penalization level
+coef(regpath, lambda = regpath$lambda[5])
 
-# Plot the RMSPE computed from the given test set
-rmspe_test <- sqrt(colMeans((y_test - est$predictions)^2))
-plot(est$lambda, rmspe_test, log = "x")
+# What penalization level leads to good prediction performance?
+cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 10,
+                       cv_k = 4, cv_measure = 'tau')
+plot(cv_results, se_mult = 1)
+plot(cv_results, se_mult = 1, what = 'coef.path')
 
-##
-## For large data sets, the DAL algorithm is much faster
-##
-set.seed(12345)
-n <- 100
-p <- 1500
-x <- 1 + matrix(rnorm(n * p), ncol = p)
-y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
-
-x_test <- matrix(rnorm(10 * n * p), ncol = p)
-y_test <- drop(x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n))
-
-# The DAL algorithm takes ~1.5 seconds to compute the solution path
-set.seed(1234)
-system.time(
-    est_dal <- elnet(
-        x, y,
-        alpha = 0.6,
-        nlambda = 100,
-        options = en_options_dal(),
-        xtest = x_test
-    )
-)
-
-\donttest{
-# In comparison, the augmented LARS algorithm can take several minutes
-set.seed(1234)
-system.time(
-    est_auglars <- elnet(
-        x, y,
-        alpha = 0.6,
-        nlambda = 100,
-        options = en_options_aug_lars(),
-        xtest = x_test
-    )
-)
-}
-}
-\references{
-Tomioka, R., Suzuki, T. and Sugiyama, M. (2011).
-    Super-Linear Convergence of Dual Augmented Lagrangian Algorithm
-    for Sparse Learning.
-    \emph{Journal of Machine Learning Research}
-    \bold{12}(May):1537-1586.
-
-Zou, H. and Hastie, T. (2005).
-    Regularization and variable selection via the elastic net.
-    \emph{Journal of the Royal Statistical Society}.
-    Series B (Statistical Methodology), \bold{67}(2):301-320.
+# Extract the coefficients at the penalization level with
+# smallest prediction error ...
+coef(cv_results)
+# ... or at the penalization level with prediction error
+# statistically indistinguishable from the minimum.
+coef(cv_results, lambda = 'se')
 }
 \seealso{
-\code{\link{elnet_cv}} for automatic selection of the penalty
-     parameter based on the cross-validated prediction error.
+\code{\link[=pense]{pense()}} for an S-estimate of regression with elastic net penalty.
+
+\code{\link[=coef.pense_fit]{coef.pense_fit()}} for extracting coefficient estimates.
+
+\code{\link[=plot.pense_fit]{plot.pense_fit()}} for plotting the regularization path.
+
+Other functions for computing non-robust estimates: 
+\code{\link{elnet_cv}()}
 }
+\concept{functions for computing non-robust estimates}

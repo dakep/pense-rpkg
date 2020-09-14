@@ -2,104 +2,126 @@
 % Please edit documentation in R/elnet.R
 \name{elnet_cv}
 \alias{elnet_cv}
-\title{Cross-validate Elastic Net}
+\title{Cross-validation for Least-Squares (Adaptive) Elastic Net Estimates}
 \usage{
 elnet_cv(
   x,
   y,
-  alpha,
-  nlambda = 100,
   lambda,
-  weights,
-  intercept = TRUE,
-  cv_k = 10,
-  cv_measure,
-  ncores = getOption("mc.cores", 1L),
+  cv_k,
+  cv_repl = 1,
+  cv_metric = c("rmspe", "tau_size", "mape"),
+  fit_all = TRUE,
   cl = NULL,
-  options = en_options_aug_lars(),
-  lambda_min_ratio,
+  ncores = deprecated(),
   ...
 )
 }
 \arguments{
-\item{x}{data matrix with predictors}
+\item{x}{\code{n} by \code{p} matrix of numeric predictors.}
 
-\item{y}{response vector}
+\item{y}{vector of response values of length \code{n}.}
 
-\item{alpha}{controls the balance between the L1 and the L2 penalty.
-\code{alpha = 0} is the ridge (L2) penalty, \code{alpha = 1} is
-the lasso.}
+\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
+\code{lambda_min_ratio} are ignored.}
 
-\item{nlambda}{size of the lambda grid if \code{lambda} is not specified.}
+\item{cv_k}{number of folds per cross-validation.}
 
-\item{lambda}{a grid of decreasing lambda values.}
+\item{cv_repl}{number of cross-validation replications.}
 
-\item{weights}{an optional vector of weights to be used in the fitting
-process. Should be \code{NULL} or a numeric vector. If non-NULL,
-weighted EN is used with weights \code{weights}. See also 'Details'.}
+\item{cv_metric}{either a string specifying the performance metric to use, or a function to evaluate prediction
+errors in a single CV replication. If a function, it is called with a single numeric vector of
+prediction errors and must return a scalar number.}
 
-\item{intercept}{should an intercept be estimated?}
+\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
+level with smallest average CV performance.}
 
-\item{cv_k}{number of cross validation folds.}
+\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used if \code{ncores = 1}, because multi-threading
+can not be used in parallel R sessions on the same host.}
 
-\item{cv_measure}{function (name) which takes a matrix of residuals and
-returns a performance measure for each column.}
+\item{ncores}{deprecated and not used anymore.}
 
-\item{ncores, cl}{the number of processor cores or an actual \code{parallel}
-cluster. At most \code{cv_k + 1} nodes will be used.}
-
-\item{options}{additional options for the EN algorithm. See
-\code{\link{en_options}} for details.}
-
-\item{lambda_min_ratio}{if the lambda grid should be automatically defined,
-the ratio of the smallest to the largest lambda value in the grid. The
-default is \code{1e-6} if $n < p$, and
-\code{1e-5 * 10^floor(log10(p / n))} otherwise.}
-
-\item{...}{additional arguments passed on to \code{\link{elnet}}.}
+\item{...}{
+  Arguments passed on to \code{\link[=elnet]{elnet}}
+  \describe{
+    \item{\code{alpha}}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
+and \code{alpha = 0} the Ridge penalty.}
+    \item{\code{nlambda}}{number of penalization levels.}
+    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
+smallest value for which all coefficients are zero). The default depends on the sample
+size relative to the number of variables and \code{alpha}. If more observations than variables
+are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
+    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
+coefficient.}
+    \item{\code{standardize}}{standardize variables to have unit variance. Coefficients are always returned in original scale.}
+    \item{\code{weights}}{a vector of positive observation weights.}
+    \item{\code{intercept}}{include an intercept in the model.}
+    \item{\code{sparse}}{use sparse coefficient vectors.}
+    \item{\code{en_algorithm_opts}}{options for the EN algorithm. See \link{en_algorithm_options}
+for details.}
+    \item{\code{eps}}{numerical tolerance.}
+    \item{\code{xtest}}{deprecated. Instead, extract coefficients with \code{\link[=coef.pense_fit]{coef.pense_fit()}} and compute predictions manually.}
+    \item{\code{options}}{deprecated. Use \code{en_algorithm_opts} instead.}
+    \item{\code{correction}}{defunct. Correction for EN estimates is not supported anymore.}
+  }}
 }
 \value{
-\item{lambda}{vector of lambda values.}
- \item{status}{integer specifying the exit status of the EN algorithm.}
- \item{message}{explanation of the exit status.}
- \item{coefficients}{matrix of regression coefficients. Each
-     column corresponds to the estimate for the lambda value at the same
-     index.}
- \item{residuals}{matrix of residuals. Each column corresponds to the
-     residuals for the lambda value at the same index.}
- \item{cvres}{data frame with lambda, average cross-validated performance
-     and the estimated standard deviation.}
+a list with components:
+\describe{
+\item{\code{lambda}}{the sequence of penalization levels.}
+\item{\code{cvres}}{data frame of average cross-validated performance.}
+\item{\code{cv_replications}}{matrix of cross-validated performance metrics, one column per replication.
+Rows are in the same order as in \code{cvres}.}
+\item{\code{call}}{the original call.}
+\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned by \code{\link[=elnet]{elnet()}}.}
+}
 }
 \description{
-Perform k-fold cross-validation for \code{\link{elnet}}.
+Perform (repeated) K-fold cross-validation for \code{\link[=elnet]{elnet()}}.
+}
+\details{
+The built-in CV metrics are
+\describe{
+\item{\code{"rmspe"}}{Root mean squared prediction error (default).}
+\item{\code{"mape"}}{Median absolute prediction error.}
+\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}}.}
+}
 }
 \examples{
-# Generate some dummy data
-set.seed(12345)
-n <- 30
-p <- 15
-x <- 1 + matrix(rnorm(n * p), ncol = p)
-y <- x \%*\% c(2:5, numeric(p - 4)) + rnorm(n)
+# Compute the LS-EN regularization path for Freeny's revenue data
+# (see ?freeny)
+data(freeny)
+x <- as.matrix(freeny[ , 2:5])
 
-x_test <- matrix(rnorm(10 * n * p), ncol = p)
-y_test <- drop(x_test \%*\% c(2:5, numeric(p - 4)) + rnorm(n))
+regpath <- elnet(x, freeny$y, alpha = 0.75)
+plot(regpath)
 
-# Compute the classical EN and select lambda based on CV
-set.seed(1234)
-est <- elnet_cv(
-    x, y,
-    alpha = 0.6,
-    nlambda = 100
-)
+# Extract the coefficients at a certain penalization level
+coef(regpath, lambda = regpath$lambda[5])
 
-# The optimal lambda according to CV is
-est$lambda_opt
-plot(est)
+# What penalization level leads to good prediction performance?
+cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 10,
+                       cv_k = 4, cv_measure = 'tau')
+plot(cv_results, se_mult = 1)
+plot(cv_results, se_mult = 1, what = 'coef.path')
 
-# and the RMSPE at this lambda is
-sqrt(mean((y_test - predict(est, x_test))^2))
+# Extract the coefficients at the penalization level with
+# smallest prediction error ...
+coef(cv_results)
+# ... or at the penalization level with prediction error
+# statistically indistinguishable from the minimum.
+coef(cv_results, lambda = 'se')
 }
 \seealso{
-\code{\link{elnet}} to compute only the solution path, without
-     selecting the optimal penalty parameter using CV.
+\code{\link[=elnet]{elnet()}} for computing the LS-EN regularization path without cross-validation.
+
+\code{\link[=pense_cv]{pense_cv()}} for cross-validation of S-estimates of regression with elastic net penalty.
+
+\code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficient estimates.
+
+\code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the regularization path.
+
+Other functions for computing non-robust estimates: 
+\code{\link{elnet}()}
 }
+\concept{functions for computing non-robust estimates}

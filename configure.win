@@ -1,1 +1,2 @@
-cp src/autoconfig.win.h src/autoconfig.h
+cp src/autoconfig.hpp.win src/autoconfig.hpp
+cp R/autoconfig.win.R.in R/autoconfig.R

@@ -1,0 +1,16 @@
+//
+//  autoconfig.hpp
+//  pense
+//
+//  Created by David Kepplinger on 2019-04-03.
+//  Copyright © 2019 David Kepplinger. All rights reserved.
+//
+
+#ifndef AUTOCONFIG_HPP_
+#define AUTOCONFIG_HPP_
+
+#undef PENSE_ENABLE_OPENMP
+#undef PENSE_DISABLE_OPENMP
+#undef PENSE_OPENMP_ADD_CONST_SHARED
+
+#endif  // AUTOCONFIG_HPP_

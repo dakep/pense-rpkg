@@ -1,228 +1,174 @@
-#' PY (Pena-Yohai) initial estimates for EN S-estimators
+#' ENPY Initial Estimates for EN S-Estimators
 #'
-#' Computes the PY initial estimates for the EN S-estimator with different
-#' strategies for computing the principal sensitivity components.
+#' Compute initial estimates for the EN S-estimator using the EN-PY procedure.
 #'
-#' Two different methods to calculate the sensitivity components are implemented:
-#' \describe{
-#'      \item{\code{"rr"}}{Approximate the PSCs by using the residuals from the
-#'          elastic net fit and the hat matrix from the ridge regression.
-#'          This method only works if \code{alpha} < 1 or
-#'          \code{ncol(x)} < \code{nrow(x)}.}
-#'      \item{\code{"exact"}}{Calculate the PSCs from the difference between the
-#'          residuals and leave-one-out residuals from elastic net.}
-#' }
+#' If these manually computed initial estimates are intended as starting points for [pense()], they are by default
+#' *shared* for all penalization levels.
+#' To restrict the use of the initial estimates to the penalty level they were computed for, use
+#' `as_starting_point(..., specific = TRUE)`. See [as_starting_point()] for details.
 #'
-#' @param x data matrix with predictors.
-#' @param y response vector.
-#' @param alpha,lambda EN penalty parameters (NOT adjusted for the number of
-#'      observations in \code{x}).
-#' @param delta desired breakdown point of the resulting estimator.
-#' @param cc tuning constant for the S-estimator. Default is to chosen based
-#'      on the breakdown point \code{delta}. Should never have to be changed.
-#' @param options additional options for the initial estimator. See
-#'      \code{\link{initest_options}} for details.
-#' @param en_options additional options for the EN algorithm. See
-#'      \code{\link{en_options}} for details.
+#' @inheritParams pense
+#' @param enpy_opts options for the EN-PY algorithm, created with the [enpy_options()] function.
+#' @param lambda a vector of positive values of penalization levels.
+#' @param cc cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
+#'    Normal distribution.
 #'
-#' @return \item{coeff}{A numeric matrix with one initial coefficient per column}
-#'         \item{objF}{A vector of values of the objective function for the respective coefficient}
-#'
-#' @references Pena, D., and Yohai, V.J. (1999).
-#'     A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
-#'     \emph{Journal of the American Statistical Association}, \bold{94}(446),
-#'     434-445. \url{http://doi.org/10.2307/2670164}
-#'
-#' @example examples/enpy.R
+#' @family functions for initial estimates
 #'
 #' @export
-enpy <- function(x, y, alpha, lambda, delta, cc,
-                 options = initest_options(),
-                 en_options = en_options_aug_lars()) {
-    y <- drop(y)
+#'
+#' @references Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
+#'    Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
+#'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
+#'
+#'
+#' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
+#' @importFrom rlang abort
+enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, intercept = TRUE, penalty_loadings,
+                                    enpy_opts = enpy_options(), mscale_opts = mscale_algorithm_options(),
+                                    eps = 1e-6, sparse = FALSE, ncores = 1L) {
+  y <- .as(y, 'numeric')
+  x_dim <- dim(x)
 
-    dx <- dim(x)
-    dY <- dim(y)
-    yl <- length(y)
+  if (length(y) != x_dim[[1L]]) {
+    abort("Number of observations in `x` and `y` does not match.")
+  } else if (x_dim[[2L]] <= 1L) {
+    abort("`x` must be a matrix with at least 1 column.")
+  }
 
-    if (is.null(yl) || (!is.null(dY) && length(dY) != 1L) || !is.numeric(y)) {
-        stop("`yl` must be a numeric vector")
-    }
+  if (missing(cc)) {
+    cc <- NULL
+  }
 
-    if (is.null(dx) || length(dx) != 2L || !is.numeric(x) || dx[1L] != yl) {
-        stop("`x` must be a numeric matrix with the same number of observations as `y`")
-    }
+  alpha <- .as(alpha[[1L]], 'numeric')
+  if (alpha < 0 || alpha > 1) {
+    abort("`alpha` is outside 0 and 1.")
+  } else if (alpha < sqrt(.Machine$double.eps)) {
+    alpha <- 0
+  }
 
-    if (anyNA(x) || anyNA(y)) {
-        stop("Missing values are not supported")
-    }
+  sparse <- .as(sparse[[1L]], 'logical')
 
-    alpha <- .check_arg(alpha, "numeric", range = c(0, 1),
-                        range_test_lower = ">=", range_test_upper = "<=")
-    lambda <- .check_arg(lambda, "numeric", range = 0, range_test_lower = ">=")
+  # Check EN algorithm for ENPY
+  enpy_opts$num_threads <- max(1L, .as(ncores[[1L]], 'integer'))
+  enpy_opts$eps <- .as(eps[[1L]], 'numeric')
+  enpy_opts$en_options <- .select_en_algorithm(enpy_opts$en_options, alpha, sparse, enpy_opts$eps)
+  sparse <- enpy_opts$en_options$sparse
 
-    if (alpha < .Machine$double.eps) {
-        options$pscMethod <- 'rr'
-    }
+  if (enpy_opts$num_threads > 1L && !isTRUE(.k_multithreading_support)) {
+    warn("Multithreading not supported. Using only 1 core.")
+  }
 
-    if (lambda == 0) {
-        options$pscMethod <- "ols"
-    }
+  optional_args <- list()
+  if (!missing(penalty_loadings) && !is.null(penalty_loadings)) {
+    checked_pls <- .prepare_penalty_loadings(penalty_loadings, x, alpha, sparse = sparse, stop_all_infinite = TRUE)
+    optional_args$penalty_loadings <- checked_pls$loadings
+    restore_coef_length <- checked_pls$restore_fun
+    x <- checked_pls$trimmed_x
+  } else {
+    restore_coef_length <- function (coef) coef
+    optional_args$penalty_loadings <- NULL
+  }
 
-    options$mscaleDelta <- .check_arg(
-        delta,
-        "numeric",
-        range = c(0, 0.5),
-        range_test_upper = "<="
-    )
+  lambda <- sort(.as(lambda, 'numeric'), decreasing = TRUE)
+  penalties <- lapply(lambda, function (lambda) { list(alpha = alpha, lambda = lambda) })
+  s_loss_params <- list(mscale = .full_mscale_algo_options(bdp = bdp, cc = cc, mscale_opts = mscale_opts),
+                        intercept = intercept)
 
-    options$mscaleCC <- if (missing(cc)) {
-        consistency.rho(options$mscaleDelta, 1L)
-    } else {
-        .check_arg(
-            cc,
-            "numeric",
-            range = 0
-        )
-    }
+  res <- .Call(C_penpy, x, drop(y), penalties, s_loss_params, enpy_opts, optional_args)
 
-    result <- switch(
-        options$pscMethod,
-        ols = enpy_ols(x, y, options),
-        rr = enpy_rr(x, y, alpha, lambda, options, en_options),
-        exact = enpy_exact(x, y, alpha, lambda, options, en_options)
-    )
-
-    resorder <- sort.list(result$objF, na.last = NA, method = "quick")
-
-    dups <- which(diff(result$objF[resorder]) < options$eps)
-    if (length(dups) > 0) {
-        remove <- resorder[dups]
-        result$objF <- result$objF[-remove]
-        result$coeff <- result$coeff[ , -remove, drop = FALSE]
-    }
-
-    return(result)
-}
-
-
-## PY (Pena-Yohai) initial estimates for EN S-Estimators
-##
-## Computes the PY initial estimates for EN  S-Estimators with exact
-## principal sensitivity components.
-##
-## @param x data matrix with predictors -- a leading column of 1's will be
-##      added!
-## @param y response vector.
-## @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
-##      of observations in \code{x}).
-## @param options additional options for the initial estimator. See
-##      \code{\link{initest_options}} for details.
-## @param en_options additional options for the EN algorithm. See
-##      \code{\link{en_options}} for details.
-##
-## @return \item{coeff}{A numeric matrix with one initial coefficient per
-##      column}
-##      \item{objF}{A vector of values of the objective function for the
-##      respective coefficient}
-##
-#' @useDynLib pense, .registration = TRUE
-#' @importFrom Rcpp evalCpp
-enpy_exact <- function(x, y, alpha, lambda, options, en_options) {
-    dx <- dim(x)
-
-    xtr <- .Call(C_augtrans, x)
-    dx[2L] <- dx[2L] + 1L
-
-    ies <- .Call(C_enpy_exact, xtr, y, alpha, lambda, options, en_options)
-
-    return(list(
-        coeff = matrix(ies[[1L]], nrow = dx[2L]),
-        objF = ies[[2L]]
-    ))
-}
-
-## PY (Pena-Yohai) initial estimates for EN S-Estimators
-##
-## Computes the PY initial estimates for EN S-Estimators with
-## principal sensitivity components approximated by the ridge regression
-## solution.
-##
-## @param x data matrix with predictors -- a leading column of 1's will be
-##      added!
-## @param y response vector.
-## @param lambda,alpha The EN penalty parameters (NOT adjusted for the number
-##      of observations in \code{x}).
-## @param options additional options for the initial estimator. See
-##      \code{\link{initest_options}} for details.
-## @param en_options additional options for the EN algorithm. See
-##      \code{\link{en_options}} for details.
-##
-## @return \item{coeff}{A numeric matrix with one initial coefficient per column}
-##         \item{objF}{A vector of values of the objective function for the respective coefficient}
-##
-#' @useDynLib pense, .registration = TRUE
-#' @importFrom Rcpp evalCpp
-enpy_rr <- function(x, y, alpha, lambda, options, en_options) {
-    dx <- dim(x)
-
-    xtr <- .Call(C_augtrans, x)
-    dx[2L] <- dx[2L] + 1L
-
-    usableProp <- with(options, if(keepResidualsMethod == 1) {
-        keepResidualsProportion * keepPSCProportion
-    } else {
-        keepPSCProportion
+  res <- lapply(res, function (lambda_res) {
+    lapply(.metrics_attrib(lambda_res$estimates, lambda_res$metrics), function (est) {
+      structure(restore_coef_length(est), class = c('shared_starting_point', 'starting_point'))
     })
+  })
 
-    if (alpha >= 1 - .Machine$double.eps) {
-        if (dx[2L] >= dx[1L]) {
-            stop("`enpy_rr` can not be used for data with more variables than ",
-                 "observations if `alpha` is 1.")
-        } else if (dx[2L] >= ceiling(usableProp * dx[1L])) {
-            stop("With the specified proportion of observations to remove, ",
-                 "the number of observations will be smaller than the number ",
-                 "of variables.\n",
-                 "In this case `enpy_rr` can not be used when `alpha` is 1")
-        }
-    }
-
-    ies <- .Call(C_enpy_rr, xtr, y, alpha, lambda, options, en_options)
-
-    return(list(
-        coeff = matrix(ies[[1L]], nrow = dx[2L]),
-        objF = ies[[2L]]
-    ))
+  structure(unlist(res, recursive = FALSE, use.names = FALSE), class = c('enpy_starting_points', 'starting_points'))
 }
 
+#' Principal Sensitivity Components
+#'
+#' Compute Principal Sensitivity Components for Elastic Net Regression
+#'
+#' @inheritParams pense
+#' @param en_algorithm_opts options for the LS-EN algorithm. See [en_algorithm_options] for details.
+#' @param method defunct. PSCs are always computed for EN estimates. For the PY procedure for unpenalized estimation
+#'    use package [pyinit](https://cran.r-project.org/package=pyinit).
+#'
+#' @return a list of principal sensitivity components, one per element in `lambda`. Each PSC is itself a list
+#'    with items `lambda`, `alpha`, and `pscs`.
+#'
+#' @family functions for initial estimates
+#'
+#' @export
+#'
+#' @references Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
+#'    Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
+#'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
+#' @references Pena, D., and Yohai, V.J.
+#'    A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
+#'    *J. Amer. Statist. Assoc.* **94** (1999). no. 446, 434--445. \doi{10.2307/2670164}
+#'
+#' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
+#' @importFrom rlang abort
+prinsens <- function (x, y, alpha, lambda, intercept = TRUE, penalty_loadings, en_algorithm_opts,
+                      eps = 1e-6, sparse = FALSE, ncores = 1L, method = deprecated()) {
+  y <- .as(y, 'numeric')
+  x_dim <- dim(x)
 
-## PY (Pena-Yohai) initial estimates for EN S-Estimators
-##
-## Computes the PY initial estimates for EN S-Estimators with
-## principal sensitivity components approximated by the ridge regression
-## solution.
-##
-## @param x data matrix with predictors -- a leading column of 1's will be
-##      added!
-## @param y response vector.
-## @param options additional options for the initial estimator. See
-##      \code{\link{initest_options}} for details.
-##
-## @return \item{coeff}{A numeric matrix with one initial coefficient per column}
-##         \item{objF}{A vector of values of the objective function for the respective coefficient}
-##
-#' @useDynLib pense, .registration = TRUE
-#' @importFrom Rcpp evalCpp
-enpy_ols <- function(x, y, options) {
-    dx <- dim(x)
+  if (length(y) != x_dim[[1L]]) {
+    abort("Number of observations in `x` and `y` does not match.")
+  } else if (x_dim[[2L]] <= 1L) {
+    abort("`x` must be a matrix with at least 1 column.")
+  }
 
-    xtr <- .Call(C_augtrans, x)
-    dx[2L] <- dx[2L] + 1L
+  if (is_present(method)) {
+    if (method == 'en') {
+      deprecate_warn('2.0.0', 'prinsens(method = )')
+    } else {
+      deprecate_stop('2.0.0', 'prinsens(method = )', details = 'For unpenalized estimates use the pyinit package.')
+    }
+  }
 
-    ies <- .Call(C_py_ols, xtr, y, options)
+  sparse <- .as(sparse[[1L]], 'logical')
 
-    return(list(
-        coeff = matrix(ies[[1L]], nrow = dx[2L]),
-        objF = ies[[2L]]
-    ))
+  if (missing(en_algorithm_opts)) {
+    en_algorithm_opts <- NULL
+  }
+
+  alpha <- .as(alpha[[1L]], 'numeric')
+  if (alpha < 0 || alpha > 1) {
+    abort("`alpha` is outside 0 and 1.")
+  } else if (alpha < sqrt(.Machine$double.eps)) {
+    alpha <- 0
+  }
+
+  en_algorithm_opts <- .select_en_algorithm(en_algorithm_opts, alpha, sparse, eps)
+  sparse <- en_algorithm_opts$sparse
+
+  optional_args <- list(intercept = .as(intercept[[1L]], 'logical'),
+                        num_threads = max(1L, .as(ncores[[1L]], 'integer')))
+
+  if (!missing(penalty_loadings) && !is.null(penalty_loadings)) {
+    checked_pls <- .prepare_penalty_loadings(penalty_loadings, x, alpha, sparse = sparse, stop_all_infinite = TRUE)
+    optional_args$penalty_loadings <- checked_pls$loadings
+    x <- checked_pls$trimmed_x
+  } else {
+    optional_args$penalty_loadings <- NULL
+  }
+
+  lambda <- sort(.as(lambda, 'numeric'), decreasing = TRUE)
+  penalties <- lapply(lambda, function (lambda) { list(alpha = alpha, lambda = lambda) })
+  eps <- .as(eps[[1L]], 'numeric')
+
+  if (optional_args$num_threads > 1L && !isTRUE(.k_multithreading_support)) {
+    warn("Multithreading not supported. Using only 1 core.")
+  }
+
+  res <- .Call(C_pscs, x, drop(y), penalties, en_algorithm_opts, optional_args)
+
+  mapply(penalties, res, FUN = function (pen, pscs) {
+    pen$pscs <- pscs
+    return(pen)
+  }, SIMPLIFY = FALSE, USE.NAMES = FALSE)
 }

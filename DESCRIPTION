@@ -1,39 +1,44 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 1.2.9
-Date: 2020-02-07
+Version: 2.0.1
+Date: 2020-09-13
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),
-    person("Matias", "Salibian-Barrera", role = c("aut")),
-    person("Gabriela", "Cohen Freue", role = "aut"),
-    person("Derek", "Cho", role = "ctb")
+    person("Matías", "Salibián-Barrera", role = c("aut")),
+    person("Gabriela", "Cohen Freue", role = "aut")
     )
-Copyright: See the file COPYRIGHTS for copyright details on some of the
+Copyright: See the file COPYRIGHT for copyright details on some of the
     functions and algorithms used.
 Encoding: UTF-8
 Biarch: true
-URL: https://github.com/dakep/pense-rpkg
+SystemRequirements: C++11
+URL: https://dakep.github.io/pense-rpkg,
+    https://github.com/dakep/pense-rpkg
 BugReports: https://github.com/dakep/pense-rpkg/issues
-Description: Robust penalized elastic net S and MM estimator for linear
-    regression. The method is described in detail in
-    Cohen Freue, G. V., Kepplinger, D., Salibian-Barrera, M., and Smucler, E.
-    (2017) <https://gcohenfr.github.io/pdfs/PENSE_manuscript.pdf>.
+Description: Robust penalized (adaptive) elastic net S and M estimators for
+    linear regression. The methods are proposed in
+    Cohen Freue, G. V., Kepplinger, D., Salibián-Barrera, M., and Smucler, E.
+    (2019) <https://projecteuclid.org/euclid.aoas/1574910036>.
+    The package implements the extensions and algorithms described in
+    Kepplinger, D. (2020) <doi:10.14288/1.0392915>.
 Depends:
-    R (>= 3.1.0),
+    R (>= 3.5.0),
     Matrix
 Imports:
     Rcpp,
-    robustbase,
+    methods,
     parallel,
-    methods
+    lifecycle (>= 0.2.0),
+    rlang (>= 0.4.0)
 LinkingTo:
     Rcpp,
-    RcppArmadillo
+    RcppArmadillo (>= 0.9.600)
 Suggests:
-    testthat,
-    lars
-License: GPL (>= 2)
+    testthat (>= 2.1.0)
+License: MIT + file LICENSE
 NeedsCompilation: yes
-RoxygenNote: 7.0.2
+RoxygenNote: 7.1.1
+Roxygen: list(markdown = TRUE, load = "source")
+RdMacros: lifecycle

@@ -1,0 +1,10 @@
+File: src/rho.cc
+  The C++ code for the rho functions is based on the C code distributed with
+  the R package robustbase_0.92-5 with Copyright (C)
+    * Peter Rousseeuw and Christophe Croux;
+    * Valentin Todorov <valentin.todorov@chello.at>
+    * Andreas Ruckstuhl <andreas.ruckstuhl@zhaw.ch>
+    * Matias Salibian-Barrera <matias@stat.ubc.ca>
+    * Tobias Verbeke <tobias.verbeke@openanalytics.eu>
+    * Manuel Koller <mkoller@ispm.unibe.ch>
+    * Martin Maechler <maechler@stat.math.ethz.ch>

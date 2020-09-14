@@ -1,108 +1,157 @@
-#' Extract Residuals from a Fitted Penalized Elastic-Net S/MM-estimator
+#' Predict Method for PENSE Fits
 #'
-#' @param object a PENSE or PENSEM estimate to extract the residuals from.
-#' @param lambda the value of the penalty parameter. Default is to use the
-#'      optimal lambda \code{object$lambda_opt}.
-#' @param exact if the lambda is not part of the lambda grid, should the
-#'      estimates be obtained by linear interpolation between the nearest
-#'      lambda values (default) or computed exactly.
-#' @param correction should a correction factor be applied to the EN estimate?
-#'       See \code{\link{elnet}} for details on the applied correction.
-#' @param ... currently ignored.
-#' @return a numeric vector of residuals for the given lambda.
-#' @importFrom Matrix drop
+#' Predict response values using a PENSE (or LS-EN) regularization path fitted by [pense()] or [elnet()].
 #'
-#' @example examples/pense-methods.R
+#' @param object PENSE regularization path to extract residuals from.
+#' @param newdata an optional matrix of new predictor values. If missing, the fitted values are computed.
+#' @param lambda a single value of the penalty parameter.
+#' @param exact defunct Always gives a warning if `lambda` is not part of the fitted sequence and coefficients
+#'    need to be interpolated.
+#' @param correction defunct.
+#' @param ... currently not used.
+#' @return a numeric vector of residuals for the given penalization level.
 #'
+#' @family functions for extracting components
+#'
+#' @example examples/residuals.R
 #' @export
-residuals.pense <- function(object, lambda, exact = FALSE, correction = TRUE, ...) {
-    exact <- isTRUE(exact)
-
-    if (missing(lambda) || is.null(lambda)) {
-        lambda <- object$lambda_opt
-        exact <- FALSE
-    }
-
-    lambda_diff_abs <- abs(object$lambda - lambda)
-    lambda_match <- which(lambda_diff_abs < .Machine$double.eps)
-
-    if (length(lambda_match) > 0L) {
-        return(object$residuals[ , lambda_match[1L]])
-    }
-
-    coefs <- coef.pense(
-        object,
-        lambda = lambda,
-        exact = exact,
-        sparse = TRUE,
-        correction = correction
-    )
-
-    x <- if (!is.null(object$call$x_train)) {
-        data.matrix(eval(object$call$x_train))
-    } else {
-        data.matrix(eval(object$call$x))
-    }
-    y <- if (!is.null(object$call$y_train)) {
-        data.matrix(eval(object$call$y_train))
-    } else {
-        data.matrix(eval(object$call$y))
-    }
-
-    return(drop(y - coefs[1L] - x %*% coefs[-1L, , drop = FALSE]))
-}
-
-
-#' Extract Residuals from a Fitted Elastic-Net Estimator
-#'
-#' @param object a \code{\link{elnet}} estimate to extract the residuals from.
-#' @param lambda the value of the penalty parameter. Default is to use the
-#'      optimal lambda \code{object$lambda_opt} if the given estimator was
-#'      cross-validated or the smallest lambda if not.
-#' @param exact if the lambda is not part of the lambda grid, should the
-#'      estimates be obtained by linear interpolation between the nearest
-#'      lambda values (default) or computed exactly.
-#' @param ... currently ignored.
-#' @return a numeric vector of residuals for the given lambda.
 #'
 #' @importFrom Matrix drop
+#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom rlang abort
+#' @importFrom stats coef
 #'
-#' @example examples/elnet_cv-methods.R
-#'
-#' @export
-residuals.elnetfit <- function(object, lambda, exact = FALSE, ...) {
-    exact <- isTRUE(exact)
+predict.pense_fit <- function(object, newdata, lambda, exact = deprecated(), correction = deprecated(), ...) {
+  if (is_present(exact)) {
+    deprecate_warn('2.0.0', 'residuals(exact=)')
+  }
+  if (is_present(correction)) {
+    deprecate_stop('2.0.0', 'residuals(correction=)')
+  }
 
-    if (missing(lambda) || is.null(lambda)) {
-        if ("cv_elnetfit" %in% class(object)) {
-            lambda <- object$lambda_opt
-            exact <- FALSE
-        } else {
-            warning("Using smallest lambda since no CV prediction performance",
-                    "is available.")
-            lambda <- object$lambda[1L]
-            exact <- FALSE
-        }
+  coef_est <- coef(object, lambda = lambda, concat = FALSE)
+
+  if (missing(newdata)) {
+    newdata <- eval.parent(object$call$x)
+  } else {
+    newdata <- data.matrix(newdata)
+    x_dim <- dim(newdata)
+    if (x_dim[[2L]] != length(coef_est$beta)) {
+      abort(sprintf("`newdata` is of invalid size (contains %d predictors instead of the required %d)",
+                    x_dim[[2L]], length(coef_est$beta)))
     }
+  }
 
-    lambda_diff_abs <- abs(object$lambda - lambda)
-    lambda_match <- which(lambda_diff_abs < .Machine$double.eps)
-
-    if (length(lambda_match) > 0L) {
-        return(object$residuals[ , lambda_match[1L]])
-    }
-
-    coefs <- coef.elnetfit(
-        object,
-        lambda = lambda,
-        exact = exact,
-        sparse = TRUE
-    )
-
-    x <- data.matrix(eval(object$call$x))
-    y <- drop(eval(object$call$y))
-
-    return(drop(y - coefs[1L] - x %*% coefs[-1L, , drop = FALSE]))
+  return(drop(newdata %*% coef_est$beta) + coef_est$intercept)
 }
 
+#' Predict Method for PENSE Fits
+#'
+#' Predict response values using a PENSE (or LS-EN) regularization path with hyper-parameters chosen by
+#' cross-validation.
+#'
+#' If `lambda = "se"` and `object` contains fitted estimates for every penalization level in the sequence, extract the
+#' residuals of the most parsimonious model with prediction performance statistically indistinguishable from the best
+#' model. This is determined to be the model with prediction performance within `se_mult * cv_se` from the best model.
+#'
+#' @param object PENSE with cross-validated hyper-parameters to extract coefficients from.
+#' @param newdata an optional matrix of new predictor values. If missing, the fitted values are computed.
+#' @param lambda either a string specifying which penalty level to use or a a single numeric value of the penalty
+#'    parameter. See details.
+#' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
+#' @param exact deprecated. Always gives a warning if `lambda` is not part of the fitted sequence and coefficients
+#'    are interpolated.
+#' @param correction defunct.
+#' @param ... currently not used.
+#' @return a numeric vector of residuals for the given penalization level.
+#'
+#' @family functions for extracting components
+#'
+#' @example examples/residuals.R
+#' @export
+#'
+#' @importFrom Matrix drop
+#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom rlang warn
+#' @importFrom stats coef
+#'
+predict.pense_cvfit <- function(object, newdata, lambda = c('min', 'se'), se_mult = 1, exact = deprecated(),
+                                correction = deprecated(), ...) {
+  if (is_present(exact)) {
+    deprecate_warn('2.0.0', 'coef(exact=)')
+  }
+  if (is_present(correction)) {
+    deprecate_stop('2.0.0', 'coef(correction=)')
+  }
+  if (is.character(lambda)) {
+    lambda <- match.arg(lambda)
+  }
 
+  coef_est <- coef(object, lambda = lambda, se_mult = se_mult, concat = FALSE)
+
+  if (missing(newdata)) {
+    newdata <- eval.parent(object$call$x)
+  } else {
+    newdata <- data.matrix(newdata)
+    x_dim <- dim(newdata)
+    if (x_dim[[2L]] != length(coef_est$beta)) {
+      abort(sprintf("`newdata` is of invalid size (contains %d predictors instead of the required %d)",
+                    x_dim[[2L]], length(coef_est$beta)))
+    }
+  }
+
+  return(drop(newdata %*% coef_est$beta) + coef_est$intercept)
+}
+
+#' Extract Residuals
+#'
+#' Extract residuals from a PENSE (or LS-EN) regularization path fitted by [pense()] or [elnet()].
+#'
+#' @param object PENSE regularization path to extract residuals from.
+#' @param lambda a single value of the penalty parameter.
+#' @param exact defunct Always gives a warning if `lambda` is not part of the fitted sequence and coefficients
+#'    need to be interpolated.
+#' @param correction defunct.
+#' @param ... currently not used.
+#' @return a numeric vector of residuals for the given penalization level.
+#'
+#' @family functions for extracting components
+#'
+#' @example examples/residuals.R
+#' @export
+residuals.pense_fit <- function(object, lambda, exact = deprecated(), correction = deprecated(), ...) {
+  train_y <- eval.parent(object$call$y)
+  cl <- match.call(expand.dots = FALSE)
+  cl[[1L]] <- quote(predict)
+  return(train_y - eval.parent(cl))
+}
+
+#' Extract Residuals
+#'
+#' Extract residuals from a PENSE (or LS-EN) regularization path with hyper-parameters chosen by cross-validation.
+#'
+#' If `lambda = "se"` and `object` contains fitted estimates for every penalization level in the sequence, extract the
+#' residuals of the most parsimonious model with prediction performance statistically indistinguishable from the best
+#' model. This is determined to be the model with prediction performance within `se_mult * cv_se` from the best model.
+#'
+#' @param object PENSE with cross-validated hyper-parameters to extract coefficients from.
+#' @param lambda either a string specifying which penalty level to use or a a single numeric value of the penalty
+#'    parameter. See details.
+#' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
+#' @param exact deprecated. Always gives a warning if `lambda` is not part of the fitted sequence and coefficients
+#'    are interpolated.
+#' @param correction defunct.
+#' @param ... currently not used.
+#' @return a numeric vector of residuals for the given penalization level.
+#'
+#' @family functions for extracting components
+#'
+#' @example examples/residuals.R
+#' @export
+residuals.pense_cvfit <- function(object, lambda = c('min', 'se'), se_mult = 1, exact = deprecated(),
+                                  correction = deprecated(), ...) {
+  train_y <- eval.parent(object$call$y)
+  cl <- match.call(expand.dots = FALSE)
+  cl[[1L]] <- quote(predict)
+  return(train_y - eval.parent(cl))
+}

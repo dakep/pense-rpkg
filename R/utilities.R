@@ -1,308 +1,390 @@
+#' Compute the Tau-Scale of Centered Values
+#'
+#' Compute the \eqn{\tau}-scale without centering the values.
+#'
+#' @param x numeric values. Missing values are verbosely ignored.
+#' @return the \eqn{\tau} estimate of scale of centered values.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
+#' @export
+#' @importFrom rlang warn
+#' @importFrom stats na.omit
+tau_size <- function (x) {
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+  .Call(C_tau_size, x)
+}
+
+#' Compute the M-Scale of Centered Values
+#'
+#' Compute the M-scale without centering the values.
+#'
+#' @param x numeric values. Missing values are verbosely ignored.
+#' @param bdp desired breakdown point (between 0 and 0.5).
+#' @param cc cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
+#'    Normal distribution.
+#' @param opts a list of options for the M-scale estimation algorithm, see [mscale_algorithm_options()]
+#'    for details.
+#' @param delta deprecated. Use `bpd` instead.
+#' @param rho,eps,maxit deprecated. Instead set control options for the algorithm with the `opts` arguments.
+#' @return the M-estimate of scale.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
+#' @export
+#'
+#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom rlang warn
+#' @importFrom stats na.omit
+mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
+                    opts = mscale_algorithm_options(), delta = deprecated(), rho = deprecated(), eps = deprecated(),
+                    maxit = deprecated()) {
+  if (is_present(delta)) {
+    deprecate_warn('2.0.0', 'mscale(delta=)', 'mscale(bdp=)')
+    bdp <- delta
+  }
+  if (is_present(rho)) {
+    deprecate_warn('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
+  }
+  if (is_present(eps)) {
+    deprecate_warn('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
+    opts$eps <- .as(eps[[1L]], 'numeric')
+  }
+  if (is_present(maxit)) {
+    deprecate_warn('2.0.0', 'mscale(maxit=)', 'mscale(opts=)')
+    opts$max_it <- .as(maxit[[1L]], 'integer')
+  }
+
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+
+  if (missing(cc)) {
+    cc <- NULL
+  }
+  opts <- .full_mscale_algo_options(bdp, cc, opts)
+  .Call(C_mscale, x, opts)
+}
+
+#' Compute the M-estimate of Location
+#'
+#' Compute the M-estimate of location using an auxiliary estimate of the scale.
+#'
+#' @param x numeric values. Missing values are verbosely ignored.
+#' @param scale scale of the `x` values. If omitted, uses the [mad()][stats::mad()].
+#' @param rho the \eqn{\rho} function to use. See [rho_function()] for available functions.
+#' @param cc value of the tuning constant for the chosen \eqn{\rho} function.
+#'    By default, chosen to achieve 95% efficiency under the Normal distribution.
+#' @param opts a list of options for the M-estimating algorithm, see
+#'    [mscale_algorithm_options()] for details.
+#' @return a single numeric value, the M-estimate of location.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
+#' @export
+#'
+#' @importFrom stats mad
+#' @importFrom rlang warn
+#' @importFrom stats na.omit
+mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+  if (missing(scale)) {
+    scale <- mad(x)
+  }
+
+  if (missing(cc)) {
+    cc <- NULL
+  }
+  opts <- .full_mscale_algo_options(.5, cc, opts)
+  opts$rho <- rho_function(rho)
+  .Call(C_mloc, .as(x, 'numeric'), scale, opts)
+}
+
+#' Compute the M-estimate of Location and Scale
+#'
+#' Simultaneous estimation of the location and scale by means of M-estimates.
+#'
+#' @param x numeric values. Missing values are verbosely ignored.
+#' @param bdp desired breakdown point (between 0 and 0.5).
+#' @param scale_cc cutoff value for the bisquare \eqn{\rho} function for computing the scale estimate. By default, chosen
+#'    to yield a consistent estimate for normally distributed values.
+#' @param location_rho,location_cc \eqn{\rho} function and cutoff value for computing the location estimate.
+#'    See [rho_function()] for a list of available \eqn{\rho} functions.
+#' @param opts a list of options for the M-estimating equation,
+#'    see [mscale_algorithm_options()] for details.
+#' @return a vector with 2 elements, the M-estimate of location and the M-scale estimate.
+#'
+#' @family functions to compute robust estimates of location and scale
+#'
+#' @export
+#'
+#' @importFrom rlang warn
+#' @importFrom stats na.omit
+mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquare'), location_rho,
+                       location_cc, opts = mscale_algorithm_options()) {
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+
+  opts <- .full_mscale_algo_options(bdp, scale_cc, opts)
+  loc_opts <- list(rho = rho_function(location_rho))
+  if (!missing(location_cc)) {
+    loc_opts$cc <- .as(location_cc[[1L]], 'numeric')
+  }
+  .Call(C_mlocscale, x, opts, loc_opts)
+}
+
+#' Get the Constant for Consistency for the M-Scale
+#'
+#' @param delta desired breakdown point (between 0 and 0.5)
+#' @param rho the name of the chosen \eqn{\rho} function.
+#'
+#' @return consistency constant
+#'
+#' @family miscellaneous functions
+#'
+#' @export
+#'
+#' @importFrom rlang abort
+consistency_const <- function (delta, rho) {
+  return(switch(rho_function(rho),
+                bisquare = .bisquare_consistency_const(delta),
+                huber = abort("Huber's rho function not supported for scale estimation!")))
+}
+
+#' List Available Rho Functions
+#'
+#' @param rho the name of the \eqn{\rho} function to check for existence.
+#' @return if `rho` is missing returns a vector of supported \eqn{\rho} function names, otherwise
+#'    the internal integer representation of the \eqn{\rho} function.
+#'
+#' @family miscellaneous functions
+#'
+#' @export
+rho_function <- function (rho) {
+  available <- c('bisquare', 'huber')
+  if (missing(rho)) {
+    return(available)
+  }
+  return(match(match.arg(rho, available), available))
+}
+
+#' Create Starting Points for the PENSE Algorithm
+#'
+#' Create a starting point for starting the PENSE algorithm in [pense()].
+#' Multiple starting points can be created by combining starting points via
+#' `c(starting_point_1, starting_point_2, ...)`.
+#'
+#' A starting points can either be *shared*, i.e., used for every penalization level PENSE estimates are computed for,
+#' or *specific* to one penalization level.
+#' To create a specific starting point, provide the penalization level as `lambda`. If `lambda` is missing,
+#' a shared starting point is created.
+#' Shared and specific starting points can all be combined into a single list of starting points, with
+#' [pense()] handling them correctly.
+#' Note that specific starting points will lead to the `lambda` value being added to the grid of penalization levels.
+#' See [pense()] for details.
+#'
+#' Starting points computed via [enpy_initial_estimates()] are by default *shared* starting points but can
+#' be transformed to *specific* starting points via `enpy_starting_point(..., specific = TRUE)`.
+#'
+#' @param beta beta coefficients at the starting point. Can be a numeric vector, a sparse vector of class
+#'    [dsparseVector][Matrix::sparseVector-class], or a sparse matrix of class
+#'    [dgCMatrix][Matrix::CsparseMatrix-class] with a single column.
+#' @param intercept intercept coefficient at the starting point.
+#' @param lambda optional penalization level. If missing, the starting point is used at *every* penalization level,
+#'    otherwise, only at this penalization level.
+#' @return an object of type `starting_points` to be used as starting point for [pense()].
+#'
+#' @family functions for initial estimates
+#'
+#' @export
+#'
 #' @importFrom methods is
-nameCoefVec <- function(coef, x) {
-    dn <- dimnames(x)
-    xnames <- paste("X", seq_len(ncol(x)), sep = "")
+#' @importFrom Matrix sparseVector
+#' @importFrom rlang abort
+starting_point <- function (beta, intercept, lambda) {
+  sp <- list(intercept = .as(intercept[[1L]], 'numeric'))
+  if (missing(lambda)) {
+    class(sp) <- c('shared_starting_point', 'starting_point')
+  } else {
+    sp$lambda <- .as(lambda, 'numeric')
+    class(sp) <- c('specific_starting_point', 'starting_point')
+  }
+  if (is(beta, 'dgCMatrix') && ncol(beta) == 1L) {
+    beta <- sparseVector(beta@x, beta@i + 1L, beta@Dim[[1L]])
+  }
 
-    if (!is.null(dn) && !is.null(dn[[2L]])) {
-        xnames <- dn[[2L]]
-    }
+  if (is(beta, 'dsparseVector') || is(beta, 'numeric')) {
+    sp$beta <- beta
+  } else {
+    abort("`beta` must be a (sparse) numeric vector.")
+  }
+  return(sp)
+}
 
-    if (is.matrix(coef) || is(coef, "Matrix")) {
-        rownames(coef) <- c("(Intercept)", xnames)
+#' @rdname starting_point
+#' @param object an object with estimates to use as starting points.
+#' @param specific whether the estimates should be used as starting points only at the penalization level they
+#'   are computed for. Defaults to using the estimates as starting points for all penalization levels.
+#' @param ... further arguments passed to or from other methods.
+#' @export
+as_starting_point <- function (object, specific = FALSE, ...) {
+  UseMethod('as_starting_point')
+}
+
+#' @rdname starting_point
+#' @export
+as_starting_point.enpy_starting_points <- function (object, specific = FALSE, ...) {
+  if (isTRUE(specific)) {
+    structure(lapply(object, structure, class = c('specific_starting_point', 'starting_point')),
+              class = 'starting_points')
+  } else {
+    object
+  }
+}
+
+#' @rdname starting_point
+#' @param lambda optional penalization level(s) to extract from `object`. Penalization levels not present in `object`
+#'    are ignored with a warning.
+#' @export
+#' @importFrom rlang warn abort
+as_starting_point.pense_fit <- function (object, specific = FALSE, lambda, ...) {
+  lambda_indices <- if (missing(lambda)) {
+    seq_along(object$estimates)
+  } else if (is.numeric(lambda)) {
+    lambda_indices <- .approx_match(lambda, object$lambda)
+    bad_lambda_indices <- which(is.na(lambda_indices))
+    if (length(bad_lambda_indices) == length(lambda)) {
+      abort("No penalization level requested with `lambda` is available in `object`.")
+    } else if (length(bad_lambda_indices) > 0L) {
+      warn("Some penalization levels requested with `lambda` are not available in `object`.")
+      lambda_indices[-bad_lambda_indices]
     } else {
-        names(coef) <- c("(Intercept)", xnames)
+      lambda_indices
     }
-    return(coef)
-}
+  } else {
+    abort("`lambda` must be missing or a numeric vector.")
+  }
 
-## Get the order of a list of values removing the duplicate
-## entries
-##
-orderOmitTies <- function(x, tol = 1e-6) {
-    ord.x <- sort.list(x, na.last = NA, method = "quick")
-    sorted <- x[ord.x]
-    diffs <- diff(sorted)
+  class_list <- if (isTRUE(specific)) {
+    c('specific_starting_point', 'starting_point')
+  } else {
+    c('shared_starting_point', 'starting_point')
+  }
 
-    filtered.x <- c(sorted[1L], sorted[-1L][diffs > tol])
-    filtered.ind <- c(ord.x[1L], ord.x[-1L][diffs > tol])
-
-    return(list(
-        clean = filtered.x,
-        index = filtered.ind
-    ))
-}
-
-## Get the constant needed for consistency for the given delta
-## and the given rho function
-#' @importFrom robustbase .Mchi
-#' @importFrom stats dnorm pnorm integrate uniroot
-consistency.rho <- function(delta, int.rho.fun) {
-    if (is.character(int.rho.fun)) {
-        int.rho.fun <- .rho2IntRho(int.rho.fun)
-    }
-
-    ##
-    ## Pre-computed values for some delta values
-    ##
-    if (abs(delta - 0.5) < sqrt(.Machine$double.eps)) {
-        return(switch(
-            as.character(int.rho.fun),
-            "0" = 1.3684820, # huber
-            "1" = 1.5476450, # bisquare
-            "5" = 0.5773503 # gauss
-        ))
-    } else if (abs(delta - 0.25) < sqrt(.Machine$double.eps)) {
-        return(switch(
-            as.character(int.rho.fun),
-            "0" = 1.988013, # huber
-            "1" = 2.937015, # bisquare
-            "5" = 1.133893  # gauss
-        ))
-    } else if (abs(delta - 0.1) < sqrt(.Machine$double.eps)) {
-        return(switch(
-            as.character(int.rho.fun),
-            "0" = 3.161931, # huber
-            "1" = 5.182361, # bisquare
-            "5" = 2.064742  # gauss
-        ))
-    } else if (delta < 0.005) {
-        return(50) # ~.1% bdp for bisquare, 9.6e-5% for huber, 0.02% for gauss
-    }
-
-    integrand_huber <- function(x, cc) {
-        dnorm(x) * .Mchi(x, cc, 0L) / (0.5 * cc * cc)
-    }
-    integrand_gauss <- function(x, cc) {
-        dnorm(x) * -expm1(-((x * x) / (cc * cc)) * 0.5)
-    }
-
-    if (int.rho.fun == 1L) {
-        integral_interval <- if (delta > 0.1) {
-            c(1.5, 5.5)
-        } else {
-            c(5, 25)
-        }
-
-        # For bisquare we have the closed form solution to the expectation
-        expectation <- function(cc, delta) {
-            pnorm.mcc <- 2 * pnorm(-cc)
-            1/cc^6 * exp(-(cc^2/2)) * (
-                -cc * (15 - 4 * cc^2 + cc^4) * sqrt(2 / pi) +
-                    3 * (5 - 3 * cc^2 + cc^4) * exp(cc^2/2) * (1 - pnorm.mcc) +
-                    cc^6 * exp(cc^2/2) * pnorm.mcc
-            ) - delta
-        }
-    } else if (int.rho.fun == 0L) {
-        integral_interval <- if (delta > 0.1) {
-            c(.1, 7)
-        } else {
-            c(3, 30)
-        }
-        expectation <- function(cc, delta) {
-            integrate(integrand_huber, lower = -Inf, upper = Inf, cc)$value - delta
-        }
-    } else if (int.rho.fun == 5L) {
-        integral_interval <- if (delta > 0.1) {
-            c(.5, 2.5)
-        } else {
-            c(2, 10)
-        }
-
-        expectation <- function(cc, delta) {
-            integrate(integrand_gauss, lower = -Inf, upper = Inf, cc)$value - delta
-        }
-    }
-
-    uniroot(expectation, interval = integral_interval, delta)$root
+  structure(lapply(object$estimates[lambda_indices], structure, class = class_list), class = 'starting_points')
 }
 
 
-## Standardize data (depending on the `standardize` parameter)
-##
-## The returned list has the information on the standardization
-## as well as functions to (un)standardize regression coefficients
-##
-#' @importFrom Matrix drop
-standardize_data <- function (x, y, standardize, robust = TRUE) {
-    ret_list <- list(
-        scale_x = 1,
-        mux = 0,
-        muy = 0,
-        xs = x,
-        yc = y
-    )
-
-    ## standardize data
-    if (isTRUE(standardize)) {
-        if (!isTRUE(robust)) {
-            ret_list$scale_x <- apply(x, 2, sd)
-            ret_list$mux <- colMeans(x)
-            ret_list$muy <- mean(y)
-        } else {
-            ret_list$scale_x <- apply(x, 2, mad)
-            ret_list$mux <- apply(x, 2, median)
-            ret_list$muy <- median(y)
-        }
-
-        if (!isTRUE(all(ret_list$scale_x > 0))) {
-            stop("One or more variables in x have a MAD of 0. Can not use ",
-                 "`standardize = TRUE`!")
-        }
-
-        ret_list$xs <- scale(x, center = ret_list$mux, scale = ret_list$scale_x)
-        ret_list$yc <- y - ret_list$muy
+#' @rdname starting_point
+#' @param lambda optionally either a string specifying which penalty level to use (`"min"` or `"se"`) or a numeric
+#'    vector of the penalty levels to extract from `object`. Penalization levels not present in `object`
+#'    are ignored with a warning. If `NULL`, all estimates in `object` are extracted.
+#' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
+#'
+#' @details
+#' When creating starting points from cross-validated fits, it is possible to extract only the estimate with best
+#' CV performance (`lambda = "min"`), or the estimate with CV performance statistically indistinguishable from the
+#' best performance (`lambda = "se"`). This is determined to be the estimate with prediction performance
+#' within `se_mult * cv_se` from the best model.
+#'
+#' @export
+#' @importFrom rlang warn abort
+as_starting_point.pense_cvfit <- function (object, specific = FALSE, lambda = c('min', 'se'), se_mult = 1, ...) {
+  lambda_indices <- if (isFALSE(object$call$fit_all)) {
+    if (is.character(lambda)) {
+      lambda <- match.arg(lambda)
     }
-
-    ret_list$standardize_coefs <- function(coef_obj) {
-        if (!isTRUE(standardize)) {
-            return(coef_obj)
-        }
-
-        coef_obj$intercept <- coef_obj$intercept - ret_list$muy +
-            drop(ret_list$mux %*% coef_obj$beta)
-        coef_obj$beta <- coef_obj$beta * ret_list$scale_x
-        return(coef_obj)
+    if (!missing(lambda) && !isTRUE(lambda == 'min')) {
+      warn(paste("`object` was created with `fit_all = FALSE`. Only the estimate at the minimum is available and will",
+                 "be used as starting point."))
     }
-
-    ret_list$unstandardize_coefs <- function(coef_obj) {
-        if (!isTRUE(standardize)) {
-            return(coef_obj)
-        }
-
-        coef_obj$beta <- coef_obj$beta / ret_list$scale_x
-        coef_obj$intercept <- coef_obj$intercept + ret_list$muy -
-            drop(ret_list$mux %*% coef_obj$beta)
-        return(coef_obj)
+    1L
+  } else if (is.character(lambda)) {
+    lambda <- match.arg(lambda)
+    se_mult <- if (lambda == 'min') {
+      0
+    } else {
+      .as(se_mult[[1L]], 'numeric')
     }
+    se_selection <- .cv_se_selection(object$cvres$cvavg, object$cvres$cvse, se_mult)
+    which(se_selection == 'se_fact')
+  } else if (is.numeric(lambda)) {
+    lambda_indices <- .approx_match(lambda, object$lambda)
+    bad_lambda_indices <- which(is.na(lambda_indices))
+    if (length(bad_lambda_indices) == length(lambda)) {
+      abort("No penalization level requested with `lambda` is available in `object`.")
+    } else if (length(bad_lambda_indices) > 0L) {
+      warn("Some penalization levels requested with `lambda` are not available in `object`.")
+      lambda_indices[-bad_lambda_indices]
+    } else {
+      lambda_indices
+    }
+  } else if (is.null(lambda)) {
+    seq_along(object$estimates)
+  } else {
+    abort("`lambda` must be missing, a numeric vector, or either one of \"min\" or \"se\".")
+  }
 
-    return(ret_list)
+  class_list <- if (isTRUE(specific)) {
+    c('specific_starting_point', 'starting_point')
+  } else {
+    c('shared_starting_point', 'starting_point')
+  }
+
+  structure(lapply(object$estimates[lambda_indices], structure, class = class_list), class = 'starting_points')
 }
 
-##
-## Standardize regression coefficients
-##
-#' @importFrom Matrix drop
-standardize_coefs <- function(intercept, beta, scale_x, mux, muy) {
-    return(list(
-        intercept = intercept - muy + drop(mux %*% beta),
-        beta = beta * scale_x
-    ))
+#' @export
+#' @keywords internal
+#' @importFrom rlang abort
+as_starting_point.starting_point <- function (object, specific = FALSE, ...) {
+  if (isTRUE(specific)) {
+    if (!is.null(object$lambda)) {
+      class(object) <- c('specific_starting_point', 'starting_point')
+    } else {
+      abort("`object` can not be made a specific starting point because it does not contain item `lambda`")
+    }
+  } else {
+    class(object) <- c('shared_starting_point', 'starting_point')
+  }
+  return(object)
 }
 
-##
-## Unstandardize regression coefficients
-##
-#' @importFrom Matrix drop
-unstandardize_coefs <- function(intercept, beta, scale_x, mux, muy) {
-    beta <- beta / scale_x
-    return(list(
-        intercept = intercept + muy - drop(mux %*% beta),
-        beta = beta
-    ))
+#' @export
+#' @keywords internal
+c.starting_point <- function (...) {
+  c.starting_points(...)
 }
 
-
-## Convenience function for parallel computing
-##
-## This function handles setting up, using, and closing a potential cluster.
-## If no cluster of computing nodes is requested, it will create a proxy to the local
-## \code{lapply} function.
-##
-#' @importFrom parallel clusterEvalQ clusterExport clusterApplyLB stopCluster
-#' @importFrom parallel makePSOCKcluster clusterSetRNGStream
+#' @export
+#' @keywords internal
 #' @importFrom methods is
-setupCluster <- function(ncores = 1L, cl = NULL, eval, export, envir = parent.frame()) {
-    retlocal <- list(
-        lapply = lapply,
-        ncores = 1L,
-        stopCluster = function() {},
-        setSeed = set.seed,
-        exportedObject = function(obj) {
-            return(obj)
-        }
-    )
-
-    ret <- retlocal
-
-    ##
-    ## Set up a potential cluster
-    ##
-    if (!is.numeric(ncores) || length(ncores) != 1L || ncores < 1) {
-        warning("`ncores` must be a positive integer of length one.")
+#' @importFrom rlang abort
+c.starting_points <- function (...) {
+  structure(unlist(lapply(list(...), function (sp) {
+    if (is(sp, 'starting_point')) {
+      list(sp)
+    } else if (is(sp, 'starting_points')) {
+      sp
     } else {
-        ret$ncores <- ncores
+      abort(sprintf("Do not know how to combine starting points with an object of type `%s`", class(sp)))
     }
-
-    tryCatch({
-        withCallingHandlers({
-            if (is(cl, "cluster") || ncores > 1L) {
-                if(!is(cl, "cluster")) {
-                    cl <- makePSOCKcluster(ncores)
-                    ret$stopCluster <- function() {
-                        parallel::stopCluster(cl)
-                    }
-                }
-
-                ret$ncores <- length(cl)
-
-                if (!missing(eval)) {
-                    clusterEvalQ(cl, eval)
-                }
-
-                if (!missing(export)) {
-                    clusterExport(cl, export, envir = envir)
-                }
-
-                ret$setSeed <- function(seed) {
-                    clusterSetRNGStream(cl, iseed = seed)
-                }
-
-                ret$exportedObject <- function(obj) {
-                    substitute(obj)
-                }
-
-                ret$lapply <- function(...) {
-                    clusterApplyLB(cl, ...)
-                }
-            }
-
-        }, error = function(...) {
-            ret <- retlocal
-        })
-    }, error = function(e) {
-        warning("Error during cluster setup: ", e)
-    }, finally = {})
-
-    return(ret)
+  }), recursive = FALSE, use.names = FALSE), class = 'starting_points')
 }
-
-##
-## Get the default lambda min ratio, depending on the dimensions of `x`
-##
-.default_lambda_min_ratio <- function(x) {
-    lambda_min_ratio <- tryCatch({
-        if (ncol(x) < nrow(x)) {
-            1e-4
-        } else {
-            1e-3
-        }
-    },
-    error = function(...) {
-        return(1e-4)
-    })
-}
-
-##
-## Get the EN correction factor
-##
-#' @useDynLib pense, .registration = TRUE
-.en_correction_factor <- function(correction, alpha, lambda) {
-    .Call(
-        C_en_correction_factor,
-        as.integer(correction),
-        as.numeric(alpha),
-        as.numeric(lambda)
-    )
-}
-
-

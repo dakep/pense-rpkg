@@ -64,14 +64,14 @@
 #'
 #' @export
 #' @importFrom lifecycle deprecated
+#' @importFrom rlang exec
 elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights, intercept = TRUE,
                   en_algorithm_opts, sparse = FALSE, eps = 1e-6, standardize = TRUE,
                   correction = deprecated(), xtest = deprecated(), options = deprecated()) {
   call <- match.call(expand.dots = FALSE)
-  args_call <- call
-  args_call[[1L]] <- quote(pense:::.elnet_args)
-  args_call$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
-  args <- eval.parent(args_call)
+  args <- as.list(call[-1L])
+  args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
+  args <- do.call(.elnet_args, args, envir = parent.frame())
 
   res <- .elnet_internal(args$std_data$x, args$std_data$y, alpha = args$alpha, lambda = args$lambda,
                          penalty_loadings = args$penalty_loadings, weights = args$weights,
@@ -135,9 +135,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 'tau_size', 'mape'),
                       fit_all = TRUE, cl = NULL, ncores = deprecated(), ...) {
   call <- match.call(expand.dots = TRUE)
-  args_call <- call
-  args_call[[1L]] <- quote(pense:::.elnet_args)
-  args <- eval.parent(args_call)
+  args <- do.call(.elnet_args, as.list(call[-1L]), envir = parent.frame())
   cv_k <- .as(cv_k, 'integer')
   cv_repl <- .as(cv_repl, 'integer')
 

@@ -1,5 +1,6 @@
-Major refactoring of code and new functionality.
-This also fixes the segfault error on Solaris.
+- Update to remove the use of `:::` to access internal functions.
+- Major refactoring of code and new functionality.
+- Fixes the segfault error on Solaris.
 
 ## Test environments
 * local OS X 10.15.6, R version 4.0.2 Patched
@@ -18,15 +19,6 @@ This also fixes the segfault error on Solaris.
 ## R CMD check results
 
 0 ERRORs | 0 WARNINGs | 1 NOTEs.
-
-### NOTEs
-> There are ::: calls to the package's namespace in its code. A package almost never needs to use ::: for
-> its own objects:
-> ‘.__cluster_exported_objects__’ ‘.cluster_export_object’ ‘.cluster_unexport_object’ ‘.elnet_args’ ‘.pense_args’
-> ‘.regmest_args’ ‘predict.pense_cvfit’ ‘predict.pense_fit
-
-Methods implementing repeated cross-validation allow the user to provide a parallel cluster (set-up by the user).
-These methods run R code on the clusters and access package-internal functions using `:::`.
 
 > installed size is > 5MB
 

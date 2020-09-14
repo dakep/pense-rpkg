@@ -1,4 +1,4 @@
-# pense 2.0.0
+# pense 2.0.1
   * Add new functions for compute adaptive PENSE estimates (`adapense()` and `adapense_cv()`).
   * Functions for fitting the model (`pense()`, `adapense()`, `regmest()`, etc.) are not estimating prediction performance via cross-validation anymore.
     This can now be done using the corresponding functions `pense_cv()`, `adapense_cv()`, and so on.

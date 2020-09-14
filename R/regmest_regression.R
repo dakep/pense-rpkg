@@ -73,10 +73,9 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
                     algorithm_opts = mm_algorithm_options(), add_zero_based = TRUE, mscale_bdp = 0.25,
                     mscale_opts = mscale_algorithm_options()) {
   call <- match.call(expand.dots = TRUE)
-  args_call <- call
-  args_call[[1L]] <- quote(pense:::.regmest_args)
-  args_call$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
-  args <- eval.parent(args_call)
+  args <- as.list(call[-1L])
+  args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
+  args <- do.call(.regmest_args, args, envir = parent.frame())
 
   # Call internal function
   fit <- .regmest_internal(args$std_data$x, args$std_data$y, alpha = args$alpha, lambda = args$lambda,
@@ -136,9 +135,7 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
 regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_metric = c('tau_size', 'mape', 'rmspe'),
                        fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
-  args_call <- call
-  args_call[[1L]] <- quote(pense:::.regmest_args)
-  args <- eval.parent(args_call)
+  args <- do.call(.regmest_args, as.list(call[-1L]), envir = parent.frame())
 
   cv_k <- .as(cv_k, 'integer')
   cv_repl <- .as(cv_repl, 'integer')

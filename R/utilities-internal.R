@@ -101,9 +101,8 @@ extract_metric <- function (metrics, attr, node) {
   }), recursive = FALSE, use.names = FALSE)
 
   cl_handler <- .make_cluster_handler(par_cluster)
-  cl_handler$export('std_data', std_data)
 
-  prediction_errors_all <- cl_handler$lapply(test_segments, function (test_ind, est_fun) {
+  prediction_errors_all <- cl_handler(test_segments, function (test_ind, est_fun) {
     train_x <- std_data$x[-test_ind, , drop = FALSE]
     train_y <- std_data$y[-test_ind]
     test_x <- std_data$x[test_ind, , drop = FALSE]
@@ -117,8 +116,6 @@ extract_metric <- function (metrics, attr, node) {
       test_y - drop(test_x %*% unstd_est$beta) - unstd_est$intercept
     }), use.names = FALSE, recursive = FALSE), ncol = length(cv_ests))
   }, est_fun = est_fun)
-
-  cl_handler$unexport('std_data')
 
   prediction_errors_all <- split(prediction_errors_all, rep(seq_len(cv_repl), each = cv_k))
   prediction_metrics <- lapply(prediction_errors_all, function (prediction_errors) {
@@ -411,50 +408,22 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom rlang abort
 .make_cluster_handler <- function (par_cluster) {
   if (is.null(par_cluster)) {
-    list(lapply = function (X, FUN, ..., x, fun) {
-      environment(FUN) <- .__cluster_exported_objects__
+    return(function (X, FUN, ..., x, fun) {
       lapply(X, FUN, ...)
-    },
-    export = .cluster_export_object,
-    unexport = .cluster_unexport_object)
+    })
   } else {
     tryCatch({
       clusterEvalQ(par_cluster, {
         library(pense)
       })
     }, error = function (e) {
-      abort(paste("`parallel` cluster can not be used:", e))
+      abort(paste("`parallel` cluster cannot be used:", e))
     })
 
-    list(lapply = function (X, FUN, ..., x, fun) {
+    return(function (X, FUN, ..., x, fun) {
       clusterApplyLB(par_cluster, x = X, fun = function (X, FUN, ...) {
-        environment(FUN) <- pense:::.__cluster_exported_objects__
         FUN(X, ...)
       }, FUN = FUN, ... = ...)
-    },
-    export = function (name, value) {
-      clusterCall(par_cluster, function (name, value) {
-        pense:::.cluster_export_object(name, value)
-      }, name = name, value = value)
-      invisible(NULL)
-    },
-    unexport = function (name) {
-      clusterCall(par_cluster, function (name) {
-        pense:::.cluster_unexport_object(name)
-      }, name = name)
-      invisible(NULL)
     })
   }
-}
-
-.__cluster_exported_objects__ <- new.env()
-
-.cluster_export_object <- function (name, value) {
-  assign(name, value, envir = .__cluster_exported_objects__)
-  invisible(NULL)
-}
-
-.cluster_unexport_object <- function (name) {
-  remove(list = name, envir = .__cluster_exported_objects__)
-  invisible(NULL)
 }

@@ -128,10 +128,9 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
   }
 
   call <- match.call(expand.dots = TRUE)
-  args_call <- call
-  args_call[[1L]] <- quote(pense:::.pense_args)
-  args_call$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
-  args <- eval.parent(args_call)
+  args <- as.list(call[-1L])
+  args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
+  args <- do.call(.pense_args, args, envir = parent.frame())
 
   # Call internal function
   fit <- .pense_internal(args$std_data$x, args$std_data$y, args$alpha, args$lambda, args$enpy_lambda_inds,
@@ -190,9 +189,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_metric = c('tau_size', 'mape', 'rmspe'),
                      fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
-  args_call <- call
-  args_call[[1L]] <- quote(pense:::.pense_args)
-  args <- eval.parent(args_call)
+  args <- do.call(.pense_args, as.list(call[-1L]), envir = parent.frame())
 
   cv_k <- .as(cv_k, 'integer')
   cv_repl <- .as(cv_repl, 'integer')

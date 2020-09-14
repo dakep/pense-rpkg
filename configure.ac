@@ -1,4 +1,4 @@
-AC_INIT(pense, 2.0.0)
+AC_INIT(pense, 2.0.1)
 AC_PREREQ(2.62)
 
 : ${R_HOME=`R RHOME`}

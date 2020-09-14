@@ -122,7 +122,7 @@ predict.pense_cvfit <- function(object, newdata, lambda = c('min', 'se'), se_mul
 residuals.pense_fit <- function(object, lambda, exact = deprecated(), correction = deprecated(), ...) {
   train_y <- eval.parent(object$call$y)
   cl <- match.call(expand.dots = FALSE)
-  cl[[1L]] <- quote(pense:::predict.pense_fit)
+  cl[[1L]] <- quote(predict)
   return(train_y - eval.parent(cl))
 }
 
@@ -152,6 +152,6 @@ residuals.pense_cvfit <- function(object, lambda = c('min', 'se'), se_mult = 1, 
                                   correction = deprecated(), ...) {
   train_y <- eval.parent(object$call$y)
   cl <- match.call(expand.dots = FALSE)
-  cl[[1L]] <- quote(pense:::predict.pense_cvfit)
+  cl[[1L]] <- quote(predict)
   return(train_y - eval.parent(cl))
 }

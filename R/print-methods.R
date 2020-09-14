@@ -72,6 +72,7 @@ summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, .
 print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
   cl <- match.call(expand.dots = FALSE)
   cl[[1L]] <- quote(summary)
+  names(cl)[[which(names(cl) == 'x')]] <- 'object'
   eval.parent(cl)
 }
 

@@ -14,6 +14,14 @@ and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et al.
 adaptive extensions developed in [Kepplinger
 (2020)](https://hdl.handle.net/2429/75637).
 
+## Migrating from pense versions 1.x to 2.x
+
+Version 2.x, release September 2020, introduces many new features and
+improved computational speed. The changes, however, make the package
+incompatible with previous versions. The [migration
+guide](https://dakep.github.io/pense-rpkg/articles/migration_guide.html)
+helps migrating existing code to new versions of the package.
+
 ## Usage
 
 The main function for most users is `adapense_cv()`, which computes an

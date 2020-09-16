@@ -73,7 +73,7 @@ adapense_cv() is a convenience wrapper to compute adaptive PENSE estimates." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1.100</span>
       </span>
     </div>
 
@@ -87,6 +87,18 @@ adapense_cv() is a convenience wrapper to compute adaptive PENSE estimates." />
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Articles
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="../articles/migration_guide.html">Migrating from pense version 1.x to 2.x</a>
+    </li>
+  </ul>
 </li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -208,6 +220,8 @@ or the automatically generated grid of size <code>nlambda</code>).
 If <code>standardize = TRUE</code>, the starting points are also scaled.</p></dd>
     <dt><code>intercept</code></dt><dd><p>include an intercept in the model.</p></dd>
     <dt><code>bdp</code></dt><dd><p>desired breakdown point of the estimator, between 0 and 0.5.</p></dd>
+    <dt><code>cc</code></dt><dd><p>tuning constant for the S-estimator. Default is to chosen based on the breakdown point <code>bdp</code>.
+Does <em>not</em> affect the estimated coefficients, only the estimated scale of the residuals.</p></dd>
     <dt><code>eps</code></dt><dd><p>numerical tolerance.</p></dd>
     <dt><code>explore_solutions</code></dt><dd><p>number of solutions to compute up to the desired precision <code>eps</code>.</p></dd>
     <dt><code>explore_tol</code></dt><dd><p>numerical tolerance for exploring possible solutions. Should be (much) looser than <code>eps</code> to

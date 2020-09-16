@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Deprecated: ENPY Initial Estimates for EN S-Estimators — enpy • pense</title>
+<title>Deprecated — enpy • pense</title>
 
 
 <!-- jquery -->
@@ -39,9 +39,9 @@
 
 
 
-<meta property="og:title" content="Deprecated: ENPY Initial Estimates for EN S-Estimators — enpy" />
+<meta property="og:title" content="Deprecated — enpy" />
 <meta property="og:description" content="
-
+Compute initial estimates for EN S-estimates using ENPY.
 Superseded by enpy_initial_estimates()." />
 
 
@@ -74,7 +74,7 @@ Superseded by enpy_initial_estimates()." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1.100</span>
       </span>
     </div>
 
@@ -88,6 +88,18 @@ Superseded by enpy_initial_estimates()." />
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Articles
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="../articles/migration_guide.html">Migrating from pense version 1.x to 2.x</a>
+    </li>
+  </ul>
 </li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -113,14 +125,14 @@ Superseded by enpy_initial_estimates()." />
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Deprecated: ENPY Initial Estimates for EN S-Estimators</h1>
+    <h1>Deprecated</h1>
     <small class="dont-index">Source: <a href='https://github.com/dakep/pense-rpkg/blob/master/R/deprecated-functions.R'><code>R/deprecated-functions.R</code></a></small>
     <div class="hidden name"><code>enpy.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p><img src='figures/lifecycle-deprecated.svg' alt='Deprecated lifecycle' />
-
+    <p><img src='figures/lifecycle-deprecated.svg' alt='Deprecated lifecycle' /></p>
+<p>Compute initial estimates for EN S-estimates using ENPY.
 Superseded by <code><a href='enpy_initial_estimates.html'>enpy_initial_estimates()</a></code>.</p>
     </div>
 
@@ -168,6 +180,10 @@ on the breakdown point <code>delta</code>. Should never have to be changed.</p><
 <dt>coeff</dt><dd><p>A numeric matrix with one initial coefficient per column</p></dd>
 <dt>objF</dt><dd><p>A vector of values of the objective function for the respective coefficient</p></dd>
 
+    <h2 class="hasAnchor" id="warning"><a class="anchor" href="#warning"></a>Warning</h2>
+
+    <p>Do not use this function in new code.
+It may be removed from future versions of the package.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p>Other deprecated functions: 

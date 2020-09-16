@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Deprecated Additional Options for the Penalized EN MM-estimator — mstep_options • pense</title>
+<title>Deprecated — mstep_options • pense</title>
 
 
 <!-- jquery -->
@@ -39,10 +39,10 @@
 
 
 
-<meta property="og:title" content="Deprecated Additional Options for the Penalized EN MM-estimator — mstep_options" />
+<meta property="og:title" content="Deprecated — mstep_options" />
 <meta property="og:description" content="
-
-Superseded by mm_algorithm_options() and options supplied directly to pense()." />
+Additional options for computing penalized EN MM-estimates.
+Superseded by mm_algorithm_options() and options supplied directly to pensem_cv()." />
 
 
 
@@ -74,7 +74,7 @@ Superseded by mm_algorithm_options() and options supplied directly to pense()." 
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1.100</span>
       </span>
     </div>
 
@@ -88,6 +88,18 @@ Superseded by mm_algorithm_options() and options supplied directly to pense()." 
 </li>
 <li>
   <a href="../reference/index.html">Reference</a>
+</li>
+<li class="dropdown">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+    Articles
+     
+    <span class="caret"></span>
+  </a>
+  <ul class="dropdown-menu" role="menu">
+    <li>
+      <a href="../articles/migration_guide.html">Migrating from pense version 1.x to 2.x</a>
+    </li>
+  </ul>
 </li>
 <li>
   <a href="../news/index.html">Changelog</a>
@@ -113,15 +125,15 @@ Superseded by mm_algorithm_options() and options supplied directly to pense()." 
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>Deprecated Additional Options for the Penalized EN MM-estimator</h1>
+    <h1>Deprecated</h1>
     <small class="dont-index">Source: <a href='https://github.com/dakep/pense-rpkg/blob/master/R/deprecated-functions.R'><code>R/deprecated-functions.R</code></a></small>
     <div class="hidden name"><code>mstep_options.Rd</code></div>
     </div>
 
     <div class="ref-description">
-    <p><img src='figures/lifecycle-deprecated.svg' alt='Deprecated lifecycle' />
-
-Superseded by <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> and options supplied directly to <code><a href='pense.html'>pense()</a></code>.</p>
+    <p><img src='figures/lifecycle-deprecated.svg' alt='Deprecated lifecycle' /></p>
+<p>Additional options for computing penalized EN MM-estimates.
+Superseded by <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> and options supplied directly to <code><a href='pensem_cv.html'>pensem_cv()</a></code>.</p>
     </div>
 
     <pre class="usage"><span class='fu'>mstep_options</span>(
@@ -165,6 +177,10 @@ If <code>TRUE</code>, as by default, the estimator is "bias corrected".</p></td>
     </tr>
     </table>
 
+    <h2 class="hasAnchor" id="warning"><a class="anchor" href="#warning"></a>Warning</h2>
+
+    <p>Do not use this function in new code.
+It may be removed from future versions of the package.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p>Other deprecated functions: 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/deprecated-functions.R
 \name{initest_options}
 \alias{initest_options}
-\title{Deprecated Options for Initial Estimates}
+\title{Deprecated}
 \usage{
 initest_options(
   keep_solutions = 5,
@@ -48,8 +48,15 @@ tolerance for the M-scale.}
 }
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+
+Options for computing initial estimates via ENPY.
 Superseded by \code{\link[=enpy_options]{enpy_options()}}.
 }
+\section{Warning}{
+Do not use this function in new code.
+It may be removed from future versions of the package.
+}
+
 \seealso{
 Other deprecated functions: 
 \code{\link{deprecated_en_options}},

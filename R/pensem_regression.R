@@ -13,7 +13,7 @@ pensem_cv <- function (x, ...) {
 
 #' Deprecated Alias of pensem_cv
 #'
-#' [pensem()] is a deprecated alias for `pensem_cv()`.
+#' `pensem()` is a deprecated alias for [pensem_cv()].
 #'
 #' @inheritParams pensem_cv
 #'
@@ -132,7 +132,12 @@ pensem_cv.pense_cvfit <- function (x, scale, alpha, nlambda = 50, lambda_min_rat
   if (missing(scale)) {
     pense_coefs <- coef(x, lambda = 'min')
     resids <- as.numeric(y_train - x_train %*% pense_coefs[-1L] - pense_coefs[[1L]])
-    scale <- mscale(resids, bdp = bdp, opts = mscale_opts)
+    cc <- if (!is.null(x$call$cc)) {
+      eval.parent(x$call$cc)
+    } else {
+      NULL
+    }
+    scale <- mscale(resids, bdp = bdp, cc = cc, opts = mscale_opts)
   }
 
   regmest_call <- cl

@@ -2,7 +2,7 @@
 % Please edit documentation in R/deprecated-functions.R
 \name{pense_options}
 \alias{pense_options}
-\title{Deprecated Additional Options for the Penalized EN S-estimator}
+\title{Deprecated}
 \usage{
 pense_options(
   delta = 0.25,
@@ -36,8 +36,15 @@ If \code{TRUE}, as by default, the estimator is "bias corrected".}
 }
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+
+Additional options for computing penalized EN S-estimates.
 Superseded by \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} and options supplied directly to \code{\link[=pense]{pense()}}.
 }
+\section{Warning}{
+Do not use this function in new code.
+It may be removed from future versions of the package.
+}
+
 \seealso{
 Other deprecated functions: 
 \code{\link{deprecated_en_options}},

@@ -12,7 +12,7 @@ pensem(x, ...)
 \item{...}{ignored. See the section on deprecated parameters below.}
 }
 \description{
-\code{\link[=pensem]{pensem()}} is a deprecated alias for \code{pensem_cv()}.
+\code{pensem()} is a deprecated alias for \code{\link[=pensem_cv]{pensem_cv()}}.
 }
 \seealso{
 Other deprecated functions: 

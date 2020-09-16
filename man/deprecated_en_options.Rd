@@ -4,7 +4,7 @@
 \alias{deprecated_en_options}
 \alias{en_options_aug_lars}
 \alias{en_options_dal}
-\title{Deprecated Options for the EN Algorithms}
+\title{Deprecated}
 \usage{
 en_options_aug_lars(use_gram = c("auto", "yes", "no"), eps = 1e-12)
 
@@ -40,6 +40,8 @@ conjugate gradient is used.}
 }
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+
+Options for computing EN estimates.
 }
 \section{Functions}{
 \itemize{
@@ -47,6 +49,11 @@ conjugate gradient is used.}
 
 \item \code{en_options_dal}: Superseded by \code{\link[=en_dal_options]{en_dal_options()}}
 }}
+
+\section{Warning}{
+Do not use these functions in new code.
+They may be removed from future versions of the package.
+}
 
 \seealso{
 Other deprecated functions: 

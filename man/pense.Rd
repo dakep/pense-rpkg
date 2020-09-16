@@ -17,6 +17,7 @@ pense(
   penalty_loadings,
   intercept = TRUE,
   bdp = 0.25,
+  cc,
   add_zero_based = TRUE,
   enpy_specific = FALSE,
   other_starts,
@@ -65,6 +66,9 @@ coefficient. Only allowed for \code{alpha} > 0.}
 \item{intercept}{include an intercept in the model.}
 
 \item{bdp}{desired breakdown point of the estimator, between 0 and 0.5.}
+
+\item{cc}{tuning constant for the S-estimator. Default is to chosen based on the breakdown point \code{bdp}.
+Does \emph{not} affect the estimated coefficients, only the estimated scale of the residuals.}
 
 \item{add_zero_based}{also consider the 0-based regularization path. See details for a description.}
 

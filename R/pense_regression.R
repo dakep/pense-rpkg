@@ -61,6 +61,8 @@
 #'    `standardize = FALSE` or standardize the data manually.
 #' @param intercept include an intercept in the model.
 #' @param bdp desired breakdown point of the estimator, between 0 and 0.5.
+#' @param cc tuning constant for the S-estimator. Default is to chosen based on the breakdown point \code{bdp}.
+#'   Does *not* affect the estimated coefficients, only the estimated scale of the residuals.
 #' @param eps numerical tolerance.
 #' @param explore_solutions number of solutions to compute up to the desired precision `eps`.
 #' @param explore_tol numerical tolerance for exploring possible solutions. Should be (much) looser than `eps` to
@@ -113,7 +115,7 @@
 #' @aliases adapense
 #' @importFrom lifecycle deprecated is_present deprecate_stop
 pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio, enpy_lambda,
-                  penalty_loadings, intercept = TRUE, bdp = 0.25, add_zero_based = TRUE, enpy_specific = FALSE,
+                  penalty_loadings, intercept = TRUE, bdp = 0.25, cc, add_zero_based = TRUE, enpy_specific = FALSE,
                   other_starts, eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
                   comparison_tol = sqrt(eps), sparse = FALSE, ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(), mscale_opts = mscale_algorithm_options(),
@@ -386,7 +388,8 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
 #' @importFrom methods is
 #' @importFrom stats runif
 .pense_args <- function (x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio, enpy_lambda,
-                         penalty_loadings, intercept = TRUE, bdp = 0.25, add_zero_based = TRUE, enpy_specific = FALSE,
+                         penalty_loadings, intercept = TRUE, bdp = 0.25, cc = NULL, add_zero_based = TRUE,
+                         enpy_specific = FALSE,
                          other_starts, eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
                          comparison_tol = sqrt(eps), sparse = FALSE, ncores = 1, standardize = TRUE,
                          algorithm_opts = mm_algorithm_options(), mscale_opts = mscale_algorithm_options(),
@@ -500,7 +503,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
                      max_optima = .as(max_solutions[[1L]], 'integer'),
                      num_threads = max(1L, .as(ncores[[1L]], 'integer')),
                      sparse = isTRUE(sparse),
-                     mscale = .full_mscale_algo_options(bdp = bdp, mscale_opts = mscale_opts))
+                     mscale = .full_mscale_algo_options(bdp = bdp, cc = cc, mscale_opts = mscale_opts))
 
   if (pense_opts$explore_tol < pense_opts$eps) {
     abort("`explore_tol` must not be less than `eps`")

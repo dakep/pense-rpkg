@@ -71,6 +71,8 @@ or the automatically generated grid of size \code{nlambda}).
 If \code{standardize = TRUE}, the starting points are also scaled.}
     \item{\code{intercept}}{include an intercept in the model.}
     \item{\code{bdp}}{desired breakdown point of the estimator, between 0 and 0.5.}
+    \item{\code{cc}}{tuning constant for the S-estimator. Default is to chosen based on the breakdown point \code{bdp}.
+Does \emph{not} affect the estimated coefficients, only the estimated scale of the residuals.}
     \item{\code{eps}}{numerical tolerance.}
     \item{\code{explore_solutions}}{number of solutions to compute up to the desired precision \code{eps}.}
     \item{\code{explore_tol}}{numerical tolerance for exploring possible solutions. Should be (much) looser than \code{eps} to

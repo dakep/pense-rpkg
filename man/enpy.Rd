@@ -2,7 +2,7 @@
 % Please edit documentation in R/deprecated-functions.R
 \name{enpy}
 \alias{enpy}
-\title{Deprecated: ENPY Initial Estimates for EN S-Estimators}
+\title{Deprecated}
 \usage{
 enpy(x, y, alpha, lambda, delta, cc, options, en_options)
 }
@@ -29,8 +29,15 @@ on the breakdown point \code{delta}. Should never have to be changed.}
 }
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+
+Compute initial estimates for EN S-estimates using ENPY.
 Superseded by \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}}.
 }
+\section{Warning}{
+Do not use this function in new code.
+It may be removed from future versions of the package.
+}
+
 \seealso{
 Other deprecated functions: 
 \code{\link{deprecated_en_options}},

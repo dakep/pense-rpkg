@@ -16,3 +16,4 @@ run-checks
 .vscode
 autoconfig.R
 autoconfig.hpp
+vignettes/*_cache

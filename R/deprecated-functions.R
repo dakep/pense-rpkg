@@ -1,7 +1,14 @@
-#' Deprecated Options for Initial Estimates
+#' Deprecated
 #'
+#' @description
 #' \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+#'
+#' Options for computing initial estimates via ENPY.
 #' Superseded by [enpy_options()].
+#'
+#' @details # Warning
+#' Do not use this function in new code.
+#' It may be removed from future versions of the package.
 #'
 #' @param keep_solutions how many initial estimates should be kept to perform
 #'      full PENSE iterations?
@@ -41,9 +48,16 @@ initest_options <- function (keep_solutions = 5, psc_method = c("exact", "rr"), 
        keepPSCProportion = .as(psc_keep[[1L]], 'numeric'))
 }
 
-#' Deprecated Options for the EN Algorithms
+#' Deprecated
 #'
+#' @description
 #' \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+#'
+#' Options for computing EN estimates.
+#'
+#' @details # Warning
+#' Do not use these functions in new code.
+#' They may be removed from future versions of the package.
 #'
 #' @name deprecated_en_options
 #' @family deprecated functions
@@ -82,10 +96,17 @@ en_options_dal <- function (maxit = 100, eps = 1e-8, eta_mult = 2, eta_start_num
 }
 
 
-#' Deprecated Additional Options for the Penalized EN S-estimator
+#' Deprecated
 #'
+#' @description
 #' \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+#'
+#' Additional options for computing penalized EN S-estimates.
 #' Superseded by [mm_algorithm_options()] and options supplied directly to [pense()].
+#'
+#' @details # Warning
+#' Do not use this function in new code.
+#' It may be removed from future versions of the package.
 #'
 #' @param delta desired breakdown point of the resulting estimator.
 #' @param maxit maximum number of iterations allowed.
@@ -111,10 +132,17 @@ pense_options <- function (delta = 0.25, maxit = 1000, eps = 1e-6, mscale_eps = 
        mscale_opts = mscale_algorithm_options(max_it = maxit, eps = mscale_eps))
 }
 
-#' Deprecated Additional Options for the Penalized EN MM-estimator
+#' Deprecated
 #'
+#' @description
 #' \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
-#' Superseded by [mm_algorithm_options()] and options supplied directly to [pense()].
+#'
+#' Additional options for computing penalized EN MM-estimates.
+#' Superseded by [mm_algorithm_options()] and options supplied directly to [pensem_cv()].
+#'
+#' @details # Warning
+#' Do not use this function in new code.
+#' It may be removed from future versions of the package.
 #'
 #' @param cc **ignored.** Tuning constant for the M-estimator.
 #' @param maxit maximum number of iterations allowed.
@@ -137,10 +165,17 @@ mstep_options <- function (cc = 3.44, maxit = 1000, eps = 1e-6, adjust_bdp = FAL
   list(maxit = .as(maxit[[1L]], 'integer'))
 }
 
-#' Deprecated: ENPY Initial Estimates for EN S-Estimators
+#' Deprecated
 #'
+#' @description
 #' \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
+#'
+#' Compute initial estimates for EN S-estimates using ENPY.
 #' Superseded by [enpy_initial_estimates()].
+#'
+#' @details # Warning
+#' Do not use this function in new code.
+#' It may be removed from future versions of the package.
 #'
 #' @param x data matrix with predictors.
 #' @param y response vector.

@@ -1,8 +1,8 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 2.0.1
-Date: 2020-09-13
+Version: 2.0.1.100
+Date: 2020-09-15
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),
@@ -36,9 +36,12 @@ LinkingTo:
     Rcpp,
     RcppArmadillo (>= 0.9.600)
 Suggests:
-    testthat (>= 2.1.0)
+    testthat (>= 2.1.0),
+    knitr
 License: MIT + file LICENSE
 NeedsCompilation: yes
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE, load = "source")
 RdMacros: lifecycle
+VignetteBuilder: 
+    knitr

@@ -2,7 +2,7 @@
 % Please edit documentation in R/deprecated-functions.R
 \name{mstep_options}
 \alias{mstep_options}
-\title{Deprecated Additional Options for the Penalized EN MM-estimator}
+\title{Deprecated}
 \usage{
 mstep_options(
   cc = 3.44,
@@ -31,8 +31,15 @@ If \code{TRUE}, as by default, the estimator is "bias corrected".}
 }
 \description{
 \Sexpr[results=rd, stage=render]{lifecycle::badge('deprecated')}
-Superseded by \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} and options supplied directly to \code{\link[=pense]{pense()}}.
+
+Additional options for computing penalized EN MM-estimates.
+Superseded by \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} and options supplied directly to \code{\link[=pensem_cv]{pensem_cv()}}.
 }
+\section{Warning}{
+Do not use this function in new code.
+It may be removed from future versions of the package.
+}
+
 \seealso{
 Other deprecated functions: 
 \code{\link{deprecated_en_options}},

@@ -28,8 +28,6 @@ The main function for most users is `adapense_cv()`, which computes an
 adaptive PENSE fit and estimates prediction performance for many values
 of the penalization level.
 
-### Example
-
 ``` r
 library(pense)
 
@@ -64,30 +62,12 @@ summary(fit, lambda = "se")
 The user can also compute a non-adaptive PENSE fit by using `pense_cv()`
 in place of `adapense_cv()` or a PENSEM fit by using `pensem_cv()`.
 
-### Using a parallel cluster
+## Detailed examples
 
-The cross-validation functions in the pense package (those ending in
-`_cv()`) also accept a parallel cluster instead of the `ncores=`
-argument. Setting the seed ensures the results are reproducible and the
-same as if not using a cluster\!
-
-Continuing the example above, this could look like
-
-``` r
-library(parallel)
-
-# Set up the cluster using 3 CPUs on the local machine:
-par_clust <- makeCluster(3)
-
-set.seed(123) # Setting the seed is suggested for reproducibility of the CV results.
-fit_with_cluster <- adapense_cv(x, y, alpha = 0.9, cv_k = 5, cv_repl = 10,
-                                cl = par_clust)
-
-stopCluster(par_clust)
-```
-
-Note that the `cl=` argument cannot be mixed with the `ncores=`
-argument. Only one of them can be specified\!
+The package vignette [Estimating predictive
+models](https://dakep.github.io/pense-rpkg/articles/computing_adapense.html)
+demonstrate in more detail how to compute adaptive and non-adaptive
+PENSE estimates.
 
 ## Installation
 
@@ -98,16 +78,13 @@ R console:
 install.packages("pense")
 ```
 
-The most recent stable version as well as the developing version might
-not yet be available on CRAN. These can be directly installed from
+The most recent development version can be installed directly from
 github using the [devtools](https://cran.r-project.org/package=devtools)
 package:
 
 ``` r
-# Install the most recent stable version:
+# Install the most recent development version:
 devtools::install_github("dakep/pense-rpkg")
-# Install the (unstable) develop version:
-devtools::install_github("dakep/pense-rpkg", ref = "develop")
 ```
 
 ## References

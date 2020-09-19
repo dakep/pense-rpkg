@@ -28,8 +28,6 @@ references:
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", error = TRUE, warning = TRUE)
-
-library(pense)
 ```
 
 Version 2.x released September 2020 offers many new features and improved speed.
@@ -37,6 +35,12 @@ Version 2.x released September 2020 offers many new features and improved speed.
 
 The most visible changes are to functions `pense()` and `pensem()`, which now only fit models but do not evaluate prediction performance anymore.
 Instead, the new functions `pense_cv()` and `pensem_cv()` are now used for fitting models *and* estimating their prediction performance.
+
+First we need to load the new version of the pense package:
+```{r}
+library(pense)
+packageVersion("pense")
+```
 
 This guide uses the following simulated data:
 ```{r}

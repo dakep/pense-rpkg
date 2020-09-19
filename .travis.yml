@@ -28,7 +28,7 @@ stages:
 jobs:
 - stage: Check
   after_success:
-  - R CMD INSTALL *.tar.gz
+  - R CMD INSTALL .
   - git pull
   - git checkout ${TRAVIS_BRANCH}
   - Rscript -e 'rmarkdown::render("README.Rmd")'

@@ -18,3 +18,5 @@
 ^.*autoconfig\.R$
 ^.*autoconfig\.hpp$
 ^\.travis\.yml$
+^doc$
+^Meta$

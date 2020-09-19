@@ -59,6 +59,12 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="articles/computing_adapense.html">Estimating predictive models</a>
+    </li>
+    <li>
+      <a href="articles/lambda_grids.html">Controlling the grid of penalization levels</a>
+    </li>
+    <li>
       <a href="articles/migration_guide.html">Migrating from pense version 1.x to 2.x</a>
     </li>
   </ul>
@@ -101,9 +107,6 @@
 <h2 class="hasAnchor">
 <a href="#usage" class="anchor"></a>Usage</h2>
 <p>The main function for most users is <code><a href="reference/pense_cv.html">adapense_cv()</a></code>, which computes an adaptive PENSE fit and estimates prediction performance for many values of the penalization level.</p>
-<div id="example" class="section level3">
-<h3 class="hasAnchor">
-<a href="#example" class="anchor"></a>Example</h3>
 <div class="sourceCode" id="cb1"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw"><a href="https://dakep.github.io/pense-rpkg">pense</a></span>)
 
@@ -136,39 +139,22 @@
 </pre></div>
 <p>The user can also compute a non-adaptive PENSE fit by using <code><a href="reference/pense_cv.html">pense_cv()</a></code> in place of <code><a href="reference/pense_cv.html">adapense_cv()</a></code> or a PENSEM fit by using <code><a href="reference/pensem_cv.html">pensem_cv()</a></code>.</p>
 </div>
-<div id="using-a-parallel-cluster" class="section level3">
-<h3 class="hasAnchor">
-<a href="#using-a-parallel-cluster" class="anchor"></a>Using a parallel cluster</h3>
-<p>The cross-validation functions in the pense package (those ending in <code>_cv()</code>) also accept a parallel cluster instead of the <code>ncores=</code> argument. Setting the seed ensures the results are reproducible and the same as if not using a cluster!</p>
-<p>Continuing the example above, this could look like</p>
-<div class="sourceCode" id="cb2"><pre class="downlit">
-<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw">parallel</span>)
-
-<span class="co"># Set up the cluster using 3 CPUs on the local machine:</span>
-<span class="kw">par_clust</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html">makeCluster</a></span>(<span class="fl">3</span>)
-
-<span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">123</span>) <span class="co"># Setting the seed is suggested for reproducibility of the CV results.</span>
-<span class="kw">fit_with_cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/pense_cv.html">adapense_cv</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.9</span>, cv_k = <span class="fl">5</span>, cv_repl = <span class="fl">10</span>,
-                                cl = <span class="kw">par_clust</span>)
-
-<span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html">stopCluster</a></span>(<span class="kw">par_clust</span>)
-</pre></div>
-<p>Note that the <code>cl=</code> argument cannot be mixed with the <code>ncores=</code> argument. Only one of them can be specified!</p>
-</div>
+<div id="detailed-examples" class="section level2">
+<h2 class="hasAnchor">
+<a href="#detailed-examples" class="anchor"></a>Detailed examples</h2>
+<p>The package vignette <a href="https://dakep.github.io/pense-rpkg/articles/computing_adapense.html">Estimating predictive models</a> demonstrate in more detail how to compute adaptive and non-adaptive PENSE estimates.</p>
 </div>
 <div id="installation" class="section level2">
 <h2 class="hasAnchor">
 <a href="#installation" class="anchor"></a>Installation</h2>
 <p>To install the latest release from CRAN, run the following R code in the R console:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit">
+<div class="sourceCode" id="cb2"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html">install.packages</a></span>(<span class="st">"pense"</span>)
 </pre></div>
-<p>The most recent stable version as well as the developing version might not yet be available on CRAN. These can be directly installed from github using the <a href="https://cran.r-project.org/package=devtools">devtools</a> package:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit">
-<span class="co"># Install the most recent stable version:</span>
+<p>The most recent development version can be installed directly from github using the <a href="https://cran.r-project.org/package=devtools">devtools</a> package:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit">
+<span class="co"># Install the most recent development version:</span>
 <span class="kw">devtools</span>::<span class="fu">install_github</span>(<span class="st">"dakep/pense-rpkg"</span>)
-<span class="co"># Install the (unstable) develop version:</span>
-<span class="kw">devtools</span>::<span class="fu">install_github</span>(<span class="st">"dakep/pense-rpkg"</span>, ref = <span class="st">"develop"</span>)
 </pre></div>
 </div>
 <div id="references" class="section level2">

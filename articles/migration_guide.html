@@ -54,6 +54,12 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
+      <a href="../articles/computing_adapense.html">Estimating predictive models</a>
+    </li>
+    <li>
+      <a href="../articles/lambda_grids.html">Controlling the grid of penalization levels</a>
+    </li>
+    <li>
       <a href="../articles/migration_guide.html">Migrating from pense version 1.x to 2.x</a>
     </li>
   </ul>
@@ -85,7 +91,7 @@
       <h1 data-toc-skip>Migrating from pense version 1.x to 2.x</h1>
                         <h4 class="author">David Kepplinger</h4>
             
-            <h4 class="date">2020-09-16</h4>
+            <h4 class="date">2020-09-19</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/master/vignettes/migration_guide.Rmd"><code>vignettes/migration_guide.Rmd</code></a></small>
       <div class="hidden name"><code>migration_guide.Rmd</code></div>
@@ -96,8 +102,15 @@
     
 <p>Version 2.x released September 2020 offers many new features and improved speed. <strong>These changes make pense 2.x incompatible with code written for pense 1.x and results will not be identical!</strong></p>
 <p>The most visible changes are to functions <code><a href="../reference/pense.html">pense()</a></code> and <code><a href="../reference/pensem.html">pensem()</a></code>, which now only fit models but do not evaluate prediction performance anymore. Instead, the new functions <code><a href="../reference/pense_cv.html">pense_cv()</a></code> and <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> are now used for fitting models <em>and</em> estimating their prediction performance.</p>
-<p>This guide uses the following simulated data:</p>
+<p>First we need to load the new version of the pense package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit">
+<span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw"><a href="https://dakep.github.io/pense-rpkg">pense</a></span>)
+<span class="co">#&gt; Loading required package: Matrix</span>
+<span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span>(<span class="st">"pense"</span>)
+<span class="co">#&gt; [1] '2.0.1.100'</span>
+</pre></div>
+<p>This guide uses the following simulated data:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">1234</span>)
 <span class="kw">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span>(<span class="fu"><a href="https://rdrr.io/r/stats/TDist.html">rt</a></span>(<span class="fl">50</span> <span class="op">*</span> <span class="fl">10</span>, df = <span class="fl">5</span>), ncol = <span class="fl">10</span>)
 <span class="kw">y</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="kw">x</span>[, <span class="fl">1</span>] <span class="op">-</span> <span class="fl">2</span> <span class="op">*</span> <span class="kw">x</span>[, <span class="fl">2</span>] <span class="op">+</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="kw">x</span>[, <span class="fl">3</span>] <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html">rt</a></span>(<span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span>(<span class="kw">x</span>), df = <span class="fl">3</span>)
@@ -106,14 +119,14 @@
 <h1 class="hasAnchor">
 <a href="#the-new-_cv-family-of-functions" class="anchor"></a>The new <code>_cv()</code> family of functions</h1>
 <p>The most basic usage in old versions was to call function <code><a href="../reference/pense.html">pense()</a></code> to fit models with <code>nlambda</code> different penalization levels and evaluate each model’s prediction performance with K-fold cross-validation. In the new version, this will now raise an error:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit">
+<div class="sourceCode" id="cb3"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">1234</span>)
 <span class="kw">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, warm_reset = <span class="fl">5L</span>, cv_k = <span class="fl">5</span>)
 <span class="co">#&gt; Error: The `cv_k` argument of `pense()` was deprecated in pense 2.0.0 and is now defunct.</span>
 <span class="co">#&gt; Please use `pense_cv()` instead.</span>
 </pre></div>
 <p>As the error message says, if model fitting <em>and</em> cross-validation is required, use <code><a href="../reference/pense_cv.html">pense_cv()</a></code> instead. The simple solution is to replace <code><a href="../reference/pense.html">pense()</a></code> with <code><a href="../reference/pense_cv.html">pense_cv()</a></code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit">
+<div class="sourceCode" id="cb4"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">1234</span>)
 <span class="kw">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, warm_reset = <span class="fl">5L</span>, cv_k = <span class="fl">5</span>)
 <span class="co">#&gt; Warning: The `warm_reset` argument of `pense()` is deprecated as of pense 2.0.0.</span>
@@ -122,19 +135,19 @@
 <span class="co">#&gt; Call `lifecycle::last_warnings()` to see where this warning was generated.</span>
 </pre></div>
 <p>However, this raises a warning that the argument <code>warm_reset=</code> is also deprecated in favor of argument <code>nlambda_enpy=</code>. The new version uses more consistent and self-explaining naming for arguments. Therefore, the most basic way for computing regularized S-estimates of linear regression <em>and</em> estimating their prediction performance via CV is the following:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit">
+<div class="sourceCode" id="cb5"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span>(<span class="fl">1234</span>)
 <span class="kw">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, nlambda_enpy = <span class="fl">5L</span>, cv_k = <span class="fl">5</span>)
 </pre></div>
 <p>To only fit the models, without estimating prediction performance, use <code><a href="../reference/pense.html">pense()</a></code> (note the absence of the <code>cv_k=</code> argument):</p>
-<div class="sourceCode" id="cb5"><pre class="downlit">
+<div class="sourceCode" id="cb6"><pre class="downlit">
 <span class="kw">fitted_no_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, nlambda_enpy = <span class="fl">5L</span>)
 </pre></div>
 <div id="structure-of-returned-objects" class="section level2">
 <h2 class="hasAnchor">
 <a href="#structure-of-returned-objects" class="anchor"></a>Structure of returned objects</h2>
 <p>The structure of the returned objects is different from pense versions 1.x. In old versions, the estimated coefficients were stored as a sparse matrix object, with one column per fit (i.e., per penalization level). In new versions, estimates are stored as a list with one entry per penalization level. For fitted models with prediction performance, as in <code>fitted_with_cv</code>, the returned object additionally contains information on the prediction performance of all fitted models:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit">
+<div class="sourceCode" id="cb7"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span>(<span class="kw">fitted_no_cv</span>, max.level = <span class="fl">1</span>)
 <span class="co">#&gt; List of 3</span>
 <span class="co">#&gt;  $ estimates:List of 40</span>
@@ -157,7 +170,7 @@
 <h1 class="hasAnchor">
 <a href="#extracting-coefficient-estimates" class="anchor"></a>Extracting coefficient estimates</h1>
 <p>As in previous versions, the coefficient estimates are best accessed via the <code><a href="https://rdrr.io/r/stats/coef.html">coefficients()</a></code> method. For fits with estimated prediction performance, the method returns the coefficients of the model yielding the lowest prediction error:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit">
+<div class="sourceCode" id="cb8"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span>(<span class="kw">fitted_with_cv</span>)
 <span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span>
 <span class="co">#&gt;  0.04769560  0.56122207 -1.78107128  1.44435688 -0.12301109  0.14581996 </span>
@@ -165,7 +178,7 @@
 <span class="co">#&gt;  0.03935565 -0.05931467  0.02824981  0.21485300  0.08671250</span>
 </pre></div>
 <p>Fits computed with <code><a href="../reference/pense.html">pense()</a></code>, however, do not have information about prediction performance, hence <code><a href="https://rdrr.io/r/stats/coef.html">coefficients(fitted_no_cv)</a></code> would not know what penalization level to use. In this case, the desired penalization level must be specified manually:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit">
+<div class="sourceCode" id="cb9"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span>(<span class="kw">fitted_no_cv</span>, lambda = <span class="kw">fitted_no_cv</span><span class="op">$</span><span class="kw">lambda</span>[<span class="fl">10</span>])
 <span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span>
 <span class="co">#&gt;   0.3406859   0.2959405  -1.0300811   1.0751673   0.0000000   0.0000000 </span>
@@ -173,7 +186,7 @@
 <span class="co">#&gt;   0.2256299   0.0000000   0.0000000   0.0000000   0.0000000</span>
 </pre></div>
 <p>An important difference to previous versions is that new versions <strong>do not correct for the bias</strong> introduced by the Ridge penalty. The correction, which was adopted from the original LS elastic net paper <span class="citation">(Zou and Hastie 2005)</span>, was dropped as it does not adequately counter the effects of the Ridge penalty on the S-estimates. Specifying the <code>correction=</code> argument results in an error in new versions of the package:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit">
+<div class="sourceCode" id="cb10"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span>(<span class="kw">fitted_with_cv</span>, correction = <span class="fl">TRUE</span>)
 <span class="co">#&gt; Error: The `correction` argument of `coef()` was deprecated in pense 2.0.0 and is now defunct.</span>
 </pre></div>
@@ -225,11 +238,11 @@
 </tbody>
 </table>
 <p>For example, in previous versions the breakdown point of the PENSE estimate was set with <code><a href="../reference/pense_options.html">pense_options(delta=)</a></code>:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit">
+<div class="sourceCode" id="cb11"><pre class="downlit">
 <span class="fu"><a href="../reference/pense.html">pense</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, nlambda_enpy = <span class="fl">5L</span>, options = <span class="fu"><a href="../reference/pense_options.html">pense_options</a></span>(delta = <span class="fl">0.33</span>))
 </pre></div>
 <p>In the new versions, the breakdown point is set directly in the call to <code><a href="../reference/pense.html">pense()</a></code>:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit">
+<div class="sourceCode" id="cb12"><pre class="downlit">
 <span class="fu"><a href="../reference/pense.html">pense</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, nlambda_enpy = <span class="fl">5L</span>, bdp = <span class="fl">0.33</span>)
 </pre></div>
 </div>
@@ -266,7 +279,7 @@
 <h2 class="hasAnchor">
 <a href="#selecting-the-en-algorithm" class="anchor"></a>Selecting the EN algorithm</h2>
 <p>In previous versions, the EN algorithm (the workhorse to compute PENSE estimates), was specified via <code><a href="../reference/pense.html">pense(en_options=)</a></code>. In new versions, the user can select the EN algorithm separately for computing PENSE estimates and for computing starting points via ENPY separately. Therefore, the algorithm and it’s options are now set through arguments <code>algorithm_opts=</code> and <code>enpy_opts=</code>.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit">
+<div class="sourceCode" id="cb13"><pre class="downlit">
 <span class="fu"><a href="../reference/pense.html">pense</a></span>(<span class="kw">x</span>, <span class="kw">y</span>, alpha = <span class="fl">0.6</span>, nlambda = <span class="fl">40</span>, nlambda_enpy = <span class="fl">5L</span>,
       algorithm_opts = <span class="fu"><a href="../reference/mm_algorithm_options.html">mm_algorithm_options</a></span>(en_algorithm_opts = <span class="fu"><a href="../reference/en_lars_options.html">en_lars_options</a></span>()),
       enpy_opts = <span class="fu"><a href="../reference/enpy_options.html">enpy_options</a></span>(en_algorithm_opts = <span class="fu"><a href="../reference/en_admm_options.html">en_admm_options</a></span>()))

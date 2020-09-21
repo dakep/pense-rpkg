@@ -162,6 +162,10 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
     match.fun(cv_metric)
   }
 
+  if (is.null(formals(cv_metric))) {
+    abort("Function `cv_metric` must accept at least 1 argument.")
+  }
+
   cv_fun <- function (train_data, test_ind) {
     cv_fit <- .elnet_internal(train_data$x, train_data$y, alpha = args$alpha, lambda = args$lambda,
                               penalty_loadings = args$penalty_loadings, weights = args$weights[-test_ind],

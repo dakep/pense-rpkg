@@ -91,35 +91,43 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom rlang abort
 .run_replicated_cv <- function (std_data, cv_k, cv_repl, cv_est_fun, metric, par_cluster = NULL) {
   est_fun <- match.fun(cv_est_fun)
+  call_with_errors <- isTRUE(length(formals(metric)) == 1L)
 
   if (length(std_data$y) / cv_k < 2) {
     abort("`cv_k` must be chosen to have at least 2 observations in each fold.")
   }
 
-  test_segments <- unlist(lapply(integer(cv_repl), function (repl_id) {
+  test_segments_list <- lapply(integer(cv_repl), function (repl_id) {
     split(seq_along(std_data$y), sample(rep_len(seq_len(cv_k), length(std_data$y))))
-  }), recursive = FALSE, use.names = FALSE)
+  })
+  test_segments <- unlist(test_segments_list, recursive = FALSE, use.names = FALSE)
 
   cl_handler <- .make_cluster_handler(par_cluster)
 
-  prediction_errors_all <- cl_handler(test_segments, function (test_ind, est_fun) {
+  predictions_all <- cl_handler(test_segments, function (test_ind, est_fun) {
     train_x <- std_data$x[-test_ind, , drop = FALSE]
     train_y <- std_data$y[-test_ind]
     test_x <- std_data$x[test_ind, , drop = FALSE]
-    test_y <- std_data$y[test_ind]
 
     train_std <- std_data$cv_standardize(train_x, train_y)
     cv_ests <- est_fun(train_std, test_ind)
 
     matrix(unlist(lapply(cv_ests, function (est) {
       unstd_est <- train_std$unstandardize_coef(est)
-      test_y - drop(test_x %*% unstd_est$beta) - unstd_est$intercept
+      drop(test_x %*% unstd_est$beta) - unstd_est$intercept
     }), use.names = FALSE, recursive = FALSE), ncol = length(cv_ests))
   }, est_fun = est_fun)
 
-  prediction_errors_all <- split(prediction_errors_all, rep(seq_len(cv_repl), each = cv_k))
-  prediction_metrics <- lapply(prediction_errors_all, function (prediction_errors) {
-    apply(do.call(rbind, prediction_errors), 2, metric)
+  predictions_all <- split(predictions_all, rep(seq_len(cv_repl), each = cv_k))
+  prediction_metrics <- mapply(predictions_all, test_segments_list, FUN = function (predictions, test_inds) {
+    obs_order <- sort.list(unlist(test_inds, recursive = FALSE, use.names = FALSE))
+    ordered_predictions <- do.call(rbind, predictions)[obs_order, ]
+
+    if (call_with_errors) {
+      apply(ordered_predictions - std_data$y, 2, metric)
+    } else {
+      apply(ordered_predictions, 2, metric, std_data$y)
+    }
   })
   matrix(unlist(prediction_metrics, recursive = FALSE, use.names = FALSE), ncol = cv_repl)
 }
@@ -157,6 +165,10 @@ extract_metric <- function (metrics, attr, node) {
         mloc(xj, rho = location_rho, cc = location_cc, opts = mscale_opts)
       })
       ret_list$muy <- mloc(y, rho = location_rho, cc = location_cc, opts = mscale_opts)
+      if (!is.finite(ret_list$muy)) {
+        # In case the response has more than 50% equal values.
+        ret_list$muy <- 0
+      }
     }
 
     ret_list$x <- sweep(x, 2L, ret_list$mux, FUN = `-`, check.margin = FALSE)

@@ -40,8 +40,12 @@ proportion of a single value (e.g., zero-inflated data). In this case, either co
 \item{cv_repl}{number of cross-validation replications.}
 
 \item{cv_metric}{either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, it is called with a single numeric vector of
-prediction errors and must return a scalar number.}
+errors in a single CV replication. If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as first argument
+and the true values as second argument.
+The function must always return a single numeric value quantifying the prediction performance.
+The order of the given values corresponds to the order in the input data.}
 
 \item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
 level with smallest average CV performance.}

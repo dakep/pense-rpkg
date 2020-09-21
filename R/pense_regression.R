@@ -221,6 +221,10 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_met
     match.fun(cv_metric)
   }
 
+  if (is.null(formals(cv_metric))) {
+    abort("Function `cv_metric` must accept at least 1 argument.")
+  }
+
   cv_fun <- function (train_data, test_ind) {
     cv_fit <- .pense_internal(train_data$x, train_data$y, alpha = args$alpha, lambda = args$lambda,
                               enpy_lambda_inds = args$enpy_lambda_inds, penalty_loadings = args$penalty_loadings,

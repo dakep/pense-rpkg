@@ -91,7 +91,7 @@
       <h1 data-toc-skip>Migrating from pense version 1.x to 2.x</h1>
                         <h4 class="author">David Kepplinger</h4>
             
-            <h4 class="date">2020-09-19</h4>
+            <h4 class="date">2020-09-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/master/vignettes/migration_guide.Rmd"><code>vignettes/migration_guide.Rmd</code></a></small>
       <div class="hidden name"><code>migration_guide.Rmd</code></div>
@@ -159,7 +159,7 @@
 <span class="co">#&gt;  $ call           : language pense_cv(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
 <span class="co">#&gt;  $ lambda         : num [1:40] 3.82 3.16 2.61 2.16 1.78 ...</span>
 <span class="co">#&gt;  $ cvres          :'data.frame': 40 obs. of  3 variables:</span>
-<span class="co">#&gt;  $ cv_replications: num [1:40, 1] 3.12 3.05 2.95 2.84 2.67 ...</span>
+<span class="co">#&gt;  $ cv_replications: num [1:40, 1] 2.96 2.9 2.79 2.67 2.5 ...</span>
 <span class="co">#&gt;  $ cv_measure     : chr "tau_size"</span>
 <span class="co">#&gt;  $ estimates      :List of 40</span>
 <span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_cvfit"</span>
@@ -173,9 +173,9 @@
 <div class="sourceCode" id="cb8"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span>(<span class="kw">fitted_with_cv</span>)
 <span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span>
-<span class="co">#&gt;  0.04769560  0.56122207 -1.78107128  1.44435688 -0.12301109  0.14581996 </span>
+<span class="co">#&gt;  0.10172752  0.52970226 -1.70085495  1.40631808 -0.09281353  0.14095462 </span>
 <span class="co">#&gt;          X6          X7          X8          X9         X10 </span>
-<span class="co">#&gt;  0.03935565 -0.05931467  0.02824981  0.21485300  0.08671250</span>
+<span class="co">#&gt;  0.06652198 -0.03318776  0.00000000  0.19113248  0.05875205</span>
 </pre></div>
 <p>Fits computed with <code><a href="../reference/pense.html">pense()</a></code>, however, do not have information about prediction performance, hence <code><a href="https://rdrr.io/r/stats/coef.html">coefficients(fitted_no_cv)</a></code> would not know what penalization level to use. In this case, the desired penalization level must be specified manually:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit">

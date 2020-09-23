@@ -224,7 +224,8 @@ S-estimate.</p>
     </tr>
     <tr>
       <th>y</th>
-      <td><p>vector of response values of length <code>n</code>.</p></td>
+      <td><p>vector of response values of length <code>n</code>.
+For binary classification, <code>y</code> should be a factor with 2 levels.</p></td>
     </tr>
     <tr>
       <th>alpha</th>
@@ -300,8 +301,12 @@ can not be used in parallel R sessions on the same host.</p></td>
     <tr>
       <th>cv_metric</th>
       <td><p>either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, it is called with a single numeric vector of
-prediction errors and must return a scalar number.</p></td>
+errors in a single CV replication. If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as first argument
+and the true values as second argument.
+The function must always return a single numeric value quantifying the prediction performance.
+The order of the given values corresponds to the order in the input data.</p></td>
     </tr>
     <tr>
       <th>add_zero_based</th>
@@ -365,6 +370,17 @@ the arguments in the <code><a href='pense_cv.html'>pense_cv()</a></code> call ar
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>an object of cross-validated regularized M-estimates as returned from <code><a href='regmest_cv.html'>regmest_cv()</a></code>.</p>
+    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+
+    <p>The built-in CV metrics are</p><dl>
+<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by <code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
+<dt><code>"mape"</code></dt><dd><p>Median absolute prediction error.</p></dd>
+<dt><code>"rmspe"</code></dt><dd><p>Root mean squared prediction error.</p></dd>
+<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
+binary responses.</p></dd>
+
+</dl>
+
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p><code><a href='pense_cv.html'>pense_cv()</a></code> to compute the starting S-estimate.</p>

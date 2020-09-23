@@ -144,7 +144,7 @@
   <span class='kw'>lambda</span>,
   <span class='kw'>cv_k</span>,
   cv_repl = <span class='fl'>1</span>,
-  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"rmspe"</span>, <span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>),
+  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"rmspe"</span>, <span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"auroc"</span>),
   fit_all = <span class='fl'>TRUE</span>,
   cl = <span class='kw'>NULL</span>,
   ncores = <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span>(),
@@ -160,7 +160,8 @@
     </tr>
     <tr>
       <th>y</th>
-      <td><p>vector of response values of length <code>n</code>.</p></td>
+      <td><p>vector of response values of length <code>n</code>.
+For binary classification, <code>y</code> should be a factor with 2 levels.</p></td>
     </tr>
     <tr>
       <th>lambda</th>
@@ -178,8 +179,12 @@
     <tr>
       <th>cv_metric</th>
       <td><p>either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, it is called with a single numeric vector of
-prediction errors and must return a scalar number.</p></td>
+errors in a single CV replication. If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as first argument
+and the true values as second argument.
+The function must always return a single numeric value quantifying the prediction performance.
+The order of the given values corresponds to the order in the input data.</p></td>
     </tr>
     <tr>
       <th>fit_all</th>
@@ -237,9 +242,11 @@ Rows are in the same order as in <code>cvres</code>.</p></dd>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The built-in CV metrics are</p><dl>
-<dt><code>"rmspe"</code></dt><dd><p>Root mean squared prediction error (default).</p></dd>
+<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by <code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
 <dt><code>"mape"</code></dt><dd><p>Median absolute prediction error.</p></dd>
-<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by <code><a href='tau_size.html'>tau_size()</a></code>.</p></dd>
+<dt><code>"rmspe"</code></dt><dd><p>Root mean squared prediction error.</p></dd>
+<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
+binary responses.</p></dd>
 
 </dl>
 
@@ -283,9 +290,9 @@ Rows are in the same order as in <code>cvres</code>.</p></dd>
 <span class='co'># statistically indistinguishable from the minimum.</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -9.6665436             0.2049037            -0.6505213 
+#&gt;            -9.6779335             0.2020305            -0.6554980 
 #&gt;          income.level      market.potential 
-#&gt;             0.6740622             1.2187857 </div></pre>
+#&gt;             0.6785741             1.2213255 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

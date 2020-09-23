@@ -221,15 +221,15 @@ cross-validation</p>
 <span class='co'># smallest prediction error ...</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>)
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -9.3812401             0.2070433            -0.6733309 
+#&gt;            -7.5758397             0.2149638            -0.7086370 
 #&gt;          income.level      market.potential 
-#&gt;             0.6511531             1.2139552 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
+#&gt;             0.7014336             1.0590179 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;           -11.7821847             0.2251656            -0.5839069 
+#&gt;            -8.9377554             0.2066104            -0.6851005 
 #&gt;          income.level      market.potential 
-#&gt;             0.5450935             1.4031870 </div></pre>
+#&gt;             0.6654687             1.1777421 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

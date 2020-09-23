@@ -168,7 +168,8 @@ weights and penalty loadings.</p>
     </tr>
     <tr>
       <th>y</th>
-      <td><p>vector of response values of length <code>n</code>.</p></td>
+      <td><p>vector of response values of length <code>n</code>.
+For binary classification, <code>y</code> should be a factor with 2 levels.</p></td>
     </tr>
     <tr>
       <th>alpha</th>
@@ -300,9 +301,9 @@ the optimization problem</p>
 <span class='co'># statistically indistinguishable from the minimum.</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -9.6410933             0.2133998            -0.6346735 
+#&gt;            -9.6352867             0.2161576            -0.6290931 
 #&gt;          income.level      market.potential 
-#&gt;             0.6596042             1.2120321 </div></pre>
+#&gt;             0.6544736             1.2100799 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

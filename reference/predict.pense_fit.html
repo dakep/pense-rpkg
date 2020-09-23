@@ -223,20 +223,20 @@ need to be interpolated.</p></td>
 <span class='co'># Predict the response using the "best" penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span>(<span class='kw'>cv_results</span>, newdata = <span class='kw'>freeny</span>[<span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span>])
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
-#&gt; 8.795563 8.807410 8.824800 8.842452 8.883047 </div><div class='input'>
+#&gt; 8.795162 8.807070 8.824535 8.842175 8.882970 </div><div class='input'>
 <span class='co'># Extract the residuals at the "best" penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span>(<span class='kw'>cv_results</span>)<span class='op'>^</span><span class='fl'>2</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
-#&gt; 1962              1.025889e-05 2.572974e-04 9.880930e-05
-#&gt; 1963 8.668131e-04 5.984148e-04 1.580128e-04 1.734852e-04
-#&gt; 1964 2.070311e-04 4.390454e-05 3.728324e-06 1.617290e-04
-#&gt; 1965 6.949301e-04 1.402935e-05 1.101094e-04 6.289458e-06
-#&gt; 1966 2.252614e-04 2.219063e-04 7.720522e-05 8.334883e-06
-#&gt; 1967 5.871919e-06 1.286182e-04 2.339658e-05 4.400570e-06
-#&gt; 1968 2.103897e-04 2.531552e-04 2.446001e-05 9.280848e-05
-#&gt; 1969 8.074252e-05 6.367142e-04 1.232587e-04 8.009311e-04
-#&gt; 1970 4.672266e-04 2.419174e-04 3.292797e-05 3.356411e-04
-#&gt; 1971 1.220128e-04 3.729409e-05 1.641072e-05 6.698000e-05</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
+#&gt; 1962              7.848897e-06 2.464835e-04 9.359960e-05
+#&gt; 1963 8.505988e-04 6.021996e-04 1.637041e-04 1.795771e-04
+#&gt; 1964 2.010055e-04 4.526007e-05 3.191828e-06 1.650531e-04
+#&gt; 1965 6.871886e-04 1.397538e-05 1.084591e-04 6.238417e-06
+#&gt; 1966 2.235974e-04 2.227127e-04 7.845685e-05 8.735269e-06
+#&gt; 1967 5.946661e-06 1.285224e-04 2.320350e-05 4.855345e-06
+#&gt; 1968 2.138126e-04 2.572342e-04 2.288132e-05 9.043482e-05
+#&gt; 1969 7.984318e-05 6.318114e-04 1.211829e-04 7.936170e-04
+#&gt; 1970 4.757803e-04 2.341024e-04 3.523648e-05 3.416734e-04
+#&gt; 1971 1.285713e-04 3.422934e-05 1.431594e-05 6.324661e-05</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
 #&gt; 1962              -0.010525453 -0.022619883 -0.015569511

@@ -195,9 +195,9 @@ of regression.</p>
 <span class='co'># smallest prediction error ...</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>)
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -7.8411184             0.2115870            -0.7062462 
+#&gt;            -7.1546688             0.2236699            -0.7082050 
 #&gt;          income.level      market.potential 
-#&gt;             0.6956763             1.0835638 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
+#&gt;             0.7080877             1.0173670 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 

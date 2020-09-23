@@ -147,7 +147,7 @@ adapense_cv() is a convenience wrapper to compute adaptive PENSE estimates." />
   <span class='kw'>lambda</span>,
   <span class='kw'>cv_k</span>,
   cv_repl = <span class='fl'>1</span>,
-  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"rmspe"</span>),
+  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"rmspe"</span>, <span class='st'>"auroc"</span>),
   fit_all = <span class='fl'>TRUE</span>,
   cl = <span class='kw'>NULL</span>,
   <span class='kw'>...</span>
@@ -164,7 +164,8 @@ adapense_cv() is a convenience wrapper to compute adaptive PENSE estimates." />
     </tr>
     <tr>
       <th>y</th>
-      <td><p>vector of response values of length <code>n</code>.</p></td>
+      <td><p>vector of response values of length <code>n</code>.
+For binary classification, <code>y</code> should be a factor with 2 levels.</p></td>
     </tr>
     <tr>
       <th>standardize</th>
@@ -191,8 +192,12 @@ proportion of a single value (e.g., zero-inflated data). In this case, either co
     <tr>
       <th>cv_metric</th>
       <td><p>either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, it is called with a single numeric vector of
-prediction errors and must return a scalar number.</p></td>
+errors in a single CV replication. If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as first argument
+and the true values as second argument.
+The function must always return a single numeric value quantifying the prediction performance.
+The order of the given values corresponds to the order in the input data.</p></td>
     </tr>
     <tr>
       <th>fit_all</th>
@@ -293,6 +298,8 @@ Rows are in the same order as in <code>cvres</code>.</p></dd>
 <dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by <code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
 <dt><code>"mape"</code></dt><dd><p>Median absolute prediction error.</p></dd>
 <dt><code>"rmspe"</code></dt><dd><p>Root mean squared prediction error.</p></dd>
+<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
+binary responses.</p></dd>
 
 </dl>
 

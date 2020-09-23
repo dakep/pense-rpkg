@@ -291,6 +291,14 @@ extract_metric <- function (metrics, attr, node) {
   sqrt(mean(r^2))
 }
 
+## Area under the ROC for "negatives" having value 0 and "positives" having value 1.
+.cv_auroc <- function (pred, truth) {
+  n_neg <- sum(truth <= 0)
+  n_pos <- sum(truth > 0)
+  mww <- sum(rank(pred)[truth <= 0]) - n_neg * (n_neg + 1) / 2
+  return(mww / (n_neg * n_pos))
+}
+
 .cv_se_selection <- function (cvm, cvsd, se_fact) {
   type <- rep.int(factor('none', levels = c('none', 'min', 'se_fact')), length(cvm))
   best <- which.min(cvm)
@@ -306,6 +314,30 @@ extract_metric <- function (metrics, attr, node) {
   type[[best]] <- 'min'
   type[[best_1se]] <- 'se_fact'
   return(type)
+}
+
+## Validate the response type and return a list with elements `values` and `binary`.
+#' @importFrom rlang warn abort
+.validate_response <- function (y) {
+  nlevels <- length(unique(y))
+  if (is.factor(y)) {
+    if (nlevels == 2L) {
+      return(list(values = as.numeric(y) - 1, binary = TRUE))
+    } else if (nlevels > 2L) {
+      warn("`y` with more than 2 factor levels is implicitly treated as numeric.")
+      return(list(values = as.numeric(y), binary = FALSE))
+    }
+  } else {
+    y <- .as(y, 'numeric')
+    if (nlevels == 2L) {
+      warn(paste("`y` is interpreted as continuous response but has only 2 distinct values.",
+                 "If binary classification is desired, coerce `y` to factor with `as.factor()`."))
+    }
+    if (nlevels > 1L) {
+      return(list(values = y, binary = FALSE))
+    }
+  }
+  abort("`y` must have at least 2 distinct values.")
 }
 
 ## A wrapper around `methods::as` which raises an error if the conversion results in NA.

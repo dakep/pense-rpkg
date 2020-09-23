@@ -47,6 +47,7 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), se_mult = 1, ...) {
 .plot_cv_res <- function (object, se_mult, se_sel) {
   measure_label <- switch(object$cv_measure, mape = "Median absolute prediction error",
                           rmspe = "Root mean square prediction error",
+                          auroc = "1 - AUROC",
                           tau_size = expression(paste(tau, "-scale of the prediction error")),
                           "Prediction error")
   colors <- c('gray20', '#0072B2', '#56B4E9')

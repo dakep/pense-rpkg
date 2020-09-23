@@ -14,6 +14,7 @@
 #'
 #' @param x `n` by `p` matrix of numeric predictors.
 #' @param y vector of response values of length `n`.
+#'          For binary classification, `y` should be a factor with 2 levels.
 #' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. `alpha = 1` is the LASSO penalty,
 #'    and `alpha = 0` the Ridge penalty.
 #' @param nlambda number of penalization levels.
@@ -99,13 +100,6 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #'
 #' Perform (repeated) K-fold cross-validation for [elnet()].
 #'
-#' The built-in CV metrics are
-#' \describe{
-#'   \item{`"rmspe"`}{Root mean squared prediction error (default).}
-#'   \item{`"mape"`}{Median absolute prediction error.}
-#'   \item{`"tau_size"`}{\eqn{\tau}-size of the prediction error, computed by [tau_size()].}
-#' }
-#'
 #' @inheritParams elnet
 #' @template cv_params
 #' @inheritDotParams elnet
@@ -132,7 +126,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom stats sd
 #' @export
-elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 'tau_size', 'mape'),
+elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 'tau_size', 'mape', 'auroc'),
                       fit_all = TRUE, cl = NULL, ncores = deprecated(), ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.elnet_args, as.list(call[-1L]), envir = parent.frame())
@@ -154,9 +148,17 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
     abort("`cl` must be a valid `parallel` cluster.")
   }
 
-  cv_metric <- if (is.character(cv_metric)) {
+  cv_metric <- if (is.null(call$cv_metric) && args$binary_response) {
+    cv_measure_str <- 'auroc'
+    .cv_auroc
+  } else if (is.character(cv_metric)) {
     cv_measure_str <- match.arg(cv_metric)
-    switch(cv_measure_str, mape = .cv_mape, rmspe = .cv_rmspe, tau_size = tau_size)
+    switch(cv_measure_str, mape = .cv_mape, rmspe = .cv_rmspe, tau_size = tau_size,
+           auroc = if (args$binary_response) {
+             .cv_auroc
+           } else {
+             abort("cv_metric=\"auroc\" is only valid for binary responses.")
+           })
   } else {
     cv_measure_str <- 'user_fun'
     match.fun(cv_metric)
@@ -238,7 +240,8 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
   }
 
   # Normalize input
-  y <- .as(y, 'numeric')
+  response <- .validate_response(y)
+  y <- response$values
   x_dim <- dim(x)
 
   if (length(y) != x_dim[[1L]]) {
@@ -325,9 +328,9 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
     sort(.as(lambda, 'numeric'), decreasing = TRUE)
   }
 
-  return(list(std_data = std_data, alpha = alpha, lambda = lambda, weights = weights,
-              penalty_loadings = penalty_loadings, intercept = intercept, optional_args = optional_args,
-              restore_coef_length = restore_coef_length))
+  return(list(std_data = std_data, binary_response = response$binary, alpha = alpha, lambda = lambda,
+              weights = weights, penalty_loadings = penalty_loadings, intercept = intercept,
+              optional_args = optional_args, restore_coef_length = restore_coef_length))
 }
 
 #' @importFrom stats cov

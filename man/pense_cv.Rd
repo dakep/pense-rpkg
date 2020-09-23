@@ -12,7 +12,7 @@ pense_cv(
   lambda,
   cv_k,
   cv_repl = 1,
-  cv_metric = c("tau_size", "mape", "rmspe"),
+  cv_metric = c("tau_size", "mape", "rmspe", "auroc"),
   fit_all = TRUE,
   cl = NULL,
   ...
@@ -23,7 +23,8 @@ adapense_cv(x, y, alpha, alpha_preliminary = 0, exponent = 1, ...)
 \arguments{
 \item{x}{\code{n} by \code{p} matrix of numeric predictors.}
 
-\item{y}{vector of response values of length \code{n}.}
+\item{y}{vector of response values of length \code{n}.
+For binary classification, \code{y} should be a factor with 2 levels.}
 
 \item{standardize}{whether to standardize the \code{x} variables prior to fitting the PENSE estimates.
 Can also be set to \code{"cv_only"}, in which case the input data is not standardized, but the
@@ -137,6 +138,8 @@ The built-in CV metrics are
 \item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}} (default).}
 \item{\code{"mape"}}{Median absolute prediction error.}
 \item{\code{"rmspe"}}{Root mean squared prediction error.}
+\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
+binary responses.}
 }
 
 \code{adapense_cv()} is a convenience wrapper which performs 3 steps:

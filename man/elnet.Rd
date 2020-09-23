@@ -28,7 +28,8 @@ elnet(
 \arguments{
 \item{x}{\code{n} by \code{p} matrix of numeric predictors.}
 
-\item{y}{vector of response values of length \code{n}.}
+\item{y}{vector of response values of length \code{n}.
+For binary classification, \code{y} should be a factor with 2 levels.}
 
 \item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
 and \code{alpha = 0} the Ridge penalty.}

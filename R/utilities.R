@@ -105,6 +105,11 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
     scale <- mad(x)
   }
 
+  if (scale < .Machine$double.eps) {
+    warn("Cannot compute M-estimate of location for values with scale of 0.")
+    return(NA_real_)
+  }
+
   if (missing(cc)) {
     cc <- NULL
   }

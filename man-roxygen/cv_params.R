@@ -11,3 +11,13 @@
 #'    level with smallest average CV performance.
 #' @param cl a [parallel][parallel::makeCluster] cluster. Can only be used if `ncores = 1`, because multi-threading
 #'    can not be used in parallel R sessions on the same host.
+#'
+#' @details
+#' The built-in CV metrics are
+#' \describe{
+#'   \item{`"tau_size"`}{\eqn{\tau}-size of the prediction error, computed by [tau_size()] (default).}
+#'   \item{`"mape"`}{Median absolute prediction error.}
+#'   \item{`"rmspe"`}{Root mean squared prediction error.}
+#'   \item{`"auroc"`}{Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
+#'                    binary responses.}
+#' }

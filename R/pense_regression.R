@@ -34,6 +34,7 @@
 #'
 #' @param x `n` by `p` matrix of numeric predictors.
 #' @param y vector of response values of length `n`.
+#'          For binary classification, `y` should be a factor with 2 levels.
 #' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. `alpha = 1` is the LASSO penalty,
 #'    and `alpha = 0` the Ridge penalty.
 #' @param nlambda number of penalization levels.
@@ -151,13 +152,6 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #'
 #' Perform (repeated) K-fold cross-validation for [pense()].
 #'
-#' The built-in CV metrics are
-#' \describe{
-#'   \item{`"tau_size"`}{\eqn{\tau}-size of the prediction error, computed by [tau_size()] (default).}
-#'   \item{`"mape"`}{Median absolute prediction error.}
-#'   \item{`"rmspe"`}{Root mean squared prediction error.}
-#' }
-#'
 #' @inheritParams pense
 #' @param standardize whether to standardize the `x` variables prior to fitting the PENSE estimates.
 #'    Can also be set to `"cv_only"`, in which case the input data is not standardized, but the
@@ -188,8 +182,8 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #' @export
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom stats sd
-pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_metric = c('tau_size', 'mape', 'rmspe'),
-                     fit_all = TRUE, cl = NULL, ...) {
+pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
+                     cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'), fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.pense_args, as.list(call[-1L]), envir = parent.frame())
 
@@ -213,9 +207,17 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1, cv_met
     }
   }
 
-  cv_metric <- if (is.character(cv_metric)) {
+  cv_metric <- if (is.null(call$cv_metric) && args$binary_response) {
+    cv_measure_str <- 'auroc'
+    .cv_auroc
+  } else if (is.character(cv_metric)) {
     cv_measure_str <- match.arg(cv_metric)
-    switch(cv_measure_str, mape = .cv_mape, rmspe = .cv_rmspe, tau_size = tau_size)
+    switch(cv_measure_str, mape = .cv_mape, rmspe = .cv_rmspe, tau_size = tau_size,
+           auroc = if (args$binary_response) {
+             .cv_auroc
+           } else {
+             abort("cv_metric=\"auroc\" is only valid for binary responses.")
+           })
   } else {
     cv_measure_str <- 'user_fun'
     match.fun(cv_metric)
@@ -472,7 +474,8 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
   }
 
   ## Process input arguments
-  y <- .as(y, 'numeric')
+  response <- .validate_response(y)
+  y <- response$values
   x_dim <- dim(x)
 
   if (length(y) != x_dim[[1L]]) {
@@ -650,7 +653,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
     abort("All values in `lambda` must be positive.")
   }
 
-  return(list(std_data = std_data, alpha = alpha, lambda = lambda, enpy_lambda_inds = enpy_lambda_inds,
-              penalty_loadings = penalty_loadings, pense_opts = pense_opts, enpy_opts = enpy_opts,
-              optional_args = optional_args, restore_coef_length = restore_coef_length))
+  return(list(std_data = std_data, binary_response = response$binary, alpha = alpha, lambda = lambda,
+              enpy_lambda_inds = enpy_lambda_inds, penalty_loadings = penalty_loadings, pense_opts = pense_opts,
+              enpy_opts = enpy_opts, optional_args = optional_args, restore_coef_length = restore_coef_length))
 }

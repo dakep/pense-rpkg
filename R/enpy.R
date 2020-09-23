@@ -7,6 +7,7 @@
 #' To restrict the use of the initial estimates to the penalty level they were computed for, use
 #' `as_starting_point(..., specific = TRUE)`. See [as_starting_point()] for details.
 #'
+#' @param y vector of response values of length `n`.
 #' @inheritParams pense
 #' @param enpy_opts options for the EN-PY algorithm, created with the [enpy_options()] function.
 #' @param lambda a vector of positive values of penalization levels.
@@ -90,6 +91,7 @@ enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, interce
 #'
 #' Compute Principal Sensitivity Components for Elastic Net Regression
 #'
+#' @param y vector of response values of length `n`.
 #' @inheritParams pense
 #' @param en_algorithm_opts options for the LS-EN algorithm. See [en_algorithm_options] for details.
 #' @param method defunct. PSCs are always computed for EN estimates. For the PY procedure for unpenalized estimation

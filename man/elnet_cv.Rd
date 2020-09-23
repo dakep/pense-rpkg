@@ -10,7 +10,7 @@ elnet_cv(
   lambda,
   cv_k,
   cv_repl = 1,
-  cv_metric = c("rmspe", "tau_size", "mape"),
+  cv_metric = c("rmspe", "tau_size", "mape", "auroc"),
   fit_all = TRUE,
   cl = NULL,
   ncores = deprecated(),
@@ -20,7 +20,8 @@ elnet_cv(
 \arguments{
 \item{x}{\code{n} by \code{p} matrix of numeric predictors.}
 
-\item{y}{vector of response values of length \code{n}.}
+\item{y}{vector of response values of length \code{n}.
+For binary classification, \code{y} should be a factor with 2 levels.}
 
 \item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
 \code{lambda_min_ratio} are ignored.}
@@ -86,9 +87,11 @@ Perform (repeated) K-fold cross-validation for \code{\link[=elnet]{elnet()}}.
 \details{
 The built-in CV metrics are
 \describe{
-\item{\code{"rmspe"}}{Root mean squared prediction error (default).}
+\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}} (default).}
 \item{\code{"mape"}}{Median absolute prediction error.}
-\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}}.}
+\item{\code{"rmspe"}}{Root mean squared prediction error.}
+\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
+binary responses.}
 }
 }
 \examples{

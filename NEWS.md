@@ -1,3 +1,5 @@
+# pense 2.0.2
+  * Fix mishandling of response variables with a robust scale of 0, e.g., 0-inflated responses or responses with more than 50% identical values.
 # pense 2.0.1
   * Add new functions for compute adaptive PENSE estimates (`adapense()` and `adapense_cv()`).
   * Functions for fitting the model (`pense()`, `adapense()`, `regmest()`, etc.) are not estimating prediction performance via cross-validation anymore.

@@ -1,4 +1,4 @@
-Fixes a critical bug which prevents the methods from being used if more than 50% of response values are identical (e.g., discrete or 0-inflated responses).
+Fixes a critical bug which prevents the methods from being used if more than 50% of response values are identical (e.g., discrete responses, 0-inflated responses, etc.).
 
 ## Test environments
 * local OS X 10.15.6, R version 4.0.2 Patched

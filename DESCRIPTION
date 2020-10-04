@@ -2,7 +2,7 @@ Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
 Version: 2.0.2
-Date: 2020-09-23
+Date: 2020-10-03
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),
@@ -44,5 +44,4 @@ NeedsCompilation: yes
 RoxygenNote: 7.1.1
 Roxygen: list(markdown = TRUE, load = "source")
 RdMacros: lifecycle
-VignetteBuilder: 
-    knitr
+VignetteBuilder: knitr

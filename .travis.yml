@@ -15,14 +15,14 @@ env:
 
 branches:
   only:
-  - master
+  - main
   - "/^release\\/v?[\\d\\.]+$/"
 
 stages:
 - name: Check
   if: commit_message != "Re-build README.Rmd"
 - name: "Extended checks"
-  if: commit_message != "Re-build README.Rmd" AND branch != master
+  if: commit_message != "Re-build README.Rmd" AND branch != main
 
 
 jobs:
@@ -47,7 +47,7 @@ jobs:
     keep_history: true
     local_dir: docs
     on:
-      branch: master
+      branch: main
 - stage: "Extended checks"
   name: R-devel
   r: devel

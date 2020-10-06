@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.1.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
       </span>
     </div>
 
@@ -132,11 +132,16 @@
       <small>Source: <a href='https://github.com/dakep/pense-rpkg/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
-    <div id="pense-2-0-1" class="section level1">
-<h1 class="page-header" data-toc-text="2.0.1">
-<a href="#pense-2-0-1" class="anchor"></a>pense 2.0.1<small> 2020-09-14 </small>
+    <div id="pense-2-0-2" class="section level1">
+<h1 class="page-header" data-toc-text="2.0.2">
+<a href="#pense-2-0-2" class="anchor"></a>pense 2.0.2<small> 2020-10-05 </small>
 </h1>
 <ul>
+<li>
+<p>Fix mishandling of response variables with a robust scale of 0, e.g., 0-inflated responses or responses with more than 50% identical values.</p>
+<h1 id="pense-2.0.1" class="page-header" data-toc-text="2.0.2">pense 2.0.1<small> 2020-10-05 </small>
+</h1>
+</li>
 <li>Add new functions for compute adaptive PENSE estimates (<code><a href="../reference/pense.html">adapense()</a></code> and <code><a href="../reference/pense_cv.html">adapense_cv()</a></code>).</li>
 <li>Functions for fitting the model (<code><a href="../reference/pense.html">pense()</a></code>, <code><a href="../reference/pense.html">adapense()</a></code>, <code><a href="../reference/regmest.html">regmest()</a></code>, etc.) are not estimating prediction performance via cross-validation anymore. This can now be done using the corresponding functions <code><a href="../reference/pense_cv.html">pense_cv()</a></code>, <code><a href="../reference/pense_cv.html">adapense_cv()</a></code>, and so on.</li>
 <li>New function <code><a href="../reference/prediction_performance.html">prediction_performance()</a></code> to summarize the prediction performance of several fits.</li>
@@ -158,7 +163,7 @@
 <code><a href="../reference/enpy.html">enpy()</a></code> is replaced by <code><a href="../reference/enpy_initial_estimates.html">enpy_initial_estimates()</a></code> which has different default argument values.</li>
 </ul>
 </li>
-<li>Deprecated functions can still be used (for now) with a warning.</li>
+<li><p>Deprecated functions can still be used (for now) with a warning.</p></li>
 </ul>
 </div>
     <div id="pense-1-2-9" class="section level1">

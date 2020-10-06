@@ -14,7 +14,7 @@ Copyright: See the file COPYRIGHT for copyright details on some of the
 Encoding: UTF-8
 Biarch: true
 SystemRequirements: C++11
-URL: https://dakep.github.io/pense-rpkg,
+URL: https://dakep.github.io/pense-rpkg/,
     https://github.com/dakep/pense-rpkg
 BugReports: https://github.com/dakep/pense-rpkg/issues
 Description: Robust penalized (adaptive) elastic net S and M estimators for

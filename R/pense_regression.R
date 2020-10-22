@@ -143,7 +143,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
   fit$estimates <- lapply(fit$estimates, function (ests) {
     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
   })
-  structure(list(estimates = .metrics_attrib(fit$estimates, fit$metrics), call = call,
+  structure(list(estimates = .metrics_attrib(fit$estimates, fit$metrics), call = call, alpha = args$alpha,
                  lambda = unlist(lapply(fit$estimates, `[[`, 'lambda'), use.names = FALSE, recursive = FALSE)),
             class = c('pense', 'pense_fit'))
 }
@@ -259,8 +259,9 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   fit$estimates <- lapply(fit$estimates, function (ests) {
     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
   })
-  return(structure(list(call = call, lambda = args$lambda, cvres = cv_perf_df, cv_replications = cv_perf,
-                        cv_measure = cv_measure_str, estimates = .metrics_attrib(fit$estimates, fit$metrics)),
+  return(structure(list(call = call, lambda = args$lambda, alpha = args$alpha, cvres = cv_perf_df,
+                        cv_replications = cv_perf, cv_measure = cv_measure_str,
+                        estimates = .metrics_attrib(fit$estimates, fit$metrics)),
                    class = c('pense', 'pense_cvfit')))
 }
 

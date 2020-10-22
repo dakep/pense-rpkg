@@ -87,7 +87,8 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
   fit$estimates <- lapply(fit$estimates, function (ests) {
     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
   })
-  structure(list(estimates = .metrics_attrib(fit$estimates, fit$metrics), call = call, scale = args$scale,
+  structure(list(estimates = .metrics_attrib(fit$estimates, fit$metrics), call = call, alpha = args$alpha,
+                 scale = args$scale,
                  lambda = unlist(lapply(fit$estimates, `[[`, 'lambda'), use.names = FALSE, recursive = FALSE)),
             class = c('mest', 'pense_fit'))
 }
@@ -202,7 +203,7 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   })
 
   return(structure(list(call = call, cvres = cv_perf_df, cv_replications = cv_perf, cv_measure = cv_measure_str,
-                        scale = args$scale, lambda = args$lambda,
+                        scale = args$scale, lambda = args$lambda, alpha = args$alpha,
                         estimates = .metrics_attrib(fit$estimates, fit$metrics)),
                    class = c('mest', 'pense_cvfit')))
 }

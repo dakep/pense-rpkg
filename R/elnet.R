@@ -90,7 +90,8 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
     NULL
   }
 
-  structure(list(estimates = .metrics_attrib(res$estimates, res$metrics), call = call, predictions = predictions,
+  structure(list(estimates = .metrics_attrib(res$estimates, res$metrics), call = call, alpha = args$alpha,
+                 predictions = predictions,
                  lambda = unlist(lapply(res$estimates, `[[`, 'lambda'), use.names = FALSE, recursive = FALSE)),
             class = c('en', 'pense_fit'))
 }
@@ -197,7 +198,8 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
     args$restore_coef_length(args$std_data$unstandardize_coefs(est))
   })
   return(structure(list(call = call, cvres = cv_perf_df, cv_replications = cv_perf, cv_measure = cv_measure_str,
-                        lambda = args$lambda, estimates = .metrics_attrib(fit$estimates, fit$metrics)),
+                        lambda = args$lambda, alpha = args$alpha,
+                        estimates = .metrics_attrib(fit$estimates, fit$metrics)),
                    class = c('pense_en', 'pense_cvfit')))
 }
 

@@ -53,8 +53,8 @@ summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, .
   }
 
   cat(sprintf("Hyper-parameters: lambda=%s", format(lambda)))
-  if (!is.null(object$call$alpha)) {
-    cat(sprintf(", alpha=%s", format(object$call$alpha)))
+  if (!is.null(object$alpha)) {
+    cat(sprintf(", alpha=%s", format(object$alpha)))
   }
   if (!is.null(object$exponent)) {
     cat(sprintf(", exponent=%s", format(object$exponent)))
@@ -143,7 +143,7 @@ prediction_performance <- function (..., lambda = c('min', 'se'), se_mult = 1) {
       sum(abs(object$estimates[[se_selection]]$beta) > .Machine$double.eps)
     }
     cvres$name <- on
-    cvres$alpha <- if (!is.null(object$call$alpha)) { object$call$alpha } else { NA_real_ }
+    cvres$alpha <- if (!is.null(object$alpha)) { object$alpha } else { NA_real_ }
     cvres$exponent <- if (!is.null(object$exponent)) { object$exponent } else { NA_real_ }
 
     return(cvres)

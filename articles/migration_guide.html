@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.100</span>
       </span>
     </div>
 
@@ -108,7 +108,7 @@
 <span class="fu"><a href="https://rdrr.io/r/base/library.html">library</a></span>(<span class="kw"><a href="https://dakep.github.io/pense-rpkg">pense</a></span>)
 <span class="co">#&gt; Loading required package: Matrix</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span>(<span class="st">"pense"</span>)
-<span class="co">#&gt; [1] '2.0.2'</span>
+<span class="co">#&gt; [1] '2.0.2.100'</span>
 </pre></div>
 <p>This guide uses the following simulated data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit">
@@ -150,15 +150,17 @@
 <p>The structure of the returned objects is different from pense versions 1.x. In old versions, the estimated coefficients were stored as a sparse matrix object, with one column per fit (i.e., per penalization level). In new versions, estimates are stored as a list with one entry per penalization level. For fitted models with prediction performance, as in <code>fitted_with_cv</code>, the returned object additionally contains information on the prediction performance of all fitted models:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit">
 <span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span>(<span class="kw">fitted_no_cv</span>, max.level = <span class="fl">1</span>)
-<span class="co">#&gt; List of 3</span>
+<span class="co">#&gt; List of 4</span>
 <span class="co">#&gt;  $ estimates:List of 40</span>
 <span class="co">#&gt;  $ call     : language pense(x = x, y = y, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
+<span class="co">#&gt;  $ alpha    : num 0.6</span>
 <span class="co">#&gt;  $ lambda   : num [1:40] 3.82 3.16 2.61 2.16 1.78 ...</span>
 <span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_fit"</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span>(<span class="kw">fitted_with_cv</span>, max.level = <span class="fl">1</span>)
-<span class="co">#&gt; List of 6</span>
+<span class="co">#&gt; List of 7</span>
 <span class="co">#&gt;  $ call           : language pense_cv(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
 <span class="co">#&gt;  $ lambda         : num [1:40] 3.82 3.16 2.61 2.16 1.78 ...</span>
+<span class="co">#&gt;  $ alpha          : num 0.6</span>
 <span class="co">#&gt;  $ cvres          :'data.frame': 40 obs. of  3 variables:</span>
 <span class="co">#&gt;  $ cv_replications: num [1:40, 1] 2.96 2.9 2.79 2.67 2.5 ...</span>
 <span class="co">#&gt;  $ cv_measure     : chr "tau_size"</span>

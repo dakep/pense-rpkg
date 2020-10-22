@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.100</span>
       </span>
     </div>
 
@@ -196,7 +196,7 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <span class="co">#&gt; X40         -0.001827169</span>
 <span class="co">#&gt; ---</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; Hyper-parameters: lambda=0.05512509, alpha=0.75, exponent=1</span>
+<span class="co">#&gt; Hyper-parameters: lambda=0.05512509, exponent=1</span>
 <span class="co">#&gt; Estimated scale of the prediction error: 1.982047</span>
 </pre></div>
 <p>This model corresponds to the model with smallest scale of the prediction error (the blue dot in the plot above). There are a total of 14 predictors in the model. If you think a sparser model may be more appropriate for your application, you can also apply the <em>q</em>-standard-error rule as in the plots. The default, the one-standard-error rule leads to the following predictive model:</p>
@@ -218,7 +218,7 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <span class="co">#&gt; X39         -0.07248717</span>
 <span class="co">#&gt; ---</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; Hyper-parameters: lambda=0.1540881, alpha=0.75, exponent=1</span>
+<span class="co">#&gt; Hyper-parameters: lambda=0.1540881, exponent=1</span>
 <span class="co">#&gt; Estimated scale of the prediction error: 2.10859</span>
 </pre></div>
 <p>In this fit, only 7 out of the 40 predictors are relevant, including the 3 truly relevant predictors. But maybe different values for hyper-parameters <code>alpha</code> and <code>exponent</code> lead to even better prediction?</p>
@@ -246,22 +246,22 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span>(<span class="kw">fit_075</span>, <span class="kw">fit_075_2</span>, <span class="kw">fit_100_1</span>, <span class="kw">fit_100_2</span>)
 <span class="co">#&gt; Prediction performance estimated by cross-validation:</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span>
-<span class="co">#&gt; 1 fit_075_2 1.864024  0.2022757         14  0.75    2</span>
-<span class="co">#&gt; 2 fit_100_2 1.864606  0.2010057         14  1.00    2</span>
-<span class="co">#&gt; 3   fit_075 1.982047  0.1795832         14  0.75    1</span>
-<span class="co">#&gt; 4 fit_100_1 1.988588  0.1466705         12  1.00    1</span>
+<span class="co">#&gt;       Model Estimate Std. Error Predictors exp.</span>
+<span class="co">#&gt; 1 fit_075_2 1.864024  0.2022757         14    2</span>
+<span class="co">#&gt; 2 fit_100_2 1.864606  0.2010057         14    2</span>
+<span class="co">#&gt; 3   fit_075 1.982047  0.1795832         14    1</span>
+<span class="co">#&gt; 4 fit_100_1 1.988588  0.1466705         12    1</span>
 </pre></div>
 <p>Here we see the combination of hyper-parameters <code>alpha=0.75</code> and <code>exponent=1</code> (in object <code>fit_075_2</code>) lead to the best prediction accuracy, but the models are all based on more than 12 predictors. Instead, we can also compare sparser models with almost the same prediction performance:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit">
 <span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span>(<span class="kw">fit_075</span>, <span class="kw">fit_075_2</span>, <span class="kw">fit_100_1</span>, <span class="kw">fit_100_2</span>, lambda = <span class="st">'se'</span>)
 <span class="co">#&gt; Prediction performance estimated by cross-validation:</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span>
-<span class="co">#&gt; 1 fit_075_2 2.027702  0.2323029          4  0.75    2</span>
-<span class="co">#&gt; 2 fit_100_2 2.045782  0.2314871          4  1.00    2</span>
-<span class="co">#&gt; 3 fit_100_1 2.081398  0.2771445          7  1.00    1</span>
-<span class="co">#&gt; 4   fit_075 2.108590  0.2692151          7  0.75    1</span>
+<span class="co">#&gt;       Model Estimate Std. Error Predictors exp.</span>
+<span class="co">#&gt; 1 fit_075_2 2.027702  0.2323029          4    2</span>
+<span class="co">#&gt; 2 fit_100_2 2.045782  0.2314871          4    2</span>
+<span class="co">#&gt; 3 fit_100_1 2.081398  0.2771445          7    1</span>
+<span class="co">#&gt; 4   fit_075 2.108590  0.2692151          7    1</span>
 </pre></div>
 <p>Still, the combination of hyper-parameters <code>alpha=0.75</code> and <code>exponent=1</code> outperforms the others. We can see that the estimated coefficients and estimated relevant predictors are close to the truth:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit">
@@ -279,7 +279,7 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <span class="co">#&gt; X21          0.02125563</span>
 <span class="co">#&gt; ---</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; Hyper-parameters: lambda=0.02962154, alpha=0.75, exponent=2</span>
+<span class="co">#&gt; Hyper-parameters: lambda=0.02962154, exponent=2</span>
 <span class="co">#&gt; Estimated scale of the prediction error: 2.027702</span>
 </pre></div>
 </div>

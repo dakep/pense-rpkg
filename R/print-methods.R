@@ -118,9 +118,10 @@ prediction_performance <- function (..., lambda = c('min', 'se'), se_mult = 1) {
     object_names[object_names == ''] <- object_fallback_names[object_names == '']
   }
   names(objects) <- object_names
+  eval_frame <- parent.frame()
 
   pred_perf <- do.call(rbind, lapply(object_names, function (on) {
-    object <- eval.parent(objects[[on]], n = 2)
+    object <- eval(objects[[on]], eval_frame)
     if (!is(object, 'pense_cvfit')) {
       abort(sprintf("`%s` must be a cross-validated PENSE fit.", on))
     }

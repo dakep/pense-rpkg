@@ -1,4 +1,4 @@
-AC_INIT(pense, 2.0.1)
+AC_INIT(pense, 2.0.2)
 AC_PREREQ(2.62)
 
 : ${R_HOME=`R RHOME`}
@@ -21,8 +21,6 @@ CXXFLAGS=`"${RBIN}" CMD config CXX11FLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 LDFLAGS=`"${RBIN}" CMD config LDFLAGS`
 
-AC_PROG_CC
-AC_PROG_CPP
 AC_PROG_CXX
 
 ################################################################################

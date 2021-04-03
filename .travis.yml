@@ -3,8 +3,11 @@ cache: packages
 r:
 - release
 warnings_are_errors: true
+before_install:
+ - sudo apt-get -y install libharfbuzz-dev libfribidi-dev
+ - sudo apt-get -y install libsodium-dev
+ - Rscript -e 'remotes::install_cran("textshaping"); remotes::install_cran("pkgdown")'
 r_packages:
-- pkgdown
 - rmarkdown
 
 env:

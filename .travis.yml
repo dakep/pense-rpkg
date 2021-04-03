@@ -6,7 +6,7 @@ warnings_are_errors: true
 before_install:
  - sudo apt-get -y install libharfbuzz-dev libfribidi-dev
  - sudo apt-get -y install libsodium-dev
- - Rscript -e 'remotes::install_cran("textshaping"); remotes::install_cran("pkgdown")'
+ - Rscript -e 'install.packages(c("textshaping", "pkgdown"), repos = "https://cloud.r-project.org")'
 r_packages:
 - rmarkdown
 

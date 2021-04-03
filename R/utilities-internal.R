@@ -251,6 +251,10 @@ extract_metric <- function (metrics, attr, node) {
       if (is.null(coef_obj$intercept)) {
         coef_obj$intercept <- 0
       }
+
+      coef_obj$std_beta <- coef_obj$beta
+      coef_obj$std_intercept <- coef_obj$intercept
+
       if (isTRUE(standardize)) {
         coef_obj$beta@x <- coef_obj$beta@x * target_scale_x / ret_list$scale_x[coef_obj$beta@i]
       }
@@ -268,6 +272,10 @@ extract_metric <- function (metrics, attr, node) {
       if (is.null(coef_obj$intercept)) {
         coef_obj$intercept <- 0
       }
+
+      coef_obj$std_beta <- coef_obj$beta
+      coef_obj$std_intercept <- coef_obj$intercept
+
       if (isTRUE(standardize)) {
         coef_obj$beta <- coef_obj$beta * target_scale_x / ret_list$scale_x
       }
@@ -401,14 +409,25 @@ extract_metric <- function (metrics, attr, node) {
     restore_coef_length <- if (length(good_pl) > 0L) {
       if (isTRUE(sparse)) {
         function (coef) {
-          coef$beta <- sparseVector(coef$beta@x, good_pl[coef$beta@i], orig_p)
+          if (!is.null(coef$std_beta)) {
+            coef$std_beta <- sparseVector(coef$std_beta@x, good_pl[coef$std_beta@i], orig_p)
+          }
+          if (!is.null(coef$beta)) {
+            coef$beta <- sparseVector(coef$beta@x, good_pl[coef$beta@i], orig_p)
+          }
           return(coef)
         }
       } else {
         function (coef) {
-          beta <- numeric(orig_p)
-          beta[good_pl] <- coef$beta
-          coef$beta <- beta
+          coef_vector <- numeric(orig_p)
+          if (!is.null(coef$std_beta)) {
+            coef_vector[good_pl] <- coef$std_beta
+            coef$std_beta <- coef_vector
+          }
+          if (!is.null(coef$beta)) {
+            coef_vector[good_pl] <- coef$beta
+            coef$beta <- coef_vector
+          }
           return(coef)
         }
       }
@@ -418,11 +437,13 @@ extract_metric <- function (metrics, attr, node) {
       }
       if (isTRUE(sparse)) {
         function (coef) {
+          coef$std_beta <- sparseVector(numeric(0L), integer(0L), orig_p)
           coef$beta <- sparseVector(numeric(0L), integer(0L), orig_p)
           return(coef)
         }
       } else {
         function (coef) {
+          coef$std_beta <- numeric(orig_p)
           coef$beta <- numeric(orig_p)
           return(coef)
         }

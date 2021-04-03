@@ -9,6 +9,7 @@
   lambda = c("min", "se"),
   se_mult = 1,
   sparse = NULL,
+  standardized = FALSE,
   exact = deprecated(),
   correction = deprecated(),
   ...
@@ -25,6 +26,8 @@ value of the penalty parameter. See details.}
 \item{sparse}{should coefficients be returned as sparse or dense vectors? Defaults to the \code{sparse} argument
 supplied to \code{\link[=pense_cv]{pense_cv()}}. Can also be set to \code{sparse = 'matrix'}, in which case a sparse matrix
 is returned instead of a sparse vector.}
+
+\item{standardized}{return the standardized coefficients.}
 
 \item{exact}{deprecated. Always gives a warning if \code{lambda} is not part of the fitted sequence and coefficients
 are interpolated.}

@@ -7,6 +7,7 @@
 #' @param sparse should coefficients be returned as sparse or dense vectors? Defaults to the `sparse` argument
 #'    supplied to [pense()]. Can also be set to `sparse = 'matrix'`, in which case a sparse matrix
 #'    is returned instead of a sparse vector.
+#' @param standardized return the standardized coefficients.
 #' @param exact defunct Always gives a warning if `lambda` is not part of the fitted sequence and hence coefficients
 #'    are interpolated.
 #' @param correction defunct.
@@ -23,7 +24,8 @@
 #' @export
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang warn
-coef.pense_fit <- function (object, lambda, sparse = NULL, exact = deprecated(), correction = deprecated(), ...) {
+coef.pense_fit <- function (object, lambda, sparse = NULL, standardized = FALSE,
+                            exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
     deprecate_warn('2.0.0', 'coef(exact=)')
   }
@@ -41,15 +43,18 @@ coef.pense_fit <- function (object, lambda, sparse = NULL, exact = deprecated(),
   lambda <- .as(lambda[[1L]], 'numeric')
 
   if (isTRUE(lambda > object$lambda[[1L]]) && isTRUE(sum(abs(object$estimates[[1L]]$beta)) < .Machine$double.eps)) {
-    return(.concat_coefs(object$estimates[[1L]], object$call, sparse, parent.frame(), concat))
+    return(.concat_coefs(object$estimates[[1L]], object$call, sparse = sparse, envir = parent.frame(),
+                         standardized = standardized, concat = concat))
   }
 
   lambda_match <- .approx_match(lambda, object$lambda)
   if (is.na(lambda_match)) {
     warn("Requested penalization level not part of the sequence. Returning interpolated coefficients.")
-    return(.interpolate_coefs(object, lambda, object$lambda, sparse = sparse, envir = parent.frame(), concat = concat))
+    return(.interpolate_coefs(object, lambda, object$lambda, sparse = sparse, envir = parent.frame(),
+                              standardized = standardized, concat = concat))
   } else {
-    return(.concat_coefs(object$estimates[[lambda_match]], object$call, sparse, parent.frame(), concat))
+    return(.concat_coefs(object$estimates[[lambda_match]], object$call, sparse = sparse, envir = parent.frame(),
+                         standardized = standardized, concat = concat))
   }
 }
 
@@ -69,6 +74,7 @@ coef.pense_fit <- function (object, lambda, sparse = NULL, exact = deprecated(),
 #' @param sparse should coefficients be returned as sparse or dense vectors? Defaults to the `sparse` argument
 #'    supplied to [pense_cv()]. Can also be set to `sparse = 'matrix'`, in which case a sparse matrix
 #'    is returned instead of a sparse vector.
+#' @param standardized return the standardized coefficients.
 #' @param exact deprecated. Always gives a warning if `lambda` is not part of the fitted sequence and coefficients
 #'    are interpolated.
 #' @param correction defunct.
@@ -81,8 +87,8 @@ coef.pense_fit <- function (object, lambda, sparse = NULL, exact = deprecated(),
 #' @family functions for extracting components
 #' @example examples/pense_fit.R
 #' @export
-coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, sparse = NULL, exact = deprecated(),
-                              correction = deprecated(), ...) {
+coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, sparse = NULL, standardized = FALSE,
+                              exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
     deprecate_warn('2.0.0', 'coef(exact=)')
   }
@@ -96,9 +102,11 @@ coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, spar
 
   if (is.na(lambda_index)) {
     warn("Requested penalization level not part of the sequence. Returning interpolated coefficients.")
-    .interpolate_coefs(object, lambda, object$lambda, sparse = sparse, envir = parent.frame(), concat = concat)
+    .interpolate_coefs(object, lambda, object$lambda, sparse = sparse, envir = parent.frame(),
+                       standardized = standardized, concat = concat)
   } else {
-    .concat_coefs(object$estimates[[lambda_index]], object$call, sparse, parent.frame(), concat)
+    .concat_coefs(object$estimates[[lambda_index]], object$call, sparse = sparse, envir = parent.frame(),
+                  standardized = standardized, concat = concat)
   }
 }
 
@@ -147,9 +155,9 @@ coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, spar
 ## @param ... passed on to `.concat_coefs()`
 .interpolate_coefs <- function (object, lambda, lambda_seq, ...) {
   if (lambda < lambda_seq[[length(lambda_seq)]]) {
-    return(.concat_coefs(object$estimates[[length(lambda_seq)]], object$call))
+    return(.concat_coefs(object$estimates[[length(lambda_seq)]], object$call, ...))
   } else if (lambda > lambda_seq[[1L]]) {
-    return(.concat_coefs(object$estimates[[1L]], object$call))
+    return(.concat_coefs(object$estimates[[1L]], object$call, ...))
   }
 
   lambda_diff <- lambda_seq - lambda
@@ -158,16 +166,25 @@ coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, spar
   lambda_ind_left <- min(which(lambda_diff < 0))
   lambda_ind_right <- max(which(lambda_diff > 0))
   interp_w <- 1 / lambda_diff_abs[c(lambda_ind_left, lambda_ind_right)]
+
   interp_beta <- (interp_w[[1L]] * object$estimates[[lambda_ind_left]]$beta +
                     interp_w[[2L]] * object$estimates[[lambda_ind_right]]$beta) / sum(interp_w)
   interp_int <- (interp_w[[1L]] * object$estimates[[lambda_ind_left]]$intercept +
                    interp_w[[2L]] * object$estimates[[lambda_ind_right]]$intercept) / sum(interp_w)
-  return(.concat_coefs(list(intercept = interp_int, beta = interp_beta), object$call, ...))
+
+  interp_std_beta <- (interp_w[[1L]] * object$estimates[[lambda_ind_left]]$std_beta +
+                        interp_w[[2L]] * object$estimates[[lambda_ind_right]]$std_beta) / sum(interp_w)
+  interp_std_int <- (interp_w[[1L]] * object$estimates[[lambda_ind_left]]$std_intercept +
+                       interp_w[[2L]] * object$estimates[[lambda_ind_right]]$std_intercept) / sum(interp_w)
+
+  return(.concat_coefs(list(intercept = interp_int, beta = interp_beta,
+                            std_intercept = interp_std_int, std_beta = interp_std_beta),
+                       object$call, ...))
 }
 
 #' @importFrom methods is
 #' @importFrom Matrix sparseVector sparseMatrix
-.concat_coefs <- function (coef, call, sparse, envir, concat = TRUE) {
+.concat_coefs <- function (coef, call, sparse, envir, standardized = FALSE, concat = TRUE) {
   if (!concat) {
     return(coef)
   }
@@ -179,26 +196,33 @@ coef.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, spar
   }
   var_names <- c('(Intercept)', var_names)
 
+  if (isTRUE(standardized)) {
+    beta <- coef$std_beta
+    intercept <- coef$std_intercept
+  } else {
+    beta <- coef$beta
+    intercept <- coef$intercept
+  }
+
   if (!is.null(sparse) && pmatch(sparse[[1L]], 'matrix', nomatch = 0L) == 1L) {
-    if (is(coef$beta, 'dsparseVector')) {
-      return(sparseMatrix(x = c(coef$intercept, coef$beta@x), i = c(1L, 1L + coef$beta@i),
-                          j = rep.int(1L, length(coef$beta@i) + 1L),
-                          dims = c(coef$beta@length + 1L, 1L), dimnames = list(var_names, NULL)))
+    if (is(beta, 'dsparseVector')) {
+      return(sparseMatrix(x = c(intercept, beta@x), i = c(1L, 1L + beta@i),
+                          j = rep.int(1L, length(beta@i) + 1L),
+                          dims = c(beta@length + 1L, 1L), dimnames = list(var_names, NULL)))
     } else {
-      nz_ind <- which(abs(coef$beta) > .Machine$double.eps)
-      return(sparseMatrix(x = c(coef$intercept, coef$beta[nz_ind]), i = c(1L, 1L + nz_ind),
+      nz_ind <- which(abs(beta) > .Machine$double.eps)
+      return(sparseMatrix(x = c(intercept, beta[nz_ind]), i = c(1L, 1L + nz_ind),
                           j = rep.int(1L, length(nz_ind) + 1L),
-                          dims = c(length(coef$beta) + 1L, 1L), dimnames = list(var_names, NULL)))
+                          dims = c(length(beta) + 1L, 1L), dimnames = list(var_names, NULL)))
     }
-  } else if (isTRUE(sparse) || (is.null(sparse) && is(coef$beta, 'dsparseVector'))) {
-    if (is(coef$beta, 'dsparseVector')) {
-      return(sparseVector(c(coef$intercept, coef$beta@x), i = c(1L, coef$beta@i + 1L), length = coef$beta@length + 1L))
+  } else if (isTRUE(sparse) || (is.null(sparse) && is(beta, 'dsparseVector'))) {
+    if (is(beta, 'dsparseVector')) {
+      return(sparseVector(c(intercept, beta@x), i = c(1L, beta@i + 1L), length = beta@length + 1L))
     } else {
-      return(sparseVector(c(coef$intercept, coef$beta), i = seq_len(length(coef$beta) + 1L),
-                          length = length(coef$beta) + 1L))
+      return(sparseVector(c(intercept, beta), i = seq_len(length(beta) + 1L), length = length(beta) + 1L))
     }
-  } else if (isFALSE(sparse) || (is.null(sparse) && is.numeric(coef$beta))) {
-    coefvec <- c(coef$intercept, as.numeric(coef$beta))
+  } else if (isFALSE(sparse) || (is.null(sparse) && is.numeric(beta))) {
+    coefvec <- c(intercept, as.numeric(beta))
     names(coefvec) <- var_names
     return(coefvec)
   } else {

@@ -8,6 +8,7 @@
   object,
   lambda,
   sparse = NULL,
+  standardized = FALSE,
   exact = deprecated(),
   correction = deprecated(),
   ...
@@ -21,6 +22,8 @@
 \item{sparse}{should coefficients be returned as sparse or dense vectors? Defaults to the \code{sparse} argument
 supplied to \code{\link[=pense]{pense()}}. Can also be set to \code{sparse = 'matrix'}, in which case a sparse matrix
 is returned instead of a sparse vector.}
+
+\item{standardized}{return the standardized coefficients.}
 
 \item{exact}{defunct Always gives a warning if \code{lambda} is not part of the fitted sequence and hence coefficients
 are interpolated.}

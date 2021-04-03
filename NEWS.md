@@ -1,3 +1,7 @@
+# pense 2.0.3
+  * Fix a compilation error on RHEL due to an error in the autoconf script.
+  * Fix problems in `prediction_performance()` related to the non-standard evaluation of objects.
+  * Also return standardized coefficients as `std_beta` and `std_intercept`.
 # pense 2.0.2
   * Fix mishandling of response variables with a robust scale of 0, e.g., 0-inflated responses or responses with more than 50% identical values.
 # pense 2.0.1

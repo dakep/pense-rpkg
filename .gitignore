@@ -20,3 +20,4 @@ vignettes/*_cache
 doc
 Meta
 vignettes/*_files
+.Rhistory

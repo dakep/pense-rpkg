@@ -74,7 +74,7 @@ c(starting_point_1, starting_point_2, ...)." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -82,7 +82,7 @@ c(starting_point_1, starting_point_2, ...)." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -114,7 +114,7 @@ c(starting_point_1, starting_point_2, ...)." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -142,24 +142,24 @@ Multiple starting points can be created by combining starting points via
 <code><a href='https://rdrr.io/r/base/c.html'>c(starting_point_1, starting_point_2, ...)</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>starting_point</span>(<span class='kw'>beta</span>, <span class='kw'>intercept</span>, <span class='kw'>lambda</span>)
+    <pre class="usage"><span class='fu'>starting_point</span><span class='op'>(</span><span class='va'>beta</span>, <span class='va'>intercept</span>, <span class='va'>lambda</span><span class='op'>)</span>
 
-<span class='fu'>as_starting_point</span>(<span class='kw'>object</span>, specific = <span class='fl'>FALSE</span>, <span class='kw'>...</span>)
+<span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for enpy_starting_points</span>
-<span class='fu'>as_starting_point</span>(<span class='kw'>object</span>, specific = <span class='fl'>FALSE</span>, <span class='kw'>...</span>)
+<span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for pense_fit</span>
-<span class='fu'>as_starting_point</span>(<span class='kw'>object</span>, specific = <span class='fl'>FALSE</span>, <span class='kw'>lambda</span>, <span class='kw'>...</span>)
+<span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>lambda</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for pense_cvfit</span>
-<span class='fu'>as_starting_point</span>(
-  <span class='kw'>object</span>,
-  specific = <span class='fl'>FALSE</span>,
-  lambda = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"min"</span>, <span class='st'>"se"</span>),
-  se_mult = <span class='fl'>1</span>,
-  <span class='kw'>...</span>
-)</pre>
+<span class='fu'>as_starting_point</span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  specific <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  lambda <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"min"</span>, <span class='st'>"se"</span><span class='op'>)</span>,
+  se_mult <span class='op'>=</span> <span class='fl'>1</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

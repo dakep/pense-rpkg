@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -112,7 +112,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -139,15 +139,16 @@
     </div>
 
     <pre class="usage"><span class='co'># S3 method for pense_cvfit</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(
-  <span class='kw'>object</span>,
-  lambda = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"min"</span>, <span class='st'>"se"</span>),
-  se_mult = <span class='fl'>1</span>,
-  sparse = <span class='kw'>NULL</span>,
-  exact = <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span>(),
-  correction = <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span>(),
-  <span class='kw'>...</span>
-)</pre>
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  lambda <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"min"</span>, <span class='st'>"se"</span><span class='op'>)</span>,
+  se_mult <span class='op'>=</span> <span class='fl'>1</span>,
+  sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
+  standardized <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  exact <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  correction <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -170,6 +171,10 @@ value of the penalty parameter. See details.</p></td>
       <td><p>should coefficients be returned as sparse or dense vectors? Defaults to the <code>sparse</code> argument
 supplied to <code><a href='pense_cv.html'>pense_cv()</a></code>. Can also be set to <code>sparse = 'matrix'</code>, in which case a sparse matrix
 is returned instead of a sparse vector.</p></td>
+    </tr>
+    <tr>
+      <th>standardized</th>
+      <td><p>return the standardized coefficients.</p></td>
     </tr>
     <tr>
       <th>exact</th>
@@ -209,32 +214,32 @@ model. This is determined to be the model with prediction performance within <co
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Compute the PENSE regularization path for Freeny's revenue data</span>
 <span class='co'># (see ?freeny)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='kw'>freeny</span>)
-<span class='kw'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span>(<span class='kw'>freeny</span>[ , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span>])
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>)</span>
+<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>[</span> , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 
-<span class='kw'>regpath</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense.html'>pense</a></span>(<span class='kw'>x</span>, <span class='kw'>freeny</span><span class='op'>$</span><span class='kw'>y</span>, alpha = <span class='fl'>0.5</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span>(<span class='kw'>regpath</span>)
+<span class='va'>regpath</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense.html'>pense</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>regpath</span><span class='op'>)</span>
 </div><div class='img'><img src='coef.pense_cvfit-1.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>regpath</span>, lambda = <span class='kw'>regpath</span><span class='op'>$</span><span class='kw'>lambda</span>[<span class='fl'>40</span>])
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>40</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -6.6475338             0.2411667            -0.6985229 
 #&gt;          income.level      market.potential 
 #&gt;             0.7098337             0.9619783 </div><div class='input'>
 <span class='co'># What penalization level leads to good prediction performance?</span>
-<span class='kw'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense_cv.html'>pense_cv</a></span>(<span class='kw'>x</span>, <span class='kw'>freeny</span><span class='op'>$</span><span class='kw'>y</span>, alpha = <span class='fl'>0.5</span>, cv_repl = <span class='fl'>2</span>,
-                       cv_k = <span class='fl'>4</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span>(<span class='kw'>cv_results</span>, se_mult = <span class='fl'>1</span>)
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense_cv.html'>pense_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>2</span>,
+                       cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>cv_results</span>, se_mult <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
 </div><div class='img'><img src='coef.pense_cvfit-2.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at the penalization level with</span>
 <span class='co'># smallest prediction error ...</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>)
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -7.5758397             0.2149638            -0.7086370 
 #&gt;          income.level      market.potential 
 #&gt;             0.7014336             1.0590179 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -8.9377554             0.2066104            -0.6851005 
 #&gt;          income.level      market.potential 

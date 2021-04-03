@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -112,7 +112,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -139,14 +139,14 @@
     </div>
 
     <pre class="usage"><span class='co'># S3 method for pense_cvfit</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span>(
-  <span class='kw'>object</span>,
-  lambda = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"min"</span>, <span class='st'>"se"</span>),
-  se_mult = <span class='fl'>1</span>,
-  exact = <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span>(),
-  correction = <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span>(),
-  <span class='kw'>...</span>
-)</pre>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  lambda <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"min"</span>, <span class='st'>"se"</span><span class='op'>)</span>,
+  se_mult <span class='op'>=</span> <span class='fl'>1</span>,
+  exact <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  correction <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -199,18 +199,18 @@ model. This is determined to be the model with prediction performance within <co
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Compute the LS-EN regularization path for Freeny's revenue data</span>
 <span class='co'># (see ?freeny)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='kw'>freeny</span>)
-<span class='kw'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span>(<span class='kw'>freeny</span>[ , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span>])
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>)</span>
+<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>[</span> , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 
-<span class='kw'>regpath</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet.html'>elnet</a></span>(<span class='kw'>x</span>, <span class='kw'>freeny</span><span class='op'>$</span><span class='kw'>y</span>, alpha = <span class='fl'>0.75</span>)
+<span class='va'>regpath</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet.html'>elnet</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.75</span><span class='op'>)</span>
 
 <span class='co'># Predict the response using a specific penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span>(<span class='kw'>regpath</span>, newdata = <span class='kw'>freeny</span>[<span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span>],
-        lambda = <span class='kw'>regpath</span><span class='op'>$</span><span class='kw'>lambda</span>[<span class='fl'>10</span>])
+<span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>regpath</span>, newdata <span class='op'>=</span> <span class='va'>freeny</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span>,
+        lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>10</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
 #&gt; 9.071638 9.075877 9.082341 9.091051 9.103643 </div><div class='input'>
 <span class='co'># Extract the residuals at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span>(<span class='kw'>regpath</span>, lambda = <span class='kw'>regpath</span><span class='op'>$</span><span class='kw'>lambda</span>[<span class='fl'>5</span>])
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
 #&gt; 1962              -0.396169224 -0.398919454 -0.378220695
 #&gt; 1963 -0.384593892 -0.294338479 -0.278030430 -0.259140970
@@ -223,15 +223,15 @@ model. This is determined to be the model with prediction performance within <co
 #&gt; 1970  0.247870647  0.296181577  0.294470169  0.278217170
 #&gt; 1971  0.306686546  0.334684047  0.353729154  0.367702082</div><div class='input'>
 <span class='co'># Select penalization level via cross-validation</span>
-<span class='kw'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet_cv.html'>elnet_cv</a></span>(<span class='kw'>x</span>, <span class='kw'>freeny</span><span class='op'>$</span><span class='kw'>y</span>, alpha = <span class='fl'>0.5</span>, cv_repl = <span class='fl'>10</span>,
-                       cv_k = <span class='fl'>4</span>)
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet_cv.html'>elnet_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>10</span>,
+                       cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 
 <span class='co'># Predict the response using the "best" penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span>(<span class='kw'>cv_results</span>, newdata = <span class='kw'>freeny</span>[<span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span>])
+<span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>cv_results</span>, newdata <span class='op'>=</span> <span class='va'>freeny</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
 #&gt; 8.795162 8.807070 8.824535 8.842175 8.882970 </div><div class='input'>
 <span class='co'># Extract the residuals at the "best" penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span>(<span class='kw'>cv_results</span>)<span class='op'>^</span><span class='fl'>2</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
 #&gt; 1962              7.848897e-06 2.464835e-04 9.359960e-05
 #&gt; 1963 8.505988e-04 6.021996e-04 1.637041e-04 1.795771e-04
@@ -243,7 +243,7 @@ model. This is determined to be the model with prediction performance within <co
 #&gt; 1969 7.984318e-05 6.318114e-04 1.211829e-04 7.936170e-04
 #&gt; 1970 4.757803e-04 2.341024e-04 3.523648e-05 3.416734e-04
 #&gt; 1971 1.285713e-04 3.422934e-05 1.431594e-05 6.324661e-05</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
 #&gt; 1962              -0.010525453 -0.022619883 -0.015569511
 #&gt; 1963 -0.035107544  0.021470216  0.008204877  0.008871462

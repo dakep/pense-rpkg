@@ -74,7 +74,7 @@ Superseded by enpy_options()." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -82,7 +82,7 @@ Superseded by enpy_options()." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -114,7 +114,7 @@ Superseded by enpy_options()." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -137,24 +137,24 @@ Superseded by enpy_options()." />
     </div>
 
     <div class="ref-description">
-    <p><img src='figures/lifecycle-deprecated.svg' alt='Deprecated lifecycle' /></p>
+    <p><a href='https://lifecycle.r-lib.org/articles/stages.html#deprecated'><img src='figures/lifecycle-deprecated.svg' alt='[Deprecated]' /></a></p>
 <p>Options for computing initial estimates via ENPY.
 Superseded by <code><a href='enpy_options.html'>enpy_options()</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>initest_options</span>(
-  keep_solutions = <span class='fl'>5</span>,
-  psc_method = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"exact"</span>, <span class='st'>"rr"</span>),
-  maxit = <span class='fl'>10</span>,
-  maxit_pense_refinement = <span class='fl'>5</span>,
-  eps = <span class='fl'>1e-06</span>,
-  psc_keep = <span class='fl'>0.5</span>,
-  resid_keep_method = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"proportion"</span>, <span class='st'>"threshold"</span>),
-  resid_keep_prop = <span class='fl'>0.6</span>,
-  resid_keep_thresh = <span class='fl'>2</span>,
-  mscale_eps = <span class='fl'>1e-08</span>,
-  mscale_maxit = <span class='fl'>200</span>
-)</pre>
+    <pre class="usage"><span class='fu'>initest_options</span><span class='op'>(</span>
+  keep_solutions <span class='op'>=</span> <span class='fl'>5</span>,
+  psc_method <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"exact"</span>, <span class='st'>"rr"</span><span class='op'>)</span>,
+  maxit <span class='op'>=</span> <span class='fl'>10</span>,
+  maxit_pense_refinement <span class='op'>=</span> <span class='fl'>5</span>,
+  eps <span class='op'>=</span> <span class='fl'>1e-06</span>,
+  psc_keep <span class='op'>=</span> <span class='fl'>0.5</span>,
+  resid_keep_method <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"proportion"</span>, <span class='st'>"threshold"</span><span class='op'>)</span>,
+  resid_keep_prop <span class='op'>=</span> <span class='fl'>0.6</span>,
+  resid_keep_thresh <span class='op'>=</span> <span class='fl'>2</span>,
+  mscale_eps <span class='op'>=</span> <span class='fl'>1e-08</span>,
+  mscale_maxit <span class='op'>=</span> <span class='fl'>200</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

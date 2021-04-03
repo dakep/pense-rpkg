@@ -73,7 +73,7 @@ penalty loadings for adaptive elastic net." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -81,7 +81,7 @@ penalty loadings for adaptive elastic net." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -113,7 +113,7 @@ penalty loadings for adaptive elastic net." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -140,31 +140,31 @@ penalty loadings for adaptive elastic net." />
 penalty loadings for adaptive elastic net.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>regmest</span>(
-  <span class='kw'>x</span>,
-  <span class='kw'>y</span>,
-  <span class='kw'>alpha</span>,
-  nlambda = <span class='fl'>50</span>,
-  <span class='kw'>lambda</span>,
-  <span class='kw'>lambda_min_ratio</span>,
-  <span class='kw'>scale</span>,
-  <span class='kw'>starting_points</span>,
-  <span class='kw'>penalty_loadings</span>,
-  intercept = <span class='fl'>TRUE</span>,
-  cc = <span class='fl'>4.7</span>,
-  eps = <span class='fl'>1e-06</span>,
-  explore_solutions = <span class='fl'>10</span>,
-  explore_tol = <span class='fl'>0.1</span>,
-  max_solutions = <span class='fl'>10</span>,
-  comparison_tol = <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span>(<span class='kw'>eps</span>),
-  sparse = <span class='fl'>FALSE</span>,
-  ncores = <span class='fl'>1</span>,
-  standardize = <span class='fl'>TRUE</span>,
-  algorithm_opts = <span class='fu'><a href='mm_algorithm_options.html'>mm_algorithm_options</a></span>(),
-  add_zero_based = <span class='fl'>TRUE</span>,
-  mscale_bdp = <span class='fl'>0.25</span>,
-  mscale_opts = <span class='fu'><a href='mscale_algorithm_options.html'>mscale_algorithm_options</a></span>()
-)</pre>
+    <pre class="usage"><span class='fu'>regmest</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>y</span>,
+  <span class='va'>alpha</span>,
+  nlambda <span class='op'>=</span> <span class='fl'>50</span>,
+  <span class='va'>lambda</span>,
+  <span class='va'>lambda_min_ratio</span>,
+  <span class='va'>scale</span>,
+  <span class='va'>starting_points</span>,
+  <span class='va'>penalty_loadings</span>,
+  intercept <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  cc <span class='op'>=</span> <span class='fl'>4.7</span>,
+  eps <span class='op'>=</span> <span class='fl'>1e-06</span>,
+  explore_solutions <span class='op'>=</span> <span class='fl'>10</span>,
+  explore_tol <span class='op'>=</span> <span class='fl'>0.1</span>,
+  max_solutions <span class='op'>=</span> <span class='fl'>10</span>,
+  comparison_tol <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='va'>eps</span><span class='op'>)</span>,
+  sparse <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  ncores <span class='op'>=</span> <span class='fl'>1</span>,
+  standardize <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  algorithm_opts <span class='op'>=</span> <span class='fu'><a href='mm_algorithm_options.html'>mm_algorithm_options</a></span><span class='op'>(</span><span class='op'>)</span>,
+  add_zero_based <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  mscale_bdp <span class='op'>=</span> <span class='fl'>0.25</span>,
+  mscale_opts <span class='op'>=</span> <span class='fu'><a href='mscale_algorithm_options.html'>mscale_algorithm_options</a></span><span class='op'>(</span><span class='op'>)</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

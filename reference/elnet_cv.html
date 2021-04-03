@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -80,7 +80,7 @@
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -112,7 +112,7 @@
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -138,18 +138,18 @@
     <p>Perform (repeated) K-fold cross-validation for <code><a href='elnet.html'>elnet()</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>elnet_cv</span>(
-  <span class='kw'>x</span>,
-  <span class='kw'>y</span>,
-  <span class='kw'>lambda</span>,
-  <span class='kw'>cv_k</span>,
-  cv_repl = <span class='fl'>1</span>,
-  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"rmspe"</span>, <span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"auroc"</span>),
-  fit_all = <span class='fl'>TRUE</span>,
-  cl = <span class='kw'>NULL</span>,
-  ncores = <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span>(),
-  <span class='kw'>...</span>
-)</pre>
+    <pre class="usage"><span class='fu'>elnet_cv</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>y</span>,
+  <span class='va'>lambda</span>,
+  <span class='va'>cv_k</span>,
+  cv_repl <span class='op'>=</span> <span class='fl'>1</span>,
+  cv_metric <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"rmspe"</span>, <span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"auroc"</span><span class='op'>)</span>,
+  fit_all <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  cl <span class='op'>=</span> <span class='cn'>NULL</span>,
+  ncores <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -262,33 +262,33 @@ binary responses.</p></dd>
     <h2 class="hasAnchor" id="examples"><a class="anchor" href="#examples"></a>Examples</h2>
     <pre class="examples"><div class='input'><span class='co'># Compute the LS-EN regularization path for Freeny's revenue data</span>
 <span class='co'># (see ?freeny)</span>
-<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span>(<span class='kw'>freeny</span>)
-<span class='kw'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span>(<span class='kw'>freeny</span>[ , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span>])
+<span class='fu'><a href='https://rdrr.io/r/utils/data.html'>data</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>)</span>
+<span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>[</span> , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 
-<span class='kw'>regpath</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet.html'>elnet</a></span>(<span class='kw'>x</span>, <span class='kw'>freeny</span><span class='op'>$</span><span class='kw'>y</span>, alpha = <span class='fl'>0.75</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span>(<span class='kw'>regpath</span>)
+<span class='va'>regpath</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet.html'>elnet</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.75</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>regpath</span><span class='op'>)</span>
 </div><div class='img'><img src='elnet_cv-1.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>regpath</span>, lambda = <span class='kw'>regpath</span><span class='op'>$</span><span class='kw'>lambda</span>[<span class='fl'>5</span>])
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;           2.237517683           0.113172516          -0.070403973 
 #&gt;          income.level      market.potential 
 #&gt;           0.005292233           0.482370668 </div><div class='input'>
 <span class='co'># What penalization level leads to good prediction performance?</span>
-<span class='kw'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'>elnet_cv</span>(<span class='kw'>x</span>, <span class='kw'>freeny</span><span class='op'>$</span><span class='kw'>y</span>, alpha = <span class='fl'>0.75</span>, cv_repl = <span class='fl'>10</span>,
-                       cv_k = <span class='fl'>4</span>, cv_measure = <span class='st'>'tau'</span>)
-<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span>(<span class='kw'>cv_results</span>, se_mult = <span class='fl'>1</span>)
-</div><div class='img'><img src='elnet_cv-2.png' alt='' width='700' height='433' /></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span>(<span class='kw'>cv_results</span>, se_mult = <span class='fl'>1</span>, what = <span class='st'>'coef.path'</span>)
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'>elnet_cv</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.75</span>, cv_repl <span class='op'>=</span> <span class='fl'>10</span>,
+                       cv_k <span class='op'>=</span> <span class='fl'>4</span>, cv_measure <span class='op'>=</span> <span class='st'>'tau'</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>cv_results</span>, se_mult <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
+</div><div class='img'><img src='elnet_cv-2.png' alt='' width='700' height='433' /></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>cv_results</span>, se_mult <span class='op'>=</span> <span class='fl'>1</span>, what <span class='op'>=</span> <span class='st'>'coef.path'</span><span class='op'>)</span>
 </div><div class='img'><img src='elnet_cv-3.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at the penalization level with</span>
 <span class='co'># smallest prediction error ...</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>)
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -9.9728656             0.1627509            -0.7114539 
 #&gt;          income.level      market.potential 
 #&gt;             0.7288730             1.2678040 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span>(<span class='kw'>cv_results</span>, lambda = <span class='st'>'se'</span>)
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -9.6779335             0.2020305            -0.6554980 
 #&gt;          income.level      market.potential 

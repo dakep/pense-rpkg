@@ -74,7 +74,7 @@ S-estimate." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.200</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.300</span>
       </span>
     </div>
 
@@ -82,7 +82,7 @@ S-estimate." />
       <ul class="nav navbar-nav">
         <li>
   <a href="../index.html">
-    <span class="fas fa fas fa-home fa-lg"></span>
+    <span class="fas fa-home fa-lg"></span>
      
   </a>
 </li>
@@ -114,7 +114,7 @@ S-estimate." />
       <ul class="nav navbar-nav navbar-right">
         <li>
   <a href="https://github.com/dakep/pense-rpkg/">
-    <span class="fab fa fab fa-github fa-lg"></span>
+    <span class="fab fa-github fa-lg"></span>
      
   </a>
 </li>
@@ -142,74 +142,74 @@ a highly-robust S-estimate followed by a more efficient M-estimate using the sca
 S-estimate.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>pensem_cv</span>(<span class='kw'>x</span>, <span class='kw'>...</span>)
+    <pre class="usage"><span class='fu'>pensem_cv</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for default</span>
-<span class='fu'>pensem_cv</span>(
-  <span class='kw'>x</span>,
-  <span class='kw'>y</span>,
-  alpha = <span class='fl'>0.5</span>,
-  nlambda = <span class='fl'>50</span>,
-  <span class='kw'>lambda_min_ratio</span>,
-  <span class='kw'>lambda_m</span>,
-  <span class='kw'>lambda_s</span>,
-  standardize = <span class='fl'>TRUE</span>,
-  <span class='kw'>penalty_loadings</span>,
-  intercept = <span class='fl'>TRUE</span>,
-  bdp = <span class='fl'>0.25</span>,
-  ncores = <span class='fl'>1</span>,
-  sparse = <span class='fl'>FALSE</span>,
-  eps = <span class='fl'>1e-06</span>,
-  cc = <span class='fl'>4.7</span>,
-  cv_k = <span class='fl'>5</span>,
-  cv_repl = <span class='fl'>1</span>,
-  cl = <span class='kw'>NULL</span>,
-  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"rmspe"</span>),
-  add_zero_based = <span class='fl'>TRUE</span>,
-  explore_solutions = <span class='fl'>10</span>,
-  explore_tol = <span class='fl'>0.1</span>,
-  max_solutions = <span class='fl'>10</span>,
-  fit_all = <span class='fl'>TRUE</span>,
-  comparison_tol = <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span>(<span class='kw'>eps</span>),
-  algorithm_opts = <span class='fu'><a href='mm_algorithm_options.html'>mm_algorithm_options</a></span>(),
-  mscale_opts = <span class='fu'><a href='mscale_algorithm_options.html'>mscale_algorithm_options</a></span>(),
-  nlambda_enpy = <span class='fl'>10</span>,
-  enpy_opts = <span class='fu'><a href='enpy_options.html'>enpy_options</a></span>(),
-  <span class='kw'>...</span>
-)
+<span class='fu'>pensem_cv</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>y</span>,
+  alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+  nlambda <span class='op'>=</span> <span class='fl'>50</span>,
+  <span class='va'>lambda_min_ratio</span>,
+  <span class='va'>lambda_m</span>,
+  <span class='va'>lambda_s</span>,
+  standardize <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>penalty_loadings</span>,
+  intercept <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  bdp <span class='op'>=</span> <span class='fl'>0.25</span>,
+  ncores <span class='op'>=</span> <span class='fl'>1</span>,
+  sparse <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  eps <span class='op'>=</span> <span class='fl'>1e-06</span>,
+  cc <span class='op'>=</span> <span class='fl'>4.7</span>,
+  cv_k <span class='op'>=</span> <span class='fl'>5</span>,
+  cv_repl <span class='op'>=</span> <span class='fl'>1</span>,
+  cl <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cv_metric <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"rmspe"</span><span class='op'>)</span>,
+  add_zero_based <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  explore_solutions <span class='op'>=</span> <span class='fl'>10</span>,
+  explore_tol <span class='op'>=</span> <span class='fl'>0.1</span>,
+  max_solutions <span class='op'>=</span> <span class='fl'>10</span>,
+  fit_all <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  comparison_tol <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='va'>eps</span><span class='op'>)</span>,
+  algorithm_opts <span class='op'>=</span> <span class='fu'><a href='mm_algorithm_options.html'>mm_algorithm_options</a></span><span class='op'>(</span><span class='op'>)</span>,
+  mscale_opts <span class='op'>=</span> <span class='fu'><a href='mscale_algorithm_options.html'>mscale_algorithm_options</a></span><span class='op'>(</span><span class='op'>)</span>,
+  nlambda_enpy <span class='op'>=</span> <span class='fl'>10</span>,
+  enpy_opts <span class='op'>=</span> <span class='fu'><a href='enpy_options.html'>enpy_options</a></span><span class='op'>(</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span>
 
 <span class='co'># S3 method for pense_cvfit</span>
-<span class='fu'>pensem_cv</span>(
-  <span class='kw'>x</span>,
-  <span class='kw'>scale</span>,
-  <span class='kw'>alpha</span>,
-  nlambda = <span class='fl'>50</span>,
-  <span class='kw'>lambda_min_ratio</span>,
-  <span class='kw'>lambda_m</span>,
-  standardize = <span class='fl'>TRUE</span>,
-  <span class='kw'>penalty_loadings</span>,
-  intercept = <span class='fl'>TRUE</span>,
-  bdp = <span class='fl'>0.25</span>,
-  ncores = <span class='fl'>1</span>,
-  sparse = <span class='fl'>FALSE</span>,
-  eps = <span class='fl'>1e-06</span>,
-  cc = <span class='fl'>4.7</span>,
-  cv_k = <span class='fl'>5</span>,
-  cv_repl = <span class='fl'>1</span>,
-  cl = <span class='kw'>NULL</span>,
-  cv_metric = <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span>(<span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"rmspe"</span>),
-  add_zero_based = <span class='fl'>TRUE</span>,
-  explore_solutions = <span class='fl'>10</span>,
-  explore_tol = <span class='fl'>0.1</span>,
-  max_solutions = <span class='fl'>10</span>,
-  fit_all = <span class='fl'>TRUE</span>,
-  comparison_tol = <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span>(<span class='kw'>eps</span>),
-  algorithm_opts = <span class='fu'><a href='mm_algorithm_options.html'>mm_algorithm_options</a></span>(),
-  mscale_opts = <span class='fu'><a href='mscale_algorithm_options.html'>mscale_algorithm_options</a></span>(),
-  <span class='kw'>x_train</span>,
-  <span class='kw'>y_train</span>,
-  <span class='kw'>...</span>
-)</pre>
+<span class='fu'>pensem_cv</span><span class='op'>(</span>
+  <span class='va'>x</span>,
+  <span class='va'>scale</span>,
+  <span class='va'>alpha</span>,
+  nlambda <span class='op'>=</span> <span class='fl'>50</span>,
+  <span class='va'>lambda_min_ratio</span>,
+  <span class='va'>lambda_m</span>,
+  standardize <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  <span class='va'>penalty_loadings</span>,
+  intercept <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  bdp <span class='op'>=</span> <span class='fl'>0.25</span>,
+  ncores <span class='op'>=</span> <span class='fl'>1</span>,
+  sparse <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  eps <span class='op'>=</span> <span class='fl'>1e-06</span>,
+  cc <span class='op'>=</span> <span class='fl'>4.7</span>,
+  cv_k <span class='op'>=</span> <span class='fl'>5</span>,
+  cv_repl <span class='op'>=</span> <span class='fl'>1</span>,
+  cl <span class='op'>=</span> <span class='cn'>NULL</span>,
+  cv_metric <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"tau_size"</span>, <span class='st'>"mape"</span>, <span class='st'>"rmspe"</span><span class='op'>)</span>,
+  add_zero_based <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  explore_solutions <span class='op'>=</span> <span class='fl'>10</span>,
+  explore_tol <span class='op'>=</span> <span class='fl'>0.1</span>,
+  max_solutions <span class='op'>=</span> <span class='fl'>10</span>,
+  fit_all <span class='op'>=</span> <span class='cn'>TRUE</span>,
+  comparison_tol <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='va'>eps</span><span class='op'>)</span>,
+  algorithm_opts <span class='op'>=</span> <span class='fu'><a href='mm_algorithm_options.html'>mm_algorithm_options</a></span><span class='op'>(</span><span class='op'>)</span>,
+  mscale_opts <span class='op'>=</span> <span class='fu'><a href='mscale_algorithm_options.html'>mscale_algorithm_options</a></span><span class='op'>(</span><span class='op'>)</span>,
+  <span class='va'>x_train</span>,
+  <span class='va'>y_train</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">

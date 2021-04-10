@@ -21,3 +21,4 @@ doc
 Meta
 vignettes/*_files
 .Rhistory
+tests/debug

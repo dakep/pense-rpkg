@@ -217,12 +217,14 @@ en_ridge_options <- function () {
 .select_en_algorithm <- function (en_options, alpha, sparse, eps) {
   if (!is.null(en_options)) {
     # Check if the EN algorithm can handle the given `alpha`
-    if (en_options$algorithm == 'dal' && !isTRUE(alpha > 0)) {
+    if (identical(en_options$algorithm, 'dal') && !isTRUE(alpha > 0)) {
       warn("The DAL algorithm can not handle a Ridge penalty. Using default algorithm as fallback.")
       en_options <- NULL
-    } else if (en_options$algorithm == 'ridge' && !isTRUE(alpha < .Machine$double.eps)) {
+    } else if (identical(en_options$algorithm, 'augridge') && !isTRUE(alpha < .Machine$double.eps)) {
       warn("The Ridge algorithm can only handle a Ridge penalty. Using default algorithm as fallback.")
       en_options <- NULL
+    } else if (identical(en_options$algorithm, 'lars') && isTRUE(alpha < .Machine$double.eps)) {
+      en_options <- en_ridge_options()
     }
   }
 

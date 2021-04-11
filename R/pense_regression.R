@@ -610,16 +610,14 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
                   "`starting_point()`, `enpy_initial_estimates()`, or a combination thereof."))
     }
 
+    # Identify which other starts are shared and which are specific.
+    other_starts_shared <- vapply(other_starts, FUN.VALUE = logical(1L), FUN = is, 'shared_starting_point')
+    other_starts_specific <- vapply(other_starts, FUN.VALUE = logical(1L), FUN = is, 'specific_starting_point')
+
     # Ensure the `beta` coefficients in `other_starts` agree with the desired vector class (sparse vs. dense)
     # and standardize them.
     other_starts <- lapply(.sparsify_other_starts(other_starts, pense_opts$sparse),
                            std_data$standardize_coefs)
-
-    # Identify which other starts are shared and which are specific.
-    other_starts_shared <- unlist(lapply(other_starts, is, 'shared_starting_point'), recursive = FALSE,
-                                  use.names = FALSE)
-    other_starts_specific <- unlist(lapply(other_starts, is, 'specific_starting_point'), recursive = FALSE,
-                                    use.names = FALSE)
 
     if (any(other_starts_shared)) {
       pense_opts$strategy_other_shared <- TRUE

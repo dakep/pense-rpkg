@@ -80,6 +80,49 @@ inline bool SolveChol(const arma::mat& chol, arma::vec * const b) {
   return true;
 }
 
+//! Solve a system of linear equations `A x = b` by using conjugate gradient, starting from `x`.
+//! @param A the symmetric positive definite design matrix
+//! @param b the right-hand side of the equation
+//! @param eps numerical tolerance for convergence
+//! @param max_it maximum number of iterations for early stopping. If 0, no early stopping is performed
+//! @param x the coefficient vector with a reasonably close initial guess on input and the solution on output.
+//! @return the number of iterations required for convergence.
+inline arma::uword SolveIterative(const arma::mat& A, const arma::vec& b, const double eps, arma::uword max_it,
+                                  arma::vec * const x) {
+  arma::uword it = 0;
+  arma::vec resid = b - A * (*x);
+  arma::vec step_dir = resid;
+  double resid_norm = arma::norm(resid, 2);
+  const double conv_threshold = eps * std::max(eps, resid_norm);
+
+  if (max_it == 0) {
+    max_it = b.n_elem;
+  }
+
+  while (true) {
+    const arma::vec trans_step_dir = A * step_dir;
+    const double step_size = resid_norm * resid_norm / arma::dot(step_dir, trans_step_dir);
+    (*x) += step_size * step_dir;
+    if (it % 4 == 0) {
+      // at every 4th step, re-compute the residuals to avoid numerical issues
+      resid = b - A * (*x);
+    } else {
+      resid -= step_size * trans_step_dir;
+    }
+    if ((it++ >= max_it) || (arma::norm(resid, 2) < conv_threshold)) {
+      break;
+    }
+
+    // update v
+    const double prev_resid_norm = resid_norm;
+    resid_norm = arma::norm(resid, 2);
+    const double direction_update_sqrt = resid_norm / prev_resid_norm;
+    step_dir = resid + (direction_update_sqrt * direction_update_sqrt) * step_dir;
+  }
+
+  return it;
+}
+
 //! Choleskey decomposition of a subset of the rows/columns of a symmetric positive-semidefinite matrix *A*.
 class Cholesky {
  public:

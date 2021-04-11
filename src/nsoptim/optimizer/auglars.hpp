@@ -13,6 +13,7 @@
 #include <forward_list>
 #include <algorithm>
 #include <limits>
+#include <memory>
 
 #include "../armadillo.hpp"
 #include "../container/regression_coefficients.hpp"
@@ -872,7 +873,7 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //! @param loss a weighted LS loss function.
   //! @param penalty the Ridge penalty.
   AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>() noexcept
-    : loss_(nullptr), penalty_(nullptr) {}
+    : loss_(nullptr), penalty_(nullptr), previous_data_ptr_(nullptr) {}
 
   //! Ininitialize the optimizer using the given (weighted) LS loss function and the Ridge penalty.
   //!
@@ -880,7 +881,8 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //! @param penalty the Ridge penalty.
   AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>(
     const LossFunction& loss, const RidgePenalty& penalty) noexcept
-      : loss_(LossFunctionPtr(new LossFunction(loss))), penalty_(RidgePenaltyPtr(new RidgePenalty(penalty))) {}
+      : loss_(LossFunctionPtr(new LossFunction(loss))), penalty_(RidgePenaltyPtr(new RidgePenalty(penalty))),
+        previous_data_ptr_(nullptr) {}
 
   //! Default copy constructor.
   //!
@@ -893,7 +895,7 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
       : loss_(other.loss_? LossFunctionPtr(new LossFunction(*other.loss_)) : nullptr),
         penalty_(other.penalty_ ? RidgePenaltyPtr(new RidgePenalty(*other.penalty_)) : nullptr),
         weighted_xy_cov_(other.weighted_xy_cov_), weighted_gram_(other.weighted_gram_),
-        mean_x_(other.mean_x_), mean_y_(other.mean_y_) {}
+        previous_data_ptr_(other.previous_data_ptr_), centered_x_(other.centered_x_), centered_y_(other.centered_y_) {}
 
   //! Default copy assignment.
   //!
@@ -947,10 +949,6 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
       throw std::logic_error("no penalty set");
     }
 
-    if (loss_->IncludeIntercept()) {
-      mean_x_ = arma::mean(loss_->data().cx(), 0);
-      mean_y_ = arma::mean(loss_->data().cy());
-    }
     UpdateData(IsWeightedTag{});
 
     RegressionCoefficients<arma::vec> coefs;
@@ -980,14 +978,40 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   void UpdateData(std::true_type) {
     const PredictorResponseData& data = loss_->data();
     if (loss_->IncludeIntercept()) {
+      UpdateCenteredData();
+
       // The observations have different weights. Make the predictor matrix orthogonal to the centered response.
-      arma::mat weighted_x = data.cx().each_row() - mean_x_;
-      weighted_x.each_col() %= loss_->sqrt_weights();
-      weighted_x -= loss_->sqrt_weights() * loss_->sqrt_weights().t() * weighted_x / data.n_obs();
+      // arma::mat weighted_x = centered_x_.each_col() % loss_->sqrt_weights();
+      // weighted_x -= loss_->sqrt_weights() * loss_->sqrt_weights().t() * weighted_x / data.n_obs();
+
+      // NOTE: Performing the computation manually saves a few operations
+      arma::mat weighted_x(arma::size(centered_x_));
+      auto weighted_x_it = weighted_x.begin();
+      auto centered_x_it = centered_x_.begin();
+      const auto sqrt_weights_end = loss_->sqrt_weights().end();
+      const arma::uword ncol = centered_x_.n_cols;
+      for (arma::uword col = 0; col < ncol; ++col) {
+        double center = 0;
+        auto centered_x_mean_it = centered_x_it;
+        auto sqrt_weights_it = loss_->sqrt_weights().begin();
+        while (sqrt_weights_it != sqrt_weights_end) {
+          center += (*centered_x_mean_it) * (*sqrt_weights_it) * (*sqrt_weights_it);
+          ++centered_x_mean_it;
+          ++sqrt_weights_it;
+        }
+        center /= centered_x_.n_rows;
+        sqrt_weights_it = loss_->sqrt_weights().begin();
+        while (sqrt_weights_it != sqrt_weights_end) {
+          *weighted_x_it = (*sqrt_weights_it) * (*centered_x_it - center);
+          ++weighted_x_it;
+          ++centered_x_it;
+          ++sqrt_weights_it;
+        }
+      }
 
       weighted_gram_ = weighted_x.t() * weighted_x;
       // Apply weights to the response
-      weighted_xy_cov_ = weighted_x.t() * ((data.cy() - mean_y_) % loss_->sqrt_weights());
+      weighted_xy_cov_ = weighted_x.t() * (centered_y_ % loss_->sqrt_weights());
     } else {
       weighted_gram_ = data.cx().each_col() % loss_->sqrt_weights();
       weighted_xy_cov_ = weighted_gram_.t() * (data.cy() % loss_->sqrt_weights());
@@ -998,13 +1022,24 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   void UpdateData(std::false_type) {
     const PredictorResponseData& data = loss_->data();
     if (loss_->IncludeIntercept()) {
+      UpdateCenteredData();
       // The weights are all identical. Center the predictors and the response.
-      weighted_gram_ = data.cx().each_row() - mean_x_;
-      weighted_gram_ = weighted_gram_.t() * weighted_gram_;
-      weighted_xy_cov_ = data.cx().t() * (data.cy() - mean_y_);
+      weighted_gram_ = centered_x_.t() * centered_x_;
+      weighted_xy_cov_ = data.cx().t() * centered_y_;
     } else {
       weighted_gram_ = data.cx().t() * data.cx();
       weighted_xy_cov_ = data.cx().t() * data.cy();
+    }
+  }
+
+  // Update the local copy of the centered data. Only perform the update if the data is from a different address.
+  void UpdateCenteredData() {
+    const PredictorResponseData& data = loss_->data();
+    if (previous_data_ptr_ == nullptr || (previous_data_ptr_ != std::addressof(data))) {
+      // The data is likely different
+      centered_x_ = data.cx().each_row() - arma::mean(data.cx(), 0);
+      centered_y_ = data.cy() - arma::mean(data.cy());
+      previous_data_ptr_ = std::addressof(data);
     }
   }
 
@@ -1033,8 +1068,9 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   RidgePenaltyPtr penalty_;
   arma::vec weighted_xy_cov_;
   arma::mat weighted_gram_;
-  arma::rowvec mean_x_;
-  double mean_y_;
+  PredictorResponseData const * previous_data_ptr_;
+  arma::mat centered_x_;
+  arma::vec centered_y_;
 };
 
 }  // namespace nsoptim

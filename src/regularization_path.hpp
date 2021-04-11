@@ -366,7 +366,7 @@ class RegPath0 {
 //! Regularization Path starting at the same starting point for every penalty.
 //!
 //! Compute the regularization path for the same loss function but different penalties.
-//! At each penalty, the optimization is started from the same startin point!
+//! At each penalty, the optimization is started from the same starting point!
 template<typename Optimizer>
 class RegPathIdentical {
   using LossFunction = typename Optimizer::LossFunction;

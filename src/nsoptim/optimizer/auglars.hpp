@@ -895,7 +895,9 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
       : loss_(other.loss_? LossFunctionPtr(new LossFunction(*other.loss_)) : nullptr),
         penalty_(other.penalty_ ? RidgePenaltyPtr(new RidgePenalty(*other.penalty_)) : nullptr),
         weighted_xy_cov_(other.weighted_xy_cov_), weighted_gram_(other.weighted_gram_),
-        previous_data_ptr_(other.previous_data_ptr_), centered_x_(other.centered_x_), centered_y_(other.centered_y_) {}
+        previous_data_ptr_(other.previous_data_ptr_), previous_data_nobs_(other.previous_data_nobs_),
+        previous_data_npred_(other.previous_data_npred_), centered_x_(other.centered_x_),
+        centered_y_(other.centered_y_) {}
 
   //! Default copy assignment.
   //!
@@ -1035,11 +1037,14 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   // Update the local copy of the centered data. Only perform the update if the data is from a different address.
   void UpdateCenteredData() {
     const PredictorResponseData& data = loss_->data();
-    if (previous_data_ptr_ == nullptr || (previous_data_ptr_ != std::addressof(data))) {
+    if ((previous_data_ptr_ == nullptr) || (previous_data_ptr_ != std::addressof(data)) ||
+        (previous_data_nobs_ != data.n_obs()) || (previous_data_npred_ != data.n_pred())) {
       // The data is likely different
       centered_x_ = data.cx().each_row() - arma::mean(data.cx(), 0);
       centered_y_ = data.cy() - arma::mean(data.cy());
       previous_data_ptr_ = std::addressof(data);
+      previous_data_nobs_ = data.n_obs();
+      previous_data_npred_ = data.n_pred();
     }
   }
 
@@ -1069,6 +1074,8 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   arma::vec weighted_xy_cov_;
   arma::mat weighted_gram_;
   PredictorResponseData const * previous_data_ptr_;
+  arma::uword previous_data_nobs_;
+  arma::uword previous_data_npred_;
   arma::mat centered_x_;
   arma::vec centered_y_;
 };

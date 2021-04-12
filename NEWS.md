@@ -1,4 +1,5 @@
 # pense 2.0.3
+  * Fix a bug causing PENSE-Ridge, i.e., `pense(..., alpha = 0)`, to take a long time to compute.
   * Fix a compilation error on RHEL due to an error in the autoconf script.
   * Fix problems in `prediction_performance()` related to the non-standard evaluation of objects.
   * Also return standardized coefficients as `std_beta` and `std_intercept`.

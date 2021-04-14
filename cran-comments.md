@@ -1,7 +1,7 @@
-Fixes a critical bug which prevents the methods from being used if more than 50% of response values are identical (e.g., discrete responses, 0-inflated responses, etc.).
+Fixes several bugs which, e.g., prevented building on RHEL and degraded performance in certain situations.
 
 ## Test environments
-* local OS X 10.15.6, R version 4.0.2 Patched
+* local x86_64-apple-darwin17.0 version 11.2.3 (20D91), R version 4.0.5 Patched (2021-03-31 r80136)
 * win-builder (devel and release)
 * Travis
   * Ubuntu 16.04.7 LTS, R-oldrel

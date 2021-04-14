@@ -15,6 +15,7 @@
 ^man\-roxygen$
 ^.vscode$
 ^\.github$
+^tests/debug/.*$
 ^.*autoconfig\.R$
 ^.*autoconfig\.hpp$
 ^\.travis\.yml$

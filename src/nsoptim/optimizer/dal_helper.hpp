@@ -316,117 +316,24 @@ class Hessian {
       // No predictors are active. We can compute the inverse of the Hessian and the step direction directly.
       if (include_intercept) {
         *step_dir = StepDirNoPredictors(gradient, eta, WeightsTag{});
-        return 0;
       } else {
         // If there's no intercept, compute the step direction directly. Don't touch the internal state at all.
         *step_dir = gradient;
       }
+      return 0;
     }
 
-    // sp_vec does not have an overload for the find method, so it has to be done in a hacky way.
-    // Instead of the easy way `const uvec active = find(beta);` we create a view of the row-indices.
     beta.sync();
     const arma::uvec active(const_cast<arma::uword*>(beta.row_indices), beta.n_nonzero, false, true);
-    bool solve_directly = false;
-
-    // Compute/update the outer product.
-    if (active_.n_elem == 0) {
-      // The current outer product is empty, but there are new active predictors. Compute from scratch.
-      active_ = active;
-      auto active_view = data_->cx().cols(active);
-      outer_product_ = active_view * active_view.t();
-      if (active.n_elem < data_->n_pred()) {
-        preconditioner_.eye(arma::size(outer_product_));
-        // If not all predictors are activated at once, perform rank-1 updates sequentially.
-        for (auto new_active_it = active.cbegin(), new_active_end = active.cend(); new_active_it != new_active_end;
-             ++new_active_it) {
-          auto var_view = data_->cx().col(*new_active_it);
-          arma::vec tmp = preconditioner_ * var_view;
-          preconditioner_ -= tmp * tmp.t() / (1 + arma::as_scalar(var_view.t() * tmp));
-        }
-        metric->AddDetail("step_dir_rank1_updates", static_cast<int>(active.n_elem));
-      } else {
-        // All predictors are activated at once. We will compute the preconditioner by inverting the hessian below.
-        solve_directly = true;
-      }
-    } else {
-      // There is a change in active variables. Perform rank-1 updates to the outer product and the preconditioner.
-      int rank1_updates = 0;
-      const auto old_active_end = active_.end();
-      auto old_active_it = active_.begin();
-      const auto new_active_end = active.end();
-      auto new_active_it = active.begin();
-      while (new_active_it != new_active_end || old_active_it != old_active_end) {
-        if ((old_active_it != old_active_end) && (new_active_it == new_active_end || *new_active_it > *old_active_it)) {
-          // All remaining old active predictors must be removed or a predictor is removed from the active set.
-          auto var_view = data_->cx().col(*old_active_it);
-          outer_product_ -= var_view * var_view.t();
-
-          // Update the preconditioner according to the Sherman–Morrison-Woodbury formula
-          arma::vec tmp = preconditioner_ * var_view;
-          preconditioner_ += tmp * tmp.t() / arma::as_scalar(1 - var_view.t() * tmp);
-          ++old_active_it;
-          ++rank1_updates;
-        } else if (old_active_it == old_active_end || *new_active_it < *old_active_it) {
-          // All remaining new active predictors must be added or a predictor is added to the new active set.
-          auto var_view = data_->cx().col(*new_active_it);
-          outer_product_ += var_view * var_view.t();
-
-          // Update the preconditioner according to the Sherman–Morrison-Woodbury formula
-          arma::vec tmp = preconditioner_ * var_view;
-          preconditioner_ -= tmp * tmp.t() / arma::as_scalar(1 + var_view.t() * tmp);
-          ++new_active_it;
-          ++rank1_updates;
-        } else {
-          // The predictor is already in the old active set.
-          if (old_active_it != old_active_end) {
-            ++old_active_it;
-          }
-          if (new_active_it != new_active_end) {
-            ++new_active_it;
-          }
-        }
-      }
-      active_ = active;
-      metric->AddDetail("step_dir_rank1_updates", rank1_updates);
-    }
-
-    // Compute the Hessian.
+    auto active_view = data_->cx().cols(active);
     arma::mat hessian;
     if (include_intercept) {
-      hessian = eta.slope * moreau_factor * outer_product_ + eta.intercept * sqrt_weights_outer_;
+      hessian = eta.slope * moreau_factor * active_view * active_view.t() + eta.intercept * sqrt_weights_outer_;
     } else {
-      hessian = eta.slope * moreau_factor * outer_product_;
+      hessian = eta.slope * moreau_factor * active_view * active_view.t();
     }
     hessian.diag() += 1;  //< this is usuall faster than adding a diagonal matrix.
-
-    if (solve_directly) {
-      // If we solve the equation directly, invert the Hessian and store the result as the future preconditioner.
-      const bool success = arma::inv_sympd(preconditioner_, hessian);
-      metric->AddDetail("step_dir_invert_hessian", 1);
-      *step_dir = preconditioner_ * gradient;
-      return success ? kPhiStepDirFullInversion : kPhiStepDirInversionFailed;
-    }
-
-    // Use PCG with the current preconditioner to solve for the step direction.
-    if (step_dir->n_elem == 0) {
-      step_dir->zeros(gradient.n_elem);
-    }
-    const auto pcg_iters = SolvePcg(hessian, gradient, preconditioner_, pcg_convergence_tol_, step_dir);
-    const int max_tolerated_pcg_iters = static_cast<int>(std::sqrt(static_cast<double>(gradient.n_elem))) + 1;
-    if (pcg_iters < 0 || pcg_iters > max_tolerated_pcg_iters) {
-      // PCG did not converge. Recompute the preconditiioner.
-      metric->AddDetail("step_dir_invert_hessian", 1);
-      metric->AddDetail("step_dir_pcg_iter", (pcg_iters < 0) ? static_cast<int>(gradient.n_elem) : pcg_iters);
-      if (!arma::inv_sympd(preconditioner_, hessian)) {
-        return kPhiStepDirInversionFailed;
-      }
-      *step_dir = preconditioner_ * gradient;
-      return kPhiStepDirFullInversion;
-    } else {
-      metric->AddDetail("step_dir_pcg_iter", static_cast<int>(pcg_iters));
-    }
-    return pcg_iters;
+    return -static_cast<int>(arma::solve(*step_dir, hessian, gradient, arma::solve_opts::likely_sympd));
   }
 
  private:

@@ -155,6 +155,7 @@ class DataProxy<LossFunction, std::true_type> {
   //! a new loss!
   explicit DataProxy(LossFunction const * const loss)
     : data_(loss ? &(loss->data()) : nullptr), sqrt_weights_(loss ? &(loss->sqrt_weights()) : nullptr),
+      sqrt_weights_outer_(loss ? loss->sqrt_weights() * loss->sqrt_weights().t() : arma::mat()),
       mean_weight_(loss ? loss->mean_weight() : 1.),
       weighted_data_(loss ?
                      PredictorResponseData(data_->cx().each_col() % *sqrt_weights_, data_->cy() % *sqrt_weights_) :
@@ -198,6 +199,7 @@ class DataProxy<LossFunction, std::true_type> {
 
     if (changes.data_changed || changes.weights_changed) {
       sqrt_weights_ = &loss.sqrt_weights();
+      sqrt_weights_outer_ = loss.sqrt_weights() * loss.sqrt_weights().t();
       data_ = &loss.data();
       mean_weight_ = loss.mean_weight();
       weighted_data_ = PredictorResponseData(data_->cx().each_col() % *sqrt_weights_, data_->cy() % *sqrt_weights_);
@@ -210,6 +212,13 @@ class DataProxy<LossFunction, std::true_type> {
   //! @return vector with the sqrt of the observation weights.
   const arma::vec& sqrt_weights() const noexcept {
     return *sqrt_weights_;
+  }
+
+  //! Get the outer product of the square-root of the observation weights.
+  //!
+  //! @return vector with the sqrt of the observation weights.
+  const arma::mat& sqrt_weights_outer() const noexcept {
+    return sqrt_weights_outer_;
   }
 
   //! Get the average weight.
@@ -243,6 +252,7 @@ class DataProxy<LossFunction, std::true_type> {
  private:
   PredictorResponseData const * data_ = nullptr;
   arma::vec const * sqrt_weights_ = nullptr;
+  arma::mat sqrt_weights_outer_;
   double mean_weight_;
   PredictorResponseData weighted_data_;
 };

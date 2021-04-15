@@ -75,7 +75,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
   DalEnOptimizer(const LossFunction& loss, const PenaltyFunction& penalty,
                  const Configuration& config = _optim_dal_internal::kDefaultDalEnConfiguration) noexcept
     : config_(config), loss_(LossFunctionPtr(new LossFunction(loss))),
-      penalty_(PenaltyFunctionPtr(new PenaltyFunction(penalty))), data_(loss_.get()), hessian_(data_) {}
+      penalty_(PenaltyFunctionPtr(new PenaltyFunction(penalty))), data_(loss_.get()) {}
 
   //! Copy constructor.
   //!
@@ -86,7 +86,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     loss_(other.loss_ ? LossFunctionPtr(new LossFunction(*other.loss_)) : nullptr),
     penalty_(other.penalty_ ? PenaltyFunctionPtr(new PenaltyFunction(*other.penalty_)) : nullptr),
     coefs_(other.coefs_),
-    data_(loss_.get()), hessian_(other.hessian_, data_), eta_(other.eta_),
+    data_(loss_.get()), eta_(other.eta_),
     convergence_tolerance_(other.convergence_tolerance_) {}
 
   DalEnOptimizer(DalEnOptimizer&& other) = default;
@@ -123,11 +123,6 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     if (changes.data_changed || changes.weights_changed > 1) {
       // If the data changed, the proximity parameters must be reset.
       eta_.nxlambda = -1;
-      hessian_ = _optim_dal_internal::Hessian<LossFunction>(data_);
-    } else if (changes.weights_changed == 1) {
-      // eta_.nxlambda = -1;
-      // Weights changed slightly, so the Hessian only needs to update the outer product.
-      hessian_.UpdateData(data_);
     }
   }
 
@@ -234,8 +229,6 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     eta_.slope = std::min(eta_start_numerator / nxlambda, _optim_dal_internal::kMaximumEtaStart);
     eta_.intercept = eta_.slope;
     eta_.nxlambda = nxlambda;
-
-    hessian_.convergence_tolerance(convergence_tolerance_ * 0.1);
 
     metrics->AddDetail("eta_start_numerator", eta_start_numerator);
     metrics->AddDetail("convergence_tol", convergence_tolerance_);
@@ -357,6 +350,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     softthr_cutoff *= eta_.slope;
 
     int iter = 0;
+    arma::vec step_dir;
     while (true) {
       Metrics& inner_metrics = metrics->CreateSubMetrics("phi_iteration");
       // Update coefficient values
@@ -388,11 +382,8 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
         break;
       }
 
-      arma::vec step_dir;
-      int pcg_iter = hessian_.SolveFast(coefs_.beta, gradient, moreau_factor, eta_, loss_->IncludeIntercept(),
-                                        &inner_metrics, &step_dir);
-
-      if (pcg_iter == _optim_dal_internal::kPhiStepDirInversionFailed) {
+      const bool hessian_inverted = PhiStepDir(coefs_.beta, gradient, moreau_factor, &step_dir);
+      if (!hessian_inverted) {
         iter = _optim_dal_internal::kMinimizePhiHessianSingular;
         break;
       }
@@ -410,8 +401,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
 
       while (++line_search_iter <= _optim_dal_internal::kLinesearchMaxSteps) {
         // Update coefficient values
-        coefs_.beta = SoftThreshold(prev_coefs.beta, eta_.slope, *dual_constraint_rhs,
-                                                    softthr_cutoff);
+        coefs_.beta = SoftThreshold(prev_coefs.beta, eta_.slope, *dual_constraint_rhs, softthr_cutoff);
         coefs_.intercept = intercept_step_base - step_size * intercept_step_decrease;
 
         // Evaluate the phi function and its gradient.
@@ -531,12 +521,70 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     return c;
   }
 
+  //! Find the appropriate step direction.
+  //! @return boolean indicating if a solution was found or not.
+  bool PhiStepDir(const arma::sp_vec& beta, const arma::vec& gradient, const double moreau_factor,
+                  arma::vec * const step_dir) const {
+    if (beta.n_nonzero == 0) {
+      // No predictors are active. We can compute the inverse of the Hessian and the step direction directly.
+      if (loss_->IncludeIntercept()) {
+        *step_dir = PhiStepDirNoPredictors(gradient, HasWeightsTag{});
+      } else {
+        // If there's no intercept and no active predictors, the Hessian is the identity matrix.
+        *step_dir = gradient;
+      }
+      return true;
+    }
+
+    // Ensure that the row indicies of the non-zero elements are upated.
+    beta.sync();
+    const arma::uvec active(const_cast<arma::uword*>(beta.row_indices), beta.n_nonzero, false, true);
+
+    arma::mat hessian = PhiHessian(active, moreau_factor, HasWeightsTag{});
+    hessian.diag() += 1;  //< this is faster than adding a diagonal matrix.
+    return arma::solve(*step_dir, hessian, gradient, arma::solve_opts::likely_sympd);
+  }
+
+  //! Compute the Hessian for a weighted LS loss.
+  arma::mat PhiHessian(const arma::uvec& active_predictors, const double moreau_factor, std::true_type) const {
+    auto active_view = data_->cx().cols(active_predictors);
+    if (loss_->IncludeIntercept()) {
+      return eta_.slope * moreau_factor * active_view * active_view.t() + eta_.intercept * data_.sqrt_weights_outer();
+    } else {
+      return eta_.slope * moreau_factor * active_view * active_view.t();
+    }
+  }
+
+  //! Compute the Hessian for an un-weighted LS loss.
+  arma::mat PhiHessian(const arma::uvec& active_predictors, const double moreau_factor, std::false_type) const {
+    auto active_view = data_->cx().cols(active_predictors);
+    if (loss_->IncludeIntercept()) {
+      return eta_.slope * moreau_factor * active_view * active_view.t() + eta_.intercept;
+    } else {
+      return eta_.slope * moreau_factor * active_view * active_view.t();
+    }
+  }
+
+  //! Find the appropriate step direction if no predictors are active and a weighted LS loss is used.
+  arma::vec PhiStepDirNoPredictors(const arma::vec& gradient, std::true_type) const {
+    // If there's an intercept and weights, the preconditioner is set to the inverse of the Hessian.
+    const double sum_weights = data_->n_obs() * data_.mean_weight();
+    arma::mat inv_hessian = data_.sqrt_weights_outer() * (-eta_.intercept / (1 + eta_.intercept * sum_weights));
+    inv_hessian.diag() += 1.;
+    // The preconditioner is now the actual inverse itself and can be used directly to compute the step direction.
+    return inv_hessian * gradient;
+  }
+
+  //! Find the appropriate step direction if no predictors are active and a non-weighted LS loss is used.
+  arma::vec PhiStepDirNoPredictors(const arma::vec& gradient, std::false_type) const noexcept {
+    return gradient / (1 + eta_.intercept);
+  }
+
   const Configuration config_;
   LossFunctionPtr loss_;
   PenaltyFunctionPtr penalty_;
   Coefficients coefs_;
   _optim_dal_internal::DataProxy<LossFunction> data_;
-  _optim_dal_internal::Hessian<LossFunction> hessian_;
   _optim_dal_internal::ProximityParameters eta_;
   double convergence_tolerance_ = 1e-8;
 };

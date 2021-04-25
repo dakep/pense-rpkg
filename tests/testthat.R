@@ -1,4 +1,6 @@
-library(testthat)
-library(pense)
-
-test_check("pense")
+if (require(testthat)) {
+  library(pense)
+  test_check("pense")
+} else {
+  warning("'pense' requires 'testthat' for tests.")
+}

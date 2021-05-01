@@ -165,9 +165,10 @@ class OptimizerList {
   //!
   //! @param max_size the maximum number of optimizers in the list.
   //! @param compare_tol_ the numerical tolerance for comparing two optima.
-  OptimizerList(const int max_size, const double explore_tol, const double compare_tol, const int num_threads) noexcept
-      : max_size_(max_size), explore_tol_(explore_tol), compare_tol_(compare_tol), num_threads_(num_threads),
-        items_(max_size_, compare_tol) {}
+  OptimizerList(const int max_size, const double explore_tol, const int explore_it, const double compare_tol,
+                const int num_threads) noexcept
+      : max_size_(max_size), explore_tol_(explore_tol), explore_it_(explore_it), compare_tol_(compare_tol),
+        num_threads_(num_threads), items_(max_size_, compare_tol) {}
 
   //! Add optimizer to the list.
   //!
@@ -200,6 +201,7 @@ class OptimizerList {
  private:
   const int max_size_;
   const double explore_tol_;
+  const int explore_it_;
   const double compare_tol_;
   int num_threads_;
   UOptima items_;
@@ -252,7 +254,7 @@ class OptimizerList {
         #pragma omp task default(none) firstprivate(start_it) shared(optimizer, cold_items)
         {
           auto tmp_optimizer = *optimizer;
-          auto cold_optimum = tmp_optimizer.Optimize(*start_it);
+          auto cold_optimum = tmp_optimizer.Optimize(*start_it, explore_it_);
           if (cold_optimum.status != nsoptim::OptimumStatus::kError) {
             #pragma omp critical(regpath_insert_optimum)
             cold_items.Insert(std::move(cold_optimum), std::move(tmp_optimizer));
@@ -297,7 +299,7 @@ class OptimizerList {
 
     for (auto&& start : starts) {
       auto tmp_optimizer = *optimizer;
-      auto cold_optimum = tmp_optimizer.Optimize(start);
+      auto cold_optimum = tmp_optimizer.Optimize(start, explore_it_);
       if (cold_optimum.status != nsoptim::OptimumStatus::kError) {
         cold_items.Insert(std::move(cold_optimum), std::move(tmp_optimizer));
       }
@@ -404,11 +406,11 @@ class RegPathIdentical {
   //!
   //! @param eps the relaxed convergence tolerance.
   //! @return an approximate optimum.
-  Optimum Explore(const double eps) {
+  Optimum Explore(const double eps, const int maxit) {
     const double original_eps = optim_.convergence_tolerance();
     optim_.convergence_tolerance(eps);
     optim_.penalty(*penalty_it_);
-    const Optimum tmp = optim_.Optimize(start_);
+    const Optimum tmp = optim_.Optimize(start_, maxit);
     optim_.convergence_tolerance(original_eps);
 
     // Increment only if not previously explored!
@@ -458,15 +460,16 @@ class RegPathCarryForward {
   //! @param starts a list with of starting points, i.e., for every item in `penalties`, `starts` contains a list of
   //!               coefficients. If the list is empty, the optimization starts at the best solutions at the previous
   //!               penalty.
-  //! @param explore_tol convergence tolerance used approximate, or "explore", possible optima.
+  //! @param explore_tol convergence tolerance to approximate, or "explore", possible optima.
+  //! @param explore_it maximum number of iterations to perform in the exploration state.
   //! @param nr_retain number of optima to keep track of.
   //! @param comparison_tol numerical tolerance to distinguish optima.
   RegPathCarryForward(const Optimizer& optimizer, const LossFunction& loss, const PenaltyList& penalties,
-                      const StartCoefficients& starts, const double explore_tol, const int nr_retain,
-                      const double comparison_tol, const int num_threads) noexcept
+                      const StartCoefficients& starts, const double explore_tol, const int explore_it,
+                      const int nr_retain, const double comparison_tol, const int num_threads) noexcept
     : penalties_(penalties), starts_(starts), optim_(optimizer), penalty_it_(penalties.cbegin()),
       starts_it_(starts_.cbegin()), skip_(starts_it_->empty()),
-      cold_list_(nr_retain, explore_tol, comparison_tol, num_threads) {
+      cold_list_(nr_retain, explore_tol, explore_it, comparison_tol, num_threads) {
     optim_.loss(loss);
   }
 
@@ -531,10 +534,11 @@ class RegPathCombined {
   //! @param explore_tol the numeric tolerance for exploring solutions.
   //! @param comparison_tol numeric tolerance for comparing two optima.
   RegPathCombined(const Optimizer& optimizer, const LossFunction& loss, const PenaltyList& penalties,
-                  const int max_optima, const int nr_explore, const double explore_tol, const double comparison_tol,
-                  const int num_threads) noexcept
+                  const int max_optima, const int nr_explore, const double explore_tol, const int explore_it,
+                  const double comparison_tol, const int num_threads) noexcept
       : optimizer_(optimizer), loss_(loss), penalties_(penalties), comparison_tol_(comparison_tol),
-        max_optima_(max_optima), explore_tol_(explore_tol), nr_explore_(nr_explore), num_threads_(num_threads) {}
+        max_optima_(max_optima), explore_tol_(explore_tol), explore_it_(explore_it), nr_explore_(nr_explore),
+        num_threads_(num_threads) {}
 
   //! Add a 0-based regularization path.
   void Add() {
@@ -556,7 +560,7 @@ class RegPathCombined {
   //! @param nr_retain number of optima to keep track of.
   //! @param eps numerical tolerance to distinguish optima.
   void Add(const StartCoefficients& starts) {
-    rp_cf_.emplace_front(optimizer_, loss_, penalties_, starts, explore_tol_, nr_explore_, comparison_tol_,
+    rp_cf_.emplace_front(optimizer_, loss_, penalties_, starts, explore_tol_, explore_it_, nr_explore_, comparison_tol_,
                          num_threads_);
   }
 
@@ -611,6 +615,7 @@ class RegPathCombined {
   const double comparison_tol_;
   const int max_optima_;
   const double explore_tol_;
+  const int explore_it_;
   const int nr_explore_;
   int num_threads_;  //!< Can not be constant, as OpenMP requires it to be an lvalue!
   std::unique_ptr<RegPath0<Optimizer>> rp_0_;
@@ -625,10 +630,11 @@ class RegPathCombined {
       // First, explore all "identical" reg. paths.
       #pragma omp single
       for (auto reg_path_it = rp_id_.begin(), reg_path_end = rp_id_.end(); reg_path_it != reg_path_end; ++reg_path_it) {
-        #pragma omp task firstprivate(reg_path_it) shared(ident_explore_optima) const_shared(explore_tol_) default(none)
+        #pragma omp task firstprivate(reg_path_it) shared(ident_explore_optima) \
+                         const_shared(explore_tol_), const_shared(explore_it_) default(none)
         {
           // This takes a while...
-          auto&& optimum = reg_path_it->Explore(explore_tol_);
+          auto&& optimum = reg_path_it->Explore(explore_tol_, explore_it_);
           if (ident_explore_optima.IsGoodEnough(optimum)) {
             // Try to add to the list of unique optima
             #pragma omp critical(insert_explored_optimum)
@@ -658,7 +664,7 @@ class RegPathCombined {
   void NextIdentical(UniqueOptima* next_optima, std::false_type) {
     GenericUniqueOptima< RegPathIdentical<Optimizer>* > ident_explore_optima(nr_explore_, comparison_tol_);
     for (auto&& reg_path : rp_id_) {
-      ident_explore_optima.Insert(reg_path.Explore(explore_tol_), &reg_path);
+      ident_explore_optima.Insert(reg_path.Explore(explore_tol_, explore_it_), &reg_path);
     }
 
     for (auto&& optimum_tuple : ident_explore_optima.Elements()) {

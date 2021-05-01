@@ -22,7 +22,8 @@ using Rcpp::as;
 namespace {
 constexpr double kDefaultRhoCc = 4.5;
 constexpr bool kDefaultIncludeIntercept = true;
-constexpr double kDefaultExploreTol = 0.1;
+constexpr double kDefaultExploreTol = 1e-3;
+constexpr double kDefaultExploreIt = 20;
 constexpr double kDefaultComparisonTol = 1e-3;
 constexpr int kDefaultMaxOptima = 1;
 constexpr int kDefaultTracks = 1;
@@ -172,6 +173,7 @@ SEXP MestEnRegressionImpl(MMOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_scal
                                                 GetFallback(mest_opts, "max_optima", kDefaultMaxOptima),
                                                 GetFallback(mest_opts, "nr_tracks", kDefaultTracks),
                                                 GetFallback(mest_opts, "explore_tol", kDefaultExploreTol),
+                                                GetFallback(mest_opts, "explore_it", kDefaultExploreIt),
                                                 GetFallback(mest_opts, "comparison_tol", kDefaultComparisonTol),
                                                 GetFallback(mest_opts, "num_threads", kDefaultNumberOfThreads));
 

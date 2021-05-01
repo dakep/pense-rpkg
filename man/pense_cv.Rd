@@ -80,8 +80,12 @@ If \code{standardize = TRUE}, the starting points are also scaled.}
 Does \emph{not} affect the estimated coefficients, only the estimated scale of the residuals.}
     \item{\code{eps}}{numerical tolerance.}
     \item{\code{explore_solutions}}{number of solutions to compute up to the desired precision \code{eps}.}
-    \item{\code{explore_tol}}{numerical tolerance for exploring possible solutions. Should be (much) looser than \code{eps} to
-be useful.}
+    \item{\code{explore_tol}}{numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via \code{algorithm_opts}.}
+    \item{\code{explore_it}}{numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via \code{algorithm_opts}.}
     \item{\code{max_solutions}}{only retain up to \code{max_solutions} unique solutions per penalization level.}
     \item{\code{comparison_tol}}{numeric tolerance to determine if two solutions are equal. The comparison is first done
 on the absolute difference in the value of the objective function at the solution

@@ -134,8 +134,9 @@ The order of the given values corresponds to the order in the input data.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
 
-\item{explore_tol}{numerical tolerance for exploring possible solutions. Should be (much) looser than \code{eps} to
-be useful.}
+\item{explore_tol}{numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 

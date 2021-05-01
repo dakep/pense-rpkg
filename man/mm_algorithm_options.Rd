@@ -7,7 +7,7 @@
 mm_algorithm_options(
   max_it = 500,
   tightening = c("adaptive", "exponential", "none"),
-  tightening_steps = 10,
+  tightening_steps = 2,
   en_algorithm_opts
 )
 }

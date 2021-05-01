@@ -80,7 +80,7 @@ mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
 #' @return options for the MM algorithm.
 #' @export
 mm_algorithm_options <- function (max_it = 500, tightening = c('adaptive', 'exponential', 'none'),
-                                  tightening_steps = 10, en_algorithm_opts) {
+                                  tightening_steps = 2, en_algorithm_opts) {
   list(algorithm = 'mm', max_it = .as(max_it[[1L]], 'integer'),
        tightening = .tightening_id(match.arg(tightening)),
        tightening_steps = .as(tightening_steps[[1L]], 'integer'),

@@ -1,13 +1,16 @@
 language: r
 cache: packages
+dist: focal
+warnings_are_errors: true
 r:
 - release
-warnings_are_errors: true
-before_install:
- - sudo apt-get -y install libharfbuzz-dev libfribidi-dev
- - sudo apt-get -y install libsodium-dev
- - Rscript -e 'install.packages(c("textshaping", "pkgdown"), repos = "https://cloud.r-project.org")'
+apt_packages:
+ - libharfbuzz-dev
+ - libfribidi-dev
+ - libsodium-dev
 r_packages:
+- textshaping
+- pkgdown
 - rmarkdown
 
 env:

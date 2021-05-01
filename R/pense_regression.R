@@ -66,8 +66,9 @@
 #'   Does *not* affect the estimated coefficients, only the estimated scale of the residuals.
 #' @param eps numerical tolerance.
 #' @param explore_solutions number of solutions to compute up to the desired precision `eps`.
-#' @param explore_tol numerical tolerance for exploring possible solutions. Should be (much) looser than `eps` to
-#'    be useful.
+#' @param explore_tol,explore_it numerical tolerance and maximum number of iterations for exploring possible solutions.
+#'    The tolerance should be (much) looser than `eps` to be useful, and the number of iterations should also be much
+#'    smaller than the maximum number of iterations given via `algorithm_opts`.
 #' @param max_solutions only retain up to `max_solutions` unique solutions per penalization level.
 #' @param comparison_tol numeric tolerance to determine if two solutions are equal. The comparison is first done
 #'    on the absolute difference in the value of the objective function at the solution
@@ -117,8 +118,8 @@
 #' @importFrom lifecycle deprecated is_present deprecate_stop
 pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio, enpy_lambda,
                   penalty_loadings, intercept = TRUE, bdp = 0.25, cc, add_zero_based = TRUE, enpy_specific = FALSE,
-                  other_starts, eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
-                  comparison_tol = sqrt(eps), sparse = FALSE, ncores = 1, standardize = TRUE,
+                  other_starts, eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, explore_it = 20,
+                  max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE, ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(), mscale_opts = mscale_algorithm_options(),
                   enpy_opts = enpy_options(), cv_k = deprecated(), cv_objective = deprecated(), ...) {
 
@@ -396,8 +397,8 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
 #' @importFrom stats runif
 .pense_args <- function (x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio, enpy_lambda,
                          penalty_loadings, intercept = TRUE, bdp = 0.25, cc = NULL, add_zero_based = TRUE,
-                         enpy_specific = FALSE,
-                         other_starts, eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
+                         enpy_specific = FALSE, other_starts, eps = 1e-6, explore_solutions = 10,
+                         explore_tol = 0.1, explore_it = 20, max_solutions = 10,
                          comparison_tol = sqrt(eps), sparse = FALSE, ncores = 1, standardize = TRUE,
                          algorithm_opts = mm_algorithm_options(), mscale_opts = mscale_algorithm_options(),
                          enpy_opts = enpy_options(),
@@ -507,6 +508,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
                      eps = .as(eps[[1L]], 'numeric'),
                      comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
                      explore_tol = .as(explore_tol[[1L]], 'numeric'),
+                     explore_it = .as(explore_it[[1L]], 'integer'),
                      nr_tracks = .as(explore_solutions[[1L]], 'integer'),
                      max_optima = .as(max_solutions[[1L]], 'integer'),
                      num_threads = max(1L, .as(ncores[[1L]], 'integer')),
@@ -518,6 +520,9 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
   }
   if (pense_opts$comparison_tol < pense_opts$eps) {
     abort("`comparison_tol` must not be less than `eps`")
+  }
+  if (pense_opts$explore_it < 1L) {
+    abort("`explore_it` must not be less than 0")
   }
 
   # Check EN algorithm for ENPY

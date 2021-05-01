@@ -24,6 +24,7 @@ pense(
   eps = 1e-06,
   explore_solutions = 10,
   explore_tol = 0.1,
+  explore_it = 20,
   max_solutions = 10,
   comparison_tol = sqrt(eps),
   sparse = FALSE,
@@ -88,8 +89,9 @@ If \code{standardize = TRUE}, the starting points are also scaled.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
 
-\item{explore_tol}{numerical tolerance for exploring possible solutions. Should be (much) looser than \code{eps} to
-be useful.}
+\item{explore_tol, explore_it}{numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 

@@ -104,7 +104,7 @@ inline arma::uword SolveIterative(const arma::mat& A, const arma::vec& b, const 
     const double step_size = resid_norm * resid_norm / arma::dot(step_dir, trans_step_dir);
     (*x) += step_size * step_dir;
     if (it % 4 == 0) {
-      // at every 4th step, re-compute the residuals to avoid numerical issues
+      // at every 4th step, re-compute the residuals to avoid drift
       resid = b - A * (*x);
     } else {
       resid -= step_size * trans_step_dir;
@@ -216,6 +216,7 @@ class Cholesky {
       arma::vec l(next_column, active_size_, false, true);
       l = gram_.unsafe_col(add).elem(active_cols_.head(active_size_));
 
+      // Solve the triangular system of linear equations
       dtpsv(&upper, &trans_y, &diag_n, &mat_size, gram_decomp_packed_.get(), l.memptr(), &incx);
 
       next_column += active_size_;  //< Now points to the diagonal element of this column.

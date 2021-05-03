@@ -26,6 +26,7 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
 
  public:
   using ConvexSurrogateType = nsoptim::WeightedLsRegressionLoss;
+  using ResidualType = arma::vec;
 
   MLoss(ConstDataPtr data, const RhoFunction& rho, const double scale, const bool include_intercept = true) noexcept
     : include_intercept_(include_intercept), data_(data), rho_(rho), scale_(scale),
@@ -55,6 +56,22 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
 
   //! Evaluate the M loss function.
   //!
+  //! @param residuals residuals of the point where to evaluate the loss function.
+  //! @return loss evaluated at `residuals`.
+  double operator()(const ResidualType& residuals) const {
+    return Evaluate(residuals);
+  }
+
+  //! Evaluate the M loss function.
+  //!
+  //! @param residuals residuals of the point where to evaluate the loss function.
+  //! @return loss evaluated at `where`.
+  double Evaluate(const ResidualType& residuals) const {
+    return arma::mean(rho_(residuals, scale_));
+  }
+
+  //! Evaluate the M loss function.
+  //!
   //! @param where point where to evaluate the loss function.
   //! @return loss evaluated at `where`.
   template<typename T>
@@ -71,11 +88,23 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
     return arma::mean(rho_(Residuals(where), scale_));
   }
 
+  //! Get the residuals for the LS loss function.
+  //!
+  //! @param where Point where to compute the residuals.
+  //! @return residuals at `where`.
+  template<typename VectorType>
+  ResidualType Residuals(const nsoptim::RegressionCoefficients<VectorType>& where) const {
+    if (include_intercept_) {
+      return data_->cy() - data_->cx() * where.beta - where.intercept;
+    }
+    return data_->cy() - data_->cx() * where.beta;
+  }
+
   //! Get the weights for the surrogate LS-loss at the given residuals.
   //!
   //! @param residuals residuals where the surrogate weights are computed.
   //! @return a vector of weights, the same length as `residuals`.
-  arma::vec SurrogateWeights(const arma::vec& residuals) const {
+  arma::vec SurrogateWeights(const ResidualType& residuals) const {
     return rho_.Weight(residuals, scale_) / (scale_ * scale_);
   }
 
@@ -93,8 +122,16 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! @param where where the convex surrogate should be constructed.
   //! @return the weighted-ls loss surrogate loss function
   template<typename T>
-  ConvexSurrogateType GetConvexSurrogate(const nsoptim::RegressionCoefficients<T>& where) {
+  ConvexSurrogateType GetConvexSurrogate(const nsoptim::RegressionCoefficients<T>& where) const {
     return ConvexSurrogateType(data_, SurrogateWeights(where), include_intercept_);
+  }
+
+  //! Get the convex surrogate for the M loss function
+  //!
+  //! @param residuals residuals of the point where the convex surrogate should be constructed.
+  //! @return the weighted-ls loss surrogate loss function
+  ConvexSurrogateType GetConvexSurrogate(const ResidualType& residuals) const {
+    return ConvexSurrogateType(data_, SurrogateWeights(residuals), include_intercept_);
   }
 
   //! Clone the M loss function. The returned object does not share anything with this loss function.
@@ -129,14 +166,6 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   MLoss(const MLoss& other, ConstDataPtr data) :
       include_intercept_(other.include_intercept_), data_(data), rho_(other.rho_), scale_(other.scale_),
       pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
-
-  template<typename Coefficients>
-  arma::vec Residuals(const Coefficients& where) const {
-    if (include_intercept_) {
-      return data_->cy() - data_->cx() * where.beta - where.intercept;
-    }
-    return data_->cy() - data_->cx() * where.beta;
-  }
 
   bool include_intercept_;
   ConstDataPtr data_;

@@ -266,7 +266,9 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
       if (outer_iterations > 0 && dual_fun_value > dual_fun_val_prev) {
         dual_fun_value = dual_fun_val_prev;
       }
-      const double orig_objf_value = (*loss_)(coefs_) + (*penalty_)(coefs_);
+
+      const arma::vec residuals = loss_->data().cy() - loss_->data().cx() * coefs_.beta - coefs_.intercept;
+      const double orig_objf_value = loss_->Evaluate(residuals) + penalty_->Evaluate(coefs_);
       const double primal_fun_val = data_->n_obs() * orig_objf_value / data_.mean_weight();
       const double rel_duality_gap = (primal_fun_val + dual_fun_value) / primal_fun_val;
 
@@ -280,16 +282,16 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
       // Check for convergence or reaching the maximum nr. of iterations.
       if (std::abs(rel_duality_gap) < convergence_tolerance_) {
         metrics->AddMetric("iter", outer_iterations);
-        return MakeOptimum(*loss_, *penalty_, coefs_, orig_objf_value, std::move(metrics));
+        return MakeOptimum(*loss_, *penalty_, coefs_, residuals, orig_objf_value, std::move(metrics));
       } else if (++outer_iterations > max_it) {
         metrics->AddMetric("iter", outer_iterations);
         metrics->AddDetail("warning", "Algorithm did not converge");
-        return MakeOptimum(*loss_, *penalty_, coefs_, orig_objf_value, std::move(metrics),
+        return MakeOptimum(*loss_, *penalty_, coefs_, residuals, orig_objf_value, std::move(metrics),
                            OptimumStatus::kWarning, "Algorithm did not convergence");
       } else if (rel_duality_gap < -convergence_tolerance_) {
         metrics->AddMetric("iter", outer_iterations);
         metrics->AddDetail("warning", "Relative duality gap is negative");
-        return MakeOptimum(*loss_, *penalty_, coefs_, orig_objf_value, std::move(metrics),
+        return MakeOptimum(*loss_, *penalty_, coefs_, residuals, orig_objf_value, std::move(metrics),
                            OptimumStatus::kError, "Relative duality gap is negative");
       }
 

@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include "../armadillo.hpp"
+#include "../utilities.hpp"
 
 namespace nsoptim {
 
@@ -78,6 +79,35 @@ class PredictorResponseData {
     return PredictorResponseData(x_.tail_rows(n_obs), y_.tail_rows(n_obs));
   }
 
+  //! Compare two data containers based on their object ID.
+  //!
+  //! This does not compare the actual *data*, it only compares their ID. The ID is only equal if the objects
+  //! are the same object or exact copies of each other.
+  //!
+  //! @param other the other data container.
+  //! @return true if both container have different ids (i.e., they are different data objects!)
+  bool operator!=(const PredictorResponseData& other) const noexcept {
+    return id_ != other.id_;
+  }
+
+  //! Compare two data containers based on their object ID.
+  //!
+  //! This does not compare the actual *data*, it only compares their ID. The ID is only equal if the objects
+  //! are the same object or exact copies of each other.
+  //!
+  //! @param other the other data container.
+  //! @return true if both container have the same id (i.e., they are the same data object!)
+  bool operator==(const PredictorResponseData& other) const noexcept {
+    return id_ == other.id_;
+  }
+
+  //! Get the ID of the data container.
+  //!
+  //! @return a program-unique ID for the data container.
+  ObjectId id() const noexcept {
+    return id_;
+  }
+
   //! Get a constant reference to the predictor matrix.
   //! Only valid as long as the PredictorResponseData object is in scope.
   //!
@@ -121,6 +151,7 @@ class PredictorResponseData {
   }
 
  private:
+  ObjectId id_;
   arma::mat x_;
   arma::vec y_;
   arma::uword n_obs_;   //< The number of observations in the data.

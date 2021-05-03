@@ -92,7 +92,7 @@ class RegressionCoefficients {
     beta.t().print("Beta:");
   }
 
-  double intercept;  //< The intercept coefficient
+  double intercept;       //< The intercept coefficient
   SlopeCoefficient beta;  //< The slope coefficients
 
  private:

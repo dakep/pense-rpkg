@@ -27,6 +27,7 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
 
  public:
   using ConvexSurrogateType = nsoptim::WeightedLsRegressionLoss;
+  using ResidualType = arma::vec;
 
   struct ExtendedEvaluation {
     double loss;
@@ -97,22 +98,61 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
     return 0.5 * scale * scale;
   }
 
+  //! Evaluate the S loss function.
+  //!
+  //! @param residuals residuals at the point where to evaluate the loss function.
+  //! @return loss evaluated at `residuals`.
+  double operator()(const ResidualType& residuals) const {
+    return Evaluate(residuals);
+  }
+
+  //! Evaluate the S loss function.
+  //!
+  //! @param residuals residuals at the point where to evaluate the loss function.
+  //! @return loss evaluated at `residuals`.
+  double operator()(const ResidualType& residuals) {
+    return Evaluate(residuals);
+  }
+
+  //! Evaluate the S loss function.
+  //!
+  //! @param residuals residuals at the point where to evaluate the loss function.
+  //! @return loss evaluated at `residuals`.
+  double Evaluate(const ResidualType& residuals) {
+    const double scale = mscale_(residuals);
+    return 0.5 * scale * scale;
+  }
+
+  //! Evaluate the S loss function.
+  //!
+  //! @param residuals residuals at the point where to evaluate the loss function.
+  //! @return loss evaluated at `residuals`.
+  double Evaluate(const ResidualType& residuals) const {
+    const double scale = mscale_(residuals);
+    return 0.5 * scale * scale;
+  }
+
   //! Evaluate the S loss function at the given *residuals*.
   //!
   //! @param residuals evaluate the S-loss function at the given residuals.
   //! @return the loss and the scale evaluated at the given residuals.
-  ExtendedEvaluation EvaluateResiduals(const arma::vec& residuals) const {
+  ExtendedEvaluation EvaluateResiduals(const ResidualType& residuals) const {
     ExtendedEvaluation result;
     result.scale = mscale_(residuals);
     result.loss = 0.5 * result.scale * result.scale;
     return result;
   }
 
+  template<typename Coefficients>
+  arma::vec Residuals(const Coefficients& where) const {
+    return data_->cy() - data_->cx() * where.beta - where.intercept;
+  }
+
   //! Get the weights for the surrogate LS-loss at the given residuals.
   //!
   //! @param residuals residuals where the surrogate weights are computed.
   //! @return a vector of weights, the same length as `residuals`.
-  arma::vec SurrogateWeights(const arma::vec& residuals) {
+  arma::vec SurrogateWeights(const ResidualType& residuals) {
     const double scale = mscale_(residuals);
 
     // Check if the scale is 0.
@@ -142,6 +182,14 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   template<typename T>
   ConvexSurrogateType GetConvexSurrogate(const nsoptim::RegressionCoefficients<T>& where) {
     return ConvexSurrogateType(data_, SurrogateWeights(where), include_intercept_);
+  }
+
+  //! Get the convex surrogate for the S loss function
+  //!
+  //! @param residuals residuals of the solution where the convex surrogate should be constructed.
+  //! @return the weighted-ls loss surrogate loss function
+  ConvexSurrogateType GetConvexSurrogate(const ResidualType& residuals) {
+    return ConvexSurrogateType(data_, SurrogateWeights(residuals), include_intercept_);
   }
 
   //! Clone the S loss function. The returned object does not share anything with this loss function.
@@ -183,14 +231,6 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   SLoss(const SLoss& other, ConstDataPtr data) :
       include_intercept_(other.include_intercept_), data_(data), mscale_(other.mscale_),
       pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
-
-  template<typename Coefficients>
-  arma::vec Residuals(const Coefficients& where) const {
-    if (include_intercept_) {
-      return data_->cy() - data_->cx() * where.beta - where.intercept;
-    }
-    return data_->cy() - data_->cx() * where.beta;
-  }
 
   bool include_intercept_;
   ConstDataPtr data_;

@@ -647,26 +647,27 @@ class GenericLinearizedAdmmOptimizer : public Optimizer<typename ProxOp::LossFun
       iter_metrics.AddDetail("gap", gap);
 
       if (gap < convergence_tolerance_) {
-        return FinalizeResult(iter, gap, OptimumStatus::kOk, std::move(metrics));
+        return FinalizeResult(iter, gap, state_.fitted, OptimumStatus::kOk, std::move(metrics));
       }
     }
-    return FinalizeResult(--iter, gap, OptimumStatus::kWarning, "ADMM-algorithm did not converge.", std::move(metrics));
+    return FinalizeResult(--iter, gap, state_.fitted,
+                          OptimumStatus::kWarning, "ADMM-algorithm did not converge.", std::move(metrics));
   }
 
  private:
-  Optimum FinalizeResult(const int iter, const double gap, const OptimumStatus status,
+  Optimum FinalizeResult(const int iter, const double gap, const arma::vec& fitted, const OptimumStatus status,
                          std::unique_ptr<Metrics> metrics) {
     // Update the active set.
     metrics->AddMetric("iter", iter);
     metrics->AddMetric("gap", gap);
-    return MakeOptimum(*loss_, *penalty_, coefs_, std::move(metrics), status);
+    return MakeOptimum(*loss_, *penalty_, coefs_, loss_->data().cy() - fitted, std::move(metrics), status);
   }
 
-  Optimum FinalizeResult(const int iter, const double gap, const OptimumStatus status, const std::string& message,
-                         std::unique_ptr<Metrics> metrics) {
+  Optimum FinalizeResult(const int iter, const double gap, const arma::vec& fitted, const OptimumStatus status,
+                         const std::string& message, std::unique_ptr<Metrics> metrics) {
     metrics->AddMetric("iter", iter);
     metrics->AddMetric("gap", gap);
-    return MakeOptimum(*loss_, *penalty_, coefs_, std::move(metrics), status, message);
+    return MakeOptimum(*loss_, *penalty_, coefs_, loss_->data().cy() - fitted, std::move(metrics), status, message);
   }
 
   //! Determine the cutoff for the soft-threshold function for adaptive penalties
@@ -979,7 +980,8 @@ class AdmmVarStepOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coe
   }
 
  private:
-  Optimum FinalizeResult(const int iter, const OptimumStatus status, std::unique_ptr<Metrics> metrics) {
+  Optimum FinalizeResult(const int iter, const OptimumStatus status,
+                         std::unique_ptr<Metrics> metrics) {
     metrics->AddMetric("iter", iter);
     metrics->AddMetric("gap", state_.gap);
     metrics->AddDetail("tau-end", state_.tau);
@@ -987,8 +989,8 @@ class AdmmVarStepOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coe
     return MakeOptimum(*loss_, *penalty_, coefs_, std::move(metrics), status);
   }
 
-  Optimum FinalizeResult(const int iter, const OptimumStatus status, const std::string& message,
-                         std::unique_ptr<Metrics> metrics) {
+  Optimum FinalizeResult(const int iter, const OptimumStatus status,
+                         const std::string& message, std::unique_ptr<Metrics> metrics) {
     metrics->AddMetric("iter", iter);
     metrics->AddMetric("gap", state_.gap);
     metrics->AddDetail("tau-end", state_.tau);

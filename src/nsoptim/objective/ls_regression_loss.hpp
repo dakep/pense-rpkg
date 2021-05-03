@@ -12,6 +12,7 @@
 #include <algorithm>
 
 #include "../armadillo.hpp"
+#include "../utilities.hpp"
 #include "convex.hpp"
 #include "../container/data.hpp"
 #include "../container/regression_coefficients.hpp"
@@ -55,6 +56,7 @@ class WeightedLsRegressionLoss : public LossFunction<PredictorResponseData>,
   //! Type of the gradient if evaluated with coefficients of any type.
   template<typename>
   using GradientType = RegressionCoefficients<arma::vec>;
+  using ResidualType = arma::vec;
   //! Type of the weights vector.
   using WeightsType = arma::vec;
 
@@ -117,15 +119,42 @@ class WeightedLsRegressionLoss : public LossFunction<PredictorResponseData>,
 
   //! Evaluate the weighted LS loss function.
   //!
+  //! @param residuals residuals for evaluating the loss
+  //! @return loss evaluated with the given residuals.
+  double operator()(const ResidualType& residuals) const {
+    return Evaluate(residuals);
+  }
+
+  //! Evaluate the weighted LS loss function.
+  //!
   //! @param where Point where to evaluate the loss function.
   //! @return loss evaluated at `where`.
   template<typename VectorType>
   double Evaluate(const RegressionCoefficients<VectorType>& where) const {
-    const arma::vec residuals = data_->cy() - data_->cx() * where.beta;
     if (include_intercept_) {
-      return 0.5 * mean_weight_ * arma::mean(arma::square((residuals - where.intercept) % *sqrt_weights_));
+      return Evaluate(data_->cy() - data_->cx() * where.beta - where.intercept);
     }
+    return Evaluate(data_->cy() - data_->cx() * where.beta);
+  }
+
+  //! Evaluate the weighted LS loss function.
+  //!
+  //! @param residuals residuals for evaluating the loss
+  //! @return loss evaluated with the given residuals.
+  double Evaluate(const arma::vec& residuals) const {
     return 0.5 * mean_weight_ * arma::mean(arma::square(residuals % *sqrt_weights_));
+  }
+
+  //! Get the residuals for the LS loss function.
+  //!
+  //! @param where Point where to compute the residuals.
+  //! @return residuals at `where`.
+  template<typename VectorType>
+  ResidualType Residuals(const RegressionCoefficients<VectorType>& where) const {
+    if (include_intercept_) {
+      return data_->cy() - data_->cx() * where.beta - where.intercept;
+    }
+    return data_->cy() - data_->cx() * where.beta;
   }
 
   //! Get the difference between two sets of regression coefficients.
@@ -246,6 +275,7 @@ class LsRegressionLoss : public LossFunction<PredictorResponseData>,
  public:
   template<typename>
   using GradientType = RegressionCoefficients<arma::vec>;
+  using ResidualType = arma::vec;
 
   //! Tag this loss function as an LS-type loss.
   struct is_ls_regression_loss_tag {};
@@ -284,15 +314,42 @@ class LsRegressionLoss : public LossFunction<PredictorResponseData>,
 
   //! Evaluate the LS loss function.
   //!
+  //! @param residuals residuals for evaluating the loss
+  //! @return loss evaluated with the given residuals.
+  double operator()(const arma::vec& residuals) const {
+    return Evaluate(residuals);
+  }
+
+  //! Evaluate the LS loss function.
+  //!
   //! @param where point where to evaluate the loss function.
   //! @return loss evaluated at `where`.
   template<typename T>
   double Evaluate(const RegressionCoefficients<T>& where) const {
-    const arma::vec residuals = data_->cy() - data_->cx() * where.beta;
     if (include_intercept_) {
-      return 0.5 * arma::mean(arma::square(residuals - where.intercept));
+      return Evaluate(data_->cy() - data_->cx() * where.beta);
     }
+    return Evaluate(data_->cy() - data_->cx() * where.beta - where.intercept);
+  }
+
+  //! Evaluate the LS loss function.
+  //!
+  //! @param residuals residuals for evaluating the loss
+  //! @return loss evaluated with the given residuals.
+  double Evaluate(const arma::vec& residuals) const {
     return 0.5 * arma::mean(arma::square(residuals));
+  }
+
+  //! Get the residuals for the LS loss function.
+  //!
+  //! @param where Point where to compute the residuals.
+  //! @return residuals at `where`.
+  template<typename VectorType>
+  ResidualType Residuals(const RegressionCoefficients<VectorType>& where) const {
+    if (include_intercept_) {
+      return data_->cy() - data_->cx() * where.beta - where.intercept;
+    }
+    return data_->cy() - data_->cx() * where.beta;
   }
 
   //! Get the difference between two sets of regression coefficients.

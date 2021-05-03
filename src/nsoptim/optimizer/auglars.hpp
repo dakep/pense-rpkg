@@ -16,6 +16,7 @@
 #include <memory>
 
 #include "../armadillo.hpp"
+#include "../utilities.hpp"
 #include "../container/regression_coefficients.hpp"
 #include "../container/data.hpp"
 #include "optimizer_base.hpp"
@@ -515,7 +516,8 @@ class AugmentedLarsOptimizer : public Optimizer<LossFunction, PenaltyFunction, C
 
     auto&& data = loss_->data();
     if (data.n_pred() == 1) {
-      return MakeOptimum(*loss_, *penalty_, OptimizeSinglePredictor(IsWeightedTag{}, IsAdaptiveTag{}));
+      const Coefficients coefs = OptimizeSinglePredictor(IsWeightedTag{}, IsAdaptiveTag{});
+      return MakeOptimum(*loss_, *penalty_, coefs);
     }
 
     const double lambda_lasso = LambdaLasso(*penalty_, IsWeightedTag{});
@@ -544,51 +546,49 @@ class AugmentedLarsOptimizer : public Optimizer<LossFunction, PenaltyFunction, C
       }
     }
 
-    FinalizeCoefficients(&coefs, IsWeightedTag{}, IsAdaptiveTag{});
+    const arma::vec residuals = FinalizeCoefficients(&coefs, IsWeightedTag{}, IsAdaptiveTag{});
     if (path_->max_cor() > prev_max_cor + std::numeric_limits<double>::epsilon()) {
-      return MakeOptimum(*loss_, *penalty_, coefs, OptimumStatus::kWarning,
-                         "Penalization level below numerical precision.");
+      return MakeOptimum(*loss_, *penalty_, coefs, residuals,
+                         OptimumStatus::kWarning, "Penalization level below numerical precision.");
     }
-    return MakeOptimum(*loss_, *penalty_, coefs);
+    return MakeOptimum(*loss_, *penalty_, coefs, residuals);
   }
 
  private:
-  void FinalizeCoefficients(Coefficients* coefs, std::true_type /* is_weighted */, std::true_type /* is_adaptive */) {
+  arma::vec FinalizeCoefficients(Coefficients* coefs, std::true_type /* is_weighted */,
+                                 std::true_type /* is_adaptive */) const {
+    auto&& data = loss_->data();
     coefs->beta /= penalty_->loadings();
-    if (loss_->IncludeIntercept()) {
-      auto&& data = loss_->data();
-      coefs->intercept = mean_y_ -
-        arma::dot(arma::square(loss_->sqrt_weights()), data.cx() * coefs->beta) / data.n_obs();
-    } else {
-      coefs->intercept = 0;
-    }
+
+    const arma::vec slope_prod = data.cx() * coefs->beta;
+    coefs->intercept = loss_->IncludeIntercept() ?
+      mean_y_ - arma::dot(arma::square(loss_->sqrt_weights()), slope_prod) / data.n_obs() : 0;
+    return data.cy() - slope_prod - coefs->intercept;
   }
 
-  void FinalizeCoefficients(Coefficients* coefs, std::true_type /* is_weighted */, std::false_type /* is_adaptive */) {
-    if (loss_->IncludeIntercept()) {
-      auto&& data = loss_->data();
-      coefs->intercept = mean_y_ -
-        arma::dot(arma::square(loss_->sqrt_weights()), data.cx() * coefs->beta) / data.n_obs();
-    } else {
-      coefs->intercept = 0;
-    }
+  arma::vec FinalizeCoefficients(Coefficients* coefs, std::true_type /* is_weighted */,
+                                 std::false_type /* is_adaptive */) {
+    auto&& data = loss_->data();
+    const arma::vec slope_prod = data.cx() * coefs->beta;
+    coefs->intercept = loss_->IncludeIntercept() ?
+      mean_y_ - arma::dot(arma::square(loss_->sqrt_weights()), slope_prod) / data.n_obs() : 0;
+    return data.cy() - slope_prod - coefs->intercept;
   }
 
-  void FinalizeCoefficients(Coefficients* coefs, std::false_type /* is_weighted */, std::true_type /* is_adaptive */) {
-    if (loss_->IncludeIntercept()) {
-      coefs->intercept = mean_y_ - arma::as_scalar(mean_x_ * coefs->beta);
-    } else {
-      coefs->intercept = 0;
-    }
+  arma::vec FinalizeCoefficients(Coefficients* coefs, std::false_type /* is_weighted */,
+                                 std::true_type /* is_adaptive */) {
+    auto&& data = loss_->data();
+    coefs->intercept = loss_->IncludeIntercept() ? mean_y_ - arma::as_scalar(mean_x_ * coefs->beta) : 0;
+
     coefs->beta /= penalty_->loadings();
+    return data.cy() - data.cx() * coefs->beta - coefs->intercept;
   }
 
-  void FinalizeCoefficients(Coefficients* coefs, std::false_type /* is_weighted */, std::false_type /* is_adaptive */) {
-    if (loss_->IncludeIntercept()) {
-      coefs->intercept = mean_y_ - arma::as_scalar(mean_x_ * coefs->beta);
-    } else {
-      coefs->intercept = 0;
-    }
+  arma::vec FinalizeCoefficients(Coefficients* coefs, std::false_type /* is_weighted */,
+                                 std::false_type /* is_adaptive */) {
+    auto&& data = loss_->data();
+    coefs->intercept = loss_->IncludeIntercept() ? mean_y_ - arma::as_scalar(mean_x_ * coefs->beta) : 0;
+    return data.cy() - data.cx() * coefs->beta - coefs->intercept;
   }
 
   //! Special case of only a single predictor with sufficiently large norm.
@@ -873,7 +873,7 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //! @param loss a weighted LS loss function.
   //! @param penalty the Ridge penalty.
   AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>() noexcept
-    : loss_(nullptr), penalty_(nullptr), previous_data_ptr_(nullptr) {}
+    : previous_data_id_(ObjectId::null()), loss_(nullptr), penalty_(nullptr) {}
 
   //! Ininitialize the optimizer using the given (weighted) LS loss function and the Ridge penalty.
   //!
@@ -881,8 +881,8 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //! @param penalty the Ridge penalty.
   AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>(
     const LossFunction& loss, const RidgePenalty& penalty) noexcept
-      : loss_(LossFunctionPtr(new LossFunction(loss))), penalty_(RidgePenaltyPtr(new RidgePenalty(penalty))),
-        previous_data_ptr_(nullptr) {}
+      : previous_data_id_(ObjectId::null()), loss_(LossFunctionPtr(new LossFunction(loss))),
+        penalty_(RidgePenaltyPtr(new RidgePenalty(penalty))) {}
 
   //! Default copy constructor.
   //!
@@ -892,12 +892,11 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //! the two optimizers will *not* share the new loss/penalty function.
   AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>(
     const AugmentedRidgeOptimizer& other) noexcept
-      : loss_(other.loss_? LossFunctionPtr(new LossFunction(*other.loss_)) : nullptr),
+      : previous_data_id_(other.previous_data_id_),
+        loss_(other.loss_? LossFunctionPtr(new LossFunction(*other.loss_)) : nullptr),
         penalty_(other.penalty_ ? RidgePenaltyPtr(new RidgePenalty(*other.penalty_)) : nullptr),
         weighted_xy_cov_(other.weighted_xy_cov_), weighted_gram_(other.weighted_gram_),
-        previous_data_ptr_(other.previous_data_ptr_), previous_data_nobs_(other.previous_data_nobs_),
-        previous_data_npred_(other.previous_data_npred_), centered_x_(other.centered_x_),
-        centered_y_(other.centered_y_) {}
+        centered_x_(other.centered_x_), centered_y_(other.centered_y_) {}
 
   //! Default copy assignment.
   //!
@@ -963,12 +962,15 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
       success = arma::solve(coefs.beta, weighted_gram_, weighted_xy_cov_, arma::solve_opts::likely_sympd);
     }
 
-    // Compute the intercept
+    // Compute the intercept and residuals
+    arma::vec residuals = loss_->data().cy() - loss_->data().cx() * coefs.beta;
     if (loss_->IncludeIntercept()) {
-      coefs.intercept = ComputeIntercept(coefs, IsWeightedTag{});
+      coefs.intercept = ComputeIntercept(coefs, residuals, IsWeightedTag{});
+      residuals -= coefs.intercept;
     }
 
-    return MakeOptimum(*loss_, *penalty_, coefs, success ? OptimumStatus::kOk : OptimumStatus::kError,
+    return MakeOptimum(*loss_, *penalty_, coefs, residuals,
+                       success ? OptimumStatus::kOk : OptimumStatus::kError,
                        success ? "" : "Could not solve system of linear equations");
   }
 
@@ -1037,14 +1039,10 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   // Update the local copy of the centered data. Only perform the update if the data is from a different address.
   void UpdateCenteredData() {
     const PredictorResponseData& data = loss_->data();
-    if ((previous_data_ptr_ == nullptr) || (previous_data_ptr_ != std::addressof(data)) ||
-        (previous_data_nobs_ != data.n_obs()) || (previous_data_npred_ != data.n_pred())) {
-      // The data is likely different
+    if (previous_data_id_ != data.id()) {
       centered_x_ = data.cx().each_row() - arma::mean(data.cx(), 0);
       centered_y_ = data.cy() - arma::mean(data.cy());
-      previous_data_ptr_ = std::addressof(data);
-      previous_data_nobs_ = data.n_obs();
-      previous_data_npred_ = data.n_pred();
+      previous_data_id_ = data.id();
     }
   }
 
@@ -1058,24 +1056,21 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
     return data.n_obs() * penalty_->lambda();
   }
 
-  double ComputeIntercept(const RegressionCoefficients<arma::vec>& coefs, std::true_type) const {
-    const PredictorResponseData& data = loss_->data();
-    const arma::vec residuals = data.cy() - data.cx() * coefs.beta;
+  double ComputeIntercept(const RegressionCoefficients<arma::vec>& coefs, const arma::vec& residuals,
+                          std::true_type) const {
     return arma::mean(loss_->sqrt_weights() % loss_->sqrt_weights() % residuals);
   }
 
-  double ComputeIntercept(const RegressionCoefficients<arma::vec>& coefs, std::false_type) const {
-    const PredictorResponseData& data = loss_->data();
-    return arma::mean(data.cy() - data.cx() * coefs.beta - coefs.intercept);
+  double ComputeIntercept(const RegressionCoefficients<arma::vec>& coefs, const arma::vec& residuals,
+                          std::false_type) const {
+    return arma::mean(residuals);
   }
 
+  ObjectId previous_data_id_;
   LossFunctionPtr loss_;
   RidgePenaltyPtr penalty_;
   arma::vec weighted_xy_cov_;
   arma::mat weighted_gram_;
-  PredictorResponseData const * previous_data_ptr_;
-  arma::uword previous_data_nobs_;
-  arma::uword previous_data_npred_;
   arma::mat centered_x_;
   arma::vec centered_y_;
 };

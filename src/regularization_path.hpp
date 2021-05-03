@@ -346,11 +346,13 @@ class RegPath0 {
   }
 
   Optimum Next() {
+    // At the first penalty, compute the solution from 0.
     if (penalty_it_ == penalties_.cbegin()) {
       const auto zero_coef = optim_.loss().template ZeroCoefficients<Coefficients>();
       optim_.penalty(*penalty_it_++);
       return optim_.Optimize(zero_coef);
     }
+    // Otherwise, use the previous solution
     optim_.penalty(*penalty_it_++);
     return optim_.Optimize();
   }
@@ -413,7 +415,7 @@ class RegPathIdentical {
     const Optimum tmp = optim_.Optimize(start_, maxit);
     optim_.convergence_tolerance(original_eps);
 
-    // Increment only if not previously explored!
+    // Increment
     ++penalty_it_;
     explored_ = true;
 
@@ -540,7 +542,7 @@ class RegPathCombined {
         max_optima_(max_optima), explore_tol_(explore_tol), explore_it_(explore_it), nr_explore_(nr_explore),
         num_threads_(num_threads) {}
 
-  //! Add a 0-based regularization path.
+  //! Add a 0-based regularization path for exploration.
   void Add() {
     if (!rp_0_) {
       rp_0_.reset(new RegPath0<Optimizer>(optimizer_, loss_, penalties_));
@@ -672,7 +674,6 @@ class RegPathCombined {
     }
   }
 };
-
 }  // namespace pense
 
 #endif  // REGULARIZATION_PATH_HPP_

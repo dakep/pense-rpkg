@@ -319,7 +319,7 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
   }
 
   scale <- .as(scale[[1L]], 'numeric')
-  if (scale < .Machine$double.eps) {
+  if (!isTRUE(scale > .Machine$double.eps)) {
     abort("`scale` must be positive.")
   }
 

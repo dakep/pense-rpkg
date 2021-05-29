@@ -160,6 +160,12 @@ class Cholesky {
     return *this;
   }
 
+  //! Default move constructor.
+  Cholesky(Cholesky&& other) = default;
+
+  //! Default move assignment operator.
+  Cholesky& operator=(Cholesky&& other) = default;
+
   //! Update the diagonal of the matrix and reset the decomposition.
   //!
   //! @param add value to add to the diagonal of the matrix.
@@ -182,12 +188,6 @@ class Cholesky {
     active_size_ = 0;
   }
 
-  //! Default move constructor.
-  Cholesky(Cholesky&& other) = default;
-
-  //! Default move assignment operator.
-  Cholesky& operator=(Cholesky&& other) = default;
-
   //! Add a row/column of the matrix to the Cholesky decomposition.
   //!
   //! The row/column is added at the end.
@@ -195,8 +195,8 @@ class Cholesky {
   //! for the permutated matrix *A_[(3, 1), (3, 1)]*!
   //!
   //! @param col the column index in the interval ``[0, matrix.n_cols) ``.
-  //! @return ``true`` if the column was added, ``false`` if the column was not added because it would make the
-  //!         matrix singular and the Cholesky decomposition ill-defined.
+  //! @return ``true`` if the column was added, ``false`` if the column was not added because either it would make the
+  //!         matrix singular and the Cholesky decomposition ill-defined or the gram matrix is at it's maximal size.
   bool Add(const arma::uword add) noexcept {
     const double sq_norm_new_x = gram_(add, add);
     const double norm_new_x = std::sqrt(sq_norm_new_x);
@@ -204,6 +204,8 @@ class Cholesky {
     if (active_size_ == 0) {
       // No active variables yet and the decomposition is empty.
       gram_decomp_packed_[0] = norm_new_x;
+    } else if (active_size_ >= max_size_) {
+      return false;
     } else {
       char upper = 'U';
       char trans_y = 'T';

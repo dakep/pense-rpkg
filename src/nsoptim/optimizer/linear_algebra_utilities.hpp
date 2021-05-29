@@ -204,7 +204,7 @@ class Cholesky {
     if (active_size_ == 0) {
       // No active variables yet and the decomposition is empty.
       gram_decomp_packed_[0] = norm_new_x;
-    } else if (active_size_ >= max_size_) {
+    } else if (active_size_ >= max_active_) {
       return false;
     } else {
       char upper = 'U';

@@ -263,13 +263,15 @@ alias::FwdList<pense::PscResult<Optimizer>> ComputePscs(
 
   const uword block_size = data.n_obs() / num_threads + static_cast<uword>(data.n_obs() % num_threads > 0);
   LooStatusList loo_statuses;
-  #pragma omp parallel num_threads(num_threads) default(none) firstprivate(optimizer, block_size) \
-    shared(data, loss, penalties, loo_statuses, sensitivity_matrices, psc_results)
+  #pragma omp parallel num_threads(num_threads) default(none) firstprivate(block_size) \
+    shared(data, loss, penalties, loo_statuses, sensitivity_matrices, psc_results, optimizer)
   {
     #pragma omp for reduction(c:loo_statuses)
     for (uword start_index = 0; start_index < data.n_obs(); start_index += block_size) {
       const uword upper_index = std::min(start_index + block_size, data.n_obs());
-      loo_statuses = ComputeLoo(loss, penalties, start_index, upper_index, &optimizer, &sensitivity_matrices.items());
+      Optimizer thread_private_optimizer(optimizer);
+      loo_statuses = ComputeLoo(loss, penalties, start_index, upper_index, &thread_private_optimizer,
+                                &sensitivity_matrices.items());
     }
 
     #pragma omp single nowait

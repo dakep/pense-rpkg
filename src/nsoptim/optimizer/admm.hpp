@@ -359,35 +359,12 @@ class GenericLinearizedAdmmOptimizer : public Optimizer<typename ProxOp::LossFun
 
   //! Initialize the ADMM optimizer without setting a loss or penalty function.
   //!
-  //! @param prox_arg_1 first argument to constructor of the proximal operator.
-  //! @param prox_args... further arguments to the constructor of the proximal operator.
-  template<typename T, typename... Args, typename = typename
-           std::enable_if<!IsConfiguration<T>::value && !IsLossFunction<T>::value, void>::type >
-  explicit GenericLinearizedAdmmOptimizer(T&& prox_arg_1, Args&&... prox_args) noexcept
-      : config_(admm_optimizer::kDefaultLinConfig),
-        prox_(std::forward<T>(prox_arg_1), std::forward<Args>(prox_args)...),
-        loss_(nullptr), penalty_(nullptr) {}
-
-  //! Initialize the ADMM optimizer without setting a loss or penalty function.
-  //!
   //! @param config ADMM configuration object.
   //! @param prox_args... arguments to the constructor of the proximal operator.
   template<typename C, typename... Args, typename = typename
            std::enable_if<IsConfiguration<C>::value, void>::type >
   explicit GenericLinearizedAdmmOptimizer(const C& config, Args&&... prox_args) noexcept
       : config_(config), prox_(std::forward<Args>(prox_args)...), loss_(nullptr), penalty_(nullptr) {}
-
-  //! Initialize the ADMM optimizer without setting a loss or penalty function.
-  //!
-  //! @param prox_arg_1 first argument to constructor of the proximal operator.
-  //! @param prox_arg_2 second argument to constructor of the proximal operator.
-  //! @param prox_args... further arguments to the constructor of the proximal operator.
-  template<typename T1, typename T2, typename... Args, typename = typename
-           std::enable_if<!IsConfiguration<T1>::value && !IsLossFunction<T1>::value, void>::type >
-  GenericLinearizedAdmmOptimizer(T1&& prox_arg_1, T2&& prox_arg_2, Args&&... prox_args) noexcept
-      : config_(admm_optimizer::kDefaultLinConfig),
-        prox_(std::forward<T1>(prox_arg_1), std::forward<T2>(prox_arg_2), std::forward<Args>(prox_args)...),
-        loss_(nullptr), penalty_(nullptr) {}
 
   //! Initialize the ADMM optimizer without setting a loss or penalty function.
   //!

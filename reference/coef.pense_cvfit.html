@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.310</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
       </span>
     </div>
 
@@ -235,15 +235,15 @@ model. This is determined to be the model with prediction performance within <co
 <span class='co'># smallest prediction error ...</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -7.5758397             0.2149638            -0.7086370 
+#&gt;            -6.6475338             0.2411667            -0.6985229 
 #&gt;          income.level      market.potential 
-#&gt;             0.7014336             1.0590179 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
+#&gt;             0.7098337             0.9619783 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -8.9377554             0.2066104            -0.6851005 
+#&gt;            -9.3812401             0.2070433            -0.6733309 
 #&gt;          income.level      market.potential 
-#&gt;             0.6654687             1.1777421 </div></pre>
+#&gt;             0.6511531             1.2139552 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

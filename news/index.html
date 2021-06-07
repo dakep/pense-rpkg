@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.310</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
       </span>
     </div>
 
@@ -134,19 +134,20 @@
 
     <div id="pense-2-0-3" class="section level1">
 <h1 class="page-header" data-toc-text="2.0.3">
-<a href="#pense-2-0-3" class="anchor"></a>pense 2.0.3<small> Unreleased </small>
+<a href="#pense-2-0-3" class="anchor"></a>pense 2.0.3<small> 2021-04-14 </small>
 </h1>
 <ul>
+<li>Fix a bug causing PENSE-Ridge, i.e., <code><a href="../reference/pense.html">pense(..., alpha = 0)</a></code>, to take a long time to compute.</li>
 <li>Fix a compilation error on RHEL due to an error in the autoconf script.</li>
 <li>Fix problems in <code><a href="../reference/prediction_performance.html">prediction_performance()</a></code> related to the non-standard evaluation of objects.</li>
 <li>
 <p>Also return standardized coefficients as <code>std_beta</code> and <code>std_intercept</code>.</p>
-<h1 id="pense-2.0.2" class="page-header" data-toc-text="2.0.3">pense 2.0.2<small> Unreleased </small>
+<h1 id="pense-2.0.2" class="page-header" data-toc-text="2.0.3">pense 2.0.2<small> 2021-04-14 </small>
 </h1>
 </li>
 <li>
 <p>Fix mishandling of response variables with a robust scale of 0, e.g., 0-inflated responses or responses with more than 50% identical values.</p>
-<h1 id="pense-2.0.1" class="page-header" data-toc-text="2.0.3">pense 2.0.1<small> Unreleased </small>
+<h1 id="pense-2.0.1" class="page-header" data-toc-text="2.0.3">pense 2.0.1<small> 2021-04-14 </small>
 </h1>
 </li>
 <li>Add new functions for compute adaptive PENSE estimates (<code><a href="../reference/pense.html">adapense()</a></code> and <code><a href="../reference/pense_cv.html">adapense_cv()</a></code>).</li>

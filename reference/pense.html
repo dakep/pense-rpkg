@@ -73,7 +73,7 @@ penalty loadings for adaptive elastic net." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.310</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
       </span>
     </div>
 
@@ -159,6 +159,7 @@ penalty loadings for adaptive elastic net.</p>
   eps <span class='op'>=</span> <span class='fl'>1e-06</span>,
   explore_solutions <span class='op'>=</span> <span class='fl'>10</span>,
   explore_tol <span class='op'>=</span> <span class='fl'>0.1</span>,
+  explore_it <span class='op'>=</span> <span class='fl'>20</span>,
   max_solutions <span class='op'>=</span> <span class='fl'>10</span>,
   comparison_tol <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>sqrt</a></span><span class='op'>(</span><span class='va'>eps</span><span class='op'>)</span>,
   sparse <span class='op'>=</span> <span class='cn'>FALSE</span>,
@@ -260,9 +261,10 @@ If <code>standardize = TRUE</code>, the starting points are also scaled.</p></td
       <td><p>number of solutions to compute up to the desired precision <code>eps</code>.</p></td>
     </tr>
     <tr>
-      <th>explore_tol</th>
-      <td><p>numerical tolerance for exploring possible solutions. Should be (much) looser than <code>eps</code> to
-be useful.</p></td>
+      <th>explore_tol, explore_it</th>
+      <td><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></td>
     </tr>
     <tr>
       <th>max_solutions</th>
@@ -396,9 +398,9 @@ If <code>pense()</code> is called with any of these arguments, warnings detail h
 <span class='co'># smallest prediction error ...</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -7.8411184             0.2115870            -0.7062462 
+#&gt;            -7.3505930             0.2190124            -0.7091811 
 #&gt;          income.level      market.potential 
-#&gt;             0.6956763             1.0835638 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
+#&gt;             0.7054675             1.0372210 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 

@@ -73,7 +73,7 @@ adapense_cv() is a convenience wrapper to compute adaptive PENSE estimates." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.2.310</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
       </span>
     </div>
 
@@ -235,8 +235,12 @@ If <code>standardize = TRUE</code>, the starting points are also scaled.</p></dd
 Does <em>not</em> affect the estimated coefficients, only the estimated scale of the residuals.</p></dd>
     <dt><code>eps</code></dt><dd><p>numerical tolerance.</p></dd>
     <dt><code>explore_solutions</code></dt><dd><p>number of solutions to compute up to the desired precision <code>eps</code>.</p></dd>
-    <dt><code>explore_tol</code></dt><dd><p>numerical tolerance for exploring possible solutions. Should be (much) looser than <code>eps</code> to
-be useful.</p></dd>
+    <dt><code>explore_tol</code></dt><dd><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></dd>
+    <dt><code>explore_it</code></dt><dd><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
+The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
+smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></dd>
     <dt><code>max_solutions</code></dt><dd><p>only retain up to <code>max_solutions</code> unique solutions per penalization level.</p></dd>
     <dt><code>comparison_tol</code></dt><dd><p>numeric tolerance to determine if two solutions are equal. The comparison is first done
 on the absolute difference in the value of the objective function at the solution

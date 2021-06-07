@@ -63,7 +63,11 @@ mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
     stop("`bdp` is outside of 0 and 0.5")
   }
 
-  mscale_opts$cc <- if (is.null(cc)) { .bisquare_consistency_const(mscale_opts$delta) } else { .as(cc, 'numeric') }
+  mscale_opts$cc <- if (is.null(cc)) {
+    .bisquare_consistency_const(mscale_opts$delta)
+  } else {
+    .as(cc, 'numeric')
+  }
   return(mscale_opts)
 }
 

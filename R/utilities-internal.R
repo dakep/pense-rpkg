@@ -39,6 +39,55 @@
   uniroot(expectation, interval = integral_interval, delta)$root
 }
 
+## Determine a breakdown point with stable numerical properties of the M-scale
+## with Tukey's bisquare rho function.
+##
+## The M-scale objective (and hence the S-loss) can have unbounded or very high
+## 1st derivative. This can lead to numerical instability of the algorithms and
+## in turn excessive computation time.
+## This function chooses the breakdown point with lowest upper bound of the 1st
+## derivative from a range of bdp's in the vicinity of the desired bdp.
+##
+## @param n number of observations in the sample
+## @param desired_bdp the desired breakdown point (between 0.05 and 0.5)
+## @param tolerance how far can the chosen bdp be away from the desired bdp.
+##                  The chosen bdp is guaranteed to be in the range given by `interval`.
+## @param interval restrict the chosen bdp to this interval.
+## @param precision granularity of the grid of considered bdp's.
+.find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
+                                       interval = c(0.05, 0.5)) {
+  numeric_tol <- sqrt(.Machine$double.eps)
+
+  bdp_range <- seq(from = max(desired_bdp - tolerance, interval[[1L]]),
+                   to = min(desired_bdp + tolerance, interval[[2L]]),
+                   by = precision)
+
+  # Filter bdp's where the 1st derivative is unbounded
+  bdp_range <- bdp_range[abs(bdp_range * n - floor(bdp_range * n)) > numeric_tol]
+
+  # Determine an upper bound for the 1st derivative of the M-scale objective function
+  first_deriv_bound <- vapply(bdp_range, FUN.VALUE = numeric(1L), FUN = function (bdp) {
+    thresh <- tryCatch(uniroot(f = function (t) {
+      up <- n * (1 - bdp) / (1 - t)
+      up - floor(up) - n * t / (1 - t)
+    }, interval = c(0, 0.5),  extendInt = 'downX', tol = numeric_tol)$root,
+    error = function (e) {
+      return(NA_real_)
+    })
+
+    1 / sqrt(1 - (1 - thresh)^(1/3))
+  })
+  good_bounds <- which(is.finite(first_deriv_bound))
+
+  if (length(good_bounds) == 0L) {
+    warning(paste("The chosen breakdown point may lead to numerical instability and",
+                  "excessive computation time.",
+                  "Consider changing the breakdown point via argument `bdp`."))
+    return(desired_bdp)
+  }
+  bdp_range[[which.min(first_deriv_bound)]]
+}
+
 ## Approximate Value Matching
 ##
 ## @param x,table see [base::match] for details.

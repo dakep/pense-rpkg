@@ -136,16 +136,28 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
   args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
   args <- do.call(.pense_args, args, envir = parent.frame())
 
+  # Update BDP for numerical stability
+  stable_bdp <- .find_stable_bdb_bisquare(
+    n = length(args$std_data$y),
+    desired_bdp = args$pense_opts$mscale$delta)
+  args$pense_opts$mscale$delta <- stable_bdp
+
   # Call internal function
-  fit <- .pense_internal(args$std_data$x, args$std_data$y, args$alpha, args$lambda, args$enpy_lambda_inds,
-                         args$penalty_loadings, args$pense_opts, args$enpy_opts, args$optional_args)
+  fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y, alpha = args$alpha,
+                         lambda = args$lambda, enpy_lambda_inds = args$enpy_lambda_inds,
+                         penalty_loadings = args$penalty_loadings, pense_opts = args$pense_opts,
+                         enpy_opts = args$enpy_opts, optional_args = args$optional_args)
 
   # Retain only the best solution:
   fit$estimates <- lapply(fit$estimates, function (ests) {
     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
   })
-  structure(list(estimates = .metrics_attrib(fit$estimates, fit$metrics), call = call, alpha = args$alpha,
-                 lambda = unlist(lapply(fit$estimates, `[[`, 'lambda'), use.names = FALSE, recursive = FALSE)),
+  structure(list(estimates = .metrics_attrib(fit$estimates, fit$metrics),
+                 call = call,
+                 alpha = args$alpha,
+                 bdp = stable_bdp,
+                 lambda = unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1), 'lambda'),
+                                 use.names = FALSE, recursive = FALSE)),
             class = c('pense', 'pense_fit'))
 }
 
@@ -184,7 +196,8 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom stats sd
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
-                     cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'), fit_all = TRUE, cl = NULL, ...) {
+                     cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'), fit_all = TRUE,
+                     cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.pense_args, as.list(call[-1L]), envir = parent.frame())
 
@@ -229,16 +242,22 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   cv_fun <- function (train_data, test_ind) {
-    cv_fit <- .pense_internal(train_data$x, train_data$y, alpha = args$alpha, lambda = args$lambda,
-                              enpy_lambda_inds = args$enpy_lambda_inds, penalty_loadings = args$penalty_loadings,
+    stable_bdp <- .find_stable_bdb_bisquare(
+      n = length(train_data$y),
+      desired_bdp = args$pense_opts$mscale$delta)
+    args$pense_opts$mscale$delta <- stable_bdp
+
+    cv_fit <- .pense_internal(x = train_data$x, y = train_data$y, alpha = args$alpha,
+                              lambda = args$lambda, enpy_lambda_inds = args$enpy_lambda_inds,
+                              penalty_loadings = args$penalty_loadings,
                               pense_opts = args$pense_opts, enpy_opts = args$enpy_opts,
                               optional_args = args$optional_args)
     # Return only best local optima
     lapply(cv_fit$estimates, `[[`, 1L)
   }
 
-  cv_perf <- .run_replicated_cv(args$std_data, cv_k = cv_k, cv_repl = cv_repl, metric = cv_metric, cv_est_fun = cv_fun,
-                                par_cluster = cl)
+  cv_perf <- .run_replicated_cv(args$std_data, cv_k = cv_k, cv_repl = cv_repl, metric = cv_metric,
+                                cv_est_fun = cv_fun, par_cluster = cl)
   cv_perf_df <- data.frame(lambda = args$lambda, cvavg = rowMeans(cv_perf), cvse = 0)
 
   if (cv_repl > 1L) {
@@ -253,15 +272,26 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     enpy_lambda_inds <- 1L
   }
 
-  fit <- .pense_internal(args$std_data$x, args$std_data$y, alpha = args$alpha, lambda = fit_lambda,
-                         enpy_lambda_inds = enpy_lambda_inds, penalty_loadings = args$penalty_loadings,
-                         pense_opts = args$pense_opts, enpy_opts = args$enpy_opts, optional_args = args$optional_args)
+  stable_bdp <- .find_stable_bdb_bisquare(
+    n = length(args$std_data$y),
+    desired_bdp = args$pense_opts$mscale$delta)
+  args$pense_opts$mscale$delta <- stable_bdp
+
+  fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y, alpha = args$alpha,
+                         lambda = fit_lambda, enpy_lambda_inds = enpy_lambda_inds,
+                         penalty_loadings = args$penalty_loadings, pense_opts = args$pense_opts,
+                         enpy_opts = args$enpy_opts, optional_args = args$optional_args)
 
   fit$estimates <- lapply(fit$estimates, function (ests) {
     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
   })
-  return(structure(list(call = call, lambda = args$lambda, alpha = args$alpha, cvres = cv_perf_df,
-                        cv_replications = cv_perf, cv_measure = cv_measure_str,
+  return(structure(list(call = call,
+                        lambda = args$lambda,
+                        alpha = args$alpha,
+                        cvres = cv_perf_df,
+                        bdp = stable_bdp,
+                        cv_replications = cv_perf,
+                        cv_measure = cv_measure_str,
                         estimates = .metrics_attrib(fit$estimates, fit$metrics)),
                    class = c('pense', 'pense_cvfit')))
 }
@@ -379,8 +409,8 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
 }
 
 ## Perform some final input adjustments and call the internal C++ code.
-.pense_internal <- function(x, y, alpha, lambda, enpy_lambda_inds, penalty_loadings = NULL, pense_opts, enpy_opts,
-                            optional_args) {
+.pense_internal <- function(x, y, alpha, lambda, enpy_lambda_inds, penalty_loadings = NULL,
+                            pense_opts, enpy_opts, optional_args) {
   # Create penalties-list, without sorting the lambda sequence
   penalties <- lapply(lambda, function (l) { list(lambda = l, alpha = alpha) })
 

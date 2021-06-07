@@ -1,3 +1,13 @@
+# pense 2.x
+  * Adaptively choose the actual breakdown point based on the number of observations used to fit
+    the estimates. The chosen breakdown point is close to the user-specified breakdown point, but
+    avoids numerical instabilities in the S-loss and excessive computation caused by these
+    instabilities.
+  * Simplify the DAL algorithm to fully rely on linear algebra routines from the BLAS/LAPACK library
+    linked to R. To improve the speed of the DAL algorithm, optimized BLAS/LAPACK libraries are
+    recommended.
+  * Fix memory issues from edge-cases and OpenMP problems with Intel compilers
+
 # pense 2.0.3
   * Fix a bug causing PENSE-Ridge, i.e., `pense(..., alpha = 0)`, to take a long time to compute.
   * Fix a compilation error on RHEL due to an error in the autoconf script.

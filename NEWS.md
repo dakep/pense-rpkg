@@ -1,7 +1,7 @@
 # pense 2.x
-  * Adaptively choose the actual breakdown point based on the number of observations used to fit
-    the estimates. The chosen breakdown point is close to the user-specified breakdown point, but
-    avoids numerical instabilities in the S-loss and excessive computation caused by these
+  * Adaptively choose the actual breakdown point based on the number of observations. 
+    The chosen breakdown point is close to the user-specified breakdown point, but
+    avoids numerical instabilities in the S-loss and excessive computation time caused by these
     instabilities.
   * Simplify the DAL algorithm to fully rely on linear algebra routines from the BLAS/LAPACK library
     linked to R. To improve the speed of the DAL algorithm, optimized BLAS/LAPACK libraries are

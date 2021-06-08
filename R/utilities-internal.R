@@ -364,7 +364,7 @@ extract_metric <- function (metrics, attr, node) {
 
   # "ignore" solutions after which the prediction performance comes back down
   best_1se <- if (any(diff(candidates) > 1)) {
-    min(candidates[seq_len(max(which(diff(candidates) > 1)))])
+    min(candidates[-seq_len(max(which(diff(candidates) > 1)))])
   } else {
     min(candidates)
   }

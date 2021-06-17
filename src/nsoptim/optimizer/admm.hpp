@@ -83,7 +83,7 @@ inline bool AnyViolateKKT(const arma::mat& x, const arma::vec& residuals, const 
   // const double lambda_1 = residuals.n_elem * penalty.alpha() * penalty.lambda();
   const double lambda_1 = penalty.alpha() * lambda * residuals.n_elem;
   for (arma::uword j = 0; j < x.n_cols; ++j) {
-        // const double cutoff = lambda1 * penalty.loadings()[j];
+    // const double cutoff = lambda1 * penalty.loadings()[j];
     const double inner = arma::dot(x.col(j), residuals);
     if ((inner < -lambda_1) || (inner > lambda_1)) {
       return true;
@@ -560,8 +560,7 @@ class GenericLinearizedAdmmOptimizer : public Optimizer<typename ProxOp::LossFun
     const double scaled_lambda = penalty_->lambda() * prox_.PenaltyScaling();
 
     const auto en_cutoff = DetermineCutoff(scaled_lambda, IsAdaptiveTag{});
-    const double en_multiplier = 1 / (1 + scaled_lambda * (1 - penalty_->alpha()) *
-                                      operator_scaling_g_ * operator_scaling_f_);
+    const auto en_multiplier = DetermineEnMultiplier(scaled_lambda, IsAdaptiveTag{});
 
     double gap = 0;
 
@@ -596,13 +595,13 @@ class GenericLinearizedAdmmOptimizer : public Optimizer<typename ProxOp::LossFun
           arma::dot(coefs_.beta, x_col_sum_) - arma::accu(state_.fitted - state_.lagrangian * operator_scaling_f_));
 
         // remember: fitted_step_1 is already fitted_step_1 - state_.fitted
-        coefs_.beta = en_multiplier * SoftThreshold(coefs_.beta, -operator_scaling_g_,
+        coefs_.beta = UpdateSlope(en_multiplier, SoftThreshold(coefs_.beta, -operator_scaling_g_,
           intercept * x_col_sum_ + data.cx().t() * (fitted_step_1 + operator_scaling_f_ * state_.lagrangian),
-          en_cutoff);
+          en_cutoff));
       } else {
         // remember: fitted_step_1 is already fitted_step_1 - state_.fitted
-        coefs_.beta = en_multiplier * SoftThreshold(coefs_.beta, -operator_scaling_g_,
-          data.cx().t() * (fitted_step_1 + operator_scaling_f_ * state_.lagrangian), en_cutoff);
+        coefs_.beta = UpdateSlope(en_multiplier, SoftThreshold(coefs_.beta, -operator_scaling_g_,
+          data.cx().t() * (fitted_step_1 + operator_scaling_f_ * state_.lagrangian), en_cutoff));
       }
 
       fitted_step_1 = data.cx() * coefs_.beta;
@@ -658,6 +657,35 @@ class GenericLinearizedAdmmOptimizer : public Optimizer<typename ProxOp::LossFun
   //! @param scaled_lambda scaled adaptive EN penalty parameter
   double DetermineCutoff(const double scaled_lambda, std::false_type) const noexcept {
     return penalty_->alpha() * scaled_lambda * operator_scaling_g_ * operator_scaling_f_;
+  }
+
+  //! Determine the EN multiplier for adaptive penalties
+  //!
+  arma::vec DetermineEnMultiplier(const double scaled_lambda, std::true_type /* is_adaptive */) const noexcept {
+    return 1 / (1 + penalty_->loadings() * scaled_lambda * (1 - penalty_->alpha()) *
+      operator_scaling_g_ * operator_scaling_f_);
+  }
+
+  //! Determine the EN multiplier for non-adaptive penalties
+  //!
+  //! @param scaled_lambda scaled adaptive EN penalty parameter
+  double DetermineEnMultiplier(const double scaled_lambda, std::false_type) const noexcept {
+    return 1 / (1 + scaled_lambda * (1 - penalty_->alpha()) * operator_scaling_g_ * operator_scaling_f_);
+  }
+
+  //! Update the slope coefficients for adaptive penalties
+  //!
+  template<typename T>
+  T UpdateSlope(const arma::vec& en_mult, const T& soft_thresh) const noexcept {
+    return en_mult % soft_thresh;
+  }
+
+  //! Update the slope coefficients for non-adaptive penalties
+  //!
+  //! @param scaled_lambda scaled adaptive EN penalty parameter
+  template<typename T>
+  T UpdateSlope(const double en_mult, const T& soft_thresh) const noexcept {
+    return en_mult * soft_thresh;
   }
 
   const AdmmLinearConfiguration config_;

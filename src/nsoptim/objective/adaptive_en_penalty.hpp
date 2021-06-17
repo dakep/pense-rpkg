@@ -98,7 +98,7 @@ class AdaptiveEnPenalty : public PenaltyFunction, public ConvexFunction<Adaptive
   double Evaluate(const RegressionCoefficients<VectorType>& where) const {
     if (loadings_->n_elem > 0) {
       return lambda_ * (alpha_ * arma::accu(*loadings_ % arma::abs(where.beta)) +
-        0.5 * (1 - alpha_) * arma::dot(where.beta, where.beta));
+        0.5 * (1 - alpha_) * arma::dot(*loadings_ % where.beta, where.beta));
     }
     return lambda_ * (alpha_ * arma::norm(where.beta, 1) + 0.5 * (1 - alpha_) * arma::dot(where.beta, where.beta));
   }
@@ -112,7 +112,7 @@ class AdaptiveEnPenalty : public PenaltyFunction, public ConvexFunction<Adaptive
   T Gradient(const RegressionCoefficients<T>& where) const {
     // The gradient is computed only for the non-zero coefficients. The other elements are set to 0.
     if (loadings_->n_elem > 0) {
-      return lambda_ * (alpha_ * (*loadings_ % arma::sign(where.beta)) + (1 - alpha_) * where.beta);
+      return lambda_ * (alpha_ * (*loadings_ % arma::sign(where.beta)) + (1 - alpha_) * (*loadings_) % where.beta);
     }
     return lambda_ * (alpha_ * arma::sign(where.beta) + (1 - alpha_) * where.beta);
   }

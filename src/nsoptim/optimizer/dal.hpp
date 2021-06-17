@@ -356,8 +356,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     while (true) {
       Metrics& inner_metrics = metrics->CreateSubMetrics("phi_iteration");
       // Update coefficient values
-      coefs_.beta = SoftThreshold(prev_coefs.beta, eta_.slope, *dual_constraint_rhs,
-                                                       softthr_cutoff);
+      coefs_.beta = SoftThreshold(prev_coefs.beta, eta_.slope, *dual_constraint_rhs, softthr_cutoff);
       coefs_.intercept = prev_coefs.intercept + ComputeInterceptChange(*phi_argmin, HasWeightsTag{});
 
       // Evaluate the phi function and its gradient.

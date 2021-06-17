@@ -820,14 +820,14 @@ class AugmentedLarsOptimizer : public Optimizer<LossFunction, PenaltyFunction, C
   //! See notes for the implementation for unweighted observations.
   inline arma::vec LambdaRidge(const PenaltyFunction& penalty, std::false_type /* is_weighted */,
                                std::true_type /* is_adaptive */) const noexcept {
-    return LambdaRidge(penalty, std::false_type{}, std::false_type{}) / arma::square(penalty_->loadings());
+    return LambdaRidge(penalty, std::false_type{}, std::false_type{}) / penalty_->loadings();
   }
 
   //! Compute the "Ridge" part of the penalty in case of weighted observations and penalty loadings.
   //! See notes for the implementation for unweighted observations.
   inline arma::vec LambdaRidge(const PenaltyFunction& penalty, std::true_type /* is_weighted */,
                             std::true_type /* is_adaptive */) const noexcept {
-    return LambdaRidge(penalty, std::true_type{}, std::false_type{}) / arma::square(penalty_->loadings());
+    return LambdaRidge(penalty, std::true_type{}, std::false_type{}) / penalty_->loadings();
   }
 
   //! Compute the "Lasso" part of the penalty in case of weighted observations.

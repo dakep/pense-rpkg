@@ -16,7 +16,7 @@ grad_en <- function (est, x, y, weights, intercept = TRUE, penalty_loadings,
   }
 
   # Loss + L2
-  lambda_2 <- lambda * (1 - est$alpha) # 0.5 is remove by square!
+  lambda_2 <- lambda * (1 - est$alpha) * penalty_loadings # 0.5 is removed by square!
   resid <- drop(y - x %*% est$beta - est$intercept)
   grad_beta <- -drop((resid * weights) %*% x) / length(y) +
     as.numeric(lambda_2 * est$beta)

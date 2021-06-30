@@ -375,7 +375,7 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
       throw std::logic_error("no penalty set");
     }
 
-    std::unique_ptr<Metrics> metrics(new Metrics("mm-algorithm"));
+    auto metrics = std::make_unique<Metrics>("mm-algorithm");
     // If the coefficients are not yet initialized, reset them to the 0-vector.
     if (coefs_.beta.n_elem == 0) {
       coefs_ = loss_->template ZeroCoefficients<Coefficients>();

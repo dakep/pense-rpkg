@@ -490,7 +490,7 @@ SEXP PenseEnRegression(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds,
 //!                       `pen_loadings` ... optional vector of length `p` with non-negative penalty loadings.
 SEXP PenseMaxLambda(SEXP r_x, SEXP r_y, SEXP r_pense_opts, SEXP r_optional_args) noexcept {
   BEGIN_RCPP
-  std::unique_ptr<const nsoptim::PredictorResponseData> data = MakePredictorResponseData(r_x, r_y);
+  auto data = MakePredictorResponseData(r_x, r_y);
   const auto pense_opts = as<Rcpp::List>(r_pense_opts);
   const auto optional_args = as<Rcpp::List>(r_optional_args);
   pense::Mscale<pense::RhoBisquare> mscale(as<Rcpp::List>(pense_opts["mscale"]));

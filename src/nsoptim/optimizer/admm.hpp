@@ -553,7 +553,7 @@ class GenericLinearizedAdmmOptimizer : public Optimizer<typename ProxOp::LossFun
       coefs_.intercept = 0;
     }
 
-    std::unique_ptr<Metrics> metrics(new Metrics("admm"));
+    auto metrics = std::make_unique<Metrics>("admm");
     metrics->AddDetail("type", "linearized");
 
     operator_scaling_f_ = prox_.OperatorScaling();  // this is (1/beta) in Deng & Yin (2016)
@@ -877,7 +877,7 @@ class AdmmVarStepOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coe
     const double scaled_lambda = ScaledLambda(IsWeightedTag{});
     const bool check_empty = admm_optimizer::AllZero(coefs_.beta) || (coefs_.beta.n_elem != data_->n_pred());
 
-    std::unique_ptr<Metrics> metrics(new Metrics("admm"));
+    auto metrics = std::make_unique<Metrics>("admm");
     metrics->AddDetail("type", "var-stepsize");
 
     // Check if the coefficients are correct.

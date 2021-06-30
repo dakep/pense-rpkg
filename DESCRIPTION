@@ -13,7 +13,6 @@ Copyright: See the file COPYRIGHT for copyright details on some of the
     functions and algorithms used.
 Encoding: UTF-8
 Biarch: true
-SystemRequirements: C++11
 URL: https://dakep.github.io/pense-rpkg/,
     https://github.com/dakep/pense-rpkg
 BugReports: https://github.com/dakep/pense-rpkg/issues

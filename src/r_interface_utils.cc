@@ -52,9 +52,8 @@ std::unique_ptr<const PredictorResponseData> MakePredictorResponseData(SEXP x, S
     throw std::invalid_argument("y and x must be numeric");
   }
 
-  return std::unique_ptr<const PredictorResponseData>(
-    new PredictorResponseData(arma::mat(REAL(x), x_dims.n_rows, x_dims.n_cols, false, true),
-                              vec(REAL(y), nobs_y, false, true)));
+  return std::make_unique<const PredictorResponseData>(arma::mat(REAL(x), x_dims.n_rows, x_dims.n_cols, false, true),
+                                                       vec(REAL(y), nobs_y, false, true));
 }
 
 AdaptiveEnPenalty MakeAdaptiveEnPenalty(SEXP r_penalty, std::shared_ptr<const vec> loadings) {
@@ -171,9 +170,9 @@ std::forward_list<AdaptiveLassoPenalty> MakeAdaptiveLassoPenaltyList(SEXP r_pena
 //! @param numeric_vector a numeric R vector
 std::unique_ptr<const vec> MakeVectorView(SEXP numeric_vector) noexcept {
   if (TYPEOF(numeric_vector) != REALSXP) {
-    return std::unique_ptr<const vec>(new vec());
+    return std::make_unique<const vec>();
   }
-  return std::unique_ptr<const vec>(new vec(REAL(numeric_vector), Rf_length(numeric_vector), false, true));
+  return std::make_unique<const vec>(REAL(numeric_vector), Rf_length(numeric_vector), false, true);
 }
 }  // namespace r_interface
 }  // namespace pense

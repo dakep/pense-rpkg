@@ -213,7 +213,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     }
 
     // Create new optional metrics
-    std::unique_ptr<Metrics> metrics(new Metrics("dal-ls_en"));
+    auto metrics = std::make_unique<Metrics>("dal-ls_en");
 
     // Initialize the proximity parameters.
     double eta_start_numerator = config_.eta_start_numerator_conservative;

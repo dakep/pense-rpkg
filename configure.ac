@@ -11,13 +11,13 @@ RBIN="${R_HOME}/bin/R"
 CC=`"${RBIN}" CMD config CC`
 CPP="$CC -E"
 
-CXX11=`"${RBIN}" CMD config CXX11`
-if test -z "$CXX11"; then
-  AC_MSG_ERROR([No C++11 compiler is available])
+CXX=`"${RBIN}" CMD config CXX14`
+if test -z "$CXX"; then
+  AC_MSG_ERROR([No C++14 compiler is available])
 fi
-CXX11STD=`"${RBIN}" CMD config CXX11STD`
-CXX="${CXX11} ${CXX11STD}"
-CXXFLAGS=`"${RBIN}" CMD config CXX11FLAGS`
+CXX14STD=`"${RBIN}" CMD config CXX14STD`
+CXX="${CXX} ${CXX14STD}"
+CXXFLAGS=`"${RBIN}" CMD config CXX14FLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 LDFLAGS=`"${RBIN}" CMD config LDFLAGS`
 

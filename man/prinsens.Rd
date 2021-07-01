@@ -23,16 +23,17 @@ prinsens(
 
 \item{y}{vector of response values of length \code{n}.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
+is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
+but \code{alpha = 0} cannot be mixed with other values.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL},
+\code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
 \item{intercept}{include an intercept in the model.}
 
-\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{en_algorithm_opts}{options for the LS-EN algorithm. See \link{en_algorithm_options} for details.}
 
@@ -40,8 +41,8 @@ coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{sparse}{use sparse coefficient vectors.}
 
-\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
+\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
 
 \item{method}{defunct. PSCs are always computed for EN estimates. For the PY procedure for unpenalized estimation
 use package \href{https://cran.r-project.org/package=pyinit}{pyinit}.}

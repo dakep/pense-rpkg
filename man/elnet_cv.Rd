@@ -73,12 +73,12 @@ for details.}
 \value{
 a list with components:
 \describe{
-\item{\code{lambda}}{the sequence of penalization levels.}
+\item{\code{alpha}}{the sequence of \code{alpha} parameters.}
+\item{\code{lambda}}{a list of sequences of penalization levels, one per \code{alpha} parameter.}
 \item{\code{cvres}}{data frame of average cross-validated performance.}
-\item{\code{cv_replications}}{matrix of cross-validated performance metrics, one column per replication.
-Rows are in the same order as in \code{cvres}.}
 \item{\code{call}}{the original call.}
-\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned by \code{\link[=elnet]{elnet()}}.}
+\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned
+by \code{\link[=elnet]{elnet()}}.}
 }
 }
 \description{

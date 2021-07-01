@@ -81,33 +81,35 @@ pensem_cv(x, ...)
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
+is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
+but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{nlambda}{number of penalization levels.}
 
-\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
+\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero). The default depends on
+the sample size relative to the number of variables and \code{alpha}. If more observations than
+variables are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
 
 \item{lambda_m, lambda_s}{optional user-supplied sequence of penalization levels for the S- and M-estimates.
 If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored for the respective estimate (S and/or M).}
 
-\item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the PENSE estimates.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-\code{standardize = FALSE} or standardize the data manually.}
+\item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the PENSE
+estimates. Coefficients are always returned on the original scale. This can fail for
+variables with a large proportion of a single value (e.g., zero-inflated data).
+In this case, either compute with \code{standardize = FALSE} or standardize the data manually.}
 
-\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{intercept}{include an intercept in the model.}
 
-\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5.}
+\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
-\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
+\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
 
 \item{sparse}{use sparse coefficient vectors.}
 
@@ -130,29 +132,32 @@ and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.}
 
-\item{add_zero_based}{also consider the 0-based regularization path. See details for a description.}
+\item{add_zero_based}{also consider the 0-based regularization path. See details for a
+description.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
 
-\item{explore_tol}{numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via \code{algorithm_opts}.}
+\item{explore_tol}{numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
 \item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
 level with smallest average CV performance.}
 
-\item{comparison_tol}{numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than \code{comparison_tol}, two solutions are deemed equal if the squared difference
-of the intercepts is less than \code{comparison_tol} and the squared \eqn{L_2} norm of the
-difference vector is less than \code{comparison_tol}.}
+\item{comparison_tol}{numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution If this is less than \code{comparison_tol}, two solutions are deemed
+equal if the squared difference of the intercepts is less than \code{comparison_tol} and the
+squared \eqn{L_2} norm of the difference vector is less than \code{comparison_tol}.}
 
-\item{algorithm_opts}{options for the MM algorithm to compute the estimates. See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for
-details.}
+\item{algorithm_opts}{options for the MM algorithm to compute the estimates.
+See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
 
-\item{mscale_opts}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+\item{mscale_opts}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}}
+for details.}
 
 \item{nlambda_enpy}{number of penalization levels where the EN-PY initial estimate is computed.}
 

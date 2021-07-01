@@ -29,12 +29,13 @@ For binary classification, \code{y} should be a factor with 2 levels.}
 \item{standardize}{whether to standardize the \code{x} variables prior to fitting the PENSE estimates.
 Can also be set to \code{"cv_only"}, in which case the input data is not standardized, but the
 training data in the CV folds is scaled to match the scaling of the input data.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-\code{standardize = FALSE} or standardize the data manually.}
+Coefficients are always returned on the original scale.
+This can fail for variables with a large proportion of a single value
+(e.g., zero-inflated data).
+In this case, either compute with \code{standardize = FALSE} or standardize the data manually.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels.
+If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
 \item{cv_k}{number of folds per cross-validation.}
 
@@ -59,60 +60,61 @@ can not be used in parallel R sessions on the same host.}
   \describe{
     \item{\code{scale}}{fixed scale of the residuals.}
     \item{\code{nlambda}}{number of penalization levels.}
-    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
-    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
-    \item{\code{starting_points}}{a list of staring points, created by \code{\link[=starting_point]{starting_point()}}. The starting points are shared
-among all penalization levels.}
+    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the
+largest level (i.e., the smallest value for which all coefficients are zero).
+The default depends on the sample size relative to the number of variables and \code{alpha}.
+If more observations than variables are available, the default is \code{1e-3 * alpha},
+otherwise \code{1e-2 * alpha}.}
+    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights)
+for different penalization of each coefficient. Only allowed for \code{alpha} > 0.}
+    \item{\code{starting_points}}{a list of staring points, created by \code{\link[=starting_point]{starting_point()}}.
+The starting points are shared among all penalization levels.}
     \item{\code{intercept}}{include an intercept in the model.}
-    \item{\code{add_zero_based}}{also consider the 0-based regularization path in addition to the given starting points.}
+    \item{\code{add_zero_based}}{also consider the 0-based regularization path in addition to the given
+starting points.}
     \item{\code{cc}}{cutoff constant for Tukey's bisquare \eqn{\rho} function.}
     \item{\code{eps}}{numerical tolerance.}
     \item{\code{explore_solutions}}{number of solutions to compute up to the desired precision \code{eps}.}
-    \item{\code{explore_tol}}{numerical tolerance for exploring possible solutions. Should be (much) looser than \code{eps} to
-be useful.}
+    \item{\code{explore_tol}}{numerical tolerance for exploring possible solutions.
+Should be (much) looser than \code{eps} to be useful.}
     \item{\code{max_solutions}}{only retain up to \code{max_solutions} unique solutions per penalization level.}
-    \item{\code{comparison_tol}}{numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than \code{comparison_tol}, two solutions are deemed equal if the squared difference
-of the intercepts is less than \code{comparison_tol} and the squared \eqn{L_2} norm of the
-difference vector is less than \code{comparison_tol}.}
+    \item{\code{comparison_tol}}{numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution.
+If this is less than \code{comparison_tol}, two solutions are deemed equal if the
+squared difference of the intercepts is less than \code{comparison_tol} and the squared
+\eqn{L_2} norm of the difference vector is less than \code{comparison_tol}.}
     \item{\code{sparse}}{use sparse coefficient vectors.}
-    \item{\code{ncores}}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
-    \item{\code{algorithm_opts}}{options for the MM algorithm to compute estimates. See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
-    \item{\code{mscale_bdp}}{options for the M-scale estimate used to standardize the predictors
-(if \code{standardize = TRUE}).}
-    \item{\code{mscale_opts}}{options for the M-scale estimate used to standardize the predictors
-(if \code{standardize = TRUE}).}
+    \item{\code{ncores}}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
+    \item{\code{algorithm_opts}}{options for the MM algorithm to compute estimates.
+See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
+    \item{\code{mscale_bdp}}{options for the M-scale estimate used to standardize
+the predictors (if \code{standardize = TRUE}).}
+    \item{\code{mscale_opts}}{options for the M-scale estimate used to standardize
+the predictors (if \code{standardize = TRUE}).}
   }}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge penalty.}
 
 \item{alpha_preliminary}{\code{alpha} parameter for the preliminary estimate.}
 
-\item{exponent}{the exponent for computing the penalty loadings based on the preliminary estimate.}
+\item{exponent}{the exponent for computing the penalty loadings based on the
+preliminary estimate.}
 }
 \value{
-a list with components:
+a list-like object as returned by \code{\link[=regmest]{regmest()}}, plus the following components:
 \describe{
-\item{\code{lambda}}{the sequence of penalization levels.}
-\item{\code{scale}}{the used scale of the residuals.}
 \item{\code{cvres}}{data frame of average cross-validated performance.}
-\item{\code{cv_replications}}{matrix of cross-validated performance metrics, one column per replication.
-Rows are in the same order as in \code{cvres}.}
-\item{\code{call}}{the original call.}
-\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned by \code{\link[=regmest]{regmest()}}.}
 }
 
-the object returned by \code{adamest_cv()} has additional components
+a list-like object as returned by \code{\link[=adamest_cv]{adamest_cv()}} plus the following components:
 \describe{
-\item{\code{preliminary}}{the CV results for the preliminary estimate.}
-\item{\code{penalty_loadings}}{the penalty loadings used for the adaptive elastic net M-estimate.}
+\item{\code{exponent}}{value of the exponent.}
+\item{\code{preliminary}}{CV results for the preliminary estimate.}
+\item{\code{penalty_loadings}}{penalty loadings used for the adaptive
+elastic net M-estimate.}
 }
 }
 \description{
@@ -135,7 +137,8 @@ binary responses.}
 \item compute preliminary estimates via \code{regmest_cv(..., alpha = alpha_preliminary)},
 \item computes the penalty loadings from the estimate \code{beta} with best prediction performance by
 \code{adamest_loadings = 1 / abs(beta)^exponent}, and
-\item compute the adaptive PENSE estimates via \code{regmest_cv(..., penalty_loadings = adamest_loadings)}.
+\item compute the adaptive PENSE estimates via
+\code{regmest_cv(..., penalty_loadings = adamest_loadings)}.
 }
 }
 \examples{

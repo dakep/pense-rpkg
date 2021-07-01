@@ -9,14 +9,24 @@
 #'
 #' @example examples/pense_fit.R
 #' @export
-plot.pense_fit <- function (x, ...) {
-  .plot_coef_path(x, x$lambda, envir = parent.frame())
+#' @importFrom rlang abort
+plot.pense_fit <- function (x, alpha, ...) {
+  if (missing(alpha) || is.null(alpha)) {
+    alpha <- x$alpha[[1L]]
+  }
+  alpha <- .as(alpha[[1L]], 'numeric')
+  ai <- which((x$alpha - alpha)^2 < .Machine$double.eps)
+  if (length(ai) != 1L) {
+    abort("Requested `alpha` is not available in the fit.")
+  }
+  .plot_coef_path(x, lambda_seq = x$lambda[[ai]], alpha = alpha, envir = parent.frame())
+  invisible(x)
 }
 
 #' Plot Method for Penalized Estimates With Cross-Validation
 #'
-#' Plot the cross-validation performance or the coefficient path for fitted penalized elastic net S- or LS-estimates
-#' of regression.
+#' Plot the cross-validation performance or the coefficient path for fitted penalized
+#' elastic net S- or LS-estimates of regression.
 #'
 #' @param x fitted estimates with cross-validation information.
 #' @param what plot either the CV performance or the coefficient path.
@@ -26,81 +36,154 @@ plot.pense_fit <- function (x, ...) {
 #' @family functions for plotting and printing
 #' @example examples/pense_fit.R
 #' @export
-plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), se_mult = 1, ...) {
+#' @importFrom rlang abort warn
+plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1, ...) {
   what <- match.arg(what)
-  if (what == 'coef.path' && isFALSE(x$call$fit_all)) {
-    stop("`x` was created with `fit_all = FALSE`. Coefficient path not available.")
-  } else if (!isTRUE(ncol(x$cv_replications) > 1L)) {
-    if (what == 'cv' && !missing(se_mult) && isTRUE(se_mult > 0)) {
-      warning("Only a single cross-validation replication was performed. Standard error not available.")
+
+  if (!any(x$cvres$cvse > 0)) {
+    if (identical(what, 'cv') && !missing(se_mult) && isTRUE(se_mult > 0)) {
+      warn(paste("Only a single cross-validation replication was performed.",
+                 "Standard errors not available."))
     }
     se_mult <- 0
   }
-  se_sel <- .cv_se_selection(x$cvres$cvavg, x$cvres$cvse, se_mult)
-  lambda_opt <- x$cvres$lambda[[which(se_sel == 'se_fact')]]
-  switch(what, coef.path = .plot_coef_path(x, x$cvres$lambda, lambda_opt, envir = parent.frame()),
-         cv = .plot_cv_res(x, se_mult, se_sel))
+
+  if (identical(what, 'coef.path')) {
+    if (isFALSE(x$call$fit_all)) {
+      warn("`x` was created with `fit_all = FALSE`. Coefficient path not available.")
+    }
+    if (missing(alpha) || is.null(alpha)) {
+      alpha <- x$alpha[[1L]]
+    }
+    alpha <- .as(alpha[[1L]], 'numeric')
+    cvres_rows <- which((x$cvres$alpha - alpha)^2 < .Machine$double.eps)
+    if (length(cvres_rows) == 0L) {
+      abort("Requested `alpha` not available in the fit `object`.")
+    }
+    se_sel <- .cv_se_selection(x$cvres$cvavg[cvres_rows], x$cvres$cvse[cvres_rows], se_mult)
+    lambda_opt <- x$cvres$lambda[cvres_rows][[which(se_sel == 'se_fact')]]
+
+    .plot_coef_path(x, lambda_seq = x$cvres$lambda[cvres_rows],
+                    alpha = alpha, lambda_opt = lambda_opt,
+                    envir = parent.frame())
+  } else {
+    .plot_cv_res(x, se_mult = se_mult, alpha = alpha)
+  }
+
+  invisible(x)
 }
 
 #' @importFrom graphics plot segments abline
-#' @importFrom rlang warn
-.plot_cv_res <- function (object, se_mult, se_sel) {
+#' @importFrom rlang abort warn
+.plot_cv_res <- function (object, alpha, se_mult) {
   measure_label <- switch(object$cv_measure, mape = "Median absolute prediction error",
                           rmspe = "Root mean square prediction error",
                           auroc = "1 - AUROC",
                           tau_size = expression(paste(tau, "-scale of the prediction error")),
                           "Prediction error")
-  colors <- c('gray20', '#0072B2', '#56B4E9')
+  if (missing(alpha) || is.null(alpha)) {
+    alpha_seq <- object$alpha
+  } else {
+    alpha_seq <- object$alpha[na.omit(.approx_match(.as(alpha, 'numeric'), object$alpha))]
+    if (length(alpha_seq) == 0L) {
+      abort("None of the requested `alpha` values is available in the fit")
+    }
+  }
+
+  colors <- c(none = 'gray20', min = '#0072B2', se_fact = '#56B4E9')
+  sizes <- c(none = 1, min = 1.5, se_fact = 1.5)
+  shapes <- rep_len(c(16, 15, 17, 18, 0:14), length.out = length(alpha_seq))
 
   with(object$cvres, {
-    min_ind <- which(se_sel == 'min')
-    if (length(min_ind) == 0L) {
-      # minimum and SE rule coincide
-      min_ind <- which(se_sel == 'se_fact')
-    }
-    cols <- colors[as.integer(se_sel)]
-    xrange <- range(lambda)
-
-    # Ensure errorbars don't extend into the negative!
-    errorbar_ymin <- cvavg - se_mult * cvse
-    neg_errorbars <- which(errorbar_ymin <= 0)
-    if (length(neg_errorbars) > 0L) {
+    ymin <- cvavg - se_mult * cvse
+    y_limit_min <- if (any(ymin <= 0)) {
       warn("Error bars extending into the negative range are truncated.")
-      if (length(neg_errorbars) < length(cvavg)) {
-        # There are errorbars that do don't extend to the negative. Use the smallest positive value.
-        errorbar_ymin[neg_errorbars] <- min(errorbar_ymin[-neg_errorbars])
+      if (any(ymin > 0)) {
+        min(ymin[ymin > 0])
       } else {
-        # All errorbars extend to the negative. Use arbitrary value.
-        errorbar_ymin <- rep.int(cvavg * 0.95, length(errorbar_ymin))
+        # All errorbars extend to the negative. Use arbitrary lower limit.
+        0.95 * min(cvavg)
       }
+    } else {
+      min(ymin)
+    }
+    plot(1, 1, type = 'n', log = 'xy',
+         ylim = c(y_limit_min, max(cvavg + se_mult * cvse)),
+         xlim = range(lambda),
+         xlab = expression(paste('Penalization level (', lambda, ')')),
+         ylab = measure_label)
+
+    if (length(alpha_seq) > 1L) {
+      title(main = "CV prediction performance")
+      legend('topleft', title = expression(alpha), legend = sprintf('%g', alpha_seq),
+             pch = shapes, cex = 1)
+    } else {
+      title(main = sprintf("CV prediction performance for alpha = %g", alpha_seq))
     }
 
-    plot(lambda, cvavg, log = 'xy', col = cols,
-         ylim = range(cvavg + se_mult * cvse, errorbar_ymin),
-         pch = 20L, xlab = expression(paste('Penalization level (', lambda, ')')),
-                                      ylab = measure_label, main = "CV prediction performance")
-    if (isTRUE(se_mult > 0)) {
-      segments(lambda, errorbar_ymin, lambda, cvavg + se_mult * cvse, col = cols)
-      abline(h = cvavg[[min_ind]] + se_mult * cvse[[min_ind]], col = colors[[3L]], lty = '22')
+    for (ai in seq_along(alpha_seq)) {
+      rows <- which((alpha - alpha_seq[[ai]])^2 < .Machine$double.eps)
+      se_sel <- .cv_se_selection(cvm = cvavg[rows], cvsd = cvse[rows], se_fact = se_mult)
+      min_ind <- which(se_sel == 'min')
+      if (length(min_ind) == 0L) {
+        # minimum and SE rule coincide
+        min_ind <- which(se_sel == 'se_fact')
+      }
+      cols <- colors[as.character(se_sel)]
+      cex <- sizes[as.character(se_sel)]
+
+      points(x = lambda[rows], y = cvavg[rows], col = cols, cex = cex, pch = shapes[[ai]])
+
+      if (isTRUE(se_mult > 0)) {
+        # Ensure errorbars don't extend into the negative!
+        errorbar_ymin <- cvavg[rows] - se_mult * cvse[rows]
+        neg_errorbars <- which(errorbar_ymin <= 0)
+        if (length(neg_errorbars) > 0L) {
+          if (length(neg_errorbars) < length(errorbar_ymin)) {
+            # There are errorbars that do don't extend to the negative.
+            # Use the smallest positive value.
+            errorbar_ymin[neg_errorbars] <- min(errorbar_ymin[-neg_errorbars])
+          } else {
+            # All errorbars extend to the negative. Use arbitrary value.
+            errorbar_ymin <- rep.int(cvavg[rows] * 0.95, length(errorbar_ymin))
+          }
+        }
+        segments(x0 = lambda[rows], y0 = errorbar_ymin,
+                 x1 = lambda[rows], y1 = cvavg[rows] + se_mult * cvse[rows],
+                 col = cols)
+        # abline(h = cvavg[[min_ind]] + se_mult * cvse[[min_ind]], col = colors[[3L]], lty = '22')
+      }
     }
   })
 }
 
 #' @importFrom graphics plot lines text abline
-.plot_coef_path <- function(object, lambda_seq, lambda_opt, envir) {
+#' @importFrom rlang abort
+.plot_coef_path <- function(object, lambda_seq, alpha, lambda_opt, envir) {
+  if (missing(alpha) || is.null(alpha)) {
+    alpha <- object$alpha[[1L]]
+  }
+  alpha <- .as(alpha[[1L]], 'numeric')
+
   var_names <- tryCatch(colnames(eval(object$call$x, envir = envir)), error = function (e) NULL)
   if (is.null(var_names)) {
     var_names <- paste('X', seq_len(length(object$estimates[[1]]$beta)), sep = '')
   }
 
   active_vars <- do.call(rbind, lapply(object$estimates, function (est) {
+    if ((est$alpha - alpha)^2 > .Machine$double.eps) {
+      return(NULL)
+    }
     actives <- .active_indices_and_values(est)
     if (length(actives$var_index) > 0L) {
-      return(data.frame(.active_indices_and_values(est), lambda = est$lambda))
+      return(data.frame(actives, lambda = est$lambda, alpha = est$alpha))
     } else {
       return(NULL)
     }
   }))
+  if (is.null(active_vars)) {
+    abort("Requested `alpha` not available in the fit.")
+  }
   active_vars$var <- factor(var_names[active_vars$var_index],
                             levels = var_names[sort(unique(active_vars$var_index))])
 
@@ -111,7 +194,8 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), se_mult = 1, ...) {
   active_vars <- active_vars[order(active_vars$lambda), ]
 
   plot(1, 0, xlim = range(lambda_seq), ylim = range(0, active_vars$value), type = "n", log = "x",
-       xlab = expression(lambda), ylab = "Coefficient estimate")
+       xlab = expression(lambda), ylab = "Coefficient estimate",
+       main = sprintf("Coefficient path for alpha = %g", alpha))
 
   for (i in seq_len(nlevels(active_vars$var))) {
     sel_var <- levels(active_vars$var)[[i]]

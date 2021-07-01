@@ -95,7 +95,10 @@
 ## @return a vector the same length as `x` with integers giving the position in
 ##         `table` of the first match if there is a match, or `NA_integer_`
 ##         otherwise.
-.approx_match <- function(x, table, eps = min(sqrt(.Machine$double.eps), 0.5 * min(x, table))) {
+.approx_match <- function(x, table, eps) {
+  if (missing(eps)) {
+    eps <- max(.Machine$double.eps, min(sqrt(.Machine$double.eps), 0.5 * min(x, table)))
+  }
   .Call(C_approx_match, as.numeric(x), as.numeric(table), as.numeric(eps[[1L]]))
 }
 
@@ -434,11 +437,12 @@ extract_metric <- function (metrics, attr, node) {
   }
 }
 
-.prepare_penalty_loadings <- function (penalty_loadings, x, alpha, sparse, stop_all_infinite = FALSE) {
+.prepare_penalty_loadings <- function (penalty_loadings, x, alpha, sparse,
+                                       stop_all_infinite = FALSE) {
   orig_p <- ncol(x)
   restore_coef_length <- function (coef) coef
 
-  if(alpha < .Machine$double.eps) {
+  if(any(alpha < .Machine$double.eps)) {
     abort("Non-empty `penalty_loadings` only supported for `alpha` > 0.")
   } else if (length(penalty_loadings) != orig_p) {
     abort("`penalty_loadings` has different number of elements than `x` columns.")

@@ -4,7 +4,7 @@
 \alias{plot.pense_cvfit}
 \title{Plot Method for Penalized Estimates With Cross-Validation}
 \usage{
-\method{plot}{pense_cvfit}(x, what = c("cv", "coef.path"), se_mult = 1, ...)
+\method{plot}{pense_cvfit}(x, what = c("cv", "coef.path"), alpha, se_mult = 1, ...)
 }
 \arguments{
 \item{x}{fitted estimates with cross-validation information.}
@@ -16,8 +16,8 @@
 \item{...}{currently ignored.}
 }
 \description{
-Plot the cross-validation performance or the coefficient path for fitted penalized elastic net S- or LS-estimates
-of regression.
+Plot the cross-validation performance or the coefficient path for fitted penalized
+elastic net S- or LS-estimates of regression.
 }
 \examples{
 # Compute the PENSE regularization path for Freeny's revenue data

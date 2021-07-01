@@ -44,130 +44,141 @@ pense(
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
+is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
+but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{nlambda}{number of penalization levels.}
 
 \item{nlambda_enpy}{number of penalization levels where the EN-PY initial estimate is computed.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL},
+\code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
-\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
+\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero). The default depends on
+the sample size relative to the number of variables and \code{alpha}. If more observations than
+variables are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
 
-\item{enpy_lambda}{optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
-computed. If given and not \code{NULL}, \code{nlambda_enpy} is ignored.}
+\item{enpy_lambda}{optional user-supplied sequence of penalization levels at which EN-PY
+initial estimates are computed. If given and not \code{NULL}, \code{nlambda_enpy} is ignored.}
 
-\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{intercept}{include an intercept in the model.}
 
-\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5.}
+\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
-\item{cc}{tuning constant for the S-estimator. Default is to chosen based on the breakdown point \code{bdp}.
-Does \emph{not} affect the estimated coefficients, only the estimated scale of the residuals.}
+\item{cc}{tuning constant for the S-estimator. Default is to chosen based on the breakdown
+point \code{bdp}. Does \emph{not} affect the estimated coefficients, only the estimated scale of
+the residuals.}
 
-\item{add_zero_based}{also consider the 0-based regularization path. See details for a description.}
+\item{add_zero_based}{also consider the 0-based regularization path. See details for a
+description.}
 
-\item{enpy_specific}{use the EN-PY initial estimates only at the penalization level they are computed for.
-See details for a description.}
+\item{enpy_specific}{use the EN-PY initial estimates only at the penalization level they
+are computed for. See details for a description.}
 
 \item{other_starts}{a list of other staring points, created by \code{\link[=starting_point]{starting_point()}}.
 If the output of \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} is given, the starting points will be \emph{shared}
 among all penalization levels.
 Note that if a the starting point is \emph{specific} to a penalization level, this penalization
-level is added to the grid of penalization levels (either the manually specified grid in \code{lambda}
-or the automatically generated grid of size \code{nlambda}).
+level is added to the grid of penalization levels (either the manually specified grid in
+\code{lambda} or the automatically generated grid of size \code{nlambda}).
 If \code{standardize = TRUE}, the starting points are also scaled.}
 
 \item{eps}{numerical tolerance.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
 
-\item{explore_tol, explore_it}{numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via \code{algorithm_opts}.}
+\item{explore_tol, explore_it}{numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
-\item{comparison_tol}{numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than \code{comparison_tol}, two solutions are deemed equal if the squared difference
-of the intercepts is less than \code{comparison_tol} and the squared \eqn{L_2} norm of the
-difference vector is less than \code{comparison_tol}.}
+\item{comparison_tol}{numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution If this is less than \code{comparison_tol}, two solutions are deemed
+equal if the squared difference of the intercepts is less than \code{comparison_tol} and the
+squared \eqn{L_2} norm of the difference vector is less than \code{comparison_tol}.}
 
 \item{sparse}{use sparse coefficient vectors.}
 
-\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
+\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
 
-\item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the PENSE estimates.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-\code{standardize = FALSE} or standardize the data manually.}
+\item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the PENSE
+estimates. Coefficients are always returned on the original scale. This can fail for
+variables with a large proportion of a single value (e.g., zero-inflated data).
+In this case, either compute with \code{standardize = FALSE} or standardize the data manually.}
 
-\item{algorithm_opts}{options for the MM algorithm to compute the estimates. See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for
-details.}
+\item{algorithm_opts}{options for the MM algorithm to compute the estimates.
+See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
 
-\item{mscale_opts}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+\item{mscale_opts}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}}
+for details.}
 
 \item{enpy_opts}{options for the ENPY initial estimates, created with the
 \code{\link[=enpy_options]{enpy_options()}} function. See \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} for details.}
 
-\item{cv_k, cv_objective}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating prediction performance
-via cross-validation.}
+\item{cv_k, cv_objective}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating
+prediction performance via cross-validation.}
 
 \item{...}{ignored. See the section on deprecated parameters below.}
 }
 \value{
 a list-like object with the following items
 \describe{
-\item{\code{lambda}}{the sequence of penalization levels.}
+\item{\code{alpha}}{the sequence of \code{alpha} parameters.}
+\item{\code{lambda}}{a list of sequences of penalization levels, one per \code{alpha} parameter.}
 \item{\code{estimates}}{a list of estimates. Each estimate contains the following information:
 \describe{
 \item{\code{intercept}}{intercept estimate.}
 \item{\code{beta}}{beta (slope) estimate.}
 \item{\code{lambda}}{penalization level at which the estimate is computed.}
 \item{\code{alpha}}{\emph{alpha} hyper-parameter at which the estimate is computed.}
+\item{\code{bdp}}{chosen breakdown-point.}
 \item{\code{objf_value}}{value of the objective function at the solution.}
-\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when computing the estimate.}
+\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when
+computing the estimate.}
 \item{\code{status}}{optional status message from the algorithm.}
 }
 }
+\item{\code{bdp}}{the actual breakdown point used.}
 \item{\code{call}}{the original call.}
 }
 }
 \description{
-Compute elastic net S-estimates (PENSE estimates) along a grid of penalization levels with optional
-penalty loadings for adaptive elastic net.
+Compute elastic net S-estimates (PENSE estimates) along a grid of penalization levels with
+optional penalty loadings for adaptive elastic net.
 }
 \section{Strategies for Using Starting Points}{
 
-The function supports several different strategies to compute, and use the provided starting points for
-optimizing the PENSE objective function.
+The function supports several different strategies to compute, and use the provided starting
+points for optimizing the PENSE objective function.
 
 Starting points are computed internally but can also be supplied via \code{other_starts}.
-By default, starting points are computed internally by the EN-PY procedure for penalization levels supplied
-in \code{enpy_lambda} (or the automatically generated grid of length \code{nlambda_enpy}).
-By default, starting points computed by the EN-PY procedure are \emph{shared} for all penalization levels in \code{lambda}
-(or the automatically generated grid of length \code{nlambda}).
-If the starting points should be \emph{specific} to the penalization level the starting points' penalization level,
-set the \code{enpy_specific} argument to \code{TRUE}.
+By default, starting points are computed internally by the EN-PY procedure for penalization
+levels supplied in \code{enpy_lambda} (or the automatically generated grid of length \code{nlambda_enpy}).
+By default, starting points computed by the EN-PY procedure are \emph{shared} for all penalization
+levels in \code{lambda} (or the automatically generated grid of length \code{nlambda}).
+If the starting points should be \emph{specific} to the penalization level the starting points'
+penalization level, set the \code{enpy_specific} argument to \code{TRUE}.
 
 In addition to EN-PY initial estimates, the algorithm can also use the "0-based" strategy if
-\code{add_zero_based = TRUE} (by default). Here, the 0-vector is used to start the optimization at the largest
-penalization level in \code{lambda}. At subsequent penalization levels, the solution at the previous penalization level
-is also used as starting point.
+\code{add_zero_based = TRUE} (by default). Here, the 0-vector is used to start the optimization at
+the largest penalization level in \code{lambda}. At subsequent penalization levels, the solution at
+the previous penalization level is also used as starting point.
 
-At every penalization level, all starting points are explored using the loose numerical tolerance \code{explore_tol}.
-Only the best \code{explore_solutions} are computed to the stringent numerical tolerance \code{eps}.
-Finally, only the best \code{max_solutions} are retained and carried forward as starting points for the subsequent
-penalization level.
+At every penalization level, all starting points are explored using the loose numerical
+tolerance \code{explore_tol}. Only the best \code{explore_solutions} are computed to the stringent
+numerical tolerance \code{eps}.
+Finally, only the best \code{max_solutions} are retained and carried forward as starting points for
+the subsequent penalization level.
 }
 
 \section{Deprecated Arguments}{

@@ -8,41 +8,53 @@
 \alias{as_starting_point.pense_cvfit}
 \title{Create Starting Points for the PENSE Algorithm}
 \usage{
-starting_point(beta, intercept, lambda)
+starting_point(beta, intercept, lambda, alpha)
 
 as_starting_point(object, specific = FALSE, ...)
 
 \method{as_starting_point}{enpy_starting_points}(object, specific = FALSE, ...)
 
-\method{as_starting_point}{pense_fit}(object, specific = FALSE, lambda, ...)
+\method{as_starting_point}{pense_fit}(object, specific = FALSE, alpha, lambda, ...)
 
 \method{as_starting_point}{pense_cvfit}(
   object,
   specific = FALSE,
+  alpha,
   lambda = c("min", "se"),
   se_mult = 1,
   ...
 )
 }
 \arguments{
-\item{beta}{beta coefficients at the starting point. Can be a numeric vector, a sparse vector of class
-\link[Matrix:sparseVector-class]{dsparseVector}, or a sparse matrix of class
-\link[Matrix:CsparseMatrix-class]{dgCMatrix} with a single column.}
+\item{beta}{beta coefficients at the starting point. Can be a numeric vector,
+a sparse vector of class \link[Matrix:sparseVector-class]{dsparseVector},
+or a sparse matrix of class \link[Matrix:CsparseMatrix-class]{dgCMatrix} with a single column.}
 
 \item{intercept}{intercept coefficient at the starting point.}
 
-\item{lambda}{optionally either a string specifying which penalty level to use (\code{"min"} or \code{"se"}) or a numeric
-vector of the penalty levels to extract from \code{object}. Penalization levels not present in \code{object}
-are ignored with a warning. If \code{NULL}, all estimates in \code{object} are extracted.}
+\item{lambda, alpha}{optional penalization parameters.
+If missing, the starting point is used at \emph{every} penalization level,
+otherwise, only at this penalization level.}
+
+\item{alpha}{optional value for the \code{alpha} hyper-parameter.
+If given, only estimates with matching \code{alpha} values are extracted.
+Values not present in \code{object} are ignored with a warning.}
 
 \item{object}{an object with estimates to use as starting points.}
 
-\item{specific}{whether the estimates should be used as starting points only at the penalization level they
-are computed for. Defaults to using the estimates as starting points for all penalization levels.}
+\item{specific}{whether the estimates should be used as starting points only at
+the penalization level they are computed for.
+Defaults to using the estimates as starting points for all penalization levels.}
 
 \item{...}{further arguments passed to or from other methods.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
+
+\item{lambda}{optionally either a string specifying which penalty level to use
+(\code{"min"} or \code{"se"}) or a numeric vector of the penalty levels to extract from \code{object}.
+Penalization levels not present in \code{object} are ignored with a warning.
+If \code{NULL}, all estimates in \code{object} are extracted.
+If a numeric vector, \code{alpha} must be given and a single number.}
 }
 \value{
 an object of type \code{starting_points} to be used as starting point for \code{\link[=pense]{pense()}}.
@@ -53,22 +65,25 @@ Multiple starting points can be created by combining starting points via
 \code{c(starting_point_1, starting_point_2, ...)}.
 }
 \details{
-A starting points can either be \emph{shared}, i.e., used for every penalization level PENSE estimates are computed for,
-or \emph{specific} to one penalization level.
-To create a specific starting point, provide the penalization level as \code{lambda}. If \code{lambda} is missing,
-a shared starting point is created.
-Shared and specific starting points can all be combined into a single list of starting points, with
-\code{\link[=pense]{pense()}} handling them correctly.
-Note that specific starting points will lead to the \code{lambda} value being added to the grid of penalization levels.
+A starting points can either be \emph{shared}, i.e., used for every penalization level PENSE
+estimates are computed for, or \emph{specific} to one penalization level.
+To create a specific starting point, provide the penalization parameters \code{lambda} and \code{alpha}.
+If \code{lambda} or \code{alpha} are missing, a shared starting point is created.
+Shared and specific starting points can all be combined into a single list of starting points,
+with \code{\link[=pense]{pense()}} handling them correctly.
+Note that specific starting points will lead to the \code{lambda} value being added to the
+grid of penalization levels.
 See \code{\link[=pense]{pense()}} for details.
 
-Starting points computed via \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} are by default \emph{shared} starting points but can
-be transformed to \emph{specific} starting points via \code{enpy_starting_point(..., specific = TRUE)}.
+Starting points computed via \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} are by default \emph{shared} starting points
+but can be transformed to \emph{specific} starting points via
+\code{as_starting_point(..., specific = TRUE)}.
 
-When creating starting points from cross-validated fits, it is possible to extract only the estimate with best
-CV performance (\code{lambda = "min"}), or the estimate with CV performance statistically indistinguishable from the
-best performance (\code{lambda = "se"}). This is determined to be the estimate with prediction performance
-within \code{se_mult * cv_se} from the best model.
+When creating starting points from cross-validated fits, it is possible to extract only the
+estimate with best CV performance (\code{lambda = "min"}), or the estimate with CV performance
+statistically indistinguishable from the best performance (\code{lambda = "se"}).
+This is determined to be the estimate with prediction performance within
+\code{se_mult * cv_se} from the best model.
 }
 \seealso{
 Other functions for initial estimates: 

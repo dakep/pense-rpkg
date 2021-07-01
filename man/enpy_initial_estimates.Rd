@@ -25,44 +25,48 @@ enpy_initial_estimates(
 
 \item{y}{vector of response values of length \code{n}.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
+is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
+but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{lambda}{a vector of positive values of penalization levels.}
 
-\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5.}
+\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
-\item{cc}{cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
-Normal distribution.}
+\item{cc}{cutoff value for the bisquare rho function. By default, chosen to yield a consistent
+estimate for the Normal distribution.}
 
 \item{intercept}{include an intercept in the model.}
 
-\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{enpy_opts}{options for the EN-PY algorithm, created with the \code{\link[=enpy_options]{enpy_options()}} function.}
 
-\item{mscale_opts}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+\item{mscale_opts}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}}
+for details.}
 
 \item{eps}{numerical tolerance.}
 
 \item{sparse}{use sparse coefficient vectors.}
 
-\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
+\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
 }
 \description{
 Compute initial estimates for the EN S-estimator using the EN-PY procedure.
 }
 \details{
-If these manually computed initial estimates are intended as starting points for \code{\link[=pense]{pense()}}, they are by default
-\emph{shared} for all penalization levels.
+If these manually computed initial estimates are intended as starting points for \code{\link[=pense]{pense()}},
+they are by default \emph{shared} for all penalization levels.
 To restrict the use of the initial estimates to the penalty level they were computed for, use
 \code{as_starting_point(..., specific = TRUE)}. See \code{\link[=as_starting_point]{as_starting_point()}} for details.
 }
 \references{
 Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
-Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
+Robust elastic net estimators for variable selection and identification of
+proteomic biomarkers.
 \emph{Ann. Appl. Stat.} \strong{13} (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
 }
 \seealso{

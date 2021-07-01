@@ -33,8 +33,8 @@ Coefficients are always returned on the original scale. This can fail for variab
 proportion of a single value (e.g., zero-inflated data). In this case, either compute with
 \code{standardize = FALSE} or standardize the data manually.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL},
+\code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
 \item{cv_k}{number of folds per cross-validation.}
 
@@ -58,76 +58,80 @@ can not be used in parallel R sessions on the same host.}
   Arguments passed on to \code{\link[=pense]{pense}}
   \describe{
     \item{\code{nlambda}}{number of penalization levels.}
-    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
+    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero). The default depends on
+the sample size relative to the number of variables and \code{alpha}. If more observations than
+variables are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
     \item{\code{nlambda_enpy}}{number of penalization levels where the EN-PY initial estimate is computed.}
-    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
-    \item{\code{enpy_lambda}}{optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
-computed. If given and not \code{NULL}, \code{nlambda_enpy} is ignored.}
+    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for \code{alpha} > 0.}
+    \item{\code{enpy_lambda}}{optional user-supplied sequence of penalization levels at which EN-PY
+initial estimates are computed. If given and not \code{NULL}, \code{nlambda_enpy} is ignored.}
     \item{\code{other_starts}}{a list of other staring points, created by \code{\link[=starting_point]{starting_point()}}.
 If the output of \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} is given, the starting points will be \emph{shared}
 among all penalization levels.
 Note that if a the starting point is \emph{specific} to a penalization level, this penalization
-level is added to the grid of penalization levels (either the manually specified grid in \code{lambda}
-or the automatically generated grid of size \code{nlambda}).
+level is added to the grid of penalization levels (either the manually specified grid in
+\code{lambda} or the automatically generated grid of size \code{nlambda}).
 If \code{standardize = TRUE}, the starting points are also scaled.}
     \item{\code{intercept}}{include an intercept in the model.}
-    \item{\code{bdp}}{desired breakdown point of the estimator, between 0 and 0.5.}
-    \item{\code{cc}}{tuning constant for the S-estimator. Default is to chosen based on the breakdown point \code{bdp}.
-Does \emph{not} affect the estimated coefficients, only the estimated scale of the residuals.}
+    \item{\code{bdp}}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
+    \item{\code{cc}}{tuning constant for the S-estimator. Default is to chosen based on the breakdown
+point \code{bdp}. Does \emph{not} affect the estimated coefficients, only the estimated scale of
+the residuals.}
     \item{\code{eps}}{numerical tolerance.}
     \item{\code{explore_solutions}}{number of solutions to compute up to the desired precision \code{eps}.}
-    \item{\code{explore_tol}}{numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via \code{algorithm_opts}.}
-    \item{\code{explore_it}}{numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than \code{eps} to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via \code{algorithm_opts}.}
+    \item{\code{explore_tol}}{numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via \code{algorithm_opts}.}
+    \item{\code{explore_it}}{numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via \code{algorithm_opts}.}
     \item{\code{max_solutions}}{only retain up to \code{max_solutions} unique solutions per penalization level.}
-    \item{\code{comparison_tol}}{numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than \code{comparison_tol}, two solutions are deemed equal if the squared difference
-of the intercepts is less than \code{comparison_tol} and the squared \eqn{L_2} norm of the
-difference vector is less than \code{comparison_tol}.}
-    \item{\code{add_zero_based}}{also consider the 0-based regularization path. See details for a description.}
-    \item{\code{enpy_specific}}{use the EN-PY initial estimates only at the penalization level they are computed for.
-See details for a description.}
+    \item{\code{comparison_tol}}{numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution If this is less than \code{comparison_tol}, two solutions are deemed
+equal if the squared difference of the intercepts is less than \code{comparison_tol} and the
+squared \eqn{L_2} norm of the difference vector is less than \code{comparison_tol}.}
+    \item{\code{add_zero_based}}{also consider the 0-based regularization path. See details for a
+description.}
+    \item{\code{enpy_specific}}{use the EN-PY initial estimates only at the penalization level they
+are computed for. See details for a description.}
     \item{\code{sparse}}{use sparse coefficient vectors.}
-    \item{\code{ncores}}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
-    \item{\code{algorithm_opts}}{options for the MM algorithm to compute the estimates. See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for
-details.}
-    \item{\code{mscale_opts}}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+    \item{\code{ncores}}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
+    \item{\code{algorithm_opts}}{options for the MM algorithm to compute the estimates.
+See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
+    \item{\code{mscale_opts}}{options for the M-scale estimation. See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}}
+for details.}
     \item{\code{enpy_opts}}{options for the ENPY initial estimates, created with the
 \code{\link[=enpy_options]{enpy_options()}} function. See \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} for details.}
-    \item{\code{cv_objective}}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating prediction performance
-via cross-validation.}
+    \item{\code{cv_objective}}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating
+prediction performance via cross-validation.}
   }}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
+is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
+but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{alpha_preliminary}{\code{alpha} parameter for the preliminary estimate.}
 
 \item{exponent}{the exponent for computing the penalty loadings based on the preliminary estimate.}
 }
 \value{
-a list with components:
+a list-like object with the same components as returned by \code{\link[=pense]{pense()}},
+plus the following:
 \describe{
-\item{\code{lambda}}{the sequence of penalization levels.}
 \item{\code{cvres}}{data frame of average cross-validated performance.}
-\item{\code{cv_replications}}{matrix of cross-validated performance metrics, one column per replication.
-Rows are in the same order as in \code{cvres}.}
-\item{\code{call}}{the original call.}
-\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned by \code{\link[=pense]{pense()}}.}
 }
 
-the object returned by \code{adapense_cv()} has additional components
+a list-like object as returned by \code{\link[=pense_cv]{pense_cv()}} plus the following
 \describe{
 \item{\code{preliminary}}{the CV results for the preliminary estimate.}
+\item{\code{exponent}}{exponent used to compute the penalty loadings.}
 \item{\code{penalty_loadings}}{the penalty loadings used for the adaptive PENSE estimate.}
 }
 }

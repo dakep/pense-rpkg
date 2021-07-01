@@ -4,7 +4,7 @@
 \alias{plot.pense_fit}
 \title{Plot Method for Penalized Estimates}
 \usage{
-\method{plot}{pense_fit}(x, ...)
+\method{plot}{pense_fit}(x, alpha, ...)
 }
 \arguments{
 \item{x}{fitted estimates.}

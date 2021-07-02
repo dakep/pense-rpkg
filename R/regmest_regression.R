@@ -215,6 +215,9 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("Function `cv_metric` must accept at least 1 argument.")
   }
 
+  # Get a common seed to be used for every alpha value
+  fit_seed <- sample.int(.Machine$integer.max, 1L)
+
   cv_curves <- mapply(
     args$alpha, args$lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
@@ -232,6 +235,7 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
         lapply(cv_fit$estimates, `[[`, 1L)
       }
 
+      set.seed(fit_seed)
       cv_perf <- .run_replicated_cv(args$std_data,
                                     cv_k = cv_k,
                                     cv_repl = cv_repl,

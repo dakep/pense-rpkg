@@ -289,6 +289,9 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("Function `cv_metric` must accept at least 1 argument.")
   }
 
+  # Get a common seed to be used for every alpha value
+  fit_seed <- sample.int(.Machine$integer.max, 1L)
+
   cv_curves <- mapply(
     args$alpha, args$lambda, args$enpy_lambda_inds,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
@@ -312,6 +315,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
         lapply(cv_fit$estimates, `[[`, 1L)
       }
 
+      set.seed(fit_seed)
       cv_perf <- .run_replicated_cv(args$std_data,
                                     cv_k = cv_k,
                                     cv_repl = cv_repl,

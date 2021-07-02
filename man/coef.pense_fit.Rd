@@ -7,7 +7,7 @@
 \method{coef}{pense_fit}(
   object,
   lambda,
-  alpha,
+  alpha = NULL,
   sparse = NULL,
   standardized = FALSE,
   exact = deprecated(),
@@ -20,7 +20,7 @@
 
 \item{lambda}{a single value of the penalty parameter.}
 
-\item{alpha}{Either a single number or missing.
+\item{alpha}{Either a single number or \code{NULL} (default).
 If given, only fits with the given \code{alpha} value are considered.
 If \code{object} was fit with multiple \code{alpha} values, the parameter \code{alpha} must not be missing.}
 

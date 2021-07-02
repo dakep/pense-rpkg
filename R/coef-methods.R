@@ -5,7 +5,7 @@
 #'
 #' @param object PENSE regularization path to extract coefficients from.
 #' @param lambda a single value of the penalty parameter.
-#' @param alpha Either a single number or missing.
+#' @param alpha Either a single number or `NULL` (default).
 #'    If given, only fits with the given `alpha` value are considered.
 #'    If `object` was fit with multiple `alpha` values, the parameter `alpha` must not be missing.
 #' @param sparse should coefficients be returned as sparse or dense vectors? Defaults to the
@@ -29,7 +29,7 @@
 #' @export
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom rlang warn
-coef.pense_fit <- function (object, lambda, alpha, sparse = NULL, standardized = FALSE,
+coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standardized = FALSE,
                             exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
     deprecate_stop('2.0.0', 'coef(exact=)')
@@ -47,12 +47,14 @@ coef.pense_fit <- function (object, lambda, alpha, sparse = NULL, standardized =
 
   lambda <- .as(lambda[[1L]], 'numeric')
 
-  if (isTRUE(lambda > object$lambda[[1L]]) && isTRUE(sum(abs(object$estimates[[1L]]$beta)) < .Machine$double.eps)) {
-    return(.concat_coefs(object$estimates[[1L]], object$call, sparse = sparse, envir = parent.frame(),
-                         standardized = standardized, concat = concat))
-  }
+  # if (isTRUE(lambda > object$lambda[[1L]]) &&
+  #     isTRUE(sum(abs(object$estimates[[1L]]$beta)) < .Machine$double.eps)) {
+  #   return(.concat_coefs(object$estimates[[1L]], object$call, sparse = sparse,
+  #                        envir = parent.frame(),
+  #                        standardized = standardized, concat = concat))
+  # }
 
-  lambda_index <- .lambda_index_cvfit(object, lambda = lambda, alpha = alpha, se_mult = se_mult)
+  lambda_index <- .lambda_index_cvfit(object, lambda = lambda, alpha = alpha, se_mult = 0)
   if (length(lambda_index) > 1L) {
     warn(paste("Requested penalization level not part of the sequence.",
                "Returning interpolated coefficients."))
@@ -83,7 +85,7 @@ coef.pense_fit <- function (object, lambda, alpha, sparse = NULL, standardized =
 #' @param lambda either a string specifying which penalty level to use
 #'    (`"min"`, `"se"`, `"{x}-se`")
 #'    or a single numeric value of the penalty parameter. See details.
-#' @param alpha Either a single number or missing.
+#' @param alpha Either a single number or `NULL` (default).
 #'    If given, only fits with the given `alpha` value are considered.
 #'    If `lambda` is a numeric value and `object` was fit with multiple `alpha`
 #'    values, the parameter `alpha` must not be missing.
@@ -105,7 +107,7 @@ coef.pense_fit <- function (object, lambda, alpha, sparse = NULL, standardized =
 #' @family functions for extracting components
 #' @example examples/pense_fit.R
 #' @export
-coef.pense_cvfit <- function (object, lambda = 'min', alpha, se_mult = 1, sparse = NULL,
+coef.pense_cvfit <- function (object, lambda = 'min', alpha = NULL, se_mult = 1, sparse = NULL,
                               standardized = FALSE,
                               exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
@@ -137,6 +139,15 @@ coef.pense_cvfit <- function (object, lambda = 'min', alpha, se_mult = 1, sparse
 .lambda_index_cvfit <- function (object, lambda, alpha, se_mult) {
   if (is.character(lambda) && !identical(lambda, 'se')) {
     se_mult <- .parse_se_string(lambda, only_fact = TRUE)
+  }
+
+  if (missing(alpha) || is.null(alpha)) {
+    if (length(object$alpha) > 1L) {
+      warn(paste("`object` was fit for multiple `alpha` values.",
+                 "Using first value in `object$alpha`.",
+                 "To select a different value, specify parameter `alpha`."))
+    }
+    alpha <- object$alpha[[1L]]
   }
 
   if (is.character(lambda)) {
@@ -179,11 +190,6 @@ coef.pense_cvfit <- function (object, lambda = 'min', alpha, se_mult = 1, sparse
 
   if (length(alpha) > 1L) {
     warn("Only the first element in `alpha` is used.")
-  }
-
-  if (length(object$alpha) > 1L && (missing(alpha) || is.null(alpha))) {
-    abort(paste("`object` was fit for multiple `alpha` values.",
-                "Use the `alpha` parameter to select one of these values."))
   }
 
   alpha <- .as(alpha[[1L]], 'numeric')

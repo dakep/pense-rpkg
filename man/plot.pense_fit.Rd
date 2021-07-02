@@ -9,6 +9,9 @@
 \arguments{
 \item{x}{fitted estimates.}
 
+\item{alpha}{Plot the coefficient path for the fit with the given hyper-parameter value.
+If missing of \code{NULL}, the first value in \code{x$alpha} is used.}
+
 \item{...}{currently ignored.}
 }
 \description{

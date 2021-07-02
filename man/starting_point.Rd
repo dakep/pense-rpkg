@@ -32,9 +32,11 @@ or a sparse matrix of class \link[Matrix:CsparseMatrix-class]{dgCMatrix} with a 
 
 \item{intercept}{intercept coefficient at the starting point.}
 
-\item{lambda, alpha}{optional penalization parameters.
-If missing, the starting point is used at \emph{every} penalization level,
-otherwise, only at this penalization level.}
+\item{lambda}{optionally either a string specifying which penalty level to use
+(\code{"min"} or \code{"se"}) or a numeric vector of the penalty levels to extract from \code{object}.
+Penalization levels not present in \code{object} are ignored with a warning.
+If \code{NULL}, all estimates in \code{object} are extracted.
+If a numeric vector, \code{alpha} must be given and a single number.}
 
 \item{alpha}{optional value for the \code{alpha} hyper-parameter.
 If given, only estimates with matching \code{alpha} values are extracted.
@@ -49,12 +51,6 @@ Defaults to using the estimates as starting points for all penalization levels.}
 \item{...}{further arguments passed to or from other methods.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
-
-\item{lambda}{optionally either a string specifying which penalty level to use
-(\code{"min"} or \code{"se"}) or a numeric vector of the penalty levels to extract from \code{object}.
-Penalization levels not present in \code{object} are ignored with a warning.
-If \code{NULL}, all estimates in \code{object} are extracted.
-If a numeric vector, \code{alpha} must be given and a single number.}
 }
 \value{
 an object of type \code{starting_points} to be used as starting point for \code{\link[=pense]{pense()}}.

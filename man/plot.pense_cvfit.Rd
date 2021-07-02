@@ -4,12 +4,17 @@
 \alias{plot.pense_cvfit}
 \title{Plot Method for Penalized Estimates With Cross-Validation}
 \usage{
-\method{plot}{pense_cvfit}(x, what = c("cv", "coef.path"), alpha, se_mult = 1, ...)
+\method{plot}{pense_cvfit}(x, what = c("cv", "coef.path"), alpha = NULL, se_mult = 1, ...)
 }
 \arguments{
 \item{x}{fitted estimates with cross-validation information.}
 
 \item{what}{plot either the CV performance or the coefficient path.}
+
+\item{alpha}{If \code{what = "cv"}, only CV performance for fits with matching \code{alpha} are plotted.
+In case \code{alpha} is missing or \code{NULL}, all fits in \code{x} are plotted.
+If \code{what = "coef.path"}, plot the coefficient path for the fit with the given
+hyper-parameter value or, in case \code{alpha} is missing, for the first value in \code{x$alpha}.}
 
 \item{se_mult}{if plotting CV performance, multiplier of the estimated SE.}
 

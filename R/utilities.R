@@ -217,9 +217,16 @@ rho_function <- function (rho) {
 #'    a sparse vector of class [dsparseVector][Matrix::sparseVector-class],
 #'    or a sparse matrix of class [dgCMatrix][Matrix::CsparseMatrix-class] with a single column.
 #' @param intercept intercept coefficient at the starting point.
-#' @param lambda,alpha optional penalization parameters.
-#'    If missing, the starting point is used at *every* penalization level,
-#'    otherwise, only at this penalization level.
+#' @param alpha optional value(s) for the `alpha` hyper-parameter.
+#'    For `starting_point()`, makes the starting point specific to the given `alpha` value.
+#'    For `as_starting_point()`, only estimates with matching `alpha` values are extracted.
+#'    Values not present in `object` are ignored with a warning.
+#' @param lambda optional penalization level(s).
+#'    For `starting_point()`, makes the starting point specific to the given `alpha` value.
+#'    For `as_starting_point()`, only estimates with matching `alpha` and `lambda` values
+#'    are extracted.
+#'    If `lambda` is given, `alpha` must be given and be a single number.
+#'    Penalization levels not present in `object` are ignored with a warning.
 #' @return an object of type `starting_points` to be used as starting point for [pense()].
 #'
 #' @family functions for initial estimates
@@ -273,12 +280,6 @@ as_starting_point.enpy_starting_points <- function (object, specific = FALSE, ..
 }
 
 #' @rdname starting_point
-#' @param alpha optional value for the `alpha` hyper-parameter.
-#'    If given, only estimates with matching `alpha` values are extracted.
-#'    Values not present in `object` are ignored with a warning.
-#' @param lambda optional penalization level(s) to extract from `object`.
-#'    Penalization levels not present in `object` are ignored with a warning.
-#'    If `lambda` is given, `alpha` must be given and a single number.
 #' @export
 #' @importFrom rlang warn abort
 as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda, ...) {

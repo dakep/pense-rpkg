@@ -3,6 +3,8 @@
 #' Plot the coefficient path for fitted penalized elastic net S- or LS-estimates of regression.
 #'
 #' @param x fitted estimates.
+#' @param alpha Plot the coefficient path for the fit with the given hyper-parameter value.
+#'   If missing of `NULL`, the first value in `x$alpha` is used.
 #' @param ... currently ignored.
 #'
 #' @family functions for plotting and printing
@@ -30,6 +32,10 @@ plot.pense_fit <- function (x, alpha, ...) {
 #'
 #' @param x fitted estimates with cross-validation information.
 #' @param what plot either the CV performance or the coefficient path.
+#' @param alpha If `what = "cv"`, only CV performance for fits with matching `alpha` are plotted.
+#'   In case `alpha` is missing or `NULL`, all fits in `x` are plotted.
+#'   If `what = "coef.path"`, plot the coefficient path for the fit with the given
+#'   hyper-parameter value or, in case `alpha` is missing, for the first value in `x$alpha`.
 #' @param se_mult if plotting CV performance, multiplier of the estimated SE.
 #' @param ... currently ignored.
 #'
@@ -37,7 +43,7 @@ plot.pense_fit <- function (x, alpha, ...) {
 #' @example examples/pense_fit.R
 #' @export
 #' @importFrom rlang abort warn
-plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1, ...) {
+plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha = NULL, se_mult = 1, ...) {
   what <- match.arg(what)
 
   if (!any(x$cvres$cvse > 0)) {
@@ -52,10 +58,11 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1,
     if (isFALSE(x$call$fit_all)) {
       warn("`x` was created with `fit_all = FALSE`. Coefficient path not available.")
     }
-    if (missing(alpha) || is.null(alpha)) {
-      alpha <- x$alpha[[1L]]
+    alpha <- if (is.null(alpha)) {
+      x$alpha[[1L]]
+    } else {
+      .as(alpha[[1L]], 'numeric')
     }
-    alpha <- .as(alpha[[1L]], 'numeric')
     cvres_rows <- which((x$cvres$alpha - alpha)^2 < .Machine$double.eps)
     if (length(cvres_rows) == 0L) {
       abort("Requested `alpha` not available in the fit `object`.")
@@ -76,13 +83,13 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1,
 
 #' @importFrom graphics plot segments abline
 #' @importFrom rlang abort warn
-.plot_cv_res <- function (object, alpha, se_mult) {
+.plot_cv_res <- function (object, alpha = NULL, se_mult) {
   measure_label <- switch(object$cv_measure, mape = "Median absolute prediction error",
                           rmspe = "Root mean square prediction error",
                           auroc = "1 - AUROC",
                           tau_size = expression(paste(tau, "-scale of the prediction error")),
                           "Prediction error")
-  if (missing(alpha) || is.null(alpha)) {
+  if (is.null(alpha)) {
     alpha_seq <- object$alpha
   } else {
     alpha_seq <- object$alpha[na.omit(.approx_match(.as(alpha, 'numeric'), object$alpha))]

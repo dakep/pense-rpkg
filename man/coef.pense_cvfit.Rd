@@ -7,7 +7,7 @@
 \method{coef}{pense_cvfit}(
   object,
   lambda = "min",
-  alpha,
+  alpha = NULL,
   se_mult = 1,
   sparse = NULL,
   standardized = FALSE,
@@ -23,7 +23,7 @@
 (\code{"min"}, \code{"se"}, \verb{"\{x\}-se}")
 or a single numeric value of the penalty parameter. See details.}
 
-\item{alpha}{Either a single number or missing.
+\item{alpha}{Either a single number or \code{NULL} (default).
 If given, only fits with the given \code{alpha} value are considered.
 If \code{lambda} is a numeric value and \code{object} was fit with multiple \code{alpha}
 values, the parameter \code{alpha} must not be missing.}

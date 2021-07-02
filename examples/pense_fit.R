@@ -7,11 +7,11 @@ regpath <- pense(x, freeny$y, alpha = 0.5)
 plot(regpath)
 
 # Extract the coefficients at a certain penalization level
-coef(regpath, lambda = regpath$lambda[40])
+coef(regpath, lambda = regpath$lambda[[1]][[40]])
 
 # What penalization level leads to good prediction performance?
-cv_results <- pense_cv(x, freeny$y, alpha = 0.5, cv_repl = 2,
-                       cv_k = 4)
+cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
+                       cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)
 
 # Extract the coefficients at the penalization level with
@@ -19,4 +19,4 @@ plot(cv_results, se_mult = 1)
 coef(cv_results)
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
-coef(cv_results, lambda = 'se')
+coef(cv_results, lambda = '1-se')

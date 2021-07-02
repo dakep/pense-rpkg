@@ -69,7 +69,8 @@ for details.}
 \value{
 a list-like object with the following items
 \describe{
-\item{\code{lambda}}{the sequence of penalization parameters.}
+\item{\code{alpha}}{the sequence of \code{alpha} parameters.}
+\item{\code{lambda}}{a list of sequences of penalization levels, one per \code{alpha} parameter.}
 \item{\code{estimates}}{a list of estimates. Each estimate contains the following information:
 \describe{
 \item{\code{intercept}}{intercept estimate.}

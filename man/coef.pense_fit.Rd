@@ -7,6 +7,7 @@
 \method{coef}{pense_fit}(
   object,
   lambda,
+  alpha,
   sparse = NULL,
   standardized = FALSE,
   exact = deprecated(),
@@ -19,27 +20,32 @@
 
 \item{lambda}{a single value of the penalty parameter.}
 
-\item{sparse}{should coefficients be returned as sparse or dense vectors? Defaults to the \code{sparse} argument
-supplied to \code{\link[=pense]{pense()}}. Can also be set to \code{sparse = 'matrix'}, in which case a sparse matrix
+\item{alpha}{Either a single number or missing.
+If given, only fits with the given \code{alpha} value are considered.
+If \code{object} was fit with multiple \code{alpha} values, the parameter \code{alpha} must not be missing.}
+
+\item{sparse}{should coefficients be returned as sparse or dense vectors? Defaults to the
+sparsity setting in \code{object}.
+Can also be set to \code{sparse = 'matrix'}, in which case a sparse matrix
 is returned instead of a sparse vector.}
 
 \item{standardized}{return the standardized coefficients.}
 
-\item{exact}{defunct Always gives a warning if \code{lambda} is not part of the fitted sequence and hence coefficients
-are interpolated.}
-
-\item{correction}{defunct.}
+\item{exact, correction}{defunct.}
 
 \item{...}{currently not used.}
 }
 \value{
-either a numeric vector or a sparse vector of type \link[Matrix:sparseVector-class]{dsparseVector}
+either a numeric vector or a sparse vector of type
+\link[Matrix:sparseVector-class]{dsparseVector}
 of size \eqn{p + 1}, depending on the \code{sparse} argument.
-Note: prior to version 2.0.0 sparse coefficients were returned as sparse matrix of type \emph{dgCMatrix}.
-To get a sparse matrix, use \code{sparse = 'matrix'}.
+Note: prior to version 2.0.0 sparse coefficients were returned as sparse matrix
+of type \emph{dgCMatrix}.
+To get a sparse matrix as in previous versions, use \code{sparse = 'matrix'}.
 }
 \description{
-Extract coefficients from a PENSE (or LS-EN) regularization path fitted by \code{\link[=pense]{pense()}} or \code{\link[=elnet]{elnet()}}.
+Extract coefficients from an adaptive PENSE (or LS-EN) regularization path fitted by \code{\link[=pense]{pense()}}
+or \code{\link[=elnet]{elnet()}}.
 }
 \examples{
 # Compute the PENSE regularization path for Freeny's revenue data
@@ -66,8 +72,8 @@ coef(cv_results)
 coef(cv_results, lambda = 'se')
 }
 \seealso{
-\code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficients from a PENSE fit with hyper-parameters chosen by
-cross-validation
+\code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficients from a PENSE fit with
+hyper-parameters chosen by cross-validation
 
 Other functions for extracting components: 
 \code{\link{coef.pense_cvfit}()},

@@ -39,7 +39,8 @@
 #'
 #' @return a list-like object with the following items
 #'    \describe{
-#'      \item{`lambda`}{the sequence of penalization parameters.}
+#'      \item{`alpha`}{the sequence of `alpha` parameters.}
+#'      \item{`lambda`}{a list of sequences of penalization levels, one per `alpha` parameter.}
 #'      \item{`estimates`}{a list of estimates. Each estimate contains the following information:
 #'         \describe{
 #'           \item{`intercept`}{intercept estimate.}
@@ -90,10 +91,14 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
     NULL
   }
 
-  structure(list(estimates = .metrics_attrib(res$estimates, res$metrics), call = call, alpha = args$alpha,
-                 predictions = predictions,
-                 lambda = unlist(lapply(res$estimates, `[[`, 'lambda'), use.names = FALSE, recursive = FALSE)),
-            class = c('en', 'pense_fit'))
+  structure(list(
+    estimates = .metrics_attrib(res$estimates, res$metrics),
+    call = call,
+    alpha = args$alpha,
+    predictions = predictions,
+    lambda = list(unlist(lapply(res$estimates, `[[`, 'lambda'),
+                         use.names = FALSE, recursive = FALSE))),
+    class = c('en', 'pense_fit'))
 }
 
 
@@ -111,12 +116,12 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #'
 #' @return a list with components:
 #'    \describe{
-#'      \item{`lambda`}{the sequence of penalization levels.}
+#'      \item{`alpha`}{the sequence of `alpha` parameters.}
+#'      \item{`lambda`}{a list of sequences of penalization levels, one per `alpha` parameter.}
 #'      \item{`cvres`}{data frame of average cross-validated performance.}
-#'      \item{`cv_replications`}{matrix of cross-validated performance metrics, one column per replication.
-#'                               Rows are in the same order as in `cvres`.}
 #'      \item{`call`}{the original call.}
-#'      \item{`estimates`}{the estimates fitted on the full data. Same format as returned by [elnet()].}
+#'      \item{`estimates`}{the estimates fitted on the full data. Same format as returned
+#'                         by [elnet()].}
 #'    }
 #'
 #' @family functions for computing non-robust estimates
@@ -143,7 +148,8 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
   }
 
   if (is_present(ncores)) {
-    deprecate_warn('2.0.0', 'elnet_cv(ncores=)', details = "Please specify the `parallel` cluster with argument `cl`.")
+    deprecate_warn('2.0.0', 'elnet_cv(ncores=)',
+                   details = "Please specify the `parallel` cluster with argument `cl`.")
   }
   if (!is.null(cl) && !is(cl, 'cluster')) {
     abort("`cl` must be a valid `parallel` cluster.")
@@ -179,7 +185,8 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
   cv_perf <- .run_replicated_cv(args$std_data, cv_k = cv_k, cv_repl = cv_repl, metric = cv_metric, cv_est_fun = cv_fun,
                                 par_cluster = cl)
 
-  cv_perf_df <- data.frame(lambda = args$lambda, cvavg = rowMeans(cv_perf), cvse = 0)
+  cv_perf_df <- data.frame(lambda = args$lambda, alpha = args$alpha,
+                           cvavg = rowMeans(cv_perf), cvse = 0)
 
   if (cv_repl > 1L) {
     cv_perf_df$cvse <- apply(cv_perf, 1, sd)
@@ -197,10 +204,14 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
   fit$estimates <- lapply(fit$estimates, function (est) {
     args$restore_coef_length(args$std_data$unstandardize_coefs(est))
   })
-  return(structure(list(call = call, cvres = cv_perf_df, cv_replications = cv_perf, cv_measure = cv_measure_str,
-                        lambda = args$lambda, alpha = args$alpha,
-                        estimates = .metrics_attrib(fit$estimates, fit$metrics)),
-                   class = c('pense_en', 'pense_cvfit')))
+  return(structure(list(
+    call = call,
+    cvres = cv_perf_df,
+    cv_measure = cv_measure_str,
+    lambda = list(args$lambda),
+    alpha = args$alpha,
+    estimates = .metrics_attrib(fit$estimates, fit$metrics)),
+    class = c('pense_en', 'pense_cvfit')))
 }
 
 ## Perform some final input adjustments and call the internal C++ code.

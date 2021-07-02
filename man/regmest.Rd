@@ -36,26 +36,27 @@ regmest(
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge penalty.}
 
 \item{nlambda}{number of penalization levels.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels.
+If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
-\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
+\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the
+largest level (i.e., the smallest value for which all coefficients are zero).
+The default depends on the sample size relative to the number of variables and \code{alpha}.
+If more observations than variables are available, the default is \code{1e-3 * alpha},
+otherwise \code{1e-2 * alpha}.}
 
 \item{scale}{fixed scale of the residuals.}
 
-\item{starting_points}{a list of staring points, created by \code{\link[=starting_point]{starting_point()}}. The starting points are shared
-among all penalization levels.}
+\item{starting_points}{a list of staring points, created by \code{\link[=starting_point]{starting_point()}}.
+The starting points are shared among all penalization levels.}
 
-\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for \code{alpha} > 0.}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights)
+for different penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{intercept}{include an intercept in the model.}
 
@@ -65,38 +66,43 @@ coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
 
-\item{explore_tol}{numerical tolerance for exploring possible solutions. Should be (much) looser than \code{eps} to
-be useful.}
+\item{explore_tol}{numerical tolerance for exploring possible solutions.
+Should be (much) looser than \code{eps} to be useful.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
-\item{comparison_tol}{numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than \code{comparison_tol}, two solutions are deemed equal if the squared difference
-of the intercepts is less than \code{comparison_tol} and the squared \eqn{L_2} norm of the
-difference vector is less than \code{comparison_tol}.}
+\item{comparison_tol}{numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution.
+If this is less than \code{comparison_tol}, two solutions are deemed equal if the
+squared difference of the intercepts is less than \code{comparison_tol} and the squared
+\eqn{L_2} norm of the difference vector is less than \code{comparison_tol}.}
 
 \item{sparse}{use sparse coefficient vectors.}
 
-\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.}
+\item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.}
 
-\item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the M-estimates.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
+\item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the
+M-estimates. Coefficients are always returned on the original scale.
+This can fail for variables with a large proportion of a single value
+(e.g., zero-inflated data). In this case, either compute with
 \code{standardize = FALSE} or standardize the data manually.}
 
-\item{algorithm_opts}{options for the MM algorithm to compute estimates. See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
+\item{algorithm_opts}{options for the MM algorithm to compute estimates.
+See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
 
-\item{add_zero_based}{also consider the 0-based regularization path in addition to the given starting points.}
+\item{add_zero_based}{also consider the 0-based regularization path in addition to the given
+starting points.}
 
-\item{mscale_bdp, mscale_opts}{options for the M-scale estimate used to standardize the predictors
-(if \code{standardize = TRUE}).}
+\item{mscale_bdp, mscale_opts}{options for the M-scale estimate used to standardize
+the predictors (if \code{standardize = TRUE}).}
 }
 \value{
 a list-like object with the following items
 \describe{
-\item{\code{lambda}}{the sequence of penalization levels.}
+\item{\code{alpha}}{the sequence of \code{alpha} parameters.}
+\item{\code{lambda}}{a list of sequences of penalization levels, one per \code{alpha} parameter.}
 \item{\code{scale}}{the used scale of the residuals.}
 \item{\code{estimates}}{a list of estimates. Each estimate contains the following information:
 \describe{
@@ -105,7 +111,8 @@ a list-like object with the following items
 \item{\code{lambda}}{penalization level at which the estimate is computed.}
 \item{\code{alpha}}{\emph{alpha} hyper-parameter at which the estimate is computed.}
 \item{\code{objf_value}}{value of the objective function at the solution.}
-\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when computing the estimate.}
+\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when
+computing the estimate.}
 \item{\code{status}}{optional status message from the algorithm.}
 }
 }

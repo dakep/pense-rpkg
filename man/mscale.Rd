@@ -20,15 +20,16 @@ mscale(
 
 \item{bdp}{desired breakdown point (between 0 and 0.5).}
 
-\item{cc}{cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
-Normal distribution.}
+\item{cc}{cutoff value for the bisquare rho function.
+By default, chosen to yield a consistent estimate for the Normal distribution.}
 
-\item{opts}{a list of options for the M-scale estimation algorithm, see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}}
-for details.}
+\item{opts}{a list of options for the M-scale estimation algorithm,
+see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
 
 \item{delta}{deprecated. Use \code{bpd} instead.}
 
-\item{rho, eps, maxit}{deprecated. Instead set control options for the algorithm with the \code{opts} arguments.}
+\item{rho, eps, maxit}{deprecated. Instead set control options for the algorithm
+with the \code{opts} arguments.}
 }
 \value{
 the M-estimate of scale.

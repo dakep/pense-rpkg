@@ -18,10 +18,12 @@ mlocscale(
 
 \item{bdp}{desired breakdown point (between 0 and 0.5).}
 
-\item{scale_cc}{cutoff value for the bisquare \eqn{\rho} function for computing the scale estimate. By default, chosen
-to yield a consistent estimate for normally distributed values.}
+\item{scale_cc}{cutoff value for the bisquare \eqn{\rho} function for computing the
+scale estimate.
+By default, chosen to yield a consistent estimate for normally distributed values.}
 
-\item{location_rho, location_cc}{\eqn{\rho} function and cutoff value for computing the location estimate.
+\item{location_rho, location_cc}{\eqn{\rho} function and cutoff value for computing
+the location estimate.
 See \code{\link[=rho_function]{rho_function()}} for a list of available \eqn{\rho} functions.}
 
 \item{opts}{a list of options for the M-estimating equation,

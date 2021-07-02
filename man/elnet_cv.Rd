@@ -30,19 +30,25 @@ For binary classification, \code{y} should be a factor with 2 levels.}
 
 \item{cv_repl}{number of cross-validation replications.}
 
-\item{cv_metric}{either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, the number of arguments define the data the function receives.
-If the function takes a single argument, it is called with a single numeric vector of prediction errors.
-If the function takes two or more arguments, it is called with the predicted values as first argument
-and the true values as second argument.
+\item{cv_metric}{either a string specifying the performance metric to use, or a function to
+evaluate prediction errors in a single CV replication.
+If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of
+prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as
+first argument and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.}
 
-\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
-level with smallest average CV performance.}
+\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels.
+Can also be any combination of \code{"min"} and \code{"{x}-se"}, in which case only models at the
+penalization level with smallest average CV accuracy, or within \code{{x}} standard errors,
+respectively.
+Setting \code{fit_all} to \code{FALSE} is equivalent to \code{"min"}.
+Applies to all \code{alpha} value.}
 
-\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used if \code{ncores = 1}, because multi-threading
-can not be used in parallel R sessions on the same host.}
+\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combinatino with
+\code{ncores = 1}.}
 
 \item{ncores}{deprecated and not used anymore.}
 
@@ -73,12 +79,12 @@ for details.}
 \value{
 a list with components:
 \describe{
-\item{\code{lambda}}{the sequence of penalization levels.}
+\item{\code{alpha}}{the sequence of \code{alpha} parameters.}
+\item{\code{lambda}}{a list of sequences of penalization levels, one per \code{alpha} parameter.}
 \item{\code{cvres}}{data frame of average cross-validated performance.}
-\item{\code{cv_replications}}{matrix of cross-validated performance metrics, one column per replication.
-Rows are in the same order as in \code{cvres}.}
 \item{\code{call}}{the original call.}
-\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned by \code{\link[=elnet]{elnet()}}.}
+\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned
+by \code{\link[=elnet]{elnet()}}.}
 }
 }
 \description{
@@ -87,11 +93,12 @@ Perform (repeated) K-fold cross-validation for \code{\link[=elnet]{elnet()}}.
 \details{
 The built-in CV metrics are
 \describe{
-\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}} (default).}
+\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by
+\code{\link[=tau_size]{tau_size()}} (default).}
 \item{\code{"mape"}}{Median absolute prediction error.}
 \item{\code{"rmspe"}}{Root mean squared prediction error.}
-\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
-binary responses.}
+\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC).
+Only sensible for binary responses.}
 }
 }
 \examples{

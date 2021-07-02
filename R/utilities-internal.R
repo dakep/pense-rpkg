@@ -95,7 +95,10 @@
 ## @return a vector the same length as `x` with integers giving the position in
 ##         `table` of the first match if there is a match, or `NA_integer_`
 ##         otherwise.
-.approx_match <- function(x, table, eps = min(sqrt(.Machine$double.eps), 0.5 * min(x, table))) {
+.approx_match <- function(x, table, eps) {
+  if (missing(eps)) {
+    eps <- max(.Machine$double.eps, min(sqrt(.Machine$double.eps), 0.5 * min(x, table)))
+  }
   .Call(C_approx_match, as.numeric(x), as.numeric(table), as.numeric(eps[[1L]]))
 }
 
@@ -133,9 +136,11 @@ extract_metric <- function (metrics, attr, node) {
 ## @param std_data standardized full data set (standardized by `.standardize_data`)
 ## @param cv_k number of folds per CV split
 ## @param cv_repl number of CV replications.
-## @param cv_est_fun function taking the standardized training set and the indices of the left-out observations and
-##                   returns a list of estimates. The function always needs to return the same number of estimates!
-## @param metric function taking a vector of prediction errors and returning the scale of the prediction error.
+## @param cv_est_fun function taking the standardized training set and the indices of
+##    the left-out observations and returns a list of estimates.
+##    The function always needs to return the same number of estimates!
+## @param metric function taking a vector of prediction errors and returning the scale
+##    of the prediction error.
 #' @importFrom Matrix drop
 #' @importFrom rlang abort
 .run_replicated_cv <- function (std_data, cv_k, cv_repl, cv_est_fun, metric, par_cluster = NULL) {
@@ -168,22 +173,25 @@ extract_metric <- function (metrics, attr, node) {
   }, est_fun = est_fun)
 
   predictions_all <- split(predictions_all, rep(seq_len(cv_repl), each = cv_k))
-  prediction_metrics <- mapply(predictions_all, test_segments_list, FUN = function (predictions, test_inds) {
-    obs_order <- sort.list(unlist(test_inds, recursive = FALSE, use.names = FALSE))
-    ordered_predictions <- do.call(rbind, predictions)[obs_order, ]
+  prediction_metrics <- mapply(
+    predictions_all, test_segments_list,
+    FUN = function (predictions, test_inds) {
+      obs_order <- sort.list(unlist(test_inds, recursive = FALSE, use.names = FALSE))
+      ordered_predictions <- do.call(rbind, predictions)[obs_order, ]
 
-    if (call_with_errors) {
-      apply(ordered_predictions - std_data$y, 2, metric)
-    } else {
-      apply(ordered_predictions, 2, metric, std_data$y)
-    }
-  })
+      if (call_with_errors) {
+        apply(ordered_predictions - std_data$y, 2, metric)
+      } else {
+        apply(ordered_predictions, 2, metric, std_data$y)
+      }
+    })
   matrix(unlist(prediction_metrics, recursive = FALSE, use.names = FALSE), ncol = cv_repl)
 }
 
 ## Standardize data
 ##
-## @param x predictor matrix. Can also be a list with components `x` and `y`, in which case `y` is ignored.
+## @param x predictor matrix. Can also be a list with components `x` and `y`,
+##    in which case `y` is ignored.
 ## @param y response vector.
 ## @param intercept is an intercept included (i.e., should `y` be centered?)
 ## @param standardize standardize or not.
@@ -195,8 +203,9 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom methods is
 #' @importFrom rlang abort
 #' @importFrom stats sd
-.standardize_data <- function (x, y, intercept, standardize, robust, sparse, mscale_opts, location_rho = 'bisquare',
-                               location_cc = 4.5, target_scale_x = NULL, ...) {
+.standardize_data <- function (x, y, intercept, standardize, robust, sparse, mscale_opts,
+                               location_rho = 'bisquare', location_cc = 4.5,
+                               target_scale_x = NULL, ...) {
   if (is.list(x) && !is.null(x$x) && !is.null(x$y)) {
     y <- x$y
     x <- x$x
@@ -230,7 +239,8 @@ extract_metric <- function (metrics, attr, node) {
       apply(ret_list$x, 2, sd)
     } else {
       locscale <- apply(ret_list$x, 2, function (xj) {
-        mlocscale(xj, location_rho = location_rho, location_cc = location_cc, opts = mscale_opts, ...)
+        mlocscale(xj, location_rho = location_rho, location_cc = location_cc,
+                  opts = mscale_opts, ...)
       })
       if (isTRUE(intercept)) {
         # Re-center the predictors with the updated centers
@@ -266,12 +276,25 @@ extract_metric <- function (metrics, attr, node) {
 
     if (isTRUE(standardize == 'cv_only')) {
       # In case of "CV only" standardization, match the original scaling
-      .standardize_data(x, y, intercept = intercept, standardize = TRUE, robust = robust, sparse = sparse,
-                        location_rho = location_rho, location_cc = location_cc, mscale_opts = mscale_opts,
-                        target_scale_x = ret_list$scale_x, ... = ...)
+      .standardize_data(x, y,
+                        intercept = intercept,
+                        standardize = TRUE, robust = robust,
+                        sparse = sparse,
+                        location_rho = location_rho,
+                        location_cc = location_cc,
+                        mscale_opts = mscale_opts,
+                        target_scale_x = ret_list$scale_x,
+                        ... = ...)
     } else {
-      .standardize_data(x, y, intercept = intercept, standardize = standardize, robust = robust, sparse = sparse,
-                        location_rho = location_rho, location_cc = location_cc, mscale_opts = mscale_opts, ... = ...)
+      .standardize_data(x, y,
+                        intercept = intercept,
+                        standardize = standardize,
+                        robust = robust,
+                        sparse = sparse,
+                        location_rho = location_rho,
+                        location_cc = location_cc,
+                        mscale_opts = mscale_opts,
+                        ... = ...)
     }
   }
 
@@ -309,7 +332,8 @@ extract_metric <- function (metrics, attr, node) {
       }
       if (isTRUE(intercept)) {
         # Recreate intercept
-        coef_obj$intercept <- coef_obj$intercept + ret_list$muy - sum(ret_list$mux[coef_obj$beta@i] * coef_obj$beta@x)
+        coef_obj$intercept <- coef_obj$intercept + ret_list$muy -
+          sum(ret_list$mux[coef_obj$beta@i] * coef_obj$beta@x)
       }
       return(coef_obj)
     }
@@ -434,11 +458,12 @@ extract_metric <- function (metrics, attr, node) {
   }
 }
 
-.prepare_penalty_loadings <- function (penalty_loadings, x, alpha, sparse, stop_all_infinite = FALSE) {
+.prepare_penalty_loadings <- function (penalty_loadings, x, alpha, sparse,
+                                       stop_all_infinite = FALSE) {
   orig_p <- ncol(x)
   restore_coef_length <- function (coef) coef
 
-  if(alpha < .Machine$double.eps) {
+  if(any(alpha < .Machine$double.eps)) {
     abort("Non-empty `penalty_loadings` only supported for `alpha` > 0.")
   } else if (length(penalty_loadings) != orig_p) {
     abort("`penalty_loadings` has different number of elements than `x` columns.")
@@ -539,5 +564,31 @@ extract_metric <- function (metrics, attr, node) {
         FUN(X, ...)
       }, FUN = FUN, ... = ...)
     })
+  }
+}
+
+## Parse strings of the form *min*, *se*, or *{m}-se*.
+#' @importFrom rlang abort
+.parse_se_string <- function (x, only_fact = FALSE) {
+  x <- .as(x[[1L]], 'character')
+  xlen <- nchar(x)
+  se_fact <- 1
+  se_str <- if (identical('-se', substr(x, xlen - 2L, xlen))) {
+    se_fact <- as.numeric(substr(x, 0L, xlen - 3L))
+    if (anyNA(se_fact)) {
+      abort(sprintf("Cannot parse standard error string '%s'.", x))
+    }
+    'se'
+  } else {
+    match.arg(x, c('min', 'se'))
+  }
+  if (identical(se_str, 'min')) {
+    se_fact <- 0
+  }
+
+  if (isTRUE(only_fact)) {
+    se_fact
+  } else {
+    list(se_type = se_str, se_fact = se_fact)
   }
 }

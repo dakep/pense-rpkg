@@ -5,8 +5,13 @@
 #' model. This is determined to be the model with prediction performance within `se_mult * cv_se` from the best model.
 #'
 #' @param object,x an (adaptive) PENSE fit with cross-validation information.
-#' @param lambda either a string specifying which penalty level to use (`"min"` or `"se"`) or a a single numeric
-#'    value of the penalty parameter. See details.
+#' @param lambda either a string specifying which penalty level to use
+#'    (`"min"`, `"se"`, `"{x}-se`")
+#'    or a single numeric value of the penalty parameter. See details.
+#' @param alpha Either a single number or missing.
+#'    If given, only fits with the given `alpha` value are considered.
+#'    If `lambda` is a numeric value and `object` was fit with multiple `alpha`
+#'    values, the parameter `alpha` must not be missing.
 #' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
 #' @param ... ignored.
 #'
@@ -19,8 +24,9 @@
 #'
 #' @importFrom methods is
 #' @importFrom stats coef
-summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, ...) {
-  coef_est <- eval.parent(coef(object, lambda, se_mult, sparse = FALSE, add_lambda = TRUE))
+summary.pense_cvfit <- function (object, alpha, lambda = 'min', se_mult = 1, ...) {
+  coef_est <- eval.parent(coef(object, alpha = alpha, lambda = lambda, se_mult = se_mult,
+                               concat = FALSE))
   method_name <- if (is(object, 'adapense')) {
     "Adaptive PENSE"
   } else if (is(object, 'pense')) {
@@ -31,45 +37,50 @@ summary.pense_cvfit <- function (object, lambda = c('min', 'se'), se_mult = 1, .
     "Regularized M"
   }
   tryCatch({
-    cat(method_name, "fit", "with", "prediction", "performance", "estimated", "by", object$call$cv_repl, "replications",
-        "of", sprintf("%d-fold", object$call$cv_k), "cross-validation.\n", sep = " ", fill = TRUE)
+    cat(method_name, "fit", "with", "prediction", "performance", "estimated", "by",
+        object$call$cv_repl, "replications", "of", sprintf("%d-fold", object$call$cv_k),
+        "cross-validation.\n", sep = " ", fill = TRUE)
   }, error = function(...) {
-    cat(method_name, "fit", "with", "prediction", "performance", "estimated", "via", "cross-validation.\n",
-        sep = " ", fill = TRUE)
+    cat(method_name, "fit", "with", "prediction", "performance", "estimated", "via",
+        "cross-validation.\n", sep = " ", fill = TRUE)
   })
 
-  nnz_ind <- 1L + which(abs(coef_est[-1L]) > .Machine$double.eps)
-  cat(length(nnz_ind), "out", "of", length(coef_est) - 1L, "predictors", "have", "non-zero", "coefficients:\n",
-      sep = " ", fill = TRUE)
-  print(cbind(Estimate = coef_est[c(1L, nnz_ind)]))
+  coef_est_named <- eval.parent(coef(object, alpha = alpha, lambda = lambda, se_mult = se_mult,
+                                     sparse = FALSE))
+  nnz_ind <- 1L + which(abs(coef_est_named[-1L]) > .Machine$double.eps)
+  cat(length(nnz_ind), "out", "of", length(coef_est$beta), "predictors", "have", "non-zero",
+      "coefficients:\n", sep = " ", fill = TRUE)
+  print(cbind("Estimate" = coef_est_named[c(1L, nnz_ind)]))
   cat("---\n\n")
 
-  if (is.character(lambda)) {
-    lambda_ind <- .lambda_index_cvfit(object, lambda, se_mult)
-    lambda <- object$lambda[[lambda_ind]]
-    pred_perf <- object$cvres$cvavg[[lambda_ind]]
+  # Try to determine the prediction performance
+  cv_res_ind <- which((object$cvres$lambda - coef_est$lambda)^2 < .Machine$double.eps &
+                        (object$cvres$alpha - coef_est$alpha)^2 < .Machine$double.eps)
+  pred_perf <- if (length(cv_res_ind) > 1L) {
+    object$cvres$cvavg[[cv_res_ind[[1L]]]]
   } else {
-    pred_perf <- NULL
+    NULL
   }
 
-  cat(sprintf("Hyper-parameters: lambda=%s", format(lambda)))
+  cat("Hyper-parameters: lambda=", format(coef_est$lambda), sep = '')
   if (!is.null(object$alpha)) {
-    cat(sprintf(", alpha=%s", format(object$alpha)))
+    cat(", alpha=", format(coef_est$alpha), sep = '')
   }
   if (!is.null(object$exponent)) {
-    cat(sprintf(", exponent=%s", format(object$exponent)))
+    cat(", exponent=", format(object$exponent), sep = '')
   }
   cat("\n")
   if (!is.null(pred_perf)) {
-    cat("Estimated", "scale", "of", "the", "prediction", "error:", sprintf("%s\n\n", format(pred_perf)), sep = " ",
-        fill = TRUE)
+    cat("Estimated", "scale", "of", "the", "prediction", "error:",
+        sprintf("%s\n\n", format(pred_perf)), sep = " ", fill = TRUE)
   }
+  invisible(object)
 }
 
 #' @rdname summary.pense_cvfit
 #' @export
 #' @method print pense_cvfit
-print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
+print.pense_cvfit <- function(x, alpha, lambda = 'min', se_mult = 1, ...) {
   cl <- match.call(expand.dots = FALSE)
   cl[[1L]] <- quote(summary)
   names(cl)[[which(names(cl) == 'x')]] <- 'object'
@@ -85,7 +96,13 @@ print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
 #' prediction performance within `se_mult` of the best prediction performance.
 #'
 #' @param ... one or more (adaptive) PENSE fits with cross-validation information.
-#' @param lambda a string specifying which penalty level to use (`"min"` or `"se"`) . See details.
+#' @param lambda either a string specifying which penalty level to use
+#'    (`"min"`, `"se"`, `"{x}-se`")
+#'    or a single numeric value of the penalty parameter. See details.
+#' @param alpha Either a numeric vector or `NULL` (default).
+#'    If given, only fits with the given `alpha` value are considered.
+#'    If `lambda` is a numeric value and `object` was fit with multiple `alpha`
+#'    values, the parameter `alpha` must not be missing.
 #' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
 #'
 #' @return a data frame with details about the prediction performance of the given PENSE fits. The data frame
@@ -98,9 +115,13 @@ print.pense_cvfit <- function(x, lambda = c('min', 'se'), se_mult = 1, ...) {
 #'
 #' @importFrom methods is
 #' @importFrom rlang abort
-prediction_performance <- function (..., lambda = c('min', 'se'), se_mult = 1) {
-  se_mult <- if (match.arg(lambda) == 'se') {
-    .as(se_mult[[1L]], 'numeric')
+prediction_performance <- function (..., alpha = NULL, lambda = 'min', se_mult = 1) {
+  se_mult <- if (is.character(lambda)) {
+    if (identical(lambda, 'se')) {
+      .as(se_mult[[1L]], 'numeric')
+    } else {
+      .parse_se_string(lambda, only_fact = TRUE)
+    }
   } else {
     0
   }
@@ -123,33 +144,46 @@ prediction_performance <- function (..., lambda = c('min', 'se'), se_mult = 1) {
   pred_perf <- do.call(rbind, lapply(object_names, function (on) {
     object <- eval(objects[[on]], eval_frame)
     if (!is(object, 'pense_cvfit')) {
-      abort(sprintf("`%s` must be a cross-validated PENSE fit.", on))
+      abort(sprintf("`%s` must be a cross-validated fit.", on))
     }
-    if (!isTRUE(ncol(object$cv_replications) > 1L) && isTRUE(se_mult > 0)) {
-      warn(sprintf(
-        "Only a single cross-validation replication was performed for object `%s`. Standard error not available."), on)
+    if (isTRUE(se_mult > 0) && !any(object$cvres$cvse > 0)) {
+      warn(paste("Only a single cross-validation replication was performed for object `", on,
+                 "`. Standard error not available.", sep = ""))
       se_mult <- 0
     }
-    se_selection <- which(.cv_se_selection(object$cvres$cvavg, object$cvres$cvse, se_mult) == 'se_fact')
-    cvres <- object$cvres[se_selection, ]
 
-    cvres$model_size <- if (isFALSE(object$call$fit_all)) {
-      if (se_mult > 0) {
-        NA_integer_
-      } else {
-        sum(abs(object$estimates[[1L]]$beta) > .Machine$double.eps)
-      }
+    sel_alpha <- if (is.null(alpha)) {
+      object$alpha
     } else {
-      sum(abs(object$estimates[[se_selection]]$beta) > .Machine$double.eps)
+      object$alpha[na.omit(.approx_match(alpha, object$alpha))]
     }
-    cvres$name <- on
-    cvres$alpha <- if (!is.null(object$alpha)) { object$alpha } else { NA_real_ }
-    cvres$exponent <- if (!is.null(object$exponent)) { object$exponent } else { NA_real_ }
+
+    sel_indices <- vapply(sel_alpha, FUN.VALUE = integer(1L), FUN = function (alpha) {
+      rows <- which((object$cvres$alpha - alpha)^2 < .Machine$double.eps)
+      se_sel <- .cv_se_selection(object$cvres$cvavg[rows], object$cvres$cvse[rows], se_mult)
+      rows[[which(se_sel == 'se_fact')[[1L]]]]
+    })
+
+    cvres <- object$cvres[sel_indices, ]
+    cvres$model_size <- vapply(sel_indices, FUN.VALUE = integer(1L), FUN = function (ind) {
+      est_ind <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
+        (est$alpha - object$cvres$alpha[[ind]])^2 < .Machine$double.eps &
+          (est$lambda - object$cvres$lambda[[ind]])^2 < .Machine$double.eps
+      }))
+      if (length(est_ind) > 0L) {
+        sum(abs(object$estimates[[est_ind]]$beta) > .Machine$double.eps)
+      } else {
+        NA_integer_
+      }
+    })
+    cvres$name <- rep.int(on, length(sel_indices))
+    cvres$exponent <- rep.int(if (!is.null(object$exponent)) { object$exponent } else { NA_real_ },
+                              length(sel_indices))
 
     return(cvres)
   }))
-  pred_perf <- pred_perf[order(pred_perf$cvavg), c('name', 'cvavg', 'cvse', 'model_size', 'lambda', 'alpha',
-                                                   'exponent')]
+  pred_perf <- pred_perf[order(pred_perf$cvavg),
+                         c('name', 'cvavg', 'cvse', 'model_size', 'lambda', 'alpha', 'exponent')]
   rownames(pred_perf) <- NULL
   class(pred_perf) <- c('pense_pred_perf', class(pred_perf))
   return(pred_perf)
@@ -190,7 +224,6 @@ print.pense_pred_perf <- function (x, ...) {
 #' @method print nsoptim_metrics
 print.nsoptim_metrics <- function (x, max_level = NA, ...) {
   .print_metrics(x, max_level, '')
-  invisible(NULL)
 }
 
 .print_metrics <- function (metrics, max_level, prefix) {
@@ -217,5 +250,5 @@ print.nsoptim_metrics <- function (x, max_level = NA, ...) {
     lapply(rev(metrics$sub_metrics), .print_metrics, max_level = max_level - 1L,
            prefix = paste0(prefix, '  '))
   }
-  invisible(NULL)
+  invisible(metrics)
 }

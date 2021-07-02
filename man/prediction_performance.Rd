@@ -5,14 +5,21 @@
 \alias{print.pense_pred_perf}
 \title{Prediction Performance of Adaptive PENSE Fits}
 \usage{
-prediction_performance(..., lambda = c("min", "se"), se_mult = 1)
+prediction_performance(..., alpha = NULL, lambda = "min", se_mult = 1)
 
 \method{print}{pense_pred_perf}(x, ...)
 }
 \arguments{
 \item{...}{one or more (adaptive) PENSE fits with cross-validation information.}
 
-\item{lambda}{a string specifying which penalty level to use (\code{"min"} or \code{"se"}) . See details.}
+\item{alpha}{Either a numeric vector or \code{NULL} (default).
+If given, only fits with the given \code{alpha} value are considered.
+If \code{lambda} is a numeric value and \code{object} was fit with multiple \code{alpha}
+values, the parameter \code{alpha} must not be missing.}
+
+\item{lambda}{either a string specifying which penalty level to use
+(\code{"min"}, \code{"se"}, \verb{"\{x\}-se}")
+or a single numeric value of the penalty parameter. See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
 

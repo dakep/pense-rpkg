@@ -5,15 +5,21 @@
 \alias{print.pense_cvfit}
 \title{Summarize Cross-Validated PENSE Fit}
 \usage{
-\method{summary}{pense_cvfit}(object, lambda = c("min", "se"), se_mult = 1, ...)
+\method{summary}{pense_cvfit}(object, alpha, lambda = "min", se_mult = 1, ...)
 
-\method{print}{pense_cvfit}(x, lambda = c("min", "se"), se_mult = 1, ...)
+\method{print}{pense_cvfit}(x, alpha, lambda = "min", se_mult = 1, ...)
 }
 \arguments{
 \item{object, x}{an (adaptive) PENSE fit with cross-validation information.}
 
-\item{lambda}{either a string specifying which penalty level to use (\code{"min"} or \code{"se"}) or a a single numeric
-value of the penalty parameter. See details.}
+\item{alpha}{Either a single number or missing.
+If given, only fits with the given \code{alpha} value are considered.
+If \code{lambda} is a numeric value and \code{object} was fit with multiple \code{alpha}
+values, the parameter \code{alpha} must not be missing.}
+
+\item{lambda}{either a string specifying which penalty level to use
+(\code{"min"}, \code{"se"}, \verb{"\{x\}-se}")
+or a single numeric value of the penalty parameter. See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
 

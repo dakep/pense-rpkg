@@ -158,30 +158,31 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
   args$pense_opts$mscale$delta <- stable_bdp
 
   # Call internal function
-  fits <- mapply(args$alpha, args$lambda, args$enpy_lambda_inds,
-                 SIMPLIFY = FALSE, USE.NAMES = FALSE,
-                 FUN = function (alpha, lambda, enpy_lambda_inds) {
-                   fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
-                                          alpha = alpha,
-                                          lambda = lambda,
-                                          enpy_lambda_inds = enpy_lambda_inds,
-                                          penalty_loadings = args$penalty_loadings,
-                                          pense_opts = args$pense_opts,
-                                          enpy_opts = args$enpy_opts,
-                                          optional_args = args$optional_args)
+  fits <- mapply(
+    args$alpha, args$lambda, args$enpy_lambda_inds,
+    SIMPLIFY = FALSE, USE.NAMES = FALSE,
+    FUN = function (alpha, lambda, enpy_lambda_inds) {
+      fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
+                             alpha = alpha,
+                             lambda = lambda,
+                             enpy_lambda_inds = enpy_lambda_inds,
+                             penalty_loadings = args$penalty_loadings,
+                             pense_opts = args$pense_opts,
+                             enpy_opts = args$enpy_opts,
+                             optional_args = args$optional_args)
 
-                   # Retain only the best solution:
-                   fit$estimates <- lapply(fit$estimates, function (ests) {
-                     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-                   })
-                   # Handle metrics
-                   fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-                   fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                               'lambda'), use.names = FALSE, recursive = FALSE)
-                   fit$alpha <- alpha
+      # Retain only the best solution:
+      fit$estimates <- lapply(fit$estimates, function (ests) {
+        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
+      })
+      # Handle metrics
+      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
+                                  'lambda'), use.names = FALSE, recursive = FALSE)
+      fit$alpha <- alpha
 
-                   fit
-                 })
+      fit
+    })
 
   structure(list(
     call = call,
@@ -200,9 +201,10 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #' @param standardize whether to standardize the `x` variables prior to fitting the PENSE estimates.
 #'    Can also be set to `"cv_only"`, in which case the input data is not standardized, but the
 #'    training data in the CV folds is scaled to match the scaling of the input data.
-#'    Coefficients are always returned on the original scale. This can fail for variables with a large
-#'    proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-#'    `standardize = FALSE` or standardize the data manually.
+#'    Coefficients are always returned on the original scale.
+#'    This can fail for variables with a large proportion of a single value
+#'    (e.g., zero-inflated data).
+#'    In this case, either compute with `standardize = FALSE` or standardize the data manually.
 #' @template cv_params
 #' @inheritDotParams pense -standardize
 #'
@@ -222,11 +224,25 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
 #' @export
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom stats sd
+#' @importFrom rlang abort
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
                      cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'), fit_all = TRUE,
                      cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.pense_args, as.list(call[-1L]), envir = parent.frame())
+
+  fit_ses <- if (is.character(fit_all)) {
+    unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L), only_fact = TRUE,
+                  USE.NAMES = FALSE))
+  } else if (isFALSE(fit_all)) {
+    .parse_se_string('min', only_fact = TRUE)
+  } else {
+    TRUE
+  }
+
+  if (length(fit_ses) < 1L) {
+    fit_ses <- TRUE
+  }
 
   cv_k <- .as(cv_k, 'integer')
   cv_repl <- .as(cv_repl, 'integer')
@@ -237,6 +253,11 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
 
   if (cv_repl < 1L) {
     abort("`cv_repl` must be greater than 0.")
+  }
+
+  if (cv_repl == 1L && any(fit_ses > 0)) {
+    warn("To use `fit_all = \"se\"`, `cv_repl` must be 2 or greater.")
+    fit_ses <- 0
   }
 
   if (!is.null(cl)) {
@@ -268,49 +289,55 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("Function `cv_metric` must accept at least 1 argument.")
   }
 
-  cv_curves <- mapply(args$alpha, args$lambda, args$enpy_lambda_inds,
-                      SIMPLIFY = FALSE, USE.NAMES = FALSE,
-                      FUN = function (alpha, lambda, enpy_lambda_inds) {
-                        cv_fun <- function (train_data, test_ind) {
-                          stable_bdp <- .find_stable_bdb_bisquare(
-                            n = length(train_data$y),
-                            desired_bdp = args$pense_opts$mscale$delta)
-                          args$pense_opts$mscale$delta <- stable_bdp
+  cv_curves <- mapply(
+    args$alpha, args$lambda, args$enpy_lambda_inds,
+    SIMPLIFY = FALSE, USE.NAMES = FALSE,
+    FUN = function (alpha, lambda, enpy_lambda_inds) {
+      cv_fun <- function (train_data, test_ind) {
+        stable_bdp <- .find_stable_bdb_bisquare(
+          n = length(train_data$y),
+          desired_bdp = args$pense_opts$mscale$delta)
+        args$pense_opts$mscale$delta <- stable_bdp
 
-                          cv_fit <- .pense_internal(x = train_data$x, y = train_data$y,
-                                                    alpha = alpha,
-                                                    lambda = lambda,
-                                                    enpy_lambda_inds = enpy_lambda_inds,
-                                                    penalty_loadings = args$penalty_loadings,
-                                                    pense_opts = args$pense_opts,
-                                                    enpy_opts = args$enpy_opts,
-                                                    optional_args = args$optional_args)
+        cv_fit <- .pense_internal(x = train_data$x, y = train_data$y,
+                                  alpha = alpha,
+                                  lambda = lambda,
+                                  enpy_lambda_inds = enpy_lambda_inds,
+                                  penalty_loadings = args$penalty_loadings,
+                                  pense_opts = args$pense_opts,
+                                  enpy_opts = args$enpy_opts,
+                                  optional_args = args$optional_args)
 
-                          # Return only best local optima
-                          lapply(cv_fit$estimates, `[[`, 1L)
-                        }
+        # Return only best local optima
+        lapply(cv_fit$estimates, `[[`, 1L)
+      }
 
-                        cv_perf <- .run_replicated_cv(args$std_data,
-                                                      cv_k = cv_k,
-                                                      cv_repl = cv_repl,
-                                                      metric = cv_metric,
-                                                      cv_est_fun = cv_fun,
-                                                      par_cluster = cl)
-                        data.frame(lambda = lambda, alpha = alpha,
-                                   cvavg = rowMeans(cv_perf),
-                                   cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
-                      })
+      cv_perf <- .run_replicated_cv(args$std_data,
+                                    cv_k = cv_k,
+                                    cv_repl = cv_repl,
+                                    metric = cv_metric,
+                                    cv_est_fun = cv_fun,
+                                    par_cluster = cl)
+      data.frame(lambda = lambda, alpha = alpha,
+                 cvavg = rowMeans(cv_perf),
+                 cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
+    })
 
   cv_curves <- do.call(rbind, cv_curves)
 
-  if (isTRUE(fit_all)) {
-    lambda <- args$lambda
-    alpha <- args$alpha
-    enpy_lambda_inds <- args$enpy_lambda_inds
+  if (isTRUE(fit_ses)) {
+    fit_lambda <- args$lambda
+    fit_enpy_lambda_inds <- args$enpy_lambda_inds
   } else {
-    lambda <- with(cv_curves, lambda[[which.min(cvavg)]])
-    alpha <- with(cv_curves, alpha[[which.min(cvavg)]])
-    enpy_lambda_inds <- 1L
+    fit_lambda <- lapply(args$alpha, function (alpha) {
+      rows <- which((cv_curves$alpha - alpha)^2 < .Machine$double.eps)
+
+      lambda_inds <- vapply(fit_ses, FUN.VALUE = numeric(1L), FUN = function (se_fact) {
+        which(.cv_se_selection(cv_curves$cvavg[rows], cv_curves$cvse[rows], se_fact) == 'se_fact')
+      })
+      unique(cv_curves$lambda[rows[lambda_inds]])
+    })
+    fit_enpy_lambda_inds <- lapply(fit_lambda, seq_along)
   }
 
   stable_bdp <- .find_stable_bdb_bisquare(
@@ -318,31 +345,31 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     desired_bdp = args$pense_opts$mscale$delta)
   args$pense_opts$mscale$delta <- stable_bdp
 
-
   # Call internal function
-  fits <- mapply(args$alpha, args$lambda, args$enpy_lambda_inds,
-                 SIMPLIFY = FALSE, USE.NAMES = FALSE,
-                 FUN = function (alpha, lambda, enpy_lambda_inds) {
-                   fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
-                                          alpha = alpha,
-                                          lambda = lambda,
-                                          enpy_lambda_inds = enpy_lambda_inds,
-                                          penalty_loadings = args$penalty_loadings,
-                                          pense_opts = args$pense_opts,
-                                          enpy_opts = args$enpy_opts,
-                                          optional_args = args$optional_args)
+  fits <- mapply(
+    args$alpha, fit_lambda, fit_enpy_lambda_inds,
+    SIMPLIFY = FALSE, USE.NAMES = FALSE,
+    FUN = function (alpha, lambda, enpy_lambda_inds) {
+      fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
+                             alpha = alpha,
+                             lambda = lambda,
+                             enpy_lambda_inds = enpy_lambda_inds,
+                             penalty_loadings = args$penalty_loadings,
+                             pense_opts = args$pense_opts,
+                             enpy_opts = args$enpy_opts,
+                             optional_args = args$optional_args)
 
-                   # Retain only the best solution:
-                   fit$estimates <- lapply(fit$estimates, function (ests) {
-                     args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-                   })
-                   # Handle metrics
-                   fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-                   fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                               'lambda'), use.names = FALSE, recursive = FALSE)
-                   fit$alpha <- alpha
-                   fit
-                 })
+      # Retain only the best solution:
+      fit$estimates <- lapply(fit$estimates, function (ests) {
+        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
+      })
+      # Handle metrics
+      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
+                                  'lambda'), use.names = FALSE, recursive = FALSE)
+      fit$alpha <- alpha
+      fit
+    })
 
   structure(list(
     call = call,

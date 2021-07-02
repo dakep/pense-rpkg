@@ -76,10 +76,13 @@ coef.pense_fit <- function (object, lambda, alpha, sparse = NULL, standardized =
 #' performance statistically indistinguishable from the best model.
 #' This is determined to be the model with prediction performance within `se_mult * cv_se`
 #' from the best model.
+#' The string in `lambda` can also directly specify the multiplier by setting `lambda = "{x}-se"`,
+#' where `{x}` is any (positive) number.
 #'
 #' @param object PENSE with cross-validated hyper-parameters to extract coefficients from.
-#' @param lambda either a string specifying which penalty level to use (`"min"` or `"se"`) or
-#'    a single numeric value of the penalty parameter. See details.
+#' @param lambda either a string specifying which penalty level to use
+#'    (`"min"`, `"se"`, `"{x}-se`")
+#'    or a single numeric value of the penalty parameter. See details.
 #' @param alpha Either a single number or missing.
 #'    If given, only fits with the given `alpha` value are considered.
 #'    If `lambda` is a numeric value and `object` was fit with multiple `alpha`
@@ -102,7 +105,7 @@ coef.pense_fit <- function (object, lambda, alpha, sparse = NULL, standardized =
 #' @family functions for extracting components
 #' @example examples/pense_fit.R
 #' @export
-coef.pense_cvfit <- function (object, lambda = c('min', 'se'), alpha, se_mult = 1, sparse = NULL,
+coef.pense_cvfit <- function (object, lambda = 'min', alpha, se_mult = 1, sparse = NULL,
                               standardized = FALSE,
                               exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
@@ -131,28 +134,15 @@ coef.pense_cvfit <- function (object, lambda = c('min', 'se'), alpha, se_mult = 
 
 ## Determine the appropriate indices in the `object$estimates` list
 #' @importFrom rlang warn abort
-.lambda_index_cvfit <- function (object, lambda = c('min', 'se'), alpha, se_mult) {
-  if (is.character(lambda)) {
-    lambda <- match.arg(lambda)
-  }
-
-  if (isFALSE(object$call$fit_all)) {
-    if (!isTRUE(lambda == 'min')) {
-      warn(paste("`object` was created with `fit_all = FALSE`. Only the estimate at the minimum",
-                 "is available and will be returned."))
-    }
-    return(1L)
+.lambda_index_cvfit <- function (object, lambda, alpha, se_mult) {
+  if (is.character(lambda) && !identical(lambda, 'se')) {
+    se_mult <- .parse_se_string(lambda, only_fact = TRUE)
   }
 
   if (is.character(lambda)) {
-    if (!any(object$cvres$cvse > 0) && isTRUE(lambda == 'se') && isTRUE(se_mult > 0)) {
+    if (!any(object$cvres$cvse > 0) && isTRUE(se_mult > 0)) {
       warn(paste("Only a single cross-validation replication was performed.",
                  "Standard error not available. Using minimum lambda."))
-    }
-
-    if (isTRUE(lambda == 'min')) {
-      lambda <- 'se'
-      se_mult <- 0
     }
 
     considered_alpha <- if (!missing(alpha) && !is.null(alpha)) {
@@ -163,6 +153,10 @@ coef.pense_cvfit <- function (object, lambda = c('min', 'se'), alpha, se_mult = 
 
     if (length(considered_alpha) == 0L) {
       abort("`object` was not fit with the requested `alpha` value.")
+    }
+
+    if (isTRUE(se_mult > 0) && !any(object$cvres$cvse > 0)) {
+      warn("Standard errors not available. Returning estimate for `lambda = \"min\"`.")
     }
 
     best_per_alpha <- vapply(considered_alpha, FUN.VALUE = numeric(2L), FUN = function (alpha) {

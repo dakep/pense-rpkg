@@ -6,7 +6,7 @@
 \usage{
 \method{coef}{pense_cvfit}(
   object,
-  lambda = c("min", "se"),
+  lambda = "min",
   alpha,
   se_mult = 1,
   sparse = NULL,
@@ -19,8 +19,9 @@
 \arguments{
 \item{object}{PENSE with cross-validated hyper-parameters to extract coefficients from.}
 
-\item{lambda}{either a string specifying which penalty level to use (\code{"min"} or \code{"se"}) or
-a single numeric value of the penalty parameter. See details.}
+\item{lambda}{either a string specifying which penalty level to use
+(\code{"min"}, \code{"se"}, \verb{"\{x\}-se}")
+or a single numeric value of the penalty parameter. See details.}
 
 \item{alpha}{Either a single number or missing.
 If given, only fits with the given \code{alpha} value are considered.
@@ -58,6 +59,8 @@ the sequence, extract the coefficients of the most parsimonious model with predi
 performance statistically indistinguishable from the best model.
 This is determined to be the model with prediction performance within \code{se_mult * cv_se}
 from the best model.
+The string in \code{lambda} can also directly specify the multiplier by setting \code{lambda = "{x}-se"},
+where \code{{x}} is any (positive) number.
 }
 \examples{
 # Compute the PENSE regularization path for Freeny's revenue data

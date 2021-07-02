@@ -121,14 +121,16 @@ Not supported on all platforms, in which case a warning is given.}
 
 \item{cv_repl}{number of cross-validation replications.}
 
-\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used if \code{ncores = 1}, because multi-threading
-can not be used in parallel R sessions on the same host.}
+\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combinatino with
+\code{ncores = 1}.}
 
-\item{cv_metric}{either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, the number of arguments define the data the function receives.
-If the function takes a single argument, it is called with a single numeric vector of prediction errors.
-If the function takes two or more arguments, it is called with the predicted values as first argument
-and the true values as second argument.
+\item{cv_metric}{either a string specifying the performance metric to use, or a function to
+evaluate prediction errors in a single CV replication.
+If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of
+prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as
+first argument and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.}
 
@@ -144,8 +146,12 @@ iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
-\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
-level with smallest average CV performance.}
+\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels.
+Can also be any combination of \code{"min"} and \code{"{x}-se"}, in which case only models at the
+penalization level with smallest average CV accuracy, or within \code{{x}} standard errors,
+respectively.
+Setting \code{fit_all} to \code{FALSE} is equivalent to \code{"min"}.
+Applies to all \code{alpha} value.}
 
 \item{comparison_tol}{numeric tolerance to determine if two solutions are equal.
 The comparison is first done on the absolute difference in the value of the objective
@@ -180,11 +186,12 @@ S-estimate.
 \details{
 The built-in CV metrics are
 \describe{
-\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}} (default).}
+\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by
+\code{\link[=tau_size]{tau_size()}} (default).}
 \item{\code{"mape"}}{Median absolute prediction error.}
 \item{\code{"rmspe"}}{Root mean squared prediction error.}
-\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
-binary responses.}
+\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC).
+Only sensible for binary responses.}
 }
 }
 \seealso{

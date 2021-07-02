@@ -31,7 +31,7 @@ library(pense)
 ```
 
 Computing robust, regularized estimates for high-dimensional linear regression models can take a long time.
-Luckily many steps can be done in parallel to save time.
+To save time, many steps can be done in parallel.
 If your computer has more than 1 CPU core, you can harness more computing power by creating a cluster of R processes:
 
 ```{r}
@@ -67,10 +67,13 @@ Here, prediction accuracy is estimated via 5-fold cross-validation, replicated 3
 set.seed(1234)
 fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 3, cl = cluster)
 ```
+```{r, eval=FALSE, include=FALSE}
+fit_075_3repl <- fit_075
+```
 
 You should always set a seed prior to computing adaptive PENSE or PENSE estimates to ensure reproducibility of the internal cross-validation.
 
-By default, adaptive PENSE estimates are computed with a breakdown point of 25\%.
+By default, adaptive PENSE estimates are computed with a breakdown point of ~25\%.
 This means, the estimates are reliable if up to 25\% of observations contain arbitrary contamination.
 If you suspect that a larger proportion of observations may be affected by contamination, you can increase the breakdown point of the estimates with argument `bdp=` to up to 50\%.
 Note, however, that a higher breakdown point also leads to less accurate estimates.
@@ -89,9 +92,8 @@ plot(fit_075)
 The plot shows the estimated scale of the prediction error for all 50 models.
 The penalization level leading to the best prediction performance is highlighted by a dark blue dot.
 If more than one CV replication was performed, the plot also shows a light blue dot, marking the most parsimonious model with prediction performance "indistinguishable" from the best model.
-The plot uses the "one-standard-error" rule, visualized by the dashed horizontal line depicting the the minimum average scale of the prediction error plus 1 standard error of this estimated scale.
+The plot uses the "one-standard-error" rule using the minimum average scale of the prediction error plus 1 standard error of this estimated scale.
 You can adjust this rule to the "*q*-standard-error" with `plot(se_mult = q)`, where `q` is any positive number.
-
 
 In our case, the estimated prediction performance is fairly unstable and has large variability.
 With such unstable estimates of prediction performance it is difficult to reliably select the penalization level.
@@ -100,19 +102,20 @@ This is not unusual for robust estimators and can be improved by increasing the 
 The more CV replications, the more accurate the estimates of prediction accuracy, but the longer the computing time.
 If we repeat step #1, but with 10 CV replications instead of 3, we get a more stable evaluation of prediction performance:
 
-```{r, include=FALSE}
-fit_075 <- fit_075_10repl
-```
 ```{r, eval=FALSE}
 set.seed(1234)
 fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, cl = cluster)
 plot(fit_075)
 ```
+```{r, eval=FALSE, include=FALSE}
+fit_075_10repl <- fit_075
+```
 ```{r, fig.width=7, fig.height=5, echo=FALSE, fig.cap="Estimated prediction accuracy using 10 replications of 5-fold CV."}
+fit_075 <- fit_075_10repl
 plot(fit_075)
 ```
 
-With 10 replications, the error bars are still large, a testament of the contamination in the sample, but the general trend of the prediction performance is much clearer.
+With 10 replications, the error bars are still large, a testament to the contamination in the sample, but the general trend of the prediction performance is much clearer.
 Of course, you could increase the number of CV replications further to get an even smoother plot.
 
 ## Step 3: Extracting coefficients
@@ -147,42 +150,38 @@ With higher values for `exponent`, typically only predictors with the largest (i
 While this helps to screen out many or most of the truly irrelevant, it also risks missing some of the truly relevant predictors.
 
 Let us compute adaptive PENSE estimates for different values of hyper-parameters `alpha` and `exponent`.
-In the code below, this is done by manually iterating two different values for our hyper parameters: `alpha=0.75` and `alpha=1` as well as `exponent=1` and `exponent=2`.
-For more values of the hyper-parameters, iterating over all the possible combinations would be easier.
+In the code below, this is done for two values: `alpha=0.75` and `alpha=1` as well as `exponent=1` and `exponent=2`.
 
 ```{r fit_all, eval=FALSE}
 set.seed(1234)
-fit_075_2 <- adapense_cv(x, y, alpha = 0.75, exponent = 2, cv_k = 5, cv_repl = 10, cl = cluster)
+fit_exp_1 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 1, cv_k = 5, cv_repl = 10, cl = cluster)
 
 set.seed(1234)
-fit_100_1 <- adapense_cv(x, y, alpha = 1, exponent = 1, cv_k = 5, cv_repl = 10, cl = cluster)
-
-set.seed(1234)
-fit_100_2 <- adapense_cv(x, y, alpha = 1, exponent = 2, cv_k = 5, cv_repl = 10, cl = cluster)
+fit_exp_2 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 2, cv_k = 5, cv_repl = 10, cl = cluster)
 ```
 
 Note that we set the seed before each call to `adapense_cv()`.
-This is again to ensure reproducibility of CV, but also to make the estimated prediction performance more comparable across different values of the hyper-parameters.
+This is again to ensure reproducibility of the CV, but also to make the estimated prediction performance more comparable across different values of the hyper-parameters.
 
 After checking that the cross-validated prediction performance of the fitted models is smooth enough to reliably select the penalization level, we can compare all the estimates.
 For this, the package includes the function `prediction_performance()`, which extracts and prints the prediction performance of all given objects:
 
 ```{r}
-prediction_performance(fit_075, fit_075_2, fit_100_1, fit_100_2)
+prediction_performance(fit_exp_1, fit_exp_2)
 ```
 
-Here we see the combination of hyper-parameters `alpha=0.75` and `exponent=1` (in object `fit_075_2`) lead to the best prediction accuracy, but the models are all based on more than 12 predictors.
+Here we see the combination of hyper-parameters `alpha=0.75` and `exponent=1` (in object `fit_exp_1`) leads to the best prediction accuracy, but the models are all based on more than 12 predictors.
 Instead, we can also compare sparser models with almost the same prediction performance:
 
 ```{r}
-prediction_performance(fit_075, fit_075_2, fit_100_1, fit_100_2, lambda = 'se')
+prediction_performance(fit_exp_1, fit_exp_2, lambda = '1-se')
 ```
 
 Still, the combination of hyper-parameters `alpha=0.75` and `exponent=1` outperforms the others.
 We can see that the estimated coefficients and estimated relevant predictors are close to the truth:
 
 ```{r}
-summary(fit_075_2, lambda = 'se')
+summary(fit_exp_1, alpha = 0.75, lambda = '1-se')
 ```
 
 ## Using different measures of prediction performance
@@ -206,3 +205,8 @@ fit_075_mae <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 5, cl = clust
 
 A matrix with estimates of the prediction performance are accessible as slot `$cv_replications` in the object returned by `adapense_cv()`.
 The rows correspond to the different penalization levels, and columns correspond to the individual CV replications.
+
+```{r, eval=FALSE, include=FALSE}
+save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2,
+     file = 'computing_adapense_fits.RData')
+```

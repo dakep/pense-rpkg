@@ -60,10 +60,11 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1,
     if (length(cvres_rows) == 0L) {
       abort("Requested `alpha` not available in the fit `object`.")
     }
+    alpha_index <- which.min((x$alpha - alpha)^2)
     se_sel <- .cv_se_selection(x$cvres$cvavg[cvres_rows], x$cvres$cvse[cvres_rows], se_mult)
     lambda_opt <- x$cvres$lambda[cvres_rows][[which(se_sel == 'se_fact')]]
 
-    .plot_coef_path(x, lambda_seq = x$cvres$lambda[cvres_rows],
+    .plot_coef_path(x, lambda_seq = x$lambda[[alpha_index]],
                     alpha = alpha, lambda_opt = lambda_opt,
                     envir = parent.frame())
   } else {
@@ -151,7 +152,6 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1,
         segments(x0 = lambda[rows], y0 = errorbar_ymin,
                  x1 = lambda[rows], y1 = cvavg[rows] + se_mult * cvse[rows],
                  col = cols)
-        # abline(h = cvavg[[min_ind]] + se_mult * cvse[[min_ind]], col = colors[[3L]], lty = '22')
       }
     }
   })
@@ -170,20 +170,23 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha, se_mult = 1,
     var_names <- paste('X', seq_len(length(object$estimates[[1]]$beta)), sep = '')
   }
 
-  active_vars <- do.call(rbind, lapply(object$estimates, function (est) {
-    if ((est$alpha - alpha)^2 > .Machine$double.eps) {
-      return(NULL)
-    }
+  match_ests <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
+    (est$alpha - alpha)^2 < .Machine$double.eps
+  }))
+  if (length(match_ests) == 0L) {
+    abort("Requested `alpha` not available in the fit.")
+  }
+
+  active_vars <- do.call(rbind, lapply(object$estimates[match_ests], function (est) {
     actives <- .active_indices_and_values(est)
     if (length(actives$var_index) > 0L) {
       return(data.frame(actives, lambda = est$lambda, alpha = est$alpha))
     } else {
-      return(NULL)
+      return(data.frame(var_index = integer(), value = numeric(),
+                        lambda = numeric(), alpha = numeric()))
     }
   }))
-  if (is.null(active_vars)) {
-    abort("Requested `alpha` not available in the fit.")
-  }
+
   active_vars$var <- factor(var_names[active_vars$var_index],
                             levels = var_names[sort(unique(active_vars$var_index))])
 

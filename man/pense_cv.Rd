@@ -29,9 +29,10 @@ For binary classification, \code{y} should be a factor with 2 levels.}
 \item{standardize}{whether to standardize the \code{x} variables prior to fitting the PENSE estimates.
 Can also be set to \code{"cv_only"}, in which case the input data is not standardized, but the
 training data in the CV folds is scaled to match the scaling of the input data.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-\code{standardize = FALSE} or standardize the data manually.}
+Coefficients are always returned on the original scale.
+This can fail for variables with a large proportion of a single value
+(e.g., zero-inflated data).
+In this case, either compute with \code{standardize = FALSE} or standardize the data manually.}
 
 \item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL},
 \code{nlambda} and \code{lambda_min_ratio} are ignored.}
@@ -40,19 +41,25 @@ proportion of a single value (e.g., zero-inflated data). In this case, either co
 
 \item{cv_repl}{number of cross-validation replications.}
 
-\item{cv_metric}{either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, the number of arguments define the data the function receives.
-If the function takes a single argument, it is called with a single numeric vector of prediction errors.
-If the function takes two or more arguments, it is called with the predicted values as first argument
-and the true values as second argument.
+\item{cv_metric}{either a string specifying the performance metric to use, or a function to
+evaluate prediction errors in a single CV replication.
+If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of
+prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as
+first argument and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.}
 
-\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels. Otherwise, only at penalization
-level with smallest average CV performance.}
+\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels.
+Can also be any combination of \code{"min"} and \code{"{x}-se"}, in which case only models at the
+penalization level with smallest average CV accuracy, or within \code{{x}} standard errors,
+respectively.
+Setting \code{fit_all} to \code{FALSE} is equivalent to \code{"min"}.
+Applies to all \code{alpha} value.}
 
-\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used if \code{ncores = 1}, because multi-threading
-can not be used in parallel R sessions on the same host.}
+\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combinatino with
+\code{ncores = 1}.}
 
 \item{...}{
   Arguments passed on to \code{\link[=pense]{pense}}
@@ -143,11 +150,12 @@ Perform (repeated) K-fold cross-validation for \code{\link[=pense]{pense()}}.
 \details{
 The built-in CV metrics are
 \describe{
-\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by \code{\link[=tau_size]{tau_size()}} (default).}
+\item{\code{"tau_size"}}{\eqn{\tau}-size of the prediction error, computed by
+\code{\link[=tau_size]{tau_size()}} (default).}
 \item{\code{"mape"}}{Median absolute prediction error.}
 \item{\code{"rmspe"}}{Root mean squared prediction error.}
-\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
-binary responses.}
+\item{\code{"auroc"}}{Area under the receiver operator characteristic curve (actually 1 - AUROC).
+Only sensible for binary responses.}
 }
 
 \code{adapense_cv()} is a convenience wrapper which performs 3 steps:
@@ -165,7 +173,8 @@ data(freeny)
 x <- as.matrix(freeny[ , 2:5])
 
 ## Either use the convenience function directly ...
-ada_convenience <- adapense_cv(x, freeny$y, alpha = 0.5,
+ada_convenience <- adapense_cv(x, freeny$y,
+                               alpha = c(0.5, 1),
                                cv_repl = 2, cv_k = 4)
 
 ## ... or compute the steps manually:
@@ -175,14 +184,15 @@ preliminary_estimate <- pense_cv(x, freeny$y, alpha = 0,
 plot(preliminary_estimate, se_mult = 1)
 
 # Step 2: Use the coefficients with best prediction performance
-# to define the penality loadings:
+# to define the penalty loadings:
 prelim_coefs <- coef(preliminary_estimate, lambda = 'min')
 pen_loadings <- 1 / abs(prelim_coefs[-1])
 
 # Step 3: Compute the adaptive PENSE estimates and estimate
 # their prediction performance.
-ada_manual <- pense_cv(x, freeny$y, alpha = 0.5, cv_repl = 2,
-                       cv_k = 4, penalty_loadings = pen_loadings)
+ada_manual <- pense_cv(x, freeny$y, alpha = c(0.5, 1),
+                       cv_repl = 2, cv_k = 4,
+                       penalty_loadings = pen_loadings)
 
 # Visualize the prediction performance and coefficient path of
 # the adaptive PENSE estimates (manual vs. automatic)

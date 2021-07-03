@@ -344,6 +344,78 @@ class Cholesky {
   arma::uvec active_cols_;
   std::unique_ptr<double[]> gram_decomp_packed_;
 };
+
+//! Define a proxy to compute elementwise products in-place for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template <typename T>
+void InplaceElementwiseProduct(const arma::vec& rhs, T* lhs) {
+  *lhs %= rhs;
+}
+
+//! Define a proxy to compute elementwise products in-place for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template <typename T>
+void InplaceElementwiseProduct(const double rhs, T* lhs) {
+  *lhs *= rhs;
+}
+
+//! Define a proxy to compute elementwise products for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template <typename T>
+inline auto ElementwiseProduct(const T& lhs, const arma::vec& rhs) {
+  return lhs % rhs;
+}
+
+//! Define a proxy to compute elementwise products for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template <typename T>
+inline auto ElementwiseProduct(const T& lhs, const arma::sp_vec& rhs) {
+  return lhs % rhs;
+}
+
+//! Define a proxy to compute elementwise products for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template <typename T>
+inline auto ElementwiseProduct(const T& lhs, const double& rhs) {
+  return lhs * rhs;
+};
+
+//! Define a proxy to compute elementwise products for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template<>
+inline auto ElementwiseProduct<double>(const double& scalar, const arma::vec& rhs) {
+  return scalar * rhs;
+}
+
+//! Define a proxy to compute elementwise products for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template<>
+inline auto ElementwiseProduct<double>(const double& scalar, const arma::sp_vec& rhs) {
+  return scalar * rhs;
+}
+
+//! Define a proxy to compute elementwise products for "any" type of left-hand-side and
+//! a vector-type right-hand-side.
+//! @param lhs the left-hand-side
+//! @param rhs the right-hand-side vector
+template<>
+inline auto ElementwiseProduct<double>(const double& scalar, const double& rhs) {
+  return scalar * rhs;
+}
 }  // namespace linalg
 }  // namespace nsoptim
 

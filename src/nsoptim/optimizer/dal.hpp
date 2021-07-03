@@ -205,7 +205,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     const double alpha = penalty_->alpha();
     const double nxlambda = data_->n_obs() * penalty_->lambda() / data_.mean_weight();
     const auto softthr_cutoff = SoftthresholdCutoff(nxlambda * alpha, IsAdaptiveTag{});
-    const double update_denom_mult = 1 / (nxlambda * (1 - alpha));
+    const auto update_denom_mult = OneOverShiftPlusC(0., nxlambda * (1 - alpha), IsAdaptiveTag{});
 
     // If the coefficients are not yet initialized, reset them to the 0-vector.
     if (coefs_.beta.n_elem == 0) {
@@ -256,7 +256,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
       if (alpha < 1) {
         SoftThreshold(softthr_cutoff, &xtr_dual);
         dual_fun_value = _optim_dal_internal::DualLoss(dual_vec, data_->cy()) +
-          0.5 * update_denom_mult * arma::dot(xtr_dual, xtr_dual);
+          0.5 * arma::dot(linalg::ElementwiseProduct(update_denom_mult, xtr_dual), xtr_dual);
       } else {
         dual_vec *= DualVectorUpdate(nxlambda, xtr_dual, IsAdaptiveTag{});
         dual_fun_value = _optim_dal_internal::DualLoss(dual_vec, data_->cy());
@@ -330,8 +330,8 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
  private:
   using HasWeightsTag = typename traits::is_weighted<LossFunction>::type;
   using IsAdaptiveTag = typename traits::is_adaptive<PenaltyFunction>::type;
-  using SoftthresholdCutoffType = typename std::conditional<traits::is_adaptive<PenaltyFunction>::value,
-                                                            arma::vec, double>::type;
+  using PenaltyLevelType = typename std::conditional<traits::is_adaptive<PenaltyFunction>::value,
+                                                     arma::vec, double>::type;
 
   //! Minimize the AL function `phi`.
   //!
@@ -345,9 +345,9 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
   //!                            `phi_argmin`.
   //! @param metrics a pointer to the metrics for the current iteration of DAL.
   //! @return the number of iterations required to find the minimum of `phi`. If < 0, an error occured.
-  int MinimizePhi(SoftthresholdCutoffType softthr_cutoff, const double nxlambda, const double alpha,
+  int MinimizePhi(PenaltyLevelType softthr_cutoff, const double nxlambda, const double alpha,
                   arma::vec * const phi_argmin, arma::vec * const dual_constraint_rhs, Metrics * const metrics) {
-    const double moreau_factor = 1 / (1 + nxlambda * eta_.slope * (1 - alpha));
+    const auto moreau_factor = OneOverShiftPlusC(1., nxlambda * eta_.slope * (1 - alpha), IsAdaptiveTag{});
     const Coefficients prev_coefs(coefs_);
     softthr_cutoff *= eta_.slope;
 
@@ -361,7 +361,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
 
       // Evaluate the phi function and its gradient.
       const double phi_fun_value = _optim_dal_internal::DualLoss(*phi_argmin, data_->cy()) +
-        0.5 * moreau_factor * arma::dot(coefs_.beta, coefs_.beta) / eta_.slope +
+        0.5 * arma::dot(linalg::ElementwiseProduct(coefs_.beta, moreau_factor), coefs_.beta) / eta_.slope +
         0.5 * coefs_.intercept * coefs_.intercept / eta_.intercept;
 
       // Check if we reached the maximum number of inner iterations.
@@ -373,7 +373,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
       const arma::vec gradient = EvaluatePhiGradient(*phi_argmin, moreau_factor, HasWeightsTag{});
       const double gradient_norm_sq = arma::dot(gradient, gradient);
       const double intercept_diff = prev_coefs.intercept - coefs_.intercept;
-      const arma::sp_vec beta_diff = prev_coefs.beta - moreau_factor * coefs_.beta;
+      const arma::sp_vec beta_diff = prev_coefs.beta - linalg::ElementwiseProduct(moreau_factor, coefs_.beta);
       const double conv_threshold = std::max(0.5 * convergence_tolerance_,
         arma::dot(beta_diff, beta_diff) / eta_.slope + (intercept_diff * intercept_diff) / eta_.intercept);
 
@@ -407,7 +407,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
 
         // Evaluate the phi function and its gradient.
         const double phi_fun_value_step = _optim_dal_internal::DualLoss(*phi_argmin, data_->cy()) +
-          0.5 * moreau_factor * arma::dot(coefs_.beta, coefs_.beta) / eta_.slope +
+          0.5 * arma::dot(linalg::ElementwiseProduct(coefs_.beta, moreau_factor), coefs_.beta) / eta_.slope +
           0.5 * coefs_.intercept * coefs_.intercept / eta_.intercept;
 
         const double phi_fun_value_target = phi_fun_value -
@@ -429,7 +429,7 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
         break;
       }
     }
-    coefs_.beta *= moreau_factor;
+    linalg::InplaceElementwiseProduct(moreau_factor, &coefs_.beta);
     return iter;
   }
 
@@ -494,21 +494,24 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
   }
 
   //! Evaluate the gradient of the `phi` function at (a, coefs) if the LS loss includes weights.
-  arma::vec EvaluatePhiGradient(const arma::vec& phi_argmin, const double moreau_factor, std::true_type) const {
+  arma::vec EvaluatePhiGradient(const arma::vec& phi_argmin, const PenaltyLevelType& moreau_factor,
+                                std::true_type) const {
     if (loss_->IncludeIntercept()) {
-      return phi_argmin - data_->cy() + moreau_factor * data_->cx() * coefs_.beta +
+      return phi_argmin - data_->cy() + data_->cx() * linalg::ElementwiseProduct(moreau_factor, coefs_.beta) +
         coefs_.intercept * data_.sqrt_weights();
     } else {
-      return phi_argmin - data_->cy() + moreau_factor * data_->cx() * coefs_.beta;
+      return phi_argmin - data_->cy() + data_->cx() * linalg::ElementwiseProduct(moreau_factor, coefs_.beta);
     }
   }
 
   //! Evaluate the gradient of the `phi` function at (a, coefs) if the LS loss does not include weights.
-  arma::vec EvaluatePhiGradient(const arma::vec& phi_argmin, const double moreau_factor, std::false_type) const {
+  arma::vec EvaluatePhiGradient(const arma::vec& phi_argmin, const PenaltyLevelType& moreau_factor,
+                                std::false_type) const {
     if (loss_->IncludeIntercept()) {
-      return phi_argmin - data_->cy() + moreau_factor * data_->cx() * coefs_.beta + coefs_.intercept;
+      return phi_argmin - data_->cy() + data_->cx() * linalg::ElementwiseProduct(moreau_factor, coefs_.beta) +
+        coefs_.intercept;
     } else {
-      return phi_argmin - data_->cy() + moreau_factor * data_->cx() * coefs_.beta;
+      return phi_argmin - data_->cy() + data_->cx() * linalg::ElementwiseProduct(moreau_factor, coefs_.beta);
     }
   }
 
@@ -522,9 +525,19 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     return c;
   }
 
+  //! Get the Moreau factor for adaptive penalties.
+  arma::vec OneOverShiftPlusC(const double shift, const double c, std::true_type) const noexcept {
+    return 1 / (shift + c * penalty_->loadings());
+  }
+
+  //! Get the Moreau factor for non-adaptive penalties.
+  double OneOverShiftPlusC(const double shift, const double c, std::false_type) const noexcept {
+    return 1 / (shift + c);
+  }
+
   //! Find the appropriate step direction.
   //! @return boolean indicating if a solution was found or not.
-  bool PhiStepDir(const arma::sp_vec& beta, const arma::vec& gradient, const double moreau_factor,
+  bool PhiStepDir(const arma::sp_vec& beta, const arma::vec& gradient, const PenaltyLevelType& moreau_factor,
                   arma::vec * const step_dir) const {
     if (beta.n_nonzero == 0) {
       // No predictors are active. We can compute the inverse of the Hessian and the step direction directly.
@@ -546,8 +559,9 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     return arma::solve(*step_dir, hessian, gradient, arma::solve_opts::likely_sympd);
   }
 
-  //! Compute the Hessian for a weighted LS loss.
-  arma::mat PhiHessian(const arma::uvec& active_predictors, const double moreau_factor, std::true_type) const {
+  //! Compute the Hessian for a weighted LS loss and non-adaptive penalty.
+  arma::mat PhiHessian(const arma::uvec& active_predictors, const double moreau_factor,
+                       std::true_type) const {
     auto active_view = data_->cx().cols(active_predictors);
     if (loss_->IncludeIntercept()) {
       return eta_.slope * moreau_factor * active_view * active_view.t() + eta_.intercept * data_.sqrt_weights_outer();
@@ -556,13 +570,37 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
     }
   }
 
-  //! Compute the Hessian for an un-weighted LS loss.
-  arma::mat PhiHessian(const arma::uvec& active_predictors, const double moreau_factor, std::false_type) const {
+  //! Compute the Hessian for an un-weighted LS loss and non-adaptive penalty.
+  arma::mat PhiHessian(const arma::uvec& active_predictors, const double moreau_factor,
+                       std::false_type) const {
     auto active_view = data_->cx().cols(active_predictors);
     if (loss_->IncludeIntercept()) {
       return eta_.slope * moreau_factor * active_view * active_view.t() + eta_.intercept;
     } else {
       return eta_.slope * moreau_factor * active_view * active_view.t();
+    }
+  }
+
+  //! Compute the Hessian for a weighted LS loss and adaptive penalty.
+  arma::mat PhiHessian(const arma::uvec& active_predictors, const arma::vec& moreau_factor,
+                       std::true_type) const {
+    const arma::mat active_view = data_->cx().cols(active_predictors);
+    if (loss_->IncludeIntercept()) {
+      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t() +
+        eta_.intercept * data_.sqrt_weights_outer();
+    } else {
+      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t();
+    }
+  }
+
+  //! Compute the Hessian for an un-weighted LS loss and adaptive penalty.
+  arma::mat PhiHessian(const arma::uvec& active_predictors, const arma::vec& moreau_factor,
+                       std::false_type) const {
+    const arma::mat active_view = data_->cx().cols(active_predictors);
+    if (loss_->IncludeIntercept()) {
+      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t() + eta_.intercept;
+    } else {
+      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t();
     }
   }
 

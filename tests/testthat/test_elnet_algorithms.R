@@ -50,7 +50,8 @@ grad_en <- function (est, x, y, weights, intercept = TRUE, penalty_loadings,
   return(grad)
 }
 
-check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1), num_tol, num_tol_comp = num_tol) {
+check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1), num_tol,
+                                num_tol_comp = num_tol) {
   set.seed(123)
   x <- matrix(rnorm(100 * 10), ncol = 10)
   y <- 6 + rowSums(x[ , 1:3]) + rnorm(nrow(x))
@@ -74,7 +75,8 @@ check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1),
     }
     ests <- if (loadings) {
       if (weights) {
-        elnet(x, y, alpha = alpha, lambda = lambda, weights = wgts, penalty_loadings = ldgs, standardize = FALSE,
+        elnet(x, y, alpha = alpha, lambda = lambda, weights = wgts, penalty_loadings = ldgs,
+              standardize = FALSE,
               en_algorithm_opts = en_algorithm_opts, intercept = intercept, eps = num_tol)
       } else {
         elnet(x, y, alpha = alpha, lambda = lambda, penalty_loadings = ldgs, standardize = FALSE,
@@ -91,7 +93,8 @@ check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1),
     }
 
     max(sapply(ests$estimates, function (est) {
-      sum(grad_en(est, x = x, y = y, weights = wgts, penalty_loadings = ldgs, intercept = intercept)^2)
+      sum(grad_en(est, x = x, y = y, weights = wgts, penalty_loadings = ldgs,
+                  intercept = intercept)^2)
     }))
   }
 
@@ -100,10 +103,12 @@ check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1),
       lapply(c('w/o intercept', 'w/ intercept'), function (intercept) {
         if (alpha > 0) {
           lapply(c('w/o loadings', 'w/ loadings'), function (loadings) {
-            expect_lte(max_gradient(alpha = !!alpha, !!weights, !!loadings, !!intercept), !!num_tol_comp)
+            expect_lte(max_gradient(alpha = !!alpha, !!weights, !!loadings, !!intercept),
+                       !!num_tol_comp)
           })
         } else {
-          expect_lte(max_gradient(alpha = !!alpha, !!weights, 'w/o loadings', !!intercept), !!num_tol_comp)
+          expect_lte(max_gradient(alpha = !!alpha, !!weights, 'w/o loadings', !!intercept),
+                     !!num_tol_comp)
         }
       })
     })
@@ -111,7 +116,7 @@ check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1),
 }
 
 test_that("Elastic Net Algorithm `DAL`", {
-  check_en_algorithm(en_dal_options(), num_tol_comp = 1e-7, num_tol = 1e-9)
+  check_en_algorithm(en_dal_options(), num_tol_comp = 1e-6, num_tol = 1e-9)
 })
 
 test_that("Elastic Net Algorithm `linearized ADMM`", {

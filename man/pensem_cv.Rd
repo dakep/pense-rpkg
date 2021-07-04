@@ -81,9 +81,9 @@ pensem_cv(x, ...)
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
-is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
-but \code{alpha = 0} cannot be mixed with other values.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge penalty.
+Can be a vector of several values, but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{nlambda}{number of penalization levels.}
 

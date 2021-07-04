@@ -44,9 +44,9 @@ pense(
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1}
-is the LASSO penalty, and \code{alpha = 0} the Ridge penalty. Can be a vector of several values,
-but \code{alpha = 0} cannot be mixed with other values.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge penalty.
+Can be a vector of several values, but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{nlambda}{number of penalization levels.}
 
@@ -203,6 +203,7 @@ plot(regpath)
 coef(regpath, lambda = regpath$lambda[[1]][[40]])
 
 # What penalization level leads to good prediction performance?
+set.seed(123)
 cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
                        cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)

@@ -170,8 +170,8 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     fit_ses <- TRUE
   }
 
-  cv_k <- .as(cv_k, 'integer')
-  cv_repl <- .as(cv_repl, 'integer')
+  cv_k <- .as(cv_k[[1L]], 'integer')
+  cv_repl <- .as(cv_repl[[1L]], 'integer')
 
   if (cv_k < 2L) {
     abort("`cv_k` must be greater than 1.")
@@ -181,7 +181,7 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("`cv_repl` must be greater than 0.")
   }
 
-  if (cv_repl == 1L && any(fit_ses > 0)) {
+  if (identical(cv_repl, 1L) && any(fit_ses > 0)) {
     warn("To use `fit_all = \"se\"`, `cv_repl` must be 2 or greater.")
     fit_ses <- 0
   }

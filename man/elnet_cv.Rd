@@ -23,8 +23,8 @@ elnet_cv(
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels.
+If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
 \item{cv_k}{number of folds per cross-validation.}
 
@@ -55,36 +55,35 @@ Applies to all \code{alpha} value.}
 \item{...}{
   Arguments passed on to \code{\link[=elnet]{elnet}}
   \describe{
-    \item{\code{alpha}}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+    \item{\code{alpha}}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge penalty.
+Can be a vector of several values, but \code{alpha = 0} cannot be mixed with other values.}
     \item{\code{nlambda}}{number of penalization levels.}
-    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
-    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient.}
-    \item{\code{standardize}}{standardize variables to have unit variance. Coefficients are always returned in original scale.}
+    \item{\code{lambda_min_ratio}}{Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero).
+The default depends on the sample size relative to the number of variables and \code{alpha}.
+If more observations than variables are available, the default is \code{1e-3 * alpha},
+otherwise \code{1e-2 * alpha}.}
+    \item{\code{penalty_loadings}}{a vector of positive penalty loadings (a.k.a. weights) for
+different penalization of each coefficient.}
+    \item{\code{standardize}}{standardize variables to have unit variance.
+Coefficients are always returned in original scale.}
     \item{\code{weights}}{a vector of positive observation weights.}
     \item{\code{intercept}}{include an intercept in the model.}
     \item{\code{sparse}}{use sparse coefficient vectors.}
     \item{\code{en_algorithm_opts}}{options for the EN algorithm. See \link{en_algorithm_options}
 for details.}
     \item{\code{eps}}{numerical tolerance.}
-    \item{\code{xtest}}{deprecated. Instead, extract coefficients with \code{\link[=coef.pense_fit]{coef.pense_fit()}} and compute predictions manually.}
+    \item{\code{xtest}}{defunct.}
     \item{\code{options}}{deprecated. Use \code{en_algorithm_opts} instead.}
     \item{\code{correction}}{defunct. Correction for EN estimates is not supported anymore.}
   }}
 }
 \value{
-a list with components:
+a list-like object with the same components as returned by \code{\link[=elnet]{elnet()}},
+plus the following:
 \describe{
-\item{\code{alpha}}{the sequence of \code{alpha} parameters.}
-\item{\code{lambda}}{a list of sequences of penalization levels, one per \code{alpha} parameter.}
 \item{\code{cvres}}{data frame of average cross-validated performance.}
-\item{\code{call}}{the original call.}
-\item{\code{estimates}}{the estimates fitted on the full data. Same format as returned
-by \code{\link[=elnet]{elnet()}}.}
 }
 }
 \description{
@@ -107,24 +106,31 @@ Only sensible for binary responses.}
 data(freeny)
 x <- as.matrix(freeny[ , 2:5])
 
-regpath <- elnet(x, freeny$y, alpha = 0.75)
+regpath <- elnet(x, freeny$y, alpha = c(0.5, 0.75))
 plot(regpath)
+plot(regpath, alpha = 0.75)
 
 # Extract the coefficients at a certain penalization level
-coef(regpath, lambda = regpath$lambda[5])
+coef(regpath, lambda = regpath$lambda[[1]][[5]],
+     alpha = 0.75)
 
 # What penalization level leads to good prediction performance?
-cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 10,
-                       cv_k = 4, cv_measure = 'tau')
-plot(cv_results, se_mult = 1)
-plot(cv_results, se_mult = 1, what = 'coef.path')
+set.seed(123)
+cv_results <- elnet_cv(x, freeny$y, alpha = c(0.5, 0.75),
+                       cv_repl = 10, cv_k = 4,
+                       cv_measure = "tau")
+plot(cv_results, se_mult = 1.5)
+plot(cv_results, se_mult = 1.5, what = "coef.path")
+
 
 # Extract the coefficients at the penalization level with
 # smallest prediction error ...
+summary(cv_results)
 coef(cv_results)
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
-coef(cv_results, lambda = 'se')
+summary(cv_results, lambda = "1.5-se")
+coef(cv_results, lambda = "1.5-se")
 }
 \seealso{
 \code{\link[=elnet]{elnet()}} for computing the LS-EN regularization path without cross-validation.

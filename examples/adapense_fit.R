@@ -4,12 +4,14 @@ data(freeny)
 x <- as.matrix(freeny[ , 2:5])
 
 ## Either use the convenience function directly ...
+set.seed(123)
 ada_convenience <- adapense_cv(x, freeny$y,
                                alpha = c(0.5, 1),
                                cv_repl = 2, cv_k = 4)
 
 ## ... or compute the steps manually:
 # Step 1: Compute preliminary estimates with CV
+set.seed(123)
 preliminary_estimate <- pense_cv(x, freeny$y, alpha = 0,
                                  cv_repl = 2, cv_k = 4)
 plot(preliminary_estimate, se_mult = 1)
@@ -21,6 +23,7 @@ pen_loadings <- 1 / abs(prelim_coefs[-1])
 
 # Step 3: Compute the adaptive PENSE estimates and estimate
 # their prediction performance.
+set.seed(123)
 ada_manual <- pense_cv(x, freeny$y, alpha = c(0.5, 1),
                        cv_repl = 2, cv_k = 4,
                        penalty_loadings = pen_loadings)

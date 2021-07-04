@@ -77,6 +77,7 @@ predict(regpath, newdata = freeny[1:5, 2:5],
 residuals(regpath, lambda = regpath$lambda[[1]][[5]])
 
 # Select penalization level via cross-validation
+set.seed(123)
 cv_results <- elnet_cv(x, freeny$y, alpha = 0.5,
                        cv_repl = 10, cv_k = 4)
 
@@ -86,7 +87,7 @@ predict(cv_results, newdata = freeny[1:5, 2:5])
 # Extract the residuals at the "best" penalization level
 residuals(cv_results)
 # Extract the residuals at a more parsimonious penalization level
-residuals(cv_results, lambda = '1.5-se')
+residuals(cv_results, lambda = "1.5-se")
 }
 \seealso{
 Other functions for extracting components: 

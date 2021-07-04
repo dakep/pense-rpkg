@@ -31,21 +31,23 @@ elnet(
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. \code{alpha = 1} is the LASSO penalty,
-and \code{alpha = 0} the Ridge penalty.}
+\item{alpha}{elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+\code{alpha = 1} is the LASSO penalty, and \code{alpha = 0} the Ridge penalty.
+Can be a vector of several values, but \code{alpha = 0} cannot be mixed with other values.}
 
 \item{nlambda}{number of penalization levels.}
 
-\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and \code{alpha}. If more observations than variables
-are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
+\item{lambda_min_ratio}{Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero).
+The default depends on the sample size relative to the number of variables and \code{alpha}.
+If more observations than variables are available, the default is \code{1e-3 * alpha},
+otherwise \code{1e-2 * alpha}.}
 
-\item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL}, \code{nlambda} and
-\code{lambda_min_ratio} are ignored.}
+\item{lambda}{optional user-supplied sequence of penalization levels.
+If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored.}
 
-\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient.}
+\item{penalty_loadings}{a vector of positive penalty loadings (a.k.a. weights) for
+different penalization of each coefficient.}
 
 \item{weights}{a vector of positive observation weights.}
 
@@ -58,11 +60,12 @@ for details.}
 
 \item{eps}{numerical tolerance.}
 
-\item{standardize}{standardize variables to have unit variance. Coefficients are always returned in original scale.}
+\item{standardize}{standardize variables to have unit variance.
+Coefficients are always returned in original scale.}
 
 \item{correction}{defunct. Correction for EN estimates is not supported anymore.}
 
-\item{xtest}{deprecated. Instead, extract coefficients with \code{\link[=coef.pense_fit]{coef.pense_fit()}} and compute predictions manually.}
+\item{xtest}{defunct.}
 
 \item{options}{deprecated. Use \code{en_algorithm_opts} instead.}
 }
@@ -77,13 +80,12 @@ a list-like object with the following items
 \item{\code{beta}}{beta (slope) estimate.}
 \item{\code{lambda}}{penalization level at which the estimate is computed.}
 \item{\code{alpha}}{\emph{alpha} hyper-parameter at which the estimate is computed.}
-\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when computing the estimate.}
+\item{\code{statuscode}}{if \verb{> 0} the algorithm experienced issues when
+computing the estimate.}
 \item{\code{status}}{optional status message from the algorithm.}
 }
 }
 \item{\code{call}}{the original call.}
-\item{\code{predictions}}{if \code{xtest} was given, a matrix of predicted values. Each column corresponds to the
-predictions from the estimate at the \code{lambda} value at the same index.}
 }
 }
 \description{
@@ -106,24 +108,31 @@ with observation weights \eqn{w_i} and penalty loadings \eqn{l_j}.
 data(freeny)
 x <- as.matrix(freeny[ , 2:5])
 
-regpath <- elnet(x, freeny$y, alpha = 0.75)
+regpath <- elnet(x, freeny$y, alpha = c(0.5, 0.75))
 plot(regpath)
+plot(regpath, alpha = 0.75)
 
 # Extract the coefficients at a certain penalization level
-coef(regpath, lambda = regpath$lambda[5])
+coef(regpath, lambda = regpath$lambda[[1]][[5]],
+     alpha = 0.75)
 
 # What penalization level leads to good prediction performance?
-cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 10,
-                       cv_k = 4, cv_measure = 'tau')
-plot(cv_results, se_mult = 1)
-plot(cv_results, se_mult = 1, what = 'coef.path')
+set.seed(123)
+cv_results <- elnet_cv(x, freeny$y, alpha = c(0.5, 0.75),
+                       cv_repl = 10, cv_k = 4,
+                       cv_measure = "tau")
+plot(cv_results, se_mult = 1.5)
+plot(cv_results, se_mult = 1.5, what = "coef.path")
+
 
 # Extract the coefficients at the penalization level with
 # smallest prediction error ...
+summary(cv_results)
 coef(cv_results)
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
-coef(cv_results, lambda = 'se')
+summary(cv_results, lambda = "1.5-se")
+coef(cv_results, lambda = "1.5-se")
 }
 \seealso{
 \code{\link[=pense]{pense()}} for an S-estimate of regression with elastic net penalty.

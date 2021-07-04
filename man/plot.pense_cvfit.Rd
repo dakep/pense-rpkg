@@ -37,6 +37,7 @@ plot(regpath)
 coef(regpath, lambda = regpath$lambda[[1]][[40]])
 
 # What penalization level leads to good prediction performance?
+set.seed(123)
 cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
                        cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)

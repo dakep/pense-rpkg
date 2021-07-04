@@ -15,25 +15,28 @@
 #' @param x `n` by `p` matrix of numeric predictors.
 #' @param y vector of response values of length `n`.
 #'          For binary classification, `y` should be a factor with 2 levels.
-#' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. `alpha = 1` is the LASSO penalty,
-#'    and `alpha = 0` the Ridge penalty.
+#' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+#'    `alpha = 1` is the LASSO penalty, and `alpha = 0` the Ridge penalty.
+#'    Can be a vector of several values, but `alpha = 0` cannot be mixed with other values.
 #' @param nlambda number of penalization levels.
-#' @param lambda_min_ratio Smallest value of the penalization level as a fraction of the largest level (i.e., the
-#'    smallest value for which all coefficients are zero). The default depends on the sample
-#'    size relative to the number of variables and `alpha`. If more observations than variables
-#'    are available, the default is `1e-3 * alpha`, otherwise `1e-2 * alpha`.
-#' @param lambda optional user-supplied sequence of penalization levels. If given and not `NULL`, `nlambda` and
-#'    `lambda_min_ratio` are ignored.
-#' @param penalty_loadings a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-#'    coefficient.
-#' @param standardize standardize variables to have unit variance. Coefficients are always returned in original scale.
+#' @param lambda_min_ratio Smallest value of the penalization level as a fraction of the largest
+#'    level (i.e., the smallest value for which all coefficients are zero).
+#'    The default depends on the sample size relative to the number of variables and `alpha`.
+#'    If more observations than variables are available, the default is `1e-3 * alpha`,
+#'    otherwise `1e-2 * alpha`.
+#' @param lambda optional user-supplied sequence of penalization levels.
+#'    If given and not `NULL`, `nlambda` and `lambda_min_ratio` are ignored.
+#' @param penalty_loadings a vector of positive penalty loadings (a.k.a. weights) for
+#'    different penalization of each coefficient.
+#' @param standardize standardize variables to have unit variance.
+#'    Coefficients are always returned in original scale.
 #' @param weights a vector of positive observation weights.
 #' @param intercept include an intercept in the model.
 #' @param sparse use sparse coefficient vectors.
 #' @param en_algorithm_opts options for the EN algorithm. See [en_algorithm_options]
 #'    for details.
 #' @param eps numerical tolerance.
-#' @param xtest deprecated. Instead, extract coefficients with [coef.pense_fit()] and compute predictions manually.
+#' @param xtest defunct.
 #' @param options deprecated. Use `en_algorithm_opts` instead.
 #' @param correction defunct. Correction for EN estimates is not supported anymore.
 #'
@@ -47,13 +50,12 @@
 #'           \item{`beta`}{beta (slope) estimate.}
 #'           \item{`lambda`}{penalization level at which the estimate is computed.}
 #'           \item{`alpha`}{*alpha* hyper-parameter at which the estimate is computed.}
-#'           \item{`statuscode`}{if `> 0` the algorithm experienced issues when computing the estimate.}
+#'           \item{`statuscode`}{if `> 0` the algorithm experienced issues when
+#'                               computing the estimate.}
 #'           \item{`status`}{optional status message from the algorithm.}
 #'         }
 #'      }
 #'      \item{`call`}{the original call.}
-#'      \item{`predictions`}{if `xtest` was given, a matrix of predicted values. Each column corresponds to the
-#'                           predictions from the estimate at the `lambda` value at the same index.}
 #'    }
 #'
 #' @example examples/ls_elnet.R
@@ -65,42 +67,53 @@
 #' @seealso [plot.pense_fit()] for plotting the regularization path.
 #'
 #' @export
-#' @importFrom lifecycle deprecated
+#' @importFrom lifecycle deprecated is_present
 #' @importFrom rlang exec
-elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights, intercept = TRUE,
-                  en_algorithm_opts, sparse = FALSE, eps = 1e-6, standardize = TRUE,
+elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights,
+                  intercept = TRUE, en_algorithm_opts, sparse = FALSE, eps = 1e-6,
+                  standardize = TRUE,
                   correction = deprecated(), xtest = deprecated(), options = deprecated()) {
+  if (is_present(xtest)) {
+    deprecate_stop('2.0.0', 'elnet(xtest=)')
+  }
+  if (is_present(correction)) {
+    deprecate_stop('2.0.0', 'elnet(correction=)')
+  }
+
   call <- match.call(expand.dots = FALSE)
   args <- as.list(call[-1L])
   args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
   args <- do.call(.elnet_args, args, envir = parent.frame())
 
-  res <- .elnet_internal(args$std_data$x, args$std_data$y, alpha = args$alpha, lambda = args$lambda,
-                         penalty_loadings = args$penalty_loadings, weights = args$weights,
-                         intercept = args$intercept, optional_args = args$optional_args)
+  fits <- mapply(
+    args$alpha, args$lambda,
+    SIMPLIFY = FALSE, USE.NAMES = FALSE,
+    FUN = function (alpha, lambda) {
+      fit <- .elnet_internal(args$std_data$x, args$std_data$y,
+                             alpha = alpha,
+                             lambda = lambda,
+                             penalty_loadings = args$penalty_loadings,
+                             weights = args$weights,
+                             intercept = args$intercept,
+                             optional_args = args$optional_args)
 
-  res$estimates <- lapply(res$estimates, function (est) {
-    args$restore_coef_length(args$std_data$unstandardize_coefs(est))
-  })
-
-  predictions <- if (is_present(xtest)) {
-    matrix(unlist(lapply(res$estimates, function (est) {
-      as.numeric(xtest %*% est$beta) + est$intercept
-    }), use.names = FALSE, recursive = FALSE), ncol = length(res$estimates))
-  } else {
-    NULL
-  }
+      fit$estimates <- lapply(fit$estimates, function (est) {
+        args$restore_coef_length(args$std_data$unstandardize_coefs(est))
+      })
+      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
+                                  'lambda'), use.names = FALSE, recursive = FALSE)
+      fit$alpha <- alpha
+      fit
+    })
 
   structure(list(
-    estimates = .metrics_attrib(res$estimates, res$metrics),
     call = call,
-    alpha = args$alpha,
-    predictions = predictions,
-    lambda = list(unlist(lapply(res$estimates, `[[`, 'lambda'),
-                         use.names = FALSE, recursive = FALSE))),
-    class = c('en', 'pense_fit'))
+    lambda = lapply(fits, `[[`, 'lambda'),
+    estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
+    alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
+    class = c('pense_en', 'pense_fit'))
 }
-
 
 #' Cross-validation for Least-Squares (Adaptive) Elastic Net Estimates
 #'
@@ -114,14 +127,10 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @seealso [elnet()] for computing the LS-EN regularization path without cross-validation.
 #' @seealso [pense_cv()] for cross-validation of S-estimates of regression with elastic net penalty.
 #'
-#' @return a list with components:
+#' @return a list-like object with the same components as returned by [elnet()],
+#'    plus the following:
 #'    \describe{
-#'      \item{`alpha`}{the sequence of `alpha` parameters.}
-#'      \item{`lambda`}{a list of sequences of penalization levels, one per `alpha` parameter.}
 #'      \item{`cvres`}{data frame of average cross-validated performance.}
-#'      \item{`call`}{the original call.}
-#'      \item{`estimates`}{the estimates fitted on the full data. Same format as returned
-#'                         by [elnet()].}
 #'    }
 #'
 #' @family functions for computing non-robust estimates
@@ -132,12 +141,23 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom stats sd
 #' @export
-elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 'tau_size', 'mape', 'auroc'),
-                      fit_all = TRUE, cl = NULL, ncores = deprecated(), ...) {
+elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
+                      cv_metric = c('rmspe', 'tau_size', 'mape', 'auroc'), fit_all = TRUE,
+                      cl = NULL, ncores = deprecated(), ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.elnet_args, as.list(call[-1L]), envir = parent.frame())
-  cv_k <- .as(cv_k, 'integer')
-  cv_repl <- .as(cv_repl, 'integer')
+
+  fit_ses <- if (is.character(fit_all)) {
+    unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L), only_fact = TRUE,
+                  USE.NAMES = FALSE))
+  } else if (isFALSE(fit_all)) {
+    .parse_se_string('min', only_fact = TRUE)
+  } else {
+    TRUE
+  }
+
+  cv_k <- .as(cv_k[[1L]], 'integer')
+  cv_repl <- .as(cv_repl[[1L]], 'integer')
 
   if (cv_k < 2L) {
     abort("`cv_k` must be greater than 1.")
@@ -145,6 +165,11 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
 
   if (cv_repl < 1L) {
     abort("`cv_repl` must be greater than 0.")
+  }
+
+  if (identical(cv_repl, 1L) && any(fit_ses > 0)) {
+    warn("To use `fit_all = \"se\"`, `cv_repl` must be 2 or greater.")
+    fit_ses <- 0
   }
 
   if (is_present(ncores)) {
@@ -175,43 +200,79 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
     abort("Function `cv_metric` must accept at least 1 argument.")
   }
 
-  cv_fun <- function (train_data, test_ind) {
-    cv_fit <- .elnet_internal(train_data$x, train_data$y, alpha = args$alpha, lambda = args$lambda,
-                              penalty_loadings = args$penalty_loadings, weights = args$weights[-test_ind],
-                              intercept = args$intercept, optional_args = args$optional_args)
-    cv_fit$estimates
-  }
+  # Get a common seed to be used for every alpha value
+  fit_seed <- sample.int(.Machine$integer.max, 1L)
 
-  cv_perf <- .run_replicated_cv(args$std_data, cv_k = cv_k, cv_repl = cv_repl, metric = cv_metric, cv_est_fun = cv_fun,
-                                par_cluster = cl)
+  cv_curves <- mapply(
+    args$alpha, args$lambda,
+    SIMPLIFY = FALSE, USE.NAMES = FALSE,
+    FUN = function (alpha, lambda) {
+      cv_fun <- function (train_data, test_ind) {
+        cv_fit <- .elnet_internal(train_data$x, train_data$y,
+                                  alpha = alpha,
+                                  lambda = lambda,
+                                  penalty_loadings = args$penalty_loadings,
+                                  weights = args$weights[-test_ind],
+                                  intercept = args$intercept,
+                                  optional_args = args$optional_args)
+        cv_fit$estimates
+      }
 
-  cv_perf_df <- data.frame(lambda = args$lambda, alpha = args$alpha,
-                           cvavg = rowMeans(cv_perf), cvse = 0)
+      set.seed(fit_seed)
+      cv_perf <- .run_replicated_cv(args$std_data, cv_k = cv_k, cv_repl = cv_repl,
+                                    metric = cv_metric, cv_est_fun = cv_fun,
+                                    par_cluster = cl)
 
-  if (cv_repl > 1L) {
-    cv_perf_df$cvse <- apply(cv_perf, 1, sd)
-  }
+      data.frame(lambda = lambda, alpha = alpha,
+                 cvavg = rowMeans(cv_perf),
+                 cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
+    })
 
-  fit_lambda <- if (isTRUE(fit_all)) {
-    args$lambda
+  cv_curves <- do.call(rbind, cv_curves)
+
+  if (isTRUE(fit_ses)) {
+    fit_lambda <- args$lambda
   } else {
-    with(cv_perf_df, lambda[[which.min(cv_perf_df$cvavg)]])
+    fit_lambda <- lapply(args$alpha, function (alpha) {
+      rows <- which((cv_curves$alpha - alpha)^2 < .Machine$double.eps)
+
+      lambda_inds <- vapply(fit_ses, FUN.VALUE = numeric(1L), FUN = function (se_fact) {
+        which(.cv_se_selection(cv_curves$cvavg[rows], cv_curves$cvse[rows], se_fact) == 'se_fact')
+      })
+      unique(cv_curves$lambda[rows[lambda_inds]])
+    })
   }
 
-  fit <- .elnet_internal(args$std_data$x, args$std_data$y, alpha = args$alpha, lambda = fit_lambda,
-                         penalty_loadings = args$penalty_loadings, weights = args$weights, intercept =args$intercept,
-                         optional_args = args$optional_args)
-  fit$estimates <- lapply(fit$estimates, function (est) {
-    args$restore_coef_length(args$std_data$unstandardize_coefs(est))
-  })
-  return(structure(list(
+  fits <- mapply(
+    args$alpha, fit_lambda,
+    SIMPLIFY = FALSE, USE.NAMES = FALSE,
+    FUN = function (alpha, lambda) {
+      fit <- .elnet_internal(args$std_data$x, args$std_data$y,
+                             alpha = alpha,
+                             lambda = lambda,
+                             penalty_loadings = args$penalty_loadings,
+                             weights = args$weights,
+                             intercept = args$intercept,
+                             optional_args = args$optional_args)
+
+      fit$estimates <- lapply(fit$estimates, function (est) {
+        args$restore_coef_length(args$std_data$unstandardize_coefs(est))
+      })
+      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
+                                  'lambda'), use.names = FALSE, recursive = FALSE)
+      fit$alpha <- alpha
+      fit
+    })
+
+  structure(list(
     call = call,
-    cvres = cv_perf_df,
+    cvres = cv_curves,
     cv_measure = cv_measure_str,
-    lambda = list(args$lambda),
-    alpha = args$alpha,
-    estimates = .metrics_attrib(fit$estimates, fit$metrics)),
-    class = c('pense_en', 'pense_cvfit')))
+    lambda = lapply(fits, `[[`, 'lambda'),
+    estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
+    alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
+    class = c('pense_en', 'pense_cvfit'))
 }
 
 ## Perform some final input adjustments and call the internal C++ code.
@@ -274,11 +335,14 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
     isTRUE(standardize)
   }
 
-  alpha <- .as(alpha[[1L]], 'numeric')
-  if (alpha < 0 || alpha > 1) {
+  alpha <- .as(alpha, 'numeric')
+  if (any(alpha < 0 | alpha > 1)) {
     abort("`alpha` is outside 0 and 1.")
-  } else if (alpha < sqrt(.Machine$double.eps)) {
-    alpha <- 0
+  } else if (any(alpha < sqrt(.Machine$double.eps))) {
+    alpha[which(alpha < sqrt(.Machine$double.eps))] <- 0
+    if (any(alpha > 0)) {
+      abort("`alpha=0` cannot be mixed with other `alpha` values.")
+    }
   }
 
   sparse <- .as(sparse[[1L]], 'logical')
@@ -312,17 +376,25 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
 
   if (ncol(x) == 0L) {
     warn("All values in `penalty_loadings` are infinite. Only computing the intercept.")
-    std_data <- .standardize_data(matrix(runif(x_dim[[1L]]), ncol = 1L), y, intercept = intercept, sparse = sparse,
+    std_data <- .standardize_data(matrix(runif(x_dim[[1L]]), ncol = 1L), y,
+                                  intercept = intercept, sparse = sparse,
                                   standardize = standardize, robust = FALSE)
-    lambda <- .elnet_max_lambda(std_data$x, std_data$y, alpha, weights, NULL)
+    lambda <- lapply(alpha, FUN = .elnet_max_lambda,
+                     x = std_data$x, y = std_data$y, weights = weights,
+                     penalty_loadings = NULL)
 
-    return(list(std_data = std_data, alpha = alpha, lambda = lambda, weights = weights,
-                penalty_loadings = NULL, intercept = intercept, optional_args = optional_args,
+    return(list(std_data = std_data,
+                alpha = alpha,
+                lambda = lambda,
+                weights = weights,
+                penalty_loadings = NULL,
+                intercept = intercept,
+                optional_args = optional_args,
                 restore_coef_length = restore_coef_length))
   }
 
-  std_data <- .standardize_data(x, y, intercept = intercept, standardize = isTRUE(standardize), robust = FALSE,
-                                sparse = sparse)
+  std_data <- .standardize_data(x, y, intercept = intercept, standardize = isTRUE(standardize),
+                                robust = FALSE, sparse = sparse)
 
   # Scale penalty loadings appropriately
   penalty_loadings <- penalty_loadings / std_data$scale_x
@@ -331,19 +403,36 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1, cv_metric = c('rmspe', 't
   }
 
   lambda <- if (missing(lambda) || is.null(lambda)) {
-    # Generate lambda sequence automatically.
-    if (missing(lambda_min_ratio) || is.null(lambda_min_ratio)) {
-      lambda_min_ratio <- max(0.01, alpha) * if (x_dim[[1L]] > x_dim[[2L]]) { 1e-3 } else { 1e-2 }
+    if (missing(lambda_min_ratio)) {
+      lambda_min_ratio <- NULL
     }
-    max_lambda <- .elnet_max_lambda(std_data$x, std_data$y, alpha, weights, penalty_loadings)
-    rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda), length.out = nlambda)))
+
+    lapply(alpha, FUN = function (a) {
+      if (is.null(lambda_min_ratio)) {
+        lambda_min_ratio <- max(0.01, alpha) * if (x_dim[[1L]] > x_dim[[2L]]) { 1e-3 } else { 1e-2 }
+      }
+      max_lambda <- .elnet_max_lambda(std_data$x, std_data$y, a, weights, penalty_loadings)
+      rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda), length.out = nlambda)))
+    })
+  } else if (!is.list(lambda)) {
+    rep.int(list(sort(.as(lambda, 'numeric'), decreasing = TRUE)), length(alpha))
+  } else if (identical(length(lambda), length(alpha))) {
+    lapply(lambda, function (l) {
+      sort(.as(l, 'numeric'), decreasing = TRUE)
+    })
   } else {
-    sort(.as(lambda, 'numeric'), decreasing = TRUE)
+    abort("`lambda` must either be a numeric vector or a list the same length as `alpha`.")
   }
 
-  return(list(std_data = std_data, binary_response = response$binary, alpha = alpha, lambda = lambda,
-              weights = weights, penalty_loadings = penalty_loadings, intercept = intercept,
-              optional_args = optional_args, restore_coef_length = restore_coef_length))
+  return(list(std_data = std_data,
+              binary_response = response$binary,
+              alpha = alpha,
+              lambda = lambda,
+              weights = weights,
+              penalty_loadings = penalty_loadings,
+              intercept = intercept,
+              optional_args = optional_args,
+              restore_coef_length = restore_coef_length))
 }
 
 #' @importFrom stats cov

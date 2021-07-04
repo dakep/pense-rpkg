@@ -1,11 +1,13 @@
-# pense 2.x
+# pense 2.1.0
+  * Penalty loadings are now applied to both the L1 and L2 parts of the EN penalty.
+    This will lead to different results for adaptive PENSE and other adaptive estimators when fitted with *alpha < 1*!
+  * PENSE and regularized M-estimators now accept multiple `alpha` values and automatic hyper-parameter selection will also choose the best `alpha` value.
+  * New support for specifying the more general "1-SE" rules for the penalization level as string.
+    All methods which support `lambda = "min"` to extract the best fit, also support the syntax `lambda = "{m}-se"` to extract the most parsimonious fit within *m* standard-errors of the best fit.
   * Adaptively choose the actual breakdown point based on the number of observations. 
-    The chosen breakdown point is close to the user-specified breakdown point, but
-    avoids numerical instabilities in the S-loss and excessive computation time caused by these
-    instabilities.
-  * Simplify the DAL algorithm to fully rely on linear algebra routines from the BLAS/LAPACK library
-    linked to R. To improve the speed of the DAL algorithm, optimized BLAS/LAPACK libraries are
-    recommended.
+    The chosen breakdown point is close to the user-specified breakdown point, but avoids numerical instabilities in the S-loss and excessive computation time caused by these instabilities.
+  * Simplify the DAL algorithm to fully rely on linear algebra routines from the BLAS/LAPACK library linked to R.
+    To improve the speed of the DAL algorithm, optimized BLAS/LAPACK libraries are recommended.
   * Fix memory issues from edge-cases and OpenMP problems with Intel compilers
 
 # pense 2.0.3

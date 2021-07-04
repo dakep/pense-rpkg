@@ -36,9 +36,9 @@
 #' @param x `n` by `p` matrix of numeric predictors.
 #' @param y vector of response values of length `n`.
 #'          For binary classification, `y` should be a factor with 2 levels.
-#' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}. `alpha = 1`
-#'    is the LASSO penalty, and `alpha = 0` the Ridge penalty. Can be a vector of several values,
-#'    but `alpha = 0` cannot be mixed with other values.
+#' @param alpha elastic net penalty mixing parameter with \eqn{0 \le \alpha \le 1}.
+#'    `alpha = 1` is the LASSO penalty, and `alpha = 0` the Ridge penalty.
+#'    Can be a vector of several values, but `alpha = 0` cannot be mixed with other values.
 #' @param nlambda number of penalization levels.
 #' @param lambda_min_ratio Smallest value of the penalization level as a fraction of the largest
 #'    level (i.e., the smallest value for which all coefficients are zero). The default depends on
@@ -244,8 +244,8 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     fit_ses <- TRUE
   }
 
-  cv_k <- .as(cv_k, 'integer')
-  cv_repl <- .as(cv_repl, 'integer')
+  cv_k <- .as(cv_k[[1L]], 'integer')
+  cv_repl <- .as(cv_repl[[1L]], 'integer')
 
   if (cv_k < 2L) {
     abort("`cv_k` must be greater than 1.")
@@ -255,7 +255,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("`cv_repl` must be greater than 0.")
   }
 
-  if (cv_repl == 1L && any(fit_ses > 0)) {
+  if (identical(cv_repl, 1L) && any(fit_ses > 0)) {
     warn("To use `fit_all = \"se\"`, `cv_repl` must be 2 or greater.")
     fit_ses <- 0
   }

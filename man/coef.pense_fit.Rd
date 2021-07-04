@@ -18,11 +18,12 @@
 \arguments{
 \item{object}{PENSE regularization path to extract coefficients from.}
 
-\item{lambda}{a single value of the penalty parameter.}
+\item{lambda}{a single number for the penalty level.}
 
 \item{alpha}{Either a single number or \code{NULL} (default).
 If given, only fits with the given \code{alpha} value are considered.
-If \code{object} was fit with multiple \code{alpha} values, the parameter \code{alpha} must not be missing.}
+If \code{object} was fit with multiple \code{alpha} values, and no value is provided, the
+first value in \code{object$alpha} is used with a warning.}
 
 \item{sparse}{should coefficients be returned as sparse or dense vectors? Defaults to the
 sparsity setting in \code{object}.
@@ -57,11 +58,11 @@ regpath <- pense(x, freeny$y, alpha = 0.5)
 plot(regpath)
 
 # Extract the coefficients at a certain penalization level
-coef(regpath, lambda = regpath$lambda[40])
+coef(regpath, lambda = regpath$lambda[[1]][[40]])
 
 # What penalization level leads to good prediction performance?
-cv_results <- pense_cv(x, freeny$y, alpha = 0.5, cv_repl = 2,
-                       cv_k = 4)
+cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
+                       cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)
 
 # Extract the coefficients at the penalization level with
@@ -69,7 +70,7 @@ plot(cv_results, se_mult = 1)
 coef(cv_results)
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
-coef(cv_results, lambda = 'se')
+coef(cv_results, lambda = '1-se')
 }
 \seealso{
 \code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficients from a PENSE fit with

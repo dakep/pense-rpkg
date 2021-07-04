@@ -3,11 +3,8 @@
 #' Extract coefficients from an adaptive PENSE (or LS-EN) regularization path fitted by [pense()]
 #' or [elnet()].
 #'
+#' @template hyper_param-fit
 #' @param object PENSE regularization path to extract coefficients from.
-#' @param lambda a single value of the penalty parameter.
-#' @param alpha Either a single number or `NULL` (default).
-#'    If given, only fits with the given `alpha` value are considered.
-#'    If `object` was fit with multiple `alpha` values, the parameter `alpha` must not be missing.
 #' @param sparse should coefficients be returned as sparse or dense vectors? Defaults to the
 #'    sparsity setting in `object`.
 #'    Can also be set to `sparse = 'matrix'`, in which case a sparse matrix
@@ -47,13 +44,6 @@ coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standar
 
   lambda <- .as(lambda[[1L]], 'numeric')
 
-  # if (isTRUE(lambda > object$lambda[[1L]]) &&
-  #     isTRUE(sum(abs(object$estimates[[1L]]$beta)) < .Machine$double.eps)) {
-  #   return(.concat_coefs(object$estimates[[1L]], object$call, sparse = sparse,
-  #                        envir = parent.frame(),
-  #                        standardized = standardized, concat = concat))
-  # }
-
   lambda_index <- .lambda_index_cvfit(object, lambda = lambda, alpha = alpha, se_mult = 0)
   if (length(lambda_index) > 1L) {
     warn(paste("Requested penalization level not part of the sequence.",
@@ -73,23 +63,8 @@ coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standar
 #' Extract coefficients from an adaptive PENSE (or LS-EN) regularization path with hyper-parameters
 #' chosen by cross-validation.
 #'
-#' If `lambda = "se"` and `object` contains fitted estimates for every penalization level in
-#' the sequence, extract the coefficients of the most parsimonious model with prediction
-#' performance statistically indistinguishable from the best model.
-#' This is determined to be the model with prediction performance within `se_mult * cv_se`
-#' from the best model.
-#' The string in `lambda` can also directly specify the multiplier by setting `lambda = "{x}-se"`,
-#' where `{x}` is any (positive) number.
-#'
+#' @template hyper_param-cv
 #' @param object PENSE with cross-validated hyper-parameters to extract coefficients from.
-#' @param lambda either a string specifying which penalty level to use
-#'    (`"min"`, `"se"`, `"{x}-se`")
-#'    or a single numeric value of the penalty parameter. See details.
-#' @param alpha Either a single number or `NULL` (default).
-#'    If given, only fits with the given `alpha` value are considered.
-#'    If `lambda` is a numeric value and `object` was fit with multiple `alpha`
-#'    values, the parameter `alpha` must not be missing.
-#' @param se_mult If `lambda = "se"`, the multiple of standard errors to tolerate.
 #' @param sparse should coefficients be returned as sparse or dense vectors?
 #'    Defaults to the sparsity setting of the given `object`.
 #'    Can also be set to `sparse = 'matrix'`, in which case a sparse matrix
@@ -107,7 +82,7 @@ coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standar
 #' @family functions for extracting components
 #' @example examples/pense_fit.R
 #' @export
-coef.pense_cvfit <- function (object, lambda = 'min', alpha = NULL, se_mult = 1, sparse = NULL,
+coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1, sparse = NULL,
                               standardized = FALSE,
                               exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
@@ -139,15 +114,6 @@ coef.pense_cvfit <- function (object, lambda = 'min', alpha = NULL, se_mult = 1,
 .lambda_index_cvfit <- function (object, lambda, alpha, se_mult) {
   if (is.character(lambda) && !identical(lambda, 'se')) {
     se_mult <- .parse_se_string(lambda, only_fact = TRUE)
-  }
-
-  if (missing(alpha) || is.null(alpha)) {
-    if (length(object$alpha) > 1L) {
-      warn(paste("`object` was fit for multiple `alpha` values.",
-                 "Using first value in `object$alpha`.",
-                 "To select a different value, specify parameter `alpha`."))
-    }
-    alpha <- object$alpha[[1L]]
   }
 
   if (is.character(lambda)) {
@@ -182,6 +148,15 @@ coef.pense_cvfit <- function (object, lambda = 'min', alpha = NULL, se_mult = 1,
 
     alpha <- considered_alpha[[best_alpha_index]]
     lambda <- best_per_alpha['lambda', best_alpha_index]
+  }
+
+  if (missing(alpha) || is.null(alpha)) {
+    if (length(object$alpha) > 1L) {
+      warn(paste("`object` was fit for multiple `alpha` values.",
+                 "Using first value in `object$alpha`.",
+                 "To select a different value, specify parameter `alpha`."))
+    }
+    alpha <- object$alpha[[1L]]
   }
 
   if (length(lambda) > 1L) {

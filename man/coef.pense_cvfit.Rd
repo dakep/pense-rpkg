@@ -6,8 +6,8 @@
 \usage{
 \method{coef}{pense_cvfit}(
   object,
-  lambda = "min",
   alpha = NULL,
+  lambda = "min",
   se_mult = 1,
   sparse = NULL,
   standardized = FALSE,
@@ -19,14 +19,14 @@
 \arguments{
 \item{object}{PENSE with cross-validated hyper-parameters to extract coefficients from.}
 
-\item{lambda}{either a string specifying which penalty level to use
-(\code{"min"}, \code{"se"}, \verb{"\{x\}-se}")
-or a single numeric value of the penalty parameter. See details.}
-
 \item{alpha}{Either a single number or \code{NULL} (default).
 If given, only fits with the given \code{alpha} value are considered.
-If \code{lambda} is a numeric value and \code{object} was fit with multiple \code{alpha}
-values, the parameter \code{alpha} must not be missing.}
+If \code{lambda} is a numeric value and \code{object} was fit with multiple \emph{alpha}
+values and no value is provided, the first value in \code{object$alpha} is used with a warning.}
+
+\item{lambda}{either a string specifying which penalty level to use
+(\code{"min"}, \code{"se"}, \verb{"\{m\}-se}")
+or a single numeric value of the penalty parameter. See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
 
@@ -53,15 +53,25 @@ To get a sparse matrix as in previous versions, use \code{sparse = 'matrix'}.
 Extract coefficients from an adaptive PENSE (or LS-EN) regularization path with hyper-parameters
 chosen by cross-validation.
 }
-\details{
-If \code{lambda = "se"} and \code{object} contains fitted estimates for every penalization level in
-the sequence, extract the coefficients of the most parsimonious model with prediction
-performance statistically indistinguishable from the best model.
-This is determined to be the model with prediction performance within \code{se_mult * cv_se}
+\section{Hyper-parameters}{
+
+
+If \code{lambda = "{m}-se"} and \code{object} contains fitted estimates for every penalization
+level in the sequence, use the fit the most parsimonious model with prediction performance
+statistically indistinguishable from the best model.
+This is determined to be the model with prediction performance within \code{m * cv_se}
 from the best model.
-The string in \code{lambda} can also directly specify the multiplier by setting \code{lambda = "{x}-se"},
-where \code{{x}} is any (positive) number.
+If \code{lambda = "se"}, the multiplier \emph{m} is taken from \code{se_mult}.
+
+By default all \emph{alpha} hyper-parameters available in the fitted object are considered.
+This can be overridden by supplying one or multiple values in parameter \code{alpha}.
+For example, if \code{lambda = "1-se"} and \code{alpha} contains two values, the "1-SE" rule is applied
+individually for each \code{alpha} value, and the fit with the better prediction error is considered.
+
+In case \code{lambda} is a number and \code{object} was fit for several \emph{alpha} hyper-parameters,
+\code{alpha} must also be given, or the first value in \code{object$alpha} is used with a warning.
 }
+
 \examples{
 # Compute the PENSE regularization path for Freeny's revenue data
 # (see ?freeny)
@@ -72,11 +82,11 @@ regpath <- pense(x, freeny$y, alpha = 0.5)
 plot(regpath)
 
 # Extract the coefficients at a certain penalization level
-coef(regpath, lambda = regpath$lambda[40])
+coef(regpath, lambda = regpath$lambda[[1]][[40]])
 
 # What penalization level leads to good prediction performance?
-cv_results <- pense_cv(x, freeny$y, alpha = 0.5, cv_repl = 2,
-                       cv_k = 4)
+cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
+                       cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)
 
 # Extract the coefficients at the penalization level with
@@ -84,7 +94,7 @@ plot(cv_results, se_mult = 1)
 coef(cv_results)
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
-coef(cv_results, lambda = 'se')
+coef(cv_results, lambda = '1-se')
 }
 \seealso{
 Other functions for extracting components: 

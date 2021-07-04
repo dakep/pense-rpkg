@@ -7,7 +7,7 @@ regpath <- elnet(x, freeny$y, alpha = 0.75)
 plot(regpath)
 
 # Extract the coefficients at a certain penalization level
-coef(regpath, lambda = regpath$lambda[5])
+coef(regpath, lambda = regpath$lambda[[1]][[5]])
 
 # What penalization level leads to good prediction performance?
 cv_results <- elnet_cv(x, freeny$y, alpha = 0.75, cv_repl = 10,
@@ -20,4 +20,4 @@ plot(cv_results, se_mult = 1, what = 'coef.path')
 coef(cv_results)
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
-coef(cv_results, lambda = 'se')
+coef(cv_results, lambda = '1.5-se')

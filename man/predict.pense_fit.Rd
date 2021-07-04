@@ -7,6 +7,7 @@
 \method{predict}{pense_fit}(
   object,
   newdata,
+  alpha = NULL,
   lambda,
   exact = deprecated(),
   correction = deprecated(),
@@ -16,12 +17,18 @@
 \arguments{
 \item{object}{PENSE regularization path to extract residuals from.}
 
-\item{newdata}{an optional matrix of new predictor values. If missing, the fitted values are computed.}
+\item{newdata}{an optional matrix of new predictor values.
+If missing, the fitted values are computed.}
 
-\item{lambda}{a single value of the penalty parameter.}
+\item{alpha}{Either a single number or \code{NULL} (default).
+If given, only fits with the given \code{alpha} value are considered.
+If \code{object} was fit with multiple \code{alpha} values, and no value is provided, the
+first value in \code{object$alpha} is used with a warning.}
 
-\item{exact}{defunct Always gives a warning if \code{lambda} is not part of the fitted sequence and coefficients
-need to be interpolated.}
+\item{lambda}{a single number for the penalty level.}
+
+\item{exact}{defunct Always gives a warning if \code{lambda} is not part of the fitted
+sequence and coefficients need to be interpolated.}
 
 \item{correction}{defunct.}
 
@@ -31,7 +38,8 @@ need to be interpolated.}
 a numeric vector of residuals for the given penalization level.
 }
 \description{
-Predict response values using a PENSE (or LS-EN) regularization path fitted by \code{\link[=pense]{pense()}} or \code{\link[=elnet]{elnet()}}.
+Predict response values using a PENSE (or LS-EN) regularization path fitted by
+\code{\link[=pense]{pense()}}, \code{\link[=regmest]{regmest()}} or \code{\link[=elnet]{elnet()}}.
 }
 \examples{
 # Compute the LS-EN regularization path for Freeny's revenue data
@@ -43,22 +51,22 @@ regpath <- elnet(x, freeny$y, alpha = 0.75)
 
 # Predict the response using a specific penalization level
 predict(regpath, newdata = freeny[1:5, 2:5],
-        lambda = regpath$lambda[10])
+        lambda = regpath$lambda[[1]][[10]])
 
 # Extract the residuals at a certain penalization level
-residuals(regpath, lambda = regpath$lambda[5])
+residuals(regpath, lambda = regpath$lambda[[1]][[5]])
 
 # Select penalization level via cross-validation
-cv_results <- elnet_cv(x, freeny$y, alpha = 0.5, cv_repl = 10,
-                       cv_k = 4)
+cv_results <- elnet_cv(x, freeny$y, alpha = 0.5,
+                       cv_repl = 10, cv_k = 4)
 
 # Predict the response using the "best" penalization level
 predict(cv_results, newdata = freeny[1:5, 2:5])
 
 # Extract the residuals at the "best" penalization level
-residuals(cv_results)^2
+residuals(cv_results)
 # Extract the residuals at a more parsimonious penalization level
-residuals(cv_results, lambda = 'se')
+residuals(cv_results, lambda = '1.5-se')
 }
 \seealso{
 Other functions for extracting components: 

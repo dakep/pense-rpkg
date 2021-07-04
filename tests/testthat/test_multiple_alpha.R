@@ -40,7 +40,7 @@ test_that("pense() with multiple alpha", {
   expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = 0.1), 'double')
   expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = 0.8), 'double')
   expect_warning(expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = c(0.1, 0.8)), 'double'))
-  expect_error(coef(pr, lambda = pr$lambda[[1]][[5]]), regexp = 'missing')
+  expect_warning(coef(pr, lambda = pr$lambda[[1]][[5]]), regexp = 'Using first value')
 })
 
 test_that("pense_cv() with multiple alpha", {
@@ -72,9 +72,9 @@ test_that("pense_cv() with multiple alpha", {
   expect_type(pr$lambda, 'list')
   expect_type(pr$lambda[[1L]], 'double')
   expect_type(pr$lambda[[2L]], 'double')
-  expect_length(pr$lambda[[1L]], 3)
+  expect_length(pr$lambda[[1L]], 2)
   expect_length(pr$lambda[[2L]], 2)
-  expect_length(pr$estimates, 5)
+  expect_length(pr$estimates, 4)
   expect_length(pr$cvres$lambda, 2 * nlambda)
   expect_length(pr$cvres$alpha, 2 * nlambda)
   expect_length(pr$cvres$cvavg, 2 * nlambda)
@@ -131,7 +131,7 @@ test_that("regmest() with multiple alpha", {
   expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = 0.1), 'double')
   expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = 0.8), 'double')
   expect_warning(expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = c(0.1, 0.8)), 'double'))
-  expect_error(coef(pr, lambda = pr$lambda[[1]][[5]]), regexp = 'missing')
+  expect_warning(coef(pr, lambda = pr$lambda[[1]][[5]]), regexp = 'Using first value')
 })
 
 test_that("regmest_cv() with multiple alpha", {
@@ -162,9 +162,9 @@ test_that("regmest_cv() with multiple alpha", {
   expect_type(pr$lambda, 'list')
   expect_type(pr$lambda[[1L]], 'double')
   expect_type(pr$lambda[[2L]], 'double')
-  expect_length(pr$lambda[[1L]], 1)
+  expect_length(pr$lambda[[1L]], 2)
   expect_length(pr$lambda[[2L]], 2)
-  expect_length(pr$estimates, 3)
+  expect_length(pr$estimates, 4)
   expect_length(pr$cvres$lambda, 2 * nlambda)
   expect_length(pr$cvres$alpha, 2 * nlambda)
   expect_length(pr$cvres$cvavg, 2 * nlambda)

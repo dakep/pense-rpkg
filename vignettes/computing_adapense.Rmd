@@ -93,9 +93,9 @@ The plot shows the estimated scale of the prediction error for all 50 models.
 The penalization level leading to the best prediction performance is highlighted by a dark blue dot.
 If more than one CV replication was performed, the plot also shows a light blue dot, marking the most parsimonious model with prediction performance "indistinguishable" from the best model.
 The plot uses the "one-standard-error" rule using the minimum average scale of the prediction error plus 1 standard error of this estimated scale.
-You can adjust this rule to the "*q*-standard-error" with `plot(se_mult = q)`, where `q` is any positive number.
+You can adjust this rule to the "*m*-standard-error" with `plot(fit_075, lambda = "m-se")`, where `m` is any positive number (e.g., `lambda = "1.5-se"`).
 
-In our case, the estimated prediction performance is fairly unstable and has large variability.
+In our case, the estimated prediction performance is a bit unstable and has large variability.
 With such unstable estimates of prediction performance it is difficult to reliably select the penalization level.
 This is not unusual for robust estimators and can be improved by increasing the number of CV replications.
 
@@ -126,14 +126,14 @@ summary(fit_075)
 ```
 
 This model corresponds to the model with smallest scale of the prediction error (the blue dot in the plot above).
-There are a total of 14 predictors in the model.
+There are a total of `r sum(abs(coef(fit_075)) > 0) - 1` predictors in the model.
 If you think a sparser model may be more appropriate for your application, you can also apply the *q*-standard-error rule as in the plots.
 The default, the one-standard-error rule leads to the following predictive model:
 ```{r}
-summary(fit_075, lambda = "se")
+summary(fit_075, lambda = "2-se")
 ```
 
-In this fit, only 7 out of the 40 predictors are relevant, including the 3 truly relevant predictors.
+In this fit, only `r sum(abs(coef(fit_075, lambda = "2-se")) > 0) - 1` out of the 40 predictors are relevant, including the 3 truly relevant predictors.
 But maybe different values for hyper-parameters `alpha` and `exponent` lead to even better prediction?
 
 ## Step 4: Exploring different hyper-parameters
@@ -146,11 +146,11 @@ While `alpha=0.75` is a good value for many applications, `alpha=1` may also be 
 In applications with high correlation between predictors, lower values of `alpha` (e.g., `alpha=0.5`) may lead to more stability in variable selection.
 
 The hyper-parameter `exponent` generally has an effect on the sparsity of the models.
-With higher values for `exponent`, typically only predictors with the largest (in an absolute sense) standardized coefficients will be non-zero.
+With higher values for `exponent`, typically only predictors with the largest (in absolute magnitude) standardized coefficients will be non-zero.
 While this helps to screen out many or most of the truly irrelevant, it also risks missing some of the truly relevant predictors.
 
 Let us compute adaptive PENSE estimates for different values of hyper-parameters `alpha` and `exponent`.
-In the code below, this is done for two values: `alpha=0.75` and `alpha=1` as well as `exponent=1` and `exponent=2`.
+In the code below, this is done for two values: `alpha=0.75` and `alpha=1` as well as `exponent=1`, `exponent=2`, and `exponent=3`.
 
 ```{r fit_all, eval=FALSE}
 set.seed(1234)
@@ -158,30 +158,40 @@ fit_exp_1 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 1, cv_k = 5, cv_re
 
 set.seed(1234)
 fit_exp_2 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 2, cv_k = 5, cv_repl = 10, cl = cluster)
+
+set.seed(1234)
+fit_exp_3 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 3, cv_k = 5, cv_repl = 10, cl = cluster)
 ```
 
 Note that we set the seed before each call to `adapense_cv()`.
-This is again to ensure reproducibility of the CV, but also to make the estimated prediction performance more comparable across different values of the hyper-parameters.
+This is again to ensure reproducibility of the CV, but also to make the estimated prediction performance more comparable across different values of the `exponent` hyper-parameter.
 
 After checking that the cross-validated prediction performance of the fitted models is smooth enough to reliably select the penalization level, we can compare all the estimates.
 For this, the package includes the function `prediction_performance()`, which extracts and prints the prediction performance of all given objects:
 
 ```{r}
-prediction_performance(fit_exp_1, fit_exp_2)
+prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3)
 ```
 
-Here we see the combination of hyper-parameters `alpha=0.75` and `exponent=1` (in object `fit_exp_1`) leads to the best prediction accuracy, but the models are all based on more than 12 predictors.
+Here we see the combination of hyper-parameters `alpha=0.75` and `exponent=3` (in object `fit_exp_3`) leads to the best prediction accuracy, but all models are based on 12 or more predictors.
 Instead, we can also compare sparser models with almost the same prediction performance:
 
 ```{r}
-prediction_performance(fit_exp_1, fit_exp_2, lambda = '1-se')
+prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3, lambda = '1-se')
 ```
 
-Still, the combination of hyper-parameters `alpha=0.75` and `exponent=1` outperforms the others.
+These models are still quite large.
+If we are interested in even sparser models, we can increase the tolerance level to, for instance, 3 standard errors:
+
+```{r}
+prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3, lambda = '3-se')
+```
+
+This relaxation still leads to the combination of hyper-parameters `alpha=0.75` and `exponent=3`, but now with only 7 relevant predictors; including all truly relevant predictors.
 We can see that the estimated coefficients and estimated relevant predictors are close to the truth:
 
 ```{r}
-summary(fit_exp_1, alpha = 0.75, lambda = '1-se')
+summary(fit_exp_3, alpha = 0.75, lambda = '3-se')
 ```
 
 ## Using different measures of prediction performance
@@ -207,6 +217,6 @@ A matrix with estimates of the prediction performance are accessible as slot `$c
 The rows correspond to the different penalization levels, and columns correspond to the individual CV replications.
 
 ```{r, eval=FALSE, include=FALSE}
-save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2,
+save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2, fit_exp_3,
      file = 'computing_adapense_fits.RData')
 ```

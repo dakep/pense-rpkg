@@ -22,3 +22,5 @@ Meta
 vignettes/*_files
 .Rhistory
 tests/debug
+Rplots.pdf
+testthat-problems.rds

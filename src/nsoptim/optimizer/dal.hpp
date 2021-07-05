@@ -586,10 +586,10 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
                        std::true_type) const {
     const arma::mat active_view = data_->cx().cols(active_predictors);
     if (loss_->IncludeIntercept()) {
-      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t() +
+      return eta_.slope * (active_view.each_row() % moreau_factor.rows(active_predictors).t()) * active_view.t() +
         eta_.intercept * data_.sqrt_weights_outer();
     } else {
-      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t();
+      return eta_.slope * (active_view.each_row() % moreau_factor.rows(active_predictors).t()) * active_view.t();
     }
   }
 
@@ -598,9 +598,10 @@ class DalEnOptimizer : public Optimizer<LossFunction, PenaltyFunction, Regressio
                        std::false_type) const {
     const arma::mat active_view = data_->cx().cols(active_predictors);
     if (loss_->IncludeIntercept()) {
-      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t() + eta_.intercept;
+      return eta_.slope * (active_view.each_row() % moreau_factor.rows(active_predictors).t()) * active_view.t() +
+        eta_.intercept;
     } else {
-      return eta_.slope * (active_view.each_row() % moreau_factor) * active_view.t();
+      return eta_.slope * (active_view.each_row() % moreau_factor.rows(active_predictors).t()) * active_view.t();
     }
   }
 

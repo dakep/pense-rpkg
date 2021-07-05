@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -165,13 +165,14 @@
     </tr>
     <tr>
       <th>alpha</th>
-      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\). <code>alpha = 1</code> is the LASSO penalty,
-and <code>alpha = 0</code> the Ridge penalty.</p></td>
+      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\).
+<code>alpha = 1</code> is the LASSO penalty, and <code>alpha = 0</code> the Ridge penalty.
+Can be a vector of several values, but <code>alpha = 0</code> cannot be mixed with other values.</p></td>
     </tr>
     <tr>
       <th>lambda</th>
-      <td><p>optional user-supplied sequence of penalization levels. If given and not <code>NULL</code>, <code>nlambda</code> and
-<code>lambda_min_ratio</code> are ignored.</p></td>
+      <td><p>optional user-supplied sequence of penalization levels. If given and not <code>NULL</code>,
+<code>nlambda</code> and <code>lambda_min_ratio</code> are ignored.</p></td>
     </tr>
     <tr>
       <th>intercept</th>
@@ -179,8 +180,8 @@ and <code>alpha = 0</code> the Ridge penalty.</p></td>
     </tr>
     <tr>
       <th>penalty_loadings</th>
-      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
+      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>en_algorithm_opts</th>
@@ -196,8 +197,8 @@ coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>ncores</th>
-      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.</p></td>
+      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.</p></td>
     </tr>
     <tr>
       <th>method</th>

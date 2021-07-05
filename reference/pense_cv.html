@@ -73,7 +73,7 @@ adapense_cv() is a convenience wrapper to compute adaptive PENSE estimates." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -172,14 +172,15 @@ For binary classification, <code>y</code> should be a factor with 2 levels.</p><
       <td><p>whether to standardize the <code>x</code> variables prior to fitting the PENSE estimates.
 Can also be set to <code>"cv_only"</code>, in which case the input data is not standardized, but the
 training data in the CV folds is scaled to match the scaling of the input data.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-<code>standardize = FALSE</code> or standardize the data manually.</p></td>
+Coefficients are always returned on the original scale.
+This can fail for variables with a large proportion of a single value
+(e.g., zero-inflated data).
+In this case, either compute with <code>standardize = FALSE</code> or standardize the data manually.</p></td>
     </tr>
     <tr>
       <th>lambda</th>
-      <td><p>optional user-supplied sequence of penalization levels. If given and not <code>NULL</code>, <code>nlambda</code> and
-<code>lambda_min_ratio</code> are ignored.</p></td>
+      <td><p>optional user-supplied sequence of penalization levels. If given and not <code>NULL</code>,
+<code>nlambda</code> and <code>lambda_min_ratio</code> are ignored.</p></td>
     </tr>
     <tr>
       <th>cv_k</th>
@@ -191,82 +192,95 @@ proportion of a single value (e.g., zero-inflated data). In this case, either co
     </tr>
     <tr>
       <th>cv_metric</th>
-      <td><p>either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, the number of arguments define the data the function receives.
-If the function takes a single argument, it is called with a single numeric vector of prediction errors.
-If the function takes two or more arguments, it is called with the predicted values as first argument
-and the true values as second argument.
+      <td><p>either a string specifying the performance metric to use, or a function to
+evaluate prediction errors in a single CV replication.
+If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of
+prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as
+first argument and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.</p></td>
     </tr>
     <tr>
       <th>fit_all</th>
-      <td><p>If <code>TRUE</code>, fit the model for all penalization levels. Otherwise, only at penalization
-level with smallest average CV performance.</p></td>
+      <td><p>If <code>TRUE</code>, fit the model for all penalization levels.
+Can also be any combination of <code>"min"</code> and <code>"{x}-se"</code>, in which case only models at the
+penalization level with smallest average CV accuracy, or within <code>{x}</code> standard errors,
+respectively.
+Setting <code>fit_all</code> to <code>FALSE</code> is equivalent to <code>"min"</code>.
+Applies to all <code>alpha</code> value.</p></td>
     </tr>
     <tr>
       <th>cl</th>
-      <td><p>a <a href='https://rdrr.io/r/parallel/makeCluster.html'>parallel</a> cluster. Can only be used if <code>ncores = 1</code>, because multi-threading
-can not be used in parallel R sessions on the same host.</p></td>
+      <td><p>a <a href='https://rdrr.io/r/parallel/makeCluster.html'>parallel</a> cluster. Can only be used in combinatino with
+<code>ncores = 1</code>.</p></td>
     </tr>
     <tr>
       <th>...</th>
       <td><p>Arguments passed on to <code><a href='pense.html'>pense</a></code></p><dl>
     <dt><code>nlambda</code></dt><dd><p>number of penalization levels.</p></dd>
-    <dt><code>lambda_min_ratio</code></dt><dd><p>Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and <code>alpha</code>. If more observations than variables
-are available, the default is <code>1e-3 * alpha</code>, otherwise <code>1e-2 * alpha</code>.</p></dd>
+    <dt><code>lambda_min_ratio</code></dt><dd><p>Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero). The default depends on
+the sample size relative to the number of variables and <code>alpha</code>. If more observations than
+variables are available, the default is <code>1e-3 * alpha</code>, otherwise <code>1e-2 * alpha</code>.</p></dd>
     <dt><code>nlambda_enpy</code></dt><dd><p>number of penalization levels where the EN-PY initial estimate is computed.</p></dd>
-    <dt><code>penalty_loadings</code></dt><dd><p>a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></dd>
-    <dt><code>enpy_lambda</code></dt><dd><p>optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
-computed. If given and not <code>NULL</code>, <code>nlambda_enpy</code> is ignored.</p></dd>
+    <dt><code>penalty_loadings</code></dt><dd><p>a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></dd>
+    <dt><code>enpy_lambda</code></dt><dd><p>optional user-supplied sequence of penalization levels at which EN-PY
+initial estimates are computed. If given and not <code>NULL</code>, <code>nlambda_enpy</code> is ignored.</p></dd>
     <dt><code>other_starts</code></dt><dd><p>a list of other staring points, created by <code><a href='starting_point.html'>starting_point()</a></code>.
 If the output of <code><a href='enpy_initial_estimates.html'>enpy_initial_estimates()</a></code> is given, the starting points will be <em>shared</em>
 among all penalization levels.
 Note that if a the starting point is <em>specific</em> to a penalization level, this penalization
-level is added to the grid of penalization levels (either the manually specified grid in <code>lambda</code>
-or the automatically generated grid of size <code>nlambda</code>).
+level is added to the grid of penalization levels (either the manually specified grid in
+<code>lambda</code> or the automatically generated grid of size <code>nlambda</code>).
 If <code>standardize = TRUE</code>, the starting points are also scaled.</p></dd>
     <dt><code>intercept</code></dt><dd><p>include an intercept in the model.</p></dd>
-    <dt><code>bdp</code></dt><dd><p>desired breakdown point of the estimator, between 0 and 0.5.</p></dd>
-    <dt><code>cc</code></dt><dd><p>tuning constant for the S-estimator. Default is to chosen based on the breakdown point <code>bdp</code>.
-Does <em>not</em> affect the estimated coefficients, only the estimated scale of the residuals.</p></dd>
+    <dt><code>bdp</code></dt><dd><p>desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.</p></dd>
+    <dt><code>cc</code></dt><dd><p>tuning constant for the S-estimator. Default is to chosen based on the breakdown
+point <code>bdp</code>. Does <em>not</em> affect the estimated coefficients, only the estimated scale of
+the residuals.</p></dd>
     <dt><code>eps</code></dt><dd><p>numerical tolerance.</p></dd>
     <dt><code>explore_solutions</code></dt><dd><p>number of solutions to compute up to the desired precision <code>eps</code>.</p></dd>
-    <dt><code>explore_tol</code></dt><dd><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></dd>
-    <dt><code>explore_it</code></dt><dd><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></dd>
+    <dt><code>explore_tol</code></dt><dd><p>numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than <code>eps</code> to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via <code>algorithm_opts</code>.</p></dd>
+    <dt><code>explore_it</code></dt><dd><p>numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than <code>eps</code> to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via <code>algorithm_opts</code>.</p></dd>
     <dt><code>max_solutions</code></dt><dd><p>only retain up to <code>max_solutions</code> unique solutions per penalization level.</p></dd>
-    <dt><code>comparison_tol</code></dt><dd><p>numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than <code>comparison_tol</code>, two solutions are deemed equal if the squared difference
-of the intercepts is less than <code>comparison_tol</code> and the squared \(L_2\) norm of the
-difference vector is less than <code>comparison_tol</code>.</p></dd>
-    <dt><code>add_zero_based</code></dt><dd><p>also consider the 0-based regularization path. See details for a description.</p></dd>
-    <dt><code>enpy_specific</code></dt><dd><p>use the EN-PY initial estimates only at the penalization level they are computed for.
-See details for a description.</p></dd>
+    <dt><code>comparison_tol</code></dt><dd><p>numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution If this is less than <code>comparison_tol</code>, two solutions are deemed
+equal if the squared difference of the intercepts is less than <code>comparison_tol</code> and the
+squared \(L_2\) norm of the difference vector is less than <code>comparison_tol</code>.</p></dd>
+    <dt><code>add_zero_based</code></dt><dd><p>also consider the 0-based regularization path. See details for a
+description.</p></dd>
+    <dt><code>enpy_specific</code></dt><dd><p>use the EN-PY initial estimates only at the penalization level they
+are computed for. See details for a description.</p></dd>
     <dt><code>sparse</code></dt><dd><p>use sparse coefficient vectors.</p></dd>
-    <dt><code>ncores</code></dt><dd><p>number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.</p></dd>
-    <dt><code>algorithm_opts</code></dt><dd><p>options for the MM algorithm to compute the estimates. See <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> for
-details.</p></dd>
-    <dt><code>mscale_opts</code></dt><dd><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code> for details.</p></dd>
+    <dt><code>ncores</code></dt><dd><p>number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.</p></dd>
+    <dt><code>algorithm_opts</code></dt><dd><p>options for the MM algorithm to compute the estimates.
+See <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> for details.</p></dd>
+    <dt><code>mscale_opts</code></dt><dd><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code>
+for details.</p></dd>
     <dt><code>enpy_opts</code></dt><dd><p>options for the ENPY initial estimates, created with the
 <code><a href='enpy_options.html'>enpy_options()</a></code> function. See <code><a href='enpy_initial_estimates.html'>enpy_initial_estimates()</a></code> for details.</p></dd>
-    <dt><code>cv_objective</code></dt><dd><p>deprecated and ignored. See <code>pense_cv()</code> for estimating prediction performance
-via cross-validation.</p></dd>
+    <dt><code>cv_objective</code></dt><dd><p>deprecated and ignored. See <code>pense_cv()</code> for estimating
+prediction performance via cross-validation.</p></dd>
   
 </dl></td>
     </tr>
     <tr>
       <th>alpha</th>
-      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\). <code>alpha = 1</code> is the LASSO penalty,
-and <code>alpha = 0</code> the Ridge penalty.</p></td>
+      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\).
+<code>alpha = 1</code> is the LASSO penalty, and <code>alpha = 0</code> the Ridge penalty.
+Can be a vector of several values, but <code>alpha = 0</code> cannot be mixed with other values.</p></td>
     </tr>
     <tr>
       <th>alpha_preliminary</th>
@@ -280,18 +294,15 @@ and <code>alpha = 0</code> the Ridge penalty.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>a list with components:</p><dl>
-<dt><code>lambda</code></dt><dd><p>the sequence of penalization levels.</p></dd>
+    <p>a list-like object with the same components as returned by <code><a href='pense.html'>pense()</a></code>,
+plus the following:</p><dl>
 <dt><code>cvres</code></dt><dd><p>data frame of average cross-validated performance.</p></dd>
-<dt><code>cv_replications</code></dt><dd><p>matrix of cross-validated performance metrics, one column per replication.
-Rows are in the same order as in <code>cvres</code>.</p></dd>
-<dt><code>call</code></dt><dd><p>the original call.</p></dd>
-<dt><code>estimates</code></dt><dd><p>the estimates fitted on the full data. Same format as returned by <code><a href='pense.html'>pense()</a></code>.</p></dd>
 
 </dl>
 
-<p>the object returned by <code>adapense_cv()</code> has additional components</p><dl>
+<p>a list-like object as returned by <code>pense_cv()</code> plus the following</p><dl>
 <dt><code>preliminary</code></dt><dd><p>the CV results for the preliminary estimate.</p></dd>
+<dt><code>exponent</code></dt><dd><p>exponent used to compute the penalty loadings.</p></dd>
 <dt><code>penalty_loadings</code></dt><dd><p>the penalty loadings used for the adaptive PENSE estimate.</p></dd>
 
 </dl>
@@ -299,11 +310,12 @@ Rows are in the same order as in <code>cvres</code>.</p></dd>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The built-in CV metrics are</p><dl>
-<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by <code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
+<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by
+<code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
 <dt><code>"mape"</code></dt><dd><p>Median absolute prediction error.</p></dd>
 <dt><code>"rmspe"</code></dt><dd><p>Root mean squared prediction error.</p></dd>
-<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
-binary responses.</p></dd>
+<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC).
+Only sensible for binary responses.</p></dd>
 
 </dl>
 
@@ -333,24 +345,28 @@ binary responses.</p></dd>
 <span class='va'>x</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/base/matrix.html'>as.matrix</a></span><span class='op'>(</span><span class='va'>freeny</span><span class='op'>[</span> , <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 
 <span class='co'>## Either use the convenience function directly ...</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
 <span class='va'>ada_convenience</span> <span class='op'>&lt;-</span> <span class='fu'>adapense_cv</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
                                cv_repl <span class='op'>=</span> <span class='fl'>2</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 
 <span class='co'>## ... or compute the steps manually:</span>
 <span class='co'># Step 1: Compute preliminary estimates with CV</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
 <span class='va'>preliminary_estimate</span> <span class='op'>&lt;-</span> <span class='fu'>pense_cv</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0</span>,
                                  cv_repl <span class='op'>=</span> <span class='fl'>2</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>preliminary_estimate</span>, se_mult <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
-</div><div class='img'><img src='pense_cv-1.png' alt='' width='700' height='433' /></div><div class='input'>
+</div><div class='input'>
 <span class='co'># Step 2: Use the coefficients with best prediction performance</span>
-<span class='co'># to define the penality loadings:</span>
+<span class='co'># to define the penalty loadings:</span>
 <span class='va'>prelim_coefs</span> <span class='op'>&lt;-</span> <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>preliminary_estimate</span>, lambda <span class='op'>=</span> <span class='st'>'min'</span><span class='op'>)</span>
 <span class='va'>pen_loadings</span> <span class='op'>&lt;-</span> <span class='fl'>1</span> <span class='op'>/</span> <span class='fu'><a href='https://rdrr.io/r/base/MathFun.html'>abs</a></span><span class='op'>(</span><span class='va'>prelim_coefs</span><span class='op'>[</span><span class='op'>-</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>)</span>
 
 <span class='co'># Step 3: Compute the adaptive PENSE estimates and estimate</span>
 <span class='co'># their prediction performance.</span>
-<span class='va'>ada_manual</span> <span class='op'>&lt;-</span> <span class='fu'>pense_cv</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>2</span>,
-                       cv_k <span class='op'>=</span> <span class='fl'>4</span>, penalty_loadings <span class='op'>=</span> <span class='va'>pen_loadings</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
+<span class='va'>ada_manual</span> <span class='op'>&lt;-</span> <span class='fu'>pense_cv</span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+                       cv_repl <span class='op'>=</span> <span class='fl'>2</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span>,
+                       penalty_loadings <span class='op'>=</span> <span class='va'>pen_loadings</span><span class='op'>)</span>
 
 <span class='co'># Visualize the prediction performance and coefficient path of</span>
 <span class='co'># the adaptive PENSE estimates (manual vs. automatic)</span>
@@ -360,7 +376,7 @@ binary responses.</p></dd>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>preliminary_estimate</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>ada_convenience</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>ada_manual</span><span class='op'>)</span>
-</div><div class='img'><img src='pense_cv-2.png' alt='' width='700' height='433' /></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span><span class='va'>def.par</span><span class='op'>)</span>
+</div><div class='img'><img src='pense_cv-1.png' alt='' width='700' height='433' /></div><div class='input'><span class='fu'><a href='https://rdrr.io/r/graphics/par.html'>par</a></span><span class='op'>(</span><span class='va'>def.par</span><span class='op'>)</span>
 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">

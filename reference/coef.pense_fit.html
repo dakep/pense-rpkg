@@ -40,7 +40,8 @@
 
 
 <meta property="og:title" content="Extract Coefficient Estimates — coef.pense_fit" />
-<meta property="og:description" content="Extract coefficients from a PENSE (or LS-EN) regularization path fitted by pense() or elnet()." />
+<meta property="og:description" content="Extract coefficients from an adaptive PENSE (or LS-EN) regularization path fitted by pense()
+or elnet()." />
 
 
 
@@ -72,7 +73,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -135,13 +136,15 @@
     </div>
 
     <div class="ref-description">
-    <p>Extract coefficients from a PENSE (or LS-EN) regularization path fitted by <code><a href='pense.html'>pense()</a></code> or <code><a href='elnet.html'>elnet()</a></code>.</p>
+    <p>Extract coefficients from an adaptive PENSE (or LS-EN) regularization path fitted by <code><a href='pense.html'>pense()</a></code>
+or <code><a href='elnet.html'>elnet()</a></code>.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for pense_fit</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span>
   <span class='va'>object</span>,
   <span class='va'>lambda</span>,
+  alpha <span class='op'>=</span> <span class='cn'>NULL</span>,
   sparse <span class='op'>=</span> <span class='cn'>NULL</span>,
   standardized <span class='op'>=</span> <span class='cn'>FALSE</span>,
   exact <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
@@ -158,12 +161,20 @@
     </tr>
     <tr>
       <th>lambda</th>
-      <td><p>a single value of the penalty parameter.</p></td>
+      <td><p>a single number for the penalty level.</p></td>
+    </tr>
+    <tr>
+      <th>alpha</th>
+      <td><p>Either a single number or <code>NULL</code> (default).
+If given, only fits with the given <code>alpha</code> value are considered.
+If <code>object</code> was fit with multiple <code>alpha</code> values, and no value is provided, the
+first value in <code>object$alpha</code> is used with a warning.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
-      <td><p>should coefficients be returned as sparse or dense vectors? Defaults to the <code>sparse</code> argument
-supplied to <code><a href='pense.html'>pense()</a></code>. Can also be set to <code>sparse = 'matrix'</code>, in which case a sparse matrix
+      <td><p>should coefficients be returned as sparse or dense vectors? Defaults to the
+sparsity setting in <code>object</code>.
+Can also be set to <code>sparse = 'matrix'</code>, in which case a sparse matrix
 is returned instead of a sparse vector.</p></td>
     </tr>
     <tr>
@@ -171,12 +182,7 @@ is returned instead of a sparse vector.</p></td>
       <td><p>return the standardized coefficients.</p></td>
     </tr>
     <tr>
-      <th>exact</th>
-      <td><p>defunct Always gives a warning if <code>lambda</code> is not part of the fitted sequence and hence coefficients
-are interpolated.</p></td>
-    </tr>
-    <tr>
-      <th>correction</th>
+      <th>exact, correction</th>
       <td><p>defunct.</p></td>
     </tr>
     <tr>
@@ -187,14 +193,16 @@ are interpolated.</p></td>
 
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
-    <p>either a numeric vector or a sparse vector of type <a href='https://rdrr.io/pkg/Matrix/man/sparseVector-class.html'>dsparseVector</a>
+    <p>either a numeric vector or a sparse vector of type
+<a href='https://rdrr.io/pkg/Matrix/man/sparseVector-class.html'>dsparseVector</a>
 of size \(p + 1\), depending on the <code>sparse</code> argument.
-Note: prior to version 2.0.0 sparse coefficients were returned as sparse matrix of type <em>dgCMatrix</em>.
-To get a sparse matrix, use <code>sparse = 'matrix'</code>.</p>
+Note: prior to version 2.0.0 sparse coefficients were returned as sparse matrix
+of type <em>dgCMatrix</em>.
+To get a sparse matrix as in previous versions, use <code>sparse = 'matrix'</code>.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
-    <div class='dont-index'><p><code><a href='coef.pense_cvfit.html'>coef.pense_cvfit()</a></code> for extracting coefficients from a PENSE fit with hyper-parameters chosen by
-cross-validation</p>
+    <div class='dont-index'><p><code><a href='coef.pense_cvfit.html'>coef.pense_cvfit()</a></code> for extracting coefficients from a PENSE fit with
+hyper-parameters chosen by cross-validation</p>
 <p>Other functions for extracting components: 
 <code><a href='coef.pense_cvfit.html'>coef.pense_cvfit</a>()</code>,
 <code><a href='predict.pense_cvfit.html'>predict.pense_cvfit</a>()</code>,
@@ -212,25 +220,26 @@ cross-validation</p>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>regpath</span><span class='op'>)</span>
 </div><div class='img'><img src='coef.pense_fit-1.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>40</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>[[</span><span class='fl'>40</span><span class='op'>]</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -6.6475338             0.2411667            -0.6985229 
 #&gt;          income.level      market.potential 
 #&gt;             0.7098337             0.9619783 </div><div class='input'>
 <span class='co'># What penalization level leads to good prediction performance?</span>
-<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense_cv.html'>pense_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>2</span>,
-                       cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense_cv.html'>pense_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+                       cv_repl <span class='op'>=</span> <span class='fl'>2</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>cv_results</span>, se_mult <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
 </div><div class='img'><img src='coef.pense_fit-2.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at the penalization level with</span>
 <span class='co'># smallest prediction error ...</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -7.3505930             0.2190124            -0.7091811 
+#&gt;            -8.5228825             0.2072828            -0.6946405 
 #&gt;          income.level      market.potential 
-#&gt;             0.7054675             1.0372210 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
+#&gt;             0.6778202             1.1430756 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'1-se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -8.9377554             0.2066104            -0.6851005 
 #&gt;          income.level      market.potential 

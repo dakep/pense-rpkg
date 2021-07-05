@@ -74,7 +74,7 @@ S-estimate." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -229,8 +229,9 @@ For binary classification, <code>y</code> should be a factor with 2 levels.</p><
     </tr>
     <tr>
       <th>alpha</th>
-      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\). <code>alpha = 1</code> is the LASSO penalty,
-and <code>alpha = 0</code> the Ridge penalty.</p></td>
+      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\).
+<code>alpha = 1</code> is the LASSO penalty, and <code>alpha = 0</code> the Ridge penalty.
+Can be a vector of several values, but <code>alpha = 0</code> cannot be mixed with other values.</p></td>
     </tr>
     <tr>
       <th>nlambda</th>
@@ -238,10 +239,10 @@ and <code>alpha = 0</code> the Ridge penalty.</p></td>
     </tr>
     <tr>
       <th>lambda_min_ratio</th>
-      <td><p>Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and <code>alpha</code>. If more observations than variables
-are available, the default is <code>1e-3 * alpha</code>, otherwise <code>1e-2 * alpha</code>.</p></td>
+      <td><p>Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero). The default depends on
+the sample size relative to the number of variables and <code>alpha</code>. If more observations than
+variables are available, the default is <code>1e-3 * alpha</code>, otherwise <code>1e-2 * alpha</code>.</p></td>
     </tr>
     <tr>
       <th>lambda_m, lambda_s</th>
@@ -250,15 +251,15 @@ If given and not <code>NULL</code>, <code>nlambda</code> and <code>lambda_min_ra
     </tr>
     <tr>
       <th>standardize</th>
-      <td><p>logical flag to standardize the <code>x</code> variables prior to fitting the PENSE estimates.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-<code>standardize = FALSE</code> or standardize the data manually.</p></td>
+      <td><p>logical flag to standardize the <code>x</code> variables prior to fitting the PENSE
+estimates. Coefficients are always returned on the original scale. This can fail for
+variables with a large proportion of a single value (e.g., zero-inflated data).
+In this case, either compute with <code>standardize = FALSE</code> or standardize the data manually.</p></td>
     </tr>
     <tr>
       <th>penalty_loadings</th>
-      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
+      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>intercept</th>
@@ -266,12 +267,13 @@ coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>bdp</th>
-      <td><p>desired breakdown point of the estimator, between 0 and 0.5.</p></td>
+      <td><p>desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.</p></td>
     </tr>
     <tr>
       <th>ncores</th>
-      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.</p></td>
+      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -295,22 +297,25 @@ on your platform, in which case a warning is given.</p></td>
     </tr>
     <tr>
       <th>cl</th>
-      <td><p>a <a href='https://rdrr.io/r/parallel/makeCluster.html'>parallel</a> cluster. Can only be used if <code>ncores = 1</code>, because multi-threading
-can not be used in parallel R sessions on the same host.</p></td>
+      <td><p>a <a href='https://rdrr.io/r/parallel/makeCluster.html'>parallel</a> cluster. Can only be used in combinatino with
+<code>ncores = 1</code>.</p></td>
     </tr>
     <tr>
       <th>cv_metric</th>
-      <td><p>either a string specifying the performance metric to use, or a function to evaluate prediction
-errors in a single CV replication. If a function, the number of arguments define the data the function receives.
-If the function takes a single argument, it is called with a single numeric vector of prediction errors.
-If the function takes two or more arguments, it is called with the predicted values as first argument
-and the true values as second argument.
+      <td><p>either a string specifying the performance metric to use, or a function to
+evaluate prediction errors in a single CV replication.
+If a function, the number of arguments define the data the function receives.
+If the function takes a single argument, it is called with a single numeric vector of
+prediction errors.
+If the function takes two or more arguments, it is called with the predicted values as
+first argument and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.</p></td>
     </tr>
     <tr>
       <th>add_zero_based</th>
-      <td><p>also consider the 0-based regularization path. See details for a description.</p></td>
+      <td><p>also consider the 0-based regularization path. See details for a
+description.</p></td>
     </tr>
     <tr>
       <th>explore_solutions</th>
@@ -318,9 +323,10 @@ The order of the given values corresponds to the order in the input data.</p></t
     </tr>
     <tr>
       <th>explore_tol</th>
-      <td><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></td>
+      <td><p>numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than <code>eps</code> to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via <code>algorithm_opts</code>.</p></td>
     </tr>
     <tr>
       <th>max_solutions</th>
@@ -328,25 +334,30 @@ smaller than the maximum number of iterations given via <code>algorithm_opts</co
     </tr>
     <tr>
       <th>fit_all</th>
-      <td><p>If <code>TRUE</code>, fit the model for all penalization levels. Otherwise, only at penalization
-level with smallest average CV performance.</p></td>
+      <td><p>If <code>TRUE</code>, fit the model for all penalization levels.
+Can also be any combination of <code>"min"</code> and <code>"{x}-se"</code>, in which case only models at the
+penalization level with smallest average CV accuracy, or within <code>{x}</code> standard errors,
+respectively.
+Setting <code>fit_all</code> to <code>FALSE</code> is equivalent to <code>"min"</code>.
+Applies to all <code>alpha</code> value.</p></td>
     </tr>
     <tr>
       <th>comparison_tol</th>
-      <td><p>numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than <code>comparison_tol</code>, two solutions are deemed equal if the squared difference
-of the intercepts is less than <code>comparison_tol</code> and the squared \(L_2\) norm of the
-difference vector is less than <code>comparison_tol</code>.</p></td>
+      <td><p>numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution If this is less than <code>comparison_tol</code>, two solutions are deemed
+equal if the squared difference of the intercepts is less than <code>comparison_tol</code> and the
+squared \(L_2\) norm of the difference vector is less than <code>comparison_tol</code>.</p></td>
     </tr>
     <tr>
       <th>algorithm_opts</th>
-      <td><p>options for the MM algorithm to compute the estimates. See <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> for
-details.</p></td>
+      <td><p>options for the MM algorithm to compute the estimates.
+See <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> for details.</p></td>
     </tr>
     <tr>
       <th>mscale_opts</th>
-      <td><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code> for details.</p></td>
+      <td><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code>
+for details.</p></td>
     </tr>
     <tr>
       <th>nlambda_enpy</th>
@@ -374,11 +385,12 @@ the arguments in the <code><a href='pense_cv.html'>pense_cv()</a></code> call ar
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
     <p>The built-in CV metrics are</p><dl>
-<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by <code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
+<dt><code>"tau_size"</code></dt><dd><p>\(\tau\)-size of the prediction error, computed by
+<code><a href='tau_size.html'>tau_size()</a></code> (default).</p></dd>
 <dt><code>"mape"</code></dt><dd><p>Median absolute prediction error.</p></dd>
 <dt><code>"rmspe"</code></dt><dd><p>Root mean squared prediction error.</p></dd>
-<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC). Only sensible for
-binary responses.</p></dd>
+<dt><code>"auroc"</code></dt><dd><p>Area under the receiver operator characteristic curve (actually 1 - AUROC).
+Only sensible for binary responses.</p></dd>
 
 </dl>
 

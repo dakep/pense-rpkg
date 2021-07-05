@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -91,7 +91,7 @@
       <h1 data-toc-skip>Migrating from pense version 1.x to 2.x</h1>
                         <h4 class="author">David Kepplinger</h4>
             
-            <h4 class="date">2021-06-08</h4>
+            <h4 class="date">2021-07-05</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/master/vignettes/migration_guide.Rmd"><code>vignettes/migration_guide.Rmd</code></a></small>
       <div class="hidden name"><code>migration_guide.Rmd</code></div>
@@ -107,7 +107,7 @@
 <code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dakep.github.io/pense-rpkg/">pense</a></span><span class="op">)</span>
 <span class="co">#&gt; Loading required package: Matrix</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"pense"</span><span class="op">)</span>
-<span class="co">#&gt; [1] '2.0.4.100'</span></code></pre></div>
+<span class="co">#&gt; [1] '2.0.9.100'</span></code></pre></div>
 <p>This guide uses the following simulated data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
@@ -127,11 +127,13 @@
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
 <span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, warm_reset <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
 <span class="co">#&gt; Warning: The `warm_reset` argument of `pense()` is deprecated as of pense 2.0.0.</span>
-<span class="co">#&gt; Please use the `nlambda_enpy` argument instead.</span></code></pre></div>
+<span class="co">#&gt; Please use the `nlambda_enpy` argument instead.</span>
+<span class="co">#&gt; Warning: To use `fit_all = "se"`, `cv_repl` must be 2 or greater.</span></code></pre></div>
 <p>However, this raises a warning that the argument <code>warm_reset=</code> is also deprecated in favor of argument <code>nlambda_enpy=</code>. The new version uses more consistent and self-explaining naming for arguments. Therefore, the most basic way for computing regularized S-estimates of linear regression <em>and</em> estimating their prediction performance via CV is the following:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
-<span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></code></pre></div>
+<span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
+<span class="co">#&gt; Warning: To use `fit_all = "se"`, `cv_repl` must be 2 or greater.</span></code></pre></div>
 <p>To only fit the models, without estimating prediction performance, use <code><a href="../reference/pense.html">pense()</a></code> (note the absence of the <code>cv_k=</code> argument):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">fitted_no_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span></code></pre></div>
@@ -142,22 +144,21 @@
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
 <span class="co">#&gt; List of 5</span>
-<span class="co">#&gt;  $ estimates:List of 40</span>
 <span class="co">#&gt;  $ call     : language pense(x = x, y = y, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
-<span class="co">#&gt;  $ alpha    : num 0.6</span>
 <span class="co">#&gt;  $ bdp      : num 0.255</span>
-<span class="co">#&gt;  $ lambda   : num [1:40] 3.82 3.16 2.61 2.16 1.78 ...</span>
+<span class="co">#&gt;  $ lambda   :List of 1</span>
+<span class="co">#&gt;  $ estimates:List of 40</span>
+<span class="co">#&gt;  $ alpha    : num 0.6</span>
 <span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_fit"</span>
 <span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
-<span class="co">#&gt; List of 8</span>
-<span class="co">#&gt;  $ call           : language pense_cv(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
-<span class="co">#&gt;  $ lambda         : num [1:40] 3.82 3.16 2.61 2.16 1.78 ...</span>
-<span class="co">#&gt;  $ alpha          : num 0.6</span>
-<span class="co">#&gt;  $ cvres          :'data.frame': 40 obs. of  3 variables:</span>
-<span class="co">#&gt;  $ bdp            : num 0.255</span>
-<span class="co">#&gt;  $ cv_replications: num [1:40, 1] 2.95 2.88 2.76 2.66 2.45 ...</span>
-<span class="co">#&gt;  $ cv_measure     : chr "tau_size"</span>
-<span class="co">#&gt;  $ estimates      :List of 40</span>
+<span class="co">#&gt; List of 7</span>
+<span class="co">#&gt;  $ call      : language pense_cv(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
+<span class="co">#&gt;  $ bdp       : num 0.255</span>
+<span class="co">#&gt;  $ lambda    :List of 1</span>
+<span class="co">#&gt;  $ alpha     : num 0.6</span>
+<span class="co">#&gt;  $ cvres     :'data.frame':  40 obs. of  4 variables:</span>
+<span class="co">#&gt;  $ cv_measure: chr "tau_size"</span>
+<span class="co">#&gt;  $ estimates :List of 1</span>
 <span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_cvfit"</span></code></pre></div>
 </div>
 </div>
@@ -168,16 +169,13 @@
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span><span class="op">)</span>
 <span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span>
-<span class="co">#&gt;  0.10359668  0.52388714 -1.69947922  1.40525731 -0.09172963  0.14172824 </span>
+<span class="co">#&gt;  0.14269066  0.50133063 -1.63047323  1.36756054 -0.07072134  0.14133158 </span>
 <span class="co">#&gt;          X6          X7          X8          X9         X10 </span>
-<span class="co">#&gt;  0.06624163 -0.03207225  0.00000000  0.19151715  0.05766673</span></code></pre></div>
+<span class="co">#&gt;  0.09419159 -0.01291331  0.00000000  0.17531995  0.03509110</span></code></pre></div>
 <p>Fits computed with <code><a href="../reference/pense.html">pense()</a></code>, however, do not have information about prediction performance, hence <code><a href="https://rdrr.io/r/stats/coef.html">coefficients(fitted_no_cv)</a></code> would not know what penalization level to use. In this case, the desired penalization level must be specified manually:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, lambda <span class="op">=</span> <span class="va">fitted_no_cv</span><span class="op">$</span><span class="va">lambda</span><span class="op">[</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span>
-<span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span>
-<span class="co">#&gt;   0.3419530   0.2900996  -1.0044764   1.0654484   0.0000000   0.0000000 </span>
-<span class="co">#&gt;          X6          X7          X8          X9         X10 </span>
-<span class="co">#&gt;   0.2256234   0.0000000   0.0000000   0.0000000   0.0000000</span></code></pre></div>
+<span class="co">#&gt; Error in lambda[[1L]]: subscript out of bounds</span></code></pre></div>
 <p>An important difference to previous versions is that new versions <strong>do not correct for the bias</strong> introduced by the Ridge penalty. The correction, which was adopted from the original LS elastic net paper <span class="citation">(Zou and Hastie 2005)</span>, was dropped as it does not adequately counter the effects of the Ridge penalty on the S-estimates. Specifying the <code>correction=</code> argument results in an error in new versions of the package:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, correction <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>

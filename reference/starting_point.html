@@ -74,7 +74,7 @@ c(starting_point_1, starting_point_2, ...)." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -142,7 +142,7 @@ Multiple starting points can be created by combining starting points via
 <code><a href='https://rdrr.io/r/base/c.html'>c(starting_point_1, starting_point_2, ...)</a></code>.</p>
     </div>
 
-    <pre class="usage"><span class='fu'>starting_point</span><span class='op'>(</span><span class='va'>beta</span>, <span class='va'>intercept</span>, <span class='va'>lambda</span><span class='op'>)</span>
+    <pre class="usage"><span class='fu'>starting_point</span><span class='op'>(</span><span class='va'>beta</span>, <span class='va'>intercept</span>, <span class='va'>lambda</span>, <span class='va'>alpha</span><span class='op'>)</span>
 
 <span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span>
 
@@ -150,12 +150,13 @@ Multiple starting points can be created by combining starting points via
 <span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for pense_fit</span>
-<span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>lambda</span>, <span class='va'>...</span><span class='op'>)</span>
+<span class='fu'>as_starting_point</span><span class='op'>(</span><span class='va'>object</span>, specific <span class='op'>=</span> <span class='cn'>FALSE</span>, <span class='va'>alpha</span>, <span class='va'>lambda</span>, <span class='va'>...</span><span class='op'>)</span>
 
 <span class='co'># S3 method for pense_cvfit</span>
 <span class='fu'>as_starting_point</span><span class='op'>(</span>
   <span class='va'>object</span>,
   specific <span class='op'>=</span> <span class='cn'>FALSE</span>,
+  <span class='va'>alpha</span>,
   lambda <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"min"</span>, <span class='st'>"se"</span><span class='op'>)</span>,
   se_mult <span class='op'>=</span> <span class='fl'>1</span>,
   <span class='va'>...</span>
@@ -166,9 +167,9 @@ Multiple starting points can be created by combining starting points via
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>beta</th>
-      <td><p>beta coefficients at the starting point. Can be a numeric vector, a sparse vector of class
-<a href='https://rdrr.io/pkg/Matrix/man/sparseVector-class.html'>dsparseVector</a>, or a sparse matrix of class
-<a href='https://rdrr.io/pkg/Matrix/man/CsparseMatrix-class.html'>dgCMatrix</a> with a single column.</p></td>
+      <td><p>beta coefficients at the starting point. Can be a numeric vector,
+a sparse vector of class <a href='https://rdrr.io/pkg/Matrix/man/sparseVector-class.html'>dsparseVector</a>,
+or a sparse matrix of class <a href='https://rdrr.io/pkg/Matrix/man/CsparseMatrix-class.html'>dgCMatrix</a> with a single column.</p></td>
     </tr>
     <tr>
       <th>intercept</th>
@@ -176,9 +177,17 @@ Multiple starting points can be created by combining starting points via
     </tr>
     <tr>
       <th>lambda</th>
-      <td><p>optionally either a string specifying which penalty level to use (<code>"min"</code> or <code>"se"</code>) or a numeric
-vector of the penalty levels to extract from <code>object</code>. Penalization levels not present in <code>object</code>
-are ignored with a warning. If <code>NULL</code>, all estimates in <code>object</code> are extracted.</p></td>
+      <td><p>optionally either a string specifying which penalty level to use
+(<code>"min"</code> or <code>"se"</code>) or a numeric vector of the penalty levels to extract from <code>object</code>.
+Penalization levels not present in <code>object</code> are ignored with a warning.
+If <code>NULL</code>, all estimates in <code>object</code> are extracted.
+If a numeric vector, <code>alpha</code> must be given and a single number.</p></td>
+    </tr>
+    <tr>
+      <th>alpha</th>
+      <td><p>optional value for the <code>alpha</code> hyper-parameter.
+If given, only estimates with matching <code>alpha</code> values are extracted.
+Values not present in <code>object</code> are ignored with a warning.</p></td>
     </tr>
     <tr>
       <th>object</th>
@@ -186,8 +195,9 @@ are ignored with a warning. If <code>NULL</code>, all estimates in <code>object<
     </tr>
     <tr>
       <th>specific</th>
-      <td><p>whether the estimates should be used as starting points only at the penalization level they
-are computed for. Defaults to using the estimates as starting points for all penalization levels.</p></td>
+      <td><p>whether the estimates should be used as starting points only at
+the penalization level they are computed for.
+Defaults to using the estimates as starting points for all penalization levels.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -204,20 +214,23 @@ are computed for. Defaults to using the estimates as starting points for all pen
     <p>an object of type <code>starting_points</code> to be used as starting point for <code><a href='pense.html'>pense()</a></code>.</p>
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>A starting points can either be <em>shared</em>, i.e., used for every penalization level PENSE estimates are computed for,
-or <em>specific</em> to one penalization level.
-To create a specific starting point, provide the penalization level as <code>lambda</code>. If <code>lambda</code> is missing,
-a shared starting point is created.
-Shared and specific starting points can all be combined into a single list of starting points, with
-<code><a href='pense.html'>pense()</a></code> handling them correctly.
-Note that specific starting points will lead to the <code>lambda</code> value being added to the grid of penalization levels.
+    <p>A starting points can either be <em>shared</em>, i.e., used for every penalization level PENSE
+estimates are computed for, or <em>specific</em> to one penalization level.
+To create a specific starting point, provide the penalization parameters <code>lambda</code> and <code>alpha</code>.
+If <code>lambda</code> or <code>alpha</code> are missing, a shared starting point is created.
+Shared and specific starting points can all be combined into a single list of starting points,
+with <code><a href='pense.html'>pense()</a></code> handling them correctly.
+Note that specific starting points will lead to the <code>lambda</code> value being added to the
+grid of penalization levels.
 See <code><a href='pense.html'>pense()</a></code> for details.</p>
-<p>Starting points computed via <code><a href='enpy_initial_estimates.html'>enpy_initial_estimates()</a></code> are by default <em>shared</em> starting points but can
-be transformed to <em>specific</em> starting points via <code>enpy_starting_point(..., specific = TRUE)</code>.</p>
-<p>When creating starting points from cross-validated fits, it is possible to extract only the estimate with best
-CV performance (<code>lambda = "min"</code>), or the estimate with CV performance statistically indistinguishable from the
-best performance (<code>lambda = "se"</code>). This is determined to be the estimate with prediction performance
-within <code>se_mult * cv_se</code> from the best model.</p>
+<p>Starting points computed via <code><a href='enpy_initial_estimates.html'>enpy_initial_estimates()</a></code> are by default <em>shared</em> starting points
+but can be transformed to <em>specific</em> starting points via
+<code>as_starting_point(..., specific = TRUE)</code>.</p>
+<p>When creating starting points from cross-validated fits, it is possible to extract only the
+estimate with best CV performance (<code>lambda = "min"</code>), or the estimate with CV performance
+statistically indistinguishable from the best performance (<code>lambda = "se"</code>).
+This is determined to be the estimate with prediction performance within
+<code>se_mult * cv_se</code> from the best model.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p>Other functions for initial estimates: 

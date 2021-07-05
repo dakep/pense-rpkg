@@ -40,7 +40,8 @@
 
 
 <meta property="og:title" content="Extract Residuals — residuals.pense_cvfit" />
-<meta property="og:description" content="Extract residuals from a PENSE (or LS-EN) regularization path with hyper-parameters chosen by cross-validation." />
+<meta property="og:description" content="Extract residuals from a PENSE (or LS-EN) regularization path with hyper-parameters
+chosen by cross-validation." />
 
 
 
@@ -72,7 +73,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -135,13 +136,15 @@
     </div>
 
     <div class="ref-description">
-    <p>Extract residuals from a PENSE (or LS-EN) regularization path with hyper-parameters chosen by cross-validation.</p>
+    <p>Extract residuals from a PENSE (or LS-EN) regularization path with hyper-parameters
+chosen by cross-validation.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for pense_cvfit</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span>
   <span class='va'>object</span>,
-  lambda <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/c.html'>c</a></span><span class='op'>(</span><span class='st'>"min"</span>, <span class='st'>"se"</span><span class='op'>)</span>,
+  alpha <span class='op'>=</span> <span class='cn'>NULL</span>,
+  lambda <span class='op'>=</span> <span class='st'>"min"</span>,
   se_mult <span class='op'>=</span> <span class='fl'>1</span>,
   exact <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
   correction <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
@@ -156,9 +159,17 @@
       <td><p>PENSE with cross-validated hyper-parameters to extract coefficients from.</p></td>
     </tr>
     <tr>
+      <th>alpha</th>
+      <td><p>Either a single number or <code>NULL</code> (default).
+If given, only fits with the given <code>alpha</code> value are considered.
+If <code>lambda</code> is a numeric value and <code>object</code> was fit with multiple <em>alpha</em>
+values and no value is provided, the first value in <code>object$alpha</code> is used with a warning.</p></td>
+    </tr>
+    <tr>
       <th>lambda</th>
-      <td><p>either a string specifying which penalty level to use or a a single numeric value of the penalty
-parameter. See details.</p></td>
+      <td><p>either a string specifying which penalty level to use
+(<code>"min"</code>, <code>"se"</code>, <code>"{m}-se</code>")
+or a single numeric value of the penalty parameter. See details.</p></td>
     </tr>
     <tr>
       <th>se_mult</th>
@@ -182,11 +193,23 @@ are interpolated.</p></td>
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>a numeric vector of residuals for the given penalization level.</p>
-    <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
+    <h2 class="hasAnchor" id="hyper-parameters"><a class="anchor" href="#hyper-parameters"></a>Hyper-parameters</h2>
 
-    <p>If <code>lambda = "se"</code> and <code>object</code> contains fitted estimates for every penalization level in the sequence, extract the
-residuals of the most parsimonious model with prediction performance statistically indistinguishable from the best
-model. This is determined to be the model with prediction performance within <code>se_mult * cv_se</code> from the best model.</p>
+    
+
+
+<p>If <code>lambda = "{m}-se"</code> and <code>object</code> contains fitted estimates for every penalization
+level in the sequence, use the fit the most parsimonious model with prediction performance
+statistically indistinguishable from the best model.
+This is determined to be the model with prediction performance within <code>m * cv_se</code>
+from the best model.
+If <code>lambda = "se"</code>, the multiplier <em>m</em> is taken from <code>se_mult</code>.</p>
+<p>By default all <em>alpha</em> hyper-parameters available in the fitted object are considered.
+This can be overridden by supplying one or multiple values in parameter <code>alpha</code>.
+For example, if <code>lambda = "1-se"</code> and <code>alpha</code> contains two values, the "1-SE" rule is applied
+individually for each <code>alpha</code> value, and the fit with the better prediction error is considered.</p>
+<p>In case <code>lambda</code> is a number and <code>object</code> was fit for several <em>alpha</em> hyper-parameters,
+<code>alpha</code> must also be given, or the first value in <code>object$alpha</code> is used with a warning.</p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 
     <div class='dont-index'><p>Other functions for extracting components: 
@@ -206,11 +229,11 @@ model. This is determined to be the model with prediction performance within <co
 
 <span class='co'># Predict the response using a specific penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>regpath</span>, newdata <span class='op'>=</span> <span class='va'>freeny</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span>,
-        lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>10</span><span class='op'>]</span><span class='op'>)</span>
+        lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>[[</span><span class='fl'>10</span><span class='op'>]</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
 #&gt; 9.071638 9.075877 9.082341 9.091051 9.103643 </div><div class='input'>
 <span class='co'># Extract the residuals at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>[[</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
 #&gt; 1962              -0.396169224 -0.398919454 -0.378220695
 #&gt; 1963 -0.384593892 -0.294338479 -0.278030430 -0.259140970
@@ -223,38 +246,39 @@ model. This is determined to be the model with prediction performance within <co
 #&gt; 1970  0.247870647  0.296181577  0.294470169  0.278217170
 #&gt; 1971  0.306686546  0.334684047  0.353729154  0.367702082</div><div class='input'>
 <span class='co'># Select penalization level via cross-validation</span>
-<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet_cv.html'>elnet_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>10</span>,
-                       cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet_cv.html'>elnet_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+                       cv_repl <span class='op'>=</span> <span class='fl'>10</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 
 <span class='co'># Predict the response using the "best" penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>cv_results</span>, newdata <span class='op'>=</span> <span class='va'>freeny</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
 #&gt; 8.795162 8.807070 8.824535 8.842175 8.882970 </div><div class='input'>
 <span class='co'># Extract the residuals at the "best" penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
-#&gt; 1962              7.848897e-06 2.464835e-04 9.359960e-05
-#&gt; 1963 8.505988e-04 6.021996e-04 1.637041e-04 1.795771e-04
-#&gt; 1964 2.010055e-04 4.526007e-05 3.191828e-06 1.650531e-04
-#&gt; 1965 6.871886e-04 1.397538e-05 1.084591e-04 6.238417e-06
-#&gt; 1966 2.235974e-04 2.227127e-04 7.845685e-05 8.735269e-06
-#&gt; 1967 5.946661e-06 1.285224e-04 2.320350e-05 4.855345e-06
-#&gt; 1968 2.138126e-04 2.572342e-04 2.288132e-05 9.043482e-05
-#&gt; 1969 7.984318e-05 6.318114e-04 1.211829e-04 7.936170e-04
-#&gt; 1970 4.757803e-04 2.341024e-04 3.523648e-05 3.416734e-04
-#&gt; 1971 1.285713e-04 3.422934e-05 1.431594e-05 6.324661e-05</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
-</div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
-#&gt; 1962              -0.010525453 -0.022619883 -0.015569511
-#&gt; 1963 -0.035107544  0.021470216  0.008204877  0.008871462
-#&gt; 1964 -0.018329498  0.004095609 -0.004768904  0.010118697
-#&gt; 1965 -0.029022279 -0.004652820 -0.012121834 -0.003197425
-#&gt; 1966 -0.016137204  0.014152676  0.007720194  0.001900761
-#&gt; 1967 -0.002223898  0.011524214 -0.004779388 -0.000397902
-#&gt; 1968 -0.012479258 -0.013629057  0.007790677  0.012095335
-#&gt; 1969  0.010559764  0.027477195  0.013522814  0.031191235
-#&gt; 1970 -0.017586425  0.020296752 -0.001419612 -0.014534776
-#&gt; 1971 -0.005707253  0.011190639  0.009432874  0.013193935</div></pre>
+#&gt; 1962              -0.002801588 -0.015699794 -0.009674689
+#&gt; 1963 -0.029165027  0.024539756  0.012794692  0.013400637
+#&gt; 1964 -0.014177641  0.006727561 -0.001786569  0.012847301
+#&gt; 1965 -0.026214283 -0.003738367 -0.010414370 -0.002497682
+#&gt; 1966 -0.014953173  0.014923561  0.008857587  0.002955549
+#&gt; 1967 -0.002438578  0.011336771 -0.004817002 -0.002203485
+#&gt; 1968 -0.014622332 -0.016038521  0.004783442  0.009509723
+#&gt; 1969  0.008935501  0.025135859  0.011008309  0.028171208
+#&gt; 1970 -0.021812388  0.015300404 -0.005936032 -0.018484409
+#&gt; 1971 -0.011338929  0.005850584  0.003783641  0.007952774</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>"1.5-se"</span><span class='op'>)</span>
+</div><div class='output co'>#&gt;               Qtr1          Qtr2          Qtr3          Qtr4
+#&gt; 1962               -0.0133914763 -0.0253025812 -0.0180073467
+#&gt; 1963 -0.0375085950  0.0197904960  0.0063674275  0.0071084444
+#&gt; 1964 -0.0199445085  0.0028559476 -0.0059886764  0.0089958759
+#&gt; 1965 -0.0300906249 -0.0052788324 -0.0128420949 -0.0036364879
+#&gt; 1966 -0.0166186511  0.0137904162  0.0073750895  0.0016121587
+#&gt; 1967 -0.0021618673  0.0116385091 -0.0046227113  0.0002016235
+#&gt; 1968 -0.0117185912 -0.0127504673  0.0088610048  0.0131305182
+#&gt; 1969  0.0114094522  0.0285319822  0.0147126545  0.0325247699
+#&gt; 1970 -0.0158575338  0.0222103711  0.0004937030 -0.0127802705
+#&gt; 1971 -0.0035765461  0.0133307584  0.0117139290  0.0154227310</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

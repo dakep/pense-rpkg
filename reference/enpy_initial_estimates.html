@@ -72,7 +72,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -167,8 +167,9 @@
     </tr>
     <tr>
       <th>alpha</th>
-      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\). <code>alpha = 1</code> is the LASSO penalty,
-and <code>alpha = 0</code> the Ridge penalty.</p></td>
+      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\).
+<code>alpha = 1</code> is the LASSO penalty, and <code>alpha = 0</code> the Ridge penalty.
+Can be a vector of several values, but <code>alpha = 0</code> cannot be mixed with other values.</p></td>
     </tr>
     <tr>
       <th>lambda</th>
@@ -176,12 +177,13 @@ and <code>alpha = 0</code> the Ridge penalty.</p></td>
     </tr>
     <tr>
       <th>bdp</th>
-      <td><p>desired breakdown point of the estimator, between 0 and 0.5.</p></td>
+      <td><p>desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.</p></td>
     </tr>
     <tr>
       <th>cc</th>
-      <td><p>cutoff value for the bisquare rho function. By default, chosen to yield a consistent estimate for the
-Normal distribution.</p></td>
+      <td><p>cutoff value for the bisquare rho function. By default, chosen to yield a consistent
+estimate for the Normal distribution.</p></td>
     </tr>
     <tr>
       <th>intercept</th>
@@ -189,8 +191,8 @@ Normal distribution.</p></td>
     </tr>
     <tr>
       <th>penalty_loadings</th>
-      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
+      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>enpy_opts</th>
@@ -198,7 +200,8 @@ coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>mscale_opts</th>
-      <td><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code> for details.</p></td>
+      <td><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code>
+for details.</p></td>
     </tr>
     <tr>
       <th>eps</th>
@@ -210,21 +213,22 @@ coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>ncores</th>
-      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.</p></td>
+      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.</p></td>
     </tr>
     </table>
 
     <h2 class="hasAnchor" id="details"><a class="anchor" href="#details"></a>Details</h2>
 
-    <p>If these manually computed initial estimates are intended as starting points for <code><a href='pense.html'>pense()</a></code>, they are by default
-<em>shared</em> for all penalization levels.
+    <p>If these manually computed initial estimates are intended as starting points for <code><a href='pense.html'>pense()</a></code>,
+they are by default <em>shared</em> for all penalization levels.
 To restrict the use of the initial estimates to the penalty level they were computed for, use
 <code><a href='starting_point.html'>as_starting_point(..., specific = TRUE)</a></code>. See <code><a href='starting_point.html'>as_starting_point()</a></code> for details.</p>
     <h2 class="hasAnchor" id="references"><a class="anchor" href="#references"></a>References</h2>
 
     <p>Cohen Freue, G.V.; Kepplinger, D.; Salibián-Barrera, M.; Smucler, E.
-Robust elastic net estimators for variable selection and identification of proteomic biomarkers.
+Robust elastic net estimators for variable selection and identification of
+proteomic biomarkers.
 <em>Ann. Appl. Stat.</em> <strong>13</strong> (2019), no. 4, 2065--2090 doi: <a href='https://doi.org/10.1214/19-AOAS1269'>10.1214/19-AOAS1269</a></p>
     <h2 class="hasAnchor" id="see-also"><a class="anchor" href="#see-also"></a>See also</h2>
 

@@ -40,8 +40,8 @@
 
 
 <meta property="og:title" content="Compute (Adaptive) Elastic Net S-Estimates of Regression — pense" />
-<meta property="og:description" content="Compute elastic net S-estimates (PENSE estimates) along a grid of penalization levels with optional
-penalty loadings for adaptive elastic net." />
+<meta property="og:description" content="Compute elastic net S-estimates (PENSE estimates) along a grid of penalization levels with
+optional penalty loadings for adaptive elastic net." />
 
 
 
@@ -73,7 +73,7 @@ penalty loadings for adaptive elastic net." />
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -136,8 +136,8 @@ penalty loadings for adaptive elastic net." />
     </div>
 
     <div class="ref-description">
-    <p>Compute elastic net S-estimates (PENSE estimates) along a grid of penalization levels with optional
-penalty loadings for adaptive elastic net.</p>
+    <p>Compute elastic net S-estimates (PENSE estimates) along a grid of penalization levels with
+optional penalty loadings for adaptive elastic net.</p>
     </div>
 
     <pre class="usage"><span class='fu'>pense</span><span class='op'>(</span>
@@ -187,8 +187,9 @@ For binary classification, <code>y</code> should be a factor with 2 levels.</p><
     </tr>
     <tr>
       <th>alpha</th>
-      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\). <code>alpha = 1</code> is the LASSO penalty,
-and <code>alpha = 0</code> the Ridge penalty.</p></td>
+      <td><p>elastic net penalty mixing parameter with \(0 \le \alpha \le 1\).
+<code>alpha = 1</code> is the LASSO penalty, and <code>alpha = 0</code> the Ridge penalty.
+Can be a vector of several values, but <code>alpha = 0</code> cannot be mixed with other values.</p></td>
     </tr>
     <tr>
       <th>nlambda</th>
@@ -200,25 +201,25 @@ and <code>alpha = 0</code> the Ridge penalty.</p></td>
     </tr>
     <tr>
       <th>lambda</th>
-      <td><p>optional user-supplied sequence of penalization levels. If given and not <code>NULL</code>, <code>nlambda</code> and
-<code>lambda_min_ratio</code> are ignored.</p></td>
+      <td><p>optional user-supplied sequence of penalization levels. If given and not <code>NULL</code>,
+<code>nlambda</code> and <code>lambda_min_ratio</code> are ignored.</p></td>
     </tr>
     <tr>
       <th>lambda_min_ratio</th>
-      <td><p>Smallest value of the penalization level as a fraction of the largest level (i.e., the
-smallest value for which all coefficients are zero). The default depends on the sample
-size relative to the number of variables and <code>alpha</code>. If more observations than variables
-are available, the default is <code>1e-3 * alpha</code>, otherwise <code>1e-2 * alpha</code>.</p></td>
+      <td><p>Smallest value of the penalization level as a fraction of the largest
+level (i.e., the smallest value for which all coefficients are zero). The default depends on
+the sample size relative to the number of variables and <code>alpha</code>. If more observations than
+variables are available, the default is <code>1e-3 * alpha</code>, otherwise <code>1e-2 * alpha</code>.</p></td>
     </tr>
     <tr>
       <th>enpy_lambda</th>
-      <td><p>optional user-supplied sequence of penalization levels at which EN-PY initial estimates are
-computed. If given and not <code>NULL</code>, <code>nlambda_enpy</code> is ignored.</p></td>
+      <td><p>optional user-supplied sequence of penalization levels at which EN-PY
+initial estimates are computed. If given and not <code>NULL</code>, <code>nlambda_enpy</code> is ignored.</p></td>
     </tr>
     <tr>
       <th>penalty_loadings</th>
-      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different penalization of each
-coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
+      <td><p>a vector of positive penalty loadings (a.k.a. weights) for different
+penalization of each coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>intercept</th>
@@ -226,21 +227,24 @@ coefficient. Only allowed for <code>alpha</code> &gt; 0.</p></td>
     </tr>
     <tr>
       <th>bdp</th>
-      <td><p>desired breakdown point of the estimator, between 0 and 0.5.</p></td>
+      <td><p>desired breakdown point of the estimator, between 0 and 0.5. The actual
+breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.</p></td>
     </tr>
     <tr>
       <th>cc</th>
-      <td><p>tuning constant for the S-estimator. Default is to chosen based on the breakdown point <code>bdp</code>.
-Does <em>not</em> affect the estimated coefficients, only the estimated scale of the residuals.</p></td>
+      <td><p>tuning constant for the S-estimator. Default is to chosen based on the breakdown
+point <code>bdp</code>. Does <em>not</em> affect the estimated coefficients, only the estimated scale of
+the residuals.</p></td>
     </tr>
     <tr>
       <th>add_zero_based</th>
-      <td><p>also consider the 0-based regularization path. See details for a description.</p></td>
+      <td><p>also consider the 0-based regularization path. See details for a
+description.</p></td>
     </tr>
     <tr>
       <th>enpy_specific</th>
-      <td><p>use the EN-PY initial estimates only at the penalization level they are computed for.
-See details for a description.</p></td>
+      <td><p>use the EN-PY initial estimates only at the penalization level they
+are computed for. See details for a description.</p></td>
     </tr>
     <tr>
       <th>other_starts</th>
@@ -248,8 +252,8 @@ See details for a description.</p></td>
 If the output of <code><a href='enpy_initial_estimates.html'>enpy_initial_estimates()</a></code> is given, the starting points will be <em>shared</em>
 among all penalization levels.
 Note that if a the starting point is <em>specific</em> to a penalization level, this penalization
-level is added to the grid of penalization levels (either the manually specified grid in <code>lambda</code>
-or the automatically generated grid of size <code>nlambda</code>).
+level is added to the grid of penalization levels (either the manually specified grid in
+<code>lambda</code> or the automatically generated grid of size <code>nlambda</code>).
 If <code>standardize = TRUE</code>, the starting points are also scaled.</p></td>
     </tr>
     <tr>
@@ -262,9 +266,10 @@ If <code>standardize = TRUE</code>, the starting points are also scaled.</p></td
     </tr>
     <tr>
       <th>explore_tol, explore_it</th>
-      <td><p>numerical tolerance and maximum number of iterations for exploring possible solutions.
-The tolerance should be (much) looser than <code>eps</code> to be useful, and the number of iterations should also be much
-smaller than the maximum number of iterations given via <code>algorithm_opts</code>.</p></td>
+      <td><p>numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than <code>eps</code> to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via <code>algorithm_opts</code>.</p></td>
     </tr>
     <tr>
       <th>max_solutions</th>
@@ -272,11 +277,11 @@ smaller than the maximum number of iterations given via <code>algorithm_opts</co
     </tr>
     <tr>
       <th>comparison_tol</th>
-      <td><p>numeric tolerance to determine if two solutions are equal. The comparison is first done
-on the absolute difference in the value of the objective function at the solution
-If this is less than <code>comparison_tol</code>, two solutions are deemed equal if the squared difference
-of the intercepts is less than <code>comparison_tol</code> and the squared \(L_2\) norm of the
-difference vector is less than <code>comparison_tol</code>.</p></td>
+      <td><p>numeric tolerance to determine if two solutions are equal.
+The comparison is first done on the absolute difference in the value of the objective
+function at the solution If this is less than <code>comparison_tol</code>, two solutions are deemed
+equal if the squared difference of the intercepts is less than <code>comparison_tol</code> and the
+squared \(L_2\) norm of the difference vector is less than <code>comparison_tol</code>.</p></td>
     </tr>
     <tr>
       <th>sparse</th>
@@ -284,24 +289,25 @@ difference vector is less than <code>comparison_tol</code>.</p></td>
     </tr>
     <tr>
       <th>ncores</th>
-      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used. May not be supported
-on your platform, in which case a warning is given.</p></td>
+      <td><p>number of CPU cores to use in parallel. By default, only one CPU core is used.
+Not supported on all platforms, in which case a warning is given.</p></td>
     </tr>
     <tr>
       <th>standardize</th>
-      <td><p>logical flag to standardize the <code>x</code> variables prior to fitting the PENSE estimates.
-Coefficients are always returned on the original scale. This can fail for variables with a large
-proportion of a single value (e.g., zero-inflated data). In this case, either compute with
-<code>standardize = FALSE</code> or standardize the data manually.</p></td>
+      <td><p>logical flag to standardize the <code>x</code> variables prior to fitting the PENSE
+estimates. Coefficients are always returned on the original scale. This can fail for
+variables with a large proportion of a single value (e.g., zero-inflated data).
+In this case, either compute with <code>standardize = FALSE</code> or standardize the data manually.</p></td>
     </tr>
     <tr>
       <th>algorithm_opts</th>
-      <td><p>options for the MM algorithm to compute the estimates. See <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> for
-details.</p></td>
+      <td><p>options for the MM algorithm to compute the estimates.
+See <code><a href='mm_algorithm_options.html'>mm_algorithm_options()</a></code> for details.</p></td>
     </tr>
     <tr>
       <th>mscale_opts</th>
-      <td><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code> for details.</p></td>
+      <td><p>options for the M-scale estimation. See <code><a href='mscale_algorithm_options.html'>mscale_algorithm_options()</a></code>
+for details.</p></td>
     </tr>
     <tr>
       <th>enpy_opts</th>
@@ -310,8 +316,8 @@ details.</p></td>
     </tr>
     <tr>
       <th>cv_k, cv_objective</th>
-      <td><p>deprecated and ignored. See <code><a href='pense_cv.html'>pense_cv()</a></code> for estimating prediction performance
-via cross-validation.</p></td>
+      <td><p>deprecated and ignored. See <code><a href='pense_cv.html'>pense_cv()</a></code> for estimating
+prediction performance via cross-validation.</p></td>
     </tr>
     <tr>
       <th>...</th>
@@ -322,16 +328,20 @@ via cross-validation.</p></td>
     <h2 class="hasAnchor" id="value"><a class="anchor" href="#value"></a>Value</h2>
 
     <p>a list-like object with the following items</p><dl>
-<dt><code>lambda</code></dt><dd><p>the sequence of penalization levels.</p></dd>
+<dt><code>alpha</code></dt><dd><p>the sequence of <code>alpha</code> parameters.</p></dd>
+<dt><code>lambda</code></dt><dd><p>a list of sequences of penalization levels, one per <code>alpha</code> parameter.</p></dd>
 <dt><code>estimates</code></dt><dd><p>a list of estimates. Each estimate contains the following information:
 <dl>
 <dt><code>intercept</code></dt><dd><p>intercept estimate.</p></dd>
 <dt><code>beta</code></dt><dd><p>beta (slope) estimate.</p></dd>
 <dt><code>lambda</code></dt><dd><p>penalization level at which the estimate is computed.</p></dd>
 <dt><code>alpha</code></dt><dd><p><em>alpha</em> hyper-parameter at which the estimate is computed.</p></dd>
+<dt><code>bdp</code></dt><dd><p>chosen breakdown-point.</p></dd>
 <dt><code>objf_value</code></dt><dd><p>value of the objective function at the solution.</p></dd>
-<dt><code>statuscode</code></dt><dd><p>if <code>&gt; 0</code> the algorithm experienced issues when computing the estimate.</p></dd>
+<dt><code>statuscode</code></dt><dd><p>if <code>&gt; 0</code> the algorithm experienced issues when
+computing the estimate.</p></dd>
 <dt><code>status</code></dt><dd><p>optional status message from the algorithm.</p></dd></dl></p></dd>
+<dt><code>bdp</code></dt><dd><p>the actual breakdown point used.</p></dd>
 <dt><code>call</code></dt><dd><p>the original call.</p></dd>
 
 </dl>
@@ -340,23 +350,24 @@ via cross-validation.</p></td>
 
     
 
-<p>The function supports several different strategies to compute, and use the provided starting points for
-optimizing the PENSE objective function.</p>
+<p>The function supports several different strategies to compute, and use the provided starting
+points for optimizing the PENSE objective function.</p>
 <p>Starting points are computed internally but can also be supplied via <code>other_starts</code>.
-By default, starting points are computed internally by the EN-PY procedure for penalization levels supplied
-in <code>enpy_lambda</code> (or the automatically generated grid of length <code>nlambda_enpy</code>).
-By default, starting points computed by the EN-PY procedure are <em>shared</em> for all penalization levels in <code>lambda</code>
-(or the automatically generated grid of length <code>nlambda</code>).
-If the starting points should be <em>specific</em> to the penalization level the starting points' penalization level,
-set the <code>enpy_specific</code> argument to <code>TRUE</code>.</p>
+By default, starting points are computed internally by the EN-PY procedure for penalization
+levels supplied in <code>enpy_lambda</code> (or the automatically generated grid of length <code>nlambda_enpy</code>).
+By default, starting points computed by the EN-PY procedure are <em>shared</em> for all penalization
+levels in <code>lambda</code> (or the automatically generated grid of length <code>nlambda</code>).
+If the starting points should be <em>specific</em> to the penalization level the starting points'
+penalization level, set the <code>enpy_specific</code> argument to <code>TRUE</code>.</p>
 <p>In addition to EN-PY initial estimates, the algorithm can also use the "0-based" strategy if
-<code>add_zero_based = TRUE</code> (by default). Here, the 0-vector is used to start the optimization at the largest
-penalization level in <code>lambda</code>. At subsequent penalization levels, the solution at the previous penalization level
-is also used as starting point.</p>
-<p>At every penalization level, all starting points are explored using the loose numerical tolerance <code>explore_tol</code>.
-Only the best <code>explore_solutions</code> are computed to the stringent numerical tolerance <code>eps</code>.
-Finally, only the best <code>max_solutions</code> are retained and carried forward as starting points for the subsequent
-penalization level.</p>
+<code>add_zero_based = TRUE</code> (by default). Here, the 0-vector is used to start the optimization at
+the largest penalization level in <code>lambda</code>. At subsequent penalization levels, the solution at
+the previous penalization level is also used as starting point.</p>
+<p>At every penalization level, all starting points are explored using the loose numerical
+tolerance <code>explore_tol</code>. Only the best <code>explore_solutions</code> are computed to the stringent
+numerical tolerance <code>eps</code>.
+Finally, only the best <code>max_solutions</code> are retained and carried forward as starting points for
+the subsequent penalization level.</p>
     <h2 class="hasAnchor" id="deprecated-arguments"><a class="anchor" href="#deprecated-arguments"></a>Deprecated Arguments</h2>
 
     
@@ -384,29 +395,30 @@ If <code>pense()</code> is called with any of these arguments, warnings detail h
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>regpath</span><span class='op'>)</span>
 </div><div class='img'><img src='pense-1.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>40</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>[[</span><span class='fl'>40</span><span class='op'>]</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
 #&gt;            -6.6475338             0.2411667            -0.6985229 
 #&gt;          income.level      market.potential 
 #&gt;             0.7098337             0.9619783 </div><div class='input'>
 <span class='co'># What penalization level leads to good prediction performance?</span>
-<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense_cv.html'>pense_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>2</span>,
-                       cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='pense_cv.html'>pense_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+                       cv_repl <span class='op'>=</span> <span class='fl'>2</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 <span class='fu'><a href='https://rdrr.io/r/graphics/plot.default.html'>plot</a></span><span class='op'>(</span><span class='va'>cv_results</span>, se_mult <span class='op'>=</span> <span class='fl'>1</span><span class='op'>)</span>
 </div><div class='img'><img src='pense-2.png' alt='' width='700' height='433' /></div><div class='input'>
 <span class='co'># Extract the coefficients at the penalization level with</span>
 <span class='co'># smallest prediction error ...</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;            -7.3505930             0.2190124            -0.7091811 
+#&gt;            -8.5228825             0.2072828            -0.6946405 
 #&gt;          income.level      market.potential 
-#&gt;             0.7054675             1.0372210 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
+#&gt;             0.6778202             1.1430756 </div><div class='input'><span class='co'># ... or at the penalization level with prediction error</span>
 <span class='co'># statistically indistinguishable from the minimum.</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/coef.html'>coef</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'1-se'</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;           (Intercept) lag.quarterly.revenue           price.index 
-#&gt;           -10.2047807             0.2111069            -0.6464577 
+#&gt;            -8.9377554             0.2066104            -0.6851005 
 #&gt;          income.level      market.potential 
-#&gt;             0.6199943             1.2792788 </div></pre>
+#&gt;             0.6654687             1.1777421 </div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

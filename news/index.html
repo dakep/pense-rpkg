@@ -71,7 +71,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -132,6 +132,19 @@
       <small>Source: <a href='https://github.com/dakep/pense-rpkg/blob/master/NEWS.md'><code>NEWS.md</code></a></small>
     </div>
 
+    <div id="pense-2-1-0" class="section level1">
+<h1 class="page-header" data-toc-text="2.1.0">
+<a href="#pense-2-1-0" class="anchor"></a>pense 2.1.0<small> Unreleased </small>
+</h1>
+<ul>
+<li>Penalty loadings are now applied to both the L1 and L2 parts of the EN penalty. This will lead to different results for adaptive PENSE and other adaptive estimators when fitted with <em>alpha &lt; 1</em>!</li>
+<li>PENSE and regularized M-estimators now accept multiple <code>alpha</code> values and automatic hyper-parameter selection will also choose the best <code>alpha</code> value.</li>
+<li>New support for specifying the more general “1-SE” rules for the penalization level as string. All methods which support <code>lambda = "min"</code> to extract the best fit, also support the syntax <code>lambda = "{m}-se"</code> to extract the most parsimonious fit within <em>m</em> standard-errors of the best fit.</li>
+<li>Adaptively choose the actual breakdown point based on the number of observations. The chosen breakdown point is close to the user-specified breakdown point, but avoids numerical instabilities in the S-loss and excessive computation time caused by these instabilities.</li>
+<li>Simplify the DAL algorithm to fully rely on linear algebra routines from the BLAS/LAPACK library linked to R. To improve the speed of the DAL algorithm, optimized BLAS/LAPACK libraries are recommended.</li>
+<li>Fix memory issues from edge-cases and OpenMP problems with Intel compilers</li>
+</ul>
+</div>
     <div id="pense-2-0-3" class="section level1">
 <h1 class="page-header" data-toc-text="2.0.3">
 <a href="#pense-2-0-3" class="anchor"></a>pense 2.0.3<small> 2021-04-14 </small>

@@ -31,7 +31,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -91,7 +91,7 @@
       <h1 data-toc-skip>Controlling the grid of penalization levels</h1>
                         <h4 class="author">David Kepplinger</h4>
             
-            <h4 class="date">2021-06-08</h4>
+            <h4 class="date">2021-07-05</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/master/vignettes/lambda_grids.Rmd"><code>vignettes/lambda_grids.Rmd</code></a></small>
       <div class="hidden name"><code>lambda_grids.Rmd</code></div>
@@ -156,9 +156,6 @@ Prediction performance of models estimated over a well-focused grid of penalizat
 <span class="va">fit_adaptive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="fl">5e-5</span>, <span class="fl">5e-4</span>, <span class="fl">5e-3</span>, <span class="fl">5e-2</span>, <span class="fl">5e-1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></code></pre></div>
 <p>The function <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> allows finer control over the grids. It supports the argument <code>lambda=</code>, which would use the same grid of penalization levels for the S- and M-estimates. But <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> additionally supports arguments <code>lambda_s=</code> and <code>lambda_m=</code> to manually specify separate grids for the S- and the M-estimates.</p>
 </div>
-</div>
-<div id="section" class="section level2">
-<h2></h2>
 </div>
   </div>
 

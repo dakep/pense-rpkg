@@ -40,7 +40,8 @@
 
 
 <meta property="og:title" content="Extract Residuals — residuals.pense_fit" />
-<meta property="og:description" content="Extract residuals from a PENSE (or LS-EN) regularization path fitted by pense() or elnet()." />
+<meta property="og:description" content="Extract residuals from a PENSE (or LS-EN) regularization path fitted by
+pense(), regmest() or elnet()." />
 
 
 
@@ -72,7 +73,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.4.100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.0.9.100</span>
       </span>
     </div>
 
@@ -135,11 +136,19 @@
     </div>
 
     <div class="ref-description">
-    <p>Extract residuals from a PENSE (or LS-EN) regularization path fitted by <code><a href='pense.html'>pense()</a></code> or <code><a href='elnet.html'>elnet()</a></code>.</p>
+    <p>Extract residuals from a PENSE (or LS-EN) regularization path fitted by
+<code><a href='pense.html'>pense()</a></code>, <code><a href='regmest.html'>regmest()</a></code> or <code><a href='elnet.html'>elnet()</a></code>.</p>
     </div>
 
     <pre class="usage"><span class='co'># S3 method for pense_fit</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>object</span>, <span class='va'>lambda</span>, exact <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>, correction <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>, <span class='va'>...</span><span class='op'>)</span></pre>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span>
+  <span class='va'>object</span>,
+  alpha <span class='op'>=</span> <span class='cn'>NULL</span>,
+  <span class='va'>lambda</span>,
+  exact <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  correction <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/Deprecated.html'>deprecated</a></span><span class='op'>(</span><span class='op'>)</span>,
+  <span class='va'>...</span>
+<span class='op'>)</span></pre>
 
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -149,13 +158,20 @@
       <td><p>PENSE regularization path to extract residuals from.</p></td>
     </tr>
     <tr>
+      <th>alpha</th>
+      <td><p>Either a single number or <code>NULL</code> (default).
+If given, only fits with the given <code>alpha</code> value are considered.
+If <code>object</code> was fit with multiple <code>alpha</code> values, and no value is provided, the
+first value in <code>object$alpha</code> is used with a warning.</p></td>
+    </tr>
+    <tr>
       <th>lambda</th>
-      <td><p>a single value of the penalty parameter.</p></td>
+      <td><p>a single number for the penalty level.</p></td>
     </tr>
     <tr>
       <th>exact</th>
-      <td><p>defunct Always gives a warning if <code>lambda</code> is not part of the fitted sequence and coefficients
-need to be interpolated.</p></td>
+      <td><p>defunct Always gives a warning if <code>lambda</code> is not part of
+the fitted sequence and coefficients need to be interpolated.</p></td>
     </tr>
     <tr>
       <th>correction</th>
@@ -189,11 +205,11 @@ need to be interpolated.</p></td>
 
 <span class='co'># Predict the response using a specific penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>regpath</span>, newdata <span class='op'>=</span> <span class='va'>freeny</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span>,
-        lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>10</span><span class='op'>]</span><span class='op'>)</span>
+        lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>[[</span><span class='fl'>10</span><span class='op'>]</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
 #&gt; 9.071638 9.075877 9.082341 9.091051 9.103643 </div><div class='input'>
 <span class='co'># Extract the residuals at a certain penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>regpath</span>, lambda <span class='op'>=</span> <span class='va'>regpath</span><span class='op'>$</span><span class='va'>lambda</span><span class='op'>[[</span><span class='fl'>1</span><span class='op'>]</span><span class='op'>]</span><span class='op'>[[</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
 #&gt; 1962              -0.396169224 -0.398919454 -0.378220695
 #&gt; 1963 -0.384593892 -0.294338479 -0.278030430 -0.259140970
@@ -206,38 +222,39 @@ need to be interpolated.</p></td>
 #&gt; 1970  0.247870647  0.296181577  0.294470169  0.278217170
 #&gt; 1971  0.306686546  0.334684047  0.353729154  0.367702082</div><div class='input'>
 <span class='co'># Select penalization level via cross-validation</span>
-<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet_cv.html'>elnet_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>, cv_repl <span class='op'>=</span> <span class='fl'>10</span>,
-                       cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
+<span class='fu'><a href='https://rdrr.io/r/base/Random.html'>set.seed</a></span><span class='op'>(</span><span class='fl'>123</span><span class='op'>)</span>
+<span class='va'>cv_results</span> <span class='op'>&lt;-</span> <span class='fu'><a href='elnet_cv.html'>elnet_cv</a></span><span class='op'>(</span><span class='va'>x</span>, <span class='va'>freeny</span><span class='op'>$</span><span class='va'>y</span>, alpha <span class='op'>=</span> <span class='fl'>0.5</span>,
+                       cv_repl <span class='op'>=</span> <span class='fl'>10</span>, cv_k <span class='op'>=</span> <span class='fl'>4</span><span class='op'>)</span>
 
 <span class='co'># Predict the response using the "best" penalization level</span>
 <span class='fu'><a href='https://rdrr.io/r/stats/predict.html'>predict</a></span><span class='op'>(</span><span class='va'>cv_results</span>, newdata <span class='op'>=</span> <span class='va'>freeny</span><span class='op'>[</span><span class='fl'>1</span><span class='op'>:</span><span class='fl'>5</span>, <span class='fl'>2</span><span class='op'>:</span><span class='fl'>5</span><span class='op'>]</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;  1962.25   1962.5  1962.75     1963  1963.25 
-#&gt; 8.794094 8.806179 8.823862 8.841466 8.882830 </div><div class='input'>
+#&gt; 8.795162 8.807070 8.824535 8.842175 8.882970 </div><div class='input'>
 <span class='co'># Extract the residuals at the "best" penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span><span class='op'>^</span><span class='fl'>2</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;              Qtr1         Qtr2         Qtr3         Qtr4
-#&gt; 1962              3.005095e-06 2.193146e-04 8.104134e-05
-#&gt; 1963 8.097514e-04 6.090920e-04 1.791670e-04 1.963012e-04
-#&gt; 1964 1.853747e-04 4.862530e-05 1.977086e-06 1.739159e-04
-#&gt; 1965 6.665374e-04 1.405364e-05 1.042364e-04 6.203151e-06
-#&gt; 1966 2.193333e-04 2.245208e-04 8.200783e-05 9.905717e-06
-#&gt; 1967 6.170454e-06 1.283443e-04 2.252591e-05 6.226242e-06
-#&gt; 1968 2.232229e-04 2.683152e-04 1.890132e-05 8.440375e-05
-#&gt; 1969 7.791054e-05 6.196729e-04 1.163387e-04 7.753244e-04
-#&gt; 1970 4.981744e-04 2.140198e-04 4.137242e-05 3.568147e-04
-#&gt; 1971 1.469863e-04 2.686597e-05 9.557948e-06 5.428973e-05</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
-<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>'se'</span><span class='op'>)</span>
+#&gt; 1962              -0.002801588 -0.015699794 -0.009674689
+#&gt; 1963 -0.029165027  0.024539756  0.012794692  0.013400637
+#&gt; 1964 -0.014177641  0.006727561 -0.001786569  0.012847301
+#&gt; 1965 -0.026214283 -0.003738367 -0.010414370 -0.002497682
+#&gt; 1966 -0.014953173  0.014923561  0.008857587  0.002955549
+#&gt; 1967 -0.002438578  0.011336771 -0.004817002 -0.002203485
+#&gt; 1968 -0.014622332 -0.016038521  0.004783442  0.009509723
+#&gt; 1969  0.008935501  0.025135859  0.011008309  0.028171208
+#&gt; 1970 -0.021812388  0.015300404 -0.005936032 -0.018484409
+#&gt; 1971 -0.011338929  0.005850584  0.003783641  0.007952774</div><div class='input'><span class='co'># Extract the residuals at a more parsimonious penalization level</span>
+<span class='fu'><a href='https://rdrr.io/r/stats/residuals.html'>residuals</a></span><span class='op'>(</span><span class='va'>cv_results</span>, lambda <span class='op'>=</span> <span class='st'>"1.5-se"</span><span class='op'>)</span>
 </div><div class='output co'>#&gt;               Qtr1          Qtr2          Qtr3          Qtr4
-#&gt; 1962               -0.0088984307 -0.0211159534 -0.0142274424
-#&gt; 1963 -0.0337770122  0.0223283796  0.0092186714  0.0098520440
-#&gt; 1964 -0.0174315975  0.0047486697 -0.0041022871  0.0107321308
-#&gt; 1965 -0.0284252350 -0.0043510109 -0.0117313263 -0.0029809124
-#&gt; 1966 -0.0158717550  0.0143460888  0.0079295164  0.0020844029
-#&gt; 1967 -0.0022608835  0.0114683449 -0.0048433907 -0.0007496397
-#&gt; 1968 -0.0129163919 -0.0141304701  0.0071741898  0.0115220813
-#&gt; 1969  0.0101239940  0.0269147816  0.0128947265  0.0304762305
-#&gt; 1970 -0.0185378448  0.0192234266 -0.0024645664 -0.0154773994
-#&gt; 1971 -0.0069036801  0.0100063851  0.0081723476  0.0119808180</div></pre>
+#&gt; 1962               -0.0133914763 -0.0253025812 -0.0180073467
+#&gt; 1963 -0.0375085950  0.0197904960  0.0063674275  0.0071084444
+#&gt; 1964 -0.0199445085  0.0028559476 -0.0059886764  0.0089958759
+#&gt; 1965 -0.0300906249 -0.0052788324 -0.0128420949 -0.0036364879
+#&gt; 1966 -0.0166186511  0.0137904162  0.0073750895  0.0016121587
+#&gt; 1967 -0.0021618673  0.0116385091 -0.0046227113  0.0002016235
+#&gt; 1968 -0.0117185912 -0.0127504673  0.0088610048  0.0131305182
+#&gt; 1969  0.0114094522  0.0285319822  0.0147126545  0.0325247699
+#&gt; 1970 -0.0158575338  0.0222103711  0.0004937030 -0.0127802705
+#&gt; 1971 -0.0035765461  0.0133307584  0.0117139290  0.0154227310</div></pre>
   </div>
   <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
     <nav id="toc" data-toggle="toc" class="sticky-top">

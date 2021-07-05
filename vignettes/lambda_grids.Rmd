@@ -51,8 +51,8 @@ For most applications "meaningful" change is only observed between models differ
 Particularly in the lower end of the grid, the estimated models often don't differ in the number of predictors and exhibit only marginal differences in the coefficient estimates.
 This may waste computational resources on exploring an area of little interest.
 You can adjust the lower endpoint of the automatic grid by changing the multiplier with argument `lambda_min_ratio=`.
-The ratio must be less than 1, and the larger (i.e., closer to 1), the narrower the grid.
-If you need to re-focus the grid on larger values of the penalization level, you can increase the ratio to 10<sup>-1</sup>:
+The ratio must be less than 1, and the closer to 1 the narrower the grid.
+If you need to re-focus the grid on larger values of the penalization level, you can increase the ratio, for example, to 10<sup>-1</sup>:
 
 ```{r, eval=FALSE}
 set.seed(1234)
@@ -68,13 +68,14 @@ fit_grid_wide <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 1e-6, cv_k =
 
 ```{r, fig.width=6.5, fig.show='hold', echo=FALSE, fig.cap="Prediction performance of models estimated on different grids of the penalization level: (a) narrow grid with `lambda_min_ratio=1e-1`, (b) wide grid with `lambda_min_ratio=1e-6`."}
 layout(matrix(1:2, nrow = 1, byrow = TRUE))
-prev_par <- par(mai = c(0.8, 0.8, 0.6, 0.2), oma = c(0, 0, 0, 0), lwd = 1.6, cex.main = 0.9, mgp = c(2.5, 1, 0))
+prev_par <- par(mai = c(0.8, 0.8, 0.6, 0.2), oma = c(0, 0, 0, 0), lwd = 1.6, cex.main = 0.7, mgp = c(2.5, 1, 0))
 
 plot(fit_grid_narrow)
 title(main = '(a) narrow grid\n\n', cex.main = 1)
 
 plot(fit_grid_wide)
 title(main = '(b) wide grid\n\n', cex.main = 1)
+
 par(prev_par)
 ```
 
@@ -115,3 +116,8 @@ fit_adaptive <- pense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, lambda = c(
 The function `pensem_cv()` allows finer control over the grids.
 It supports the argument `lambda=`, which would use the same grid of penalization levels for the S- and M-estimates.
 But `pensem_cv()` additionally supports arguments `lambda_s=` and `lambda_m=` to manually specify separate grids for the S- and the M-estimates.
+
+```{r, eval=FALSE, include=FALSE}
+save(fit_grid_narrow, fit_grid_wide, fit_grid_focused, fit_preliminary, fit_adaptive,
+     file = 'lambda_grids_fits.RData')
+```

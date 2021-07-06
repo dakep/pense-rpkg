@@ -15,7 +15,7 @@
 #'    respectively.
 #'    Setting `fit_all` to `FALSE` is equivalent to `"min"`.
 #'    Applies to all `alpha` value.
-#' @param cl a [parallel][parallel::makeCluster] cluster. Can only be used in combinatino with
+#' @param cl a [parallel][parallel::makeCluster] cluster. Can only be used in combination with
 #'   `ncores = 1`.
 #'
 #' @details

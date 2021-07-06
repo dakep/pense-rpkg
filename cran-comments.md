@@ -1,16 +1,17 @@
-Fixes several bugs which, e.g., prevented building on RHEL and degraded performance in certain situations.
+Introduces new functionality, improves speed, and fixes an OpenMP bug with Intel compilers.
 
 ## Test environments
-* local x86_64-apple-darwin17.0 version 11.2.3 (20D91), R version 4.0.5 Patched (2021-03-31 r80136)
+* local x86_64-apple-darwin17.0 (64-bit), 4.1.0 Patched (2021-06-19 r80532)
 * win-builder (devel and release)
 * Travis
-  * Ubuntu 16.04.7 LTS, R-oldrel
-  * Ubuntu 16.04.7 LTS, R-release
-  * Ubuntu 16.04.7 LTS, R-devel
+  * Ubuntu 18.04 LTS, R-oldrel
+  * Ubuntu 18.04 LTS, R-release
+  * Ubuntu 18.04 LTS, R-devel
 * Rhub
-  * Ubuntu Linux 16.04 LTS, R-devel with rchk
+  * Ubuntu Linux 20.04.1 LTS, R-devel with rchk
   * Debian Linux, R-devel, GCC ASAN/UBSAN
   * Fedora Linux, R-devel, clang, gfortran (with VALGRIND)
+  * Fedora Linux, R-devel, GCC
   * Oracle Solaris 10, x86, 32 bit, R-release
   * Windows Server 2008 R2 SP1, R-oldrel, 32/64 bit
   * Windows Server 2008 R2 SP1, R-patched, 32/64 bit
@@ -20,4 +21,4 @@ Fixes several bugs which, e.g., prevented building on RHEL and degraded performa
 
 > installed size is > 5MB
 
-The package uses heavily-templated code (both internal and from RcppArmadillo), bloating the size of the library.
+The package uses heavily-templated code (both internal and from RcppArmadillo), increasing the size of the library.

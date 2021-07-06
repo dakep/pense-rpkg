@@ -121,7 +121,7 @@ Not supported on all platforms, in which case a warning is given.}
 
 \item{cv_repl}{number of cross-validation replications.}
 
-\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combinatino with
+\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
 
 \item{cv_metric}{either a string specifying the performance metric to use, or a function to

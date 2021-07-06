@@ -58,7 +58,7 @@ respectively.
 Setting \code{fit_all} to \code{FALSE} is equivalent to \code{"min"}.
 Applies to all \code{alpha} value.}
 
-\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combinatino with
+\item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
 
 \item{...}{

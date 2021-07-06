@@ -388,7 +388,7 @@ inline auto ElementwiseProduct(const T& lhs, const arma::sp_vec& rhs) {
 template <typename T>
 inline auto ElementwiseProduct(const T& lhs, const double& rhs) {
   return lhs * rhs;
-};
+}
 
 //! Define a proxy to compute elementwise products for "any" type of left-hand-side and
 //! a vector-type right-hand-side.

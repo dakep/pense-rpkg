@@ -171,7 +171,7 @@ prediction_performance <- function (..., alpha = NULL, lambda = 'min', se_mult =
           (est$lambda - object$cvres$lambda[[ind]])^2 < .Machine$double.eps
       }))
       if (length(est_ind) > 0L) {
-        sum(abs(object$estimates[[est_ind]]$beta) > .Machine$double.eps)
+        as.integer(sum(abs(object$estimates[[est_ind]]$beta) > .Machine$double.eps))
       } else {
         NA_integer_
       }

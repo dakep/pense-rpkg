@@ -121,6 +121,31 @@ class Mscale {
     return scale_;
   }
 
+  //! Compute the 1st derivative of the M-scale function with respect to each element.
+  //!
+  //! @param values vector of values
+  //! @return a vector of derivatives, one for each element in `values`. If the scale is 0 or the M-scale equation
+  //!   is violated, an empty vector is returned.
+  arma::vec Derivative(const arma::vec& values) const {
+    const double scale = ComputeMscale(values, InitialEstimate(values));
+    if (scale < eps_) {
+      return arma::vec();
+    }
+    const auto sum_diff = rho_.SumStd(values, scale) - values.n_elem * delta_;
+
+    if (sum_diff * sum_diff > eps_) {
+      return arma::vec();
+    }
+
+    const auto deriv_rho = rho_.Derivative(values, scale);
+    const auto denom = sum(deriv_rho % values) / scale;
+    if (denom < eps_) {
+      return arma::vec(values.n_elem, arma::fill::value(R_PosInf));
+    } else {
+      return deriv_rho / denom;
+    }
+  }
+
   //! Get the rho function object.
   const RhoFunction& rho() const noexcept {
     return rho_;
@@ -154,9 +179,9 @@ class Mscale {
     do {
       const double rho_sum = rho_.SumStd(values, scale);
       const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
-      err = std::abs(new_scale / scale - 1.);
+      err = std::abs(new_scale - scale);
       scale = new_scale;
-    } while (++iter < max_it_ && err > eps_);
+    } while (++iter < max_it_ && err > eps_ * scale);
 
     return scale;
   }

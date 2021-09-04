@@ -75,6 +75,66 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
   .Call(C_mscale, x, opts)
 }
 
+#' Compute the Derivative of the M-Scale Function
+#'
+#' Compute the derivative of the M-scale function with respect to each element.
+#'
+#' @param x numeric values. Missing values are verbosely ignored.
+#' @param bdp desired breakdown point (between 0 and 0.5).
+#' @param cc cutoff value for the bisquare rho function.
+#'    By default, chosen to yield a consistent estimate for the Normal distribution.
+#' @param opts a list of options for the M-scale estimation algorithm,
+#'    see [mscale_algorithm_options()] for details.
+#' @return a vector of derivatives of the M-scale function, one per element in `x`.
+#'
+#' @importFrom rlang warn
+#' @importFrom stats na.omit
+mscale_derivative <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
+                               opts = mscale_algorithm_options()) {
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+
+  if (missing(cc)) {
+    cc <- NULL
+  }
+  opts <- .full_mscale_algo_options(bdp, cc, opts)
+  derivatives <- .Call(C_mscale_derivative, x, opts, 1L)
+  if (length(derivatives) < length(x)) {
+    derivatives <- rep_len(NA_real_, length(x))
+  }
+  derivatives
+}
+
+#' @description
+#' Compute the maximum derivative of the M-scale function with respect to each element over
+#' a grid of values.
+#'
+#' @param n_change the number of elements in `x` to replace with each value in `grid`.
+#' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
+#' @return the maximum absolute derivative over the entire grid.
+#' @describeIn mscale_derivative
+max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
+                                   cc = consistency_const(bdp, 'bisquare'),
+                                   opts = mscale_algorithm_options()) {
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+
+  if (missing(cc)) {
+    cc <- NULL
+  }
+  opts <- .full_mscale_algo_options(bdp, cc, opts)
+
+  .Call(C_max_mscale_derivative, x, grid, n_change, opts)
+}
+
 #' Compute the M-estimate of Location
 #'
 #' Compute the M-estimate of location using an auxiliary estimate of the scale.

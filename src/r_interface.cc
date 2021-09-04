@@ -31,6 +31,8 @@ const R_CallMethodDef kExportedCallMethods[] = {
   {"C_tau_size", (DL_FUNC) &TauSize, 1},
   {"C_approx_match", (DL_FUNC) &ApproximateMatch, 3},
   {"C_mscale", (DL_FUNC) &MScale, 2},
+  {"C_mscale_derivative", (DL_FUNC) &MScaleDerivative, 3},
+  {"C_max_mscale_derivative", (DL_FUNC) &MaxMScaleDerivative, 3},
   {"C_mloc", (DL_FUNC) &MLocation, 3},
   {"C_mlocscale", (DL_FUNC) &MLocationScale, 3},
   {"C_lsen_regression", (DL_FUNC) &LsEnRegression, 5},

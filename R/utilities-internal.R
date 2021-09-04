@@ -592,3 +592,4 @@ extract_metric <- function (metrics, attr, node) {
     list(se_type = se_str, se_fact = se_fact)
   }
 }
+

@@ -133,7 +133,7 @@ class Mscale {
     }
     const auto sum_diff = rho_.SumStd(values, scale) - values.n_elem * delta_;
 
-    if (sum_diff * sum_diff > eps_) {
+    if (sum_diff * sum_diff > values.n_elem * values.n_elem * eps_) {
       return arma::vec();
     }
 

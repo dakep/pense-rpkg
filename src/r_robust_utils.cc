@@ -126,14 +126,15 @@ SEXP MaxMScaleDerivative(SEXP r_x, SEXP r_grid, SEXP r_change, SEXP r_mscale_opt
       do {
         for (int i = 0; i < change; ++i) {
           x[i] = grid->at(counters[i]);
-          const auto derivatives = mscale.Derivative(x);
-          if (derivatives.n_elem > 0) {
-            const double md = arma::max(arma::abs(derivatives));
-            if (md > max_md) {
-              max_md = md;
-            }
+        }
+        const auto derivatives = mscale.Derivative(x);
+        if (derivatives.n_elem > 0) {
+          const double md = arma::max(arma::abs(derivatives));
+          if (md > max_md) {
+            max_md = md;
           }
         }
+
         p = change - 1;
         while (p >= 0) {
           ++counters[p];

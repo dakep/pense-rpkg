@@ -131,7 +131,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
                   enpy_lambda, penalty_loadings, intercept = TRUE, bdp = 0.25, cc,
                   add_zero_based = TRUE, enpy_specific = FALSE, other_starts,
                   eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, explore_it = 20,
-                  max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,
+                  max_solutions = 1, comparison_tol = sqrt(eps), sparse = FALSE,
                   ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(),
                   mscale_opts = mscale_algorithm_options(),
@@ -171,10 +171,13 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
                              enpy_opts = args$enpy_opts,
                              optional_args = args$optional_args)
 
-      # Retain only the best solution:
-      fit$estimates <- lapply(fit$estimates, function (ests) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-      })
+      # Flatten the list of estimates and unstandardize them
+      fit$estimates <- lapply(
+        unlist(fit$estimates, recursive = FALSE),
+        function (ests) {
+          args$restore_coef_length(args$std_data$unstandardize_coefs(ests))
+        })
+
       # Handle metrics
       fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
       fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
@@ -543,7 +546,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
                          enpy_lambda, penalty_loadings, intercept = TRUE, bdp = 0.25, cc = NULL,
                          add_zero_based = TRUE, enpy_specific = FALSE, other_starts,
                          eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, explore_it = 20,
-                         max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,
+                         max_solutions = 1, comparison_tol = sqrt(eps), sparse = FALSE,
                          ncores = 1, standardize = TRUE,
                          algorithm_opts = mm_algorithm_options(),
                          mscale_opts = mscale_algorithm_options(),

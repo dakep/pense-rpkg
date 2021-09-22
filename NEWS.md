@@ -1,3 +1,6 @@
+# HEAD
+ * Fix bug that the argument `max_solutions` is not used correctly.
+
 # pense 2.1.0
   * Penalty loadings are now applied to both the L1 and L2 parts of the EN penalty.
     This will lead to different results for adaptive PENSE and other adaptive estimators when fitted with *alpha < 1*!

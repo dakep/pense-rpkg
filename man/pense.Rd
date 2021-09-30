@@ -25,7 +25,7 @@ pense(
   explore_solutions = 10,
   explore_tol = 0.1,
   explore_it = 20,
-  max_solutions = 10,
+  max_solutions = 1,
   comparison_tol = sqrt(eps),
   sparse = FALSE,
   ncores = 1,

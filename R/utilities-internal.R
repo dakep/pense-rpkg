@@ -56,6 +56,10 @@
 ## @param precision granularity of the grid of considered bdp's.
 .find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
                                        interval = c(0.05, 0.5)) {
+  if (isTRUE(attr(desired_bdp, 'fixed', TRUE))) {
+    return(desired_bdp)
+  }
+
   numeric_tol <- sqrt(.Machine$double.eps)
 
   bdp_range <- seq(from = max(desired_bdp - tolerance, interval[[1L]]),

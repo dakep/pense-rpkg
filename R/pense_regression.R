@@ -65,9 +65,10 @@
 #' @param intercept include an intercept in the model.
 #' @param bdp desired breakdown point of the estimator, between 0 and 0.5. The actual
 #'    breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.
-#' @param cc tuning constant for the S-estimator. Default is to chosen based on the breakdown
-#'   point \code{bdp}. Does *not* affect the estimated coefficients, only the estimated scale of
-#'   the residuals.
+#' @param cc tuning constant for the S-estimator. Default is chosen based on the breakdown
+#'   point \code{bdp}. This affects the estimated coefficients only if
+#'   `standardize=TRUE`. Otherwise only the estimated scale of the residuals
+#'   would be affected.
 #' @param eps numerical tolerance.
 #' @param explore_solutions number of solutions to compute up to the desired precision `eps`.
 #' @param explore_tol,explore_it numerical tolerance and maximum number of iterations for

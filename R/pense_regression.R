@@ -127,11 +127,13 @@
 #' @export
 #' @aliases adapense
 #' @importFrom lifecycle deprecated is_present deprecate_stop
-pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio,
-                  enpy_lambda, penalty_loadings, intercept = TRUE, bdp = 0.25, cc,
+pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
+                  lambda_min_ratio, enpy_lambda, penalty_loadings,
+                  intercept = TRUE, bdp = 0.25, cc,
                   add_zero_based = TRUE, enpy_specific = FALSE, other_starts,
-                  eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, explore_it = 20,
-                  max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,
+                  eps = 1e-6, explore_solutions = 10, explore_tol = 0.1,
+                  explore_it = 20, max_solutions = 10,
+                  comparison_tol = sqrt(eps), sparse = FALSE,
                   ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(),
                   mscale_opts = mscale_algorithm_options(),
@@ -177,8 +179,10 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
       })
       # Handle metrics
       fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                  'lambda'), use.names = FALSE, recursive = FALSE)
+      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`,
+                                  FUN.VALUE = numeric(1),
+                                  'lambda'), use.names = FALSE,
+                           recursive = FALSE)
       fit$alpha <- alpha
 
       fit
@@ -188,8 +192,11 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_m
     call = call,
     bdp = stable_bdp,
     lambda = lapply(fits, `[[`, 'lambda'),
-    estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
-    alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
+    metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
+    estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE,
+                       use.names = FALSE),
+    alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha',
+                   USE.NAMES = FALSE)),
     class = c('pense', 'pense_fit'))
 }
 

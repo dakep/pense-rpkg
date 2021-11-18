@@ -748,7 +748,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
     return(list(std_data = std_data,
                 alpha = alpha,
                 lambda = lambda,
-                enpy_lambda_inds = integer(0L),
+                enpy_lambda_inds = rep(list(integer(0L)), length(alpha)),
                 penalty_loadings = NULL,
                 pense_opts = pense_opts,
                 enpy_opts = enpy_opts,
@@ -839,7 +839,7 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
       abort("`enpy_lambda` must either be a numeric vector or a list the same length as `alpha`.")
     }
   } else {
-    integer(0L)
+    rep(list(integer(0L)), length(alpha))
   }
 
   # Extend lambda grids if necessary

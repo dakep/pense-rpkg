@@ -16,6 +16,7 @@
     #error "The file 'RcppArmadillo.h' should not be included. Please correct to include only 'nsoptim.hpp'."
 #endif
 
+#include "autoconfig.hpp"
 #include "nsoptim_forward.hpp"
 
 #include "nsoptim/armadillo.hpp"

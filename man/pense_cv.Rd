@@ -14,6 +14,7 @@ pense_cv(
   cv_repl = 1,
   cv_metric = c("tau_size", "mape", "rmspe", "auroc"),
   fit_all = TRUE,
+  fold_starts = c("full", "enpy", "both"),
   cl = NULL,
   ...
 )
@@ -26,13 +27,15 @@ adapense_cv(x, y, alpha, alpha_preliminary = 0, exponent = 1, ...)
 \item{y}{vector of response values of length \code{n}.
 For binary classification, \code{y} should be a factor with 2 levels.}
 
-\item{standardize}{whether to standardize the \code{x} variables prior to fitting the PENSE estimates.
-Can also be set to \code{"cv_only"}, in which case the input data is not standardized, but the
-training data in the CV folds is scaled to match the scaling of the input data.
+\item{standardize}{whether to standardize the \code{x} variables prior to fitting
+the PENSE estimates. Can also be set to \code{"cv_only"}, in which case the
+input data is not standardized, but the training data in the CV folds is
+scaled to match the scaling of the input data.
 Coefficients are always returned on the original scale.
 This can fail for variables with a large proportion of a single value
 (e.g., zero-inflated data).
-In this case, either compute with \code{standardize = FALSE} or standardize the data manually.}
+In this case, either compute with \code{standardize = FALSE} or standardize
+the data manually.}
 
 \item{lambda}{optional user-supplied sequence of penalization levels. If given and not \code{NULL},
 \code{nlambda} and \code{lambda_min_ratio} are ignored.}
@@ -57,6 +60,14 @@ penalization level with smallest average CV accuracy, or within \code{{x}} stand
 respectively.
 Setting \code{fit_all} to \code{FALSE} is equivalent to \code{"min"}.
 Applies to all \code{alpha} value.}
+
+\item{fold_starts}{how to determine starting values in the
+cross-validation folds. If \code{"full"} (default), use the best solution from
+the fit to the full data as starting value. This implies
+\code{fit_all=TRUE}.
+If \code{"enpy"} compute separate ENPY initial estimates in each fold.
+The option \code{"both"} uses both.
+These starts are in addition to the starts provided in \code{other_starts}.}
 
 \item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
@@ -127,7 +138,8 @@ Can be a vector of several values, but \code{alpha = 0} cannot be mixed with oth
 
 \item{alpha_preliminary}{\code{alpha} parameter for the preliminary estimate.}
 
-\item{exponent}{the exponent for computing the penalty loadings based on the preliminary estimate.}
+\item{exponent}{the exponent for computing the penalty loadings based on
+the preliminary estimate.}
 }
 \value{
 a list-like object with the same components as returned by \code{\link[=pense]{pense()}},
@@ -140,13 +152,15 @@ a list-like object as returned by \code{\link[=pense_cv]{pense_cv()}} plus the f
 \describe{
 \item{\code{preliminary}}{the CV results for the preliminary estimate.}
 \item{\code{exponent}}{exponent used to compute the penalty loadings.}
-\item{\code{penalty_loadings}}{the penalty loadings used for the adaptive PENSE estimate.}
+\item{\code{penalty_loadings}}{penalty loadings used for the
+adaptive PENSE estimate.}
 }
 }
 \description{
 Perform (repeated) K-fold cross-validation for \code{\link[=pense]{pense()}}.
 
-\code{adapense_cv()} is a convenience wrapper to compute adaptive PENSE estimates.
+\code{adapense_cv()} is a convenience wrapper to compute adaptive
+PENSE estimates.
 }
 \details{
 The built-in CV metrics are
@@ -161,10 +175,13 @@ Only sensible for binary responses.}
 
 \code{adapense_cv()} is a convenience wrapper which performs 3 steps:
 \enumerate{
-\item compute preliminary estimates via \code{pense_cv(..., alpha = alpha_preliminary)},
-\item computes the penalty loadings from the estimate \code{beta} with best prediction performance by
+\item compute preliminary estimates via
+\code{pense_cv(..., alpha = alpha_preliminary)},
+\item computes the penalty loadings from the estimate \code{beta} with best
+prediction performance by
 \code{adapense_loadings = 1 / abs(beta)^exponent}, and
-\item compute the adaptive PENSE estimates via \code{pense_cv(..., penalty_loadings = adapense_loadings)}.
+\item compute the adaptive PENSE estimates via
+\code{pense_cv(..., penalty_loadings = adapense_loadings)}.
 }
 }
 \examples{
@@ -208,11 +225,13 @@ plot(ada_manual)
 par(def.par)
 }
 \seealso{
-\code{\link[=pense]{pense()}} for computing regularized S-estimates without cross-validation.
+\code{\link[=pense]{pense()}} for computing regularized S-estimates without
+cross-validation.
 
 \code{\link[=coef.pense_cvfit]{coef.pense_cvfit()}} for extracting coefficient estimates.
 
-\code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the regularization path.
+\code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the
+regularization path.
 
 Other functions to compute robust estimates with CV: 
 \code{\link{pensem_cv}()},

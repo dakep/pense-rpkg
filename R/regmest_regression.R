@@ -222,14 +222,15 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     args$alpha, args$lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
     FUN = function (alpha, lambda) {
-      cv_fun <- function (train_data, test_ind) {
-        cv_fit <- .regmest_internal(train_data$x, train_data$y,
-                                    alpha = alpha,
-                                    lambda = lambda,
-                                    scale = args$scale,
-                                    penalty_loadings = args$penalty_loadings,
-                                    mest_opts = args$mest_opts,
-                                    optional_args = args$optional_args)
+      cv_fun <- function (train_data, test_ind, handler_args) {
+        cv_fit <- .regmest_internal(
+          train_data$x, train_data$y,
+          alpha = handler_args$alpha,
+          lambda = handler_args$lambda,
+          scale = handler_args$args$scale,
+          penalty_loadings = handler_args$args$penalty_loadings,
+          mest_opts = handler_args$args$mest_opts,
+          optional_args = handler_args$args$optional_args)
 
         # Return only best local optima
         lapply(cv_fit$estimates, `[[`, 1L)
@@ -241,7 +242,10 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
                                     cv_repl = cv_repl,
                                     metric = cv_metric,
                                     cv_est_fun = cv_fun,
-                                    par_cluster = cl)
+                                    par_cluster = cl,
+                                    handler_args = list(args = args,
+                                                        alpha = alpha,
+                                                        lambda = lambda))
       data.frame(lambda = lambda, alpha = alpha,
                  cvavg = rowMeans(cv_perf),
                  cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })

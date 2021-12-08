@@ -326,13 +326,12 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
       .make_initest_list(c(old_starts, std_ests),
                          lambda = fit_alpha$lambda,
                          alpha = fit_alpha$alpha,
-                         sparse = pense_opts$sparse)$starting_points
+                         sparse = args$pense_opts$sparse)$starting_points
     })
   } else {
     lapply(args$alpha, function (alpha) {
       if (length(args$optional_args$individual_starts) > 0L) {
-        .filter_list(args$optional_args$individual_starts, 'alpha',
-                     fit_alpha$alpha)
+        .filter_list(args$optional_args$individual_starts, 'alpha', alpha)
       } else {
         list()
       }

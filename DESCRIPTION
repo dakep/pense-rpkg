@@ -1,8 +1,8 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 2.1.1-101
-Date: 2021-09-2
+Version: 2.1.1-102
+Date: 2021-12-08
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),
@@ -41,7 +41,7 @@ Suggests:
     jsonlite
 License: MIT + file LICENSE
 NeedsCompilation: yes
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Roxygen: list(markdown = TRUE, load = "source")
 RdMacros: lifecycle
 VignetteBuilder: knitr

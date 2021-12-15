@@ -10,16 +10,19 @@ test_that("PENSE Algorithm (1 thread)", {
 
   n <- 80L
   p <- 20L
-
+  sparse <- FALSE
   nlambda <- 25L
 
   set.seed(123)
   x <- matrix(rcauchy(n * p), ncol = p)
   y <- 2 + rowSums(x[, 1:5]) / 5 + rnorm(n, sd = 4)
-  pr <- pense(x, y, alpha = 0.8, nlambda = nlambda, nlambda_enpy = 5, ncores = 1L, bdp = 0.25,
-              sparse = FALSE, eps = 1e-8,
-              enpy_opts = enpy_options(retain_max = 5, en_algorithm_opts = en_lars_options()),
-              algorithm_opts = mm_algorithm_options(en_algorithm_opts = en_lars_options()))
+  pr <- pense(x, y, alpha = 0.8, nlambda = nlambda, nlambda_enpy = 5,
+              ncores = 1L, bdp = 0.25,
+              sparse = sparse, eps = 1e-8,
+              enpy_opts = enpy_options(retain_max = 5,
+                                       en_algorithm_opts = en_lars_options()),
+              algorithm_opts = mm_algorithm_options(
+                en_algorithm_opts = en_lars_options()))
 
   expect_equal(pr$bdp, 0.2469)
   expect_equal(pr$alpha, 0.8)
@@ -27,8 +30,8 @@ test_that("PENSE Algorithm (1 thread)", {
 
   snapshot_file <- test_path('snap/pense_algo_st.json')
   if (!file.exists(snapshot_file)) {
-    jsonlite::write_json(pr$estimates, path = snapshot_file, auto_unbox = TRUE, digits = 14,
-                         pretty = TRUE)
+    jsonlite::write_json(pr$estimates, path = snapshot_file, auto_unbox = TRUE,
+                         digits = 14, pretty = TRUE)
     skip('Snapshot file did not exist and was created.')
   }
 
@@ -52,16 +55,20 @@ test_that("PENSE Algorithm (2 threads)", {
 
   n <- 80L
   p <- 40L
-
+  sparse <- FALSE
   nlambda <- 25L
 
   set.seed(123)
   x <- matrix(rcauchy(n * p), ncol = p)
   y <- 2 + rowSums(x[, 1:5]) / 5 + rnorm(n, sd = 4)
-  pr <- pense(x, y, alpha = 0.8, nlambda = nlambda, nlambda_enpy = 5, ncores = 2L, bdp = 0.25,
-              sparse = FALSE, eps = 1e-8,
-              enpy_opts = enpy_options(retain_max = 5, en_algorithm_opts = en_lars_options()),
-              algorithm_opts = mm_algorithm_options(en_algorithm_opts = en_lars_options()))
+  pr <- pense(x, y, alpha = 0.8,
+              nlambda = nlambda, nlambda_enpy = 5,
+              ncores = 2L, bdp = 0.25,
+              sparse = sparse, eps = 1e-8,
+              enpy_opts = enpy_options(retain_max = 5,
+                                       en_algorithm_opts = en_lars_options()),
+              algorithm_opts = mm_algorithm_options(
+                en_algorithm_opts = en_lars_options()))
 
   expect_equal(pr$bdp, 0.2469)
   expect_equal(pr$alpha, 0.8)
@@ -69,8 +76,8 @@ test_that("PENSE Algorithm (2 threads)", {
 
   snapshot_file <- test_path('snap/pense_algo_mt.json')
   if (!file.exists(snapshot_file)) {
-    jsonlite::write_json(pr$estimates, path = snapshot_file, auto_unbox = TRUE, digits = 14,
-                         pretty = TRUE)
+    jsonlite::write_json(pr$estimates, path = snapshot_file, auto_unbox = TRUE,
+                         digits = 14, pretty = TRUE)
     skip('Snapshot file did not exist and was created.')
   }
 

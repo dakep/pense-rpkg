@@ -25,7 +25,7 @@ pense(
   explore_solutions = 10,
   explore_tol = 0.1,
   explore_it = 20,
-  max_solutions = 10,
+  max_solutions = 1,
   comparison_tol = sqrt(eps),
   sparse = FALSE,
   ncores = 1,
@@ -71,9 +71,10 @@ penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 \item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
 breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
-\item{cc}{tuning constant for the S-estimator. Default is to chosen based on the breakdown
-point \code{bdp}. Does \emph{not} affect the estimated coefficients, only the estimated scale of
-the residuals.}
+\item{cc}{tuning constant for the S-estimator. Default is chosen based on the breakdown
+point \code{bdp}. This affects the estimated coefficients only if
+\code{standardize=TRUE}. Otherwise only the estimated scale of the residuals
+would be affected.}
 
 \item{add_zero_based}{also consider the 0-based regularization path. See details for a
 description.}

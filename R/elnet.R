@@ -207,21 +207,29 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
     args$alpha, args$lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
     FUN = function (alpha, lambda) {
-      cv_fun <- function (train_data, test_ind) {
-        cv_fit <- .elnet_internal(train_data$x, train_data$y,
-                                  alpha = alpha,
-                                  lambda = lambda,
-                                  penalty_loadings = args$penalty_loadings,
-                                  weights = args$weights[-test_ind],
-                                  intercept = args$intercept,
-                                  optional_args = args$optional_args)
+      cv_fun <- function (train_data, test_ind, handler_args) {
+        cv_fit <- .elnet_internal(
+          train_data$x, train_data$y,
+          alpha = handler_args$alpha,
+          lambda = handler_args$lambda,
+          penalty_loadings = handler_args$args$penalty_loadings,
+          weights = handler_args$args$weights[-test_ind],
+          intercept = handler_args$args$intercept,
+          optional_args = handler_args$args$optional_args)
+
         cv_fit$estimates
       }
 
       set.seed(fit_seed)
-      cv_perf <- .run_replicated_cv(args$std_data, cv_k = cv_k, cv_repl = cv_repl,
-                                    metric = cv_metric, cv_est_fun = cv_fun,
-                                    par_cluster = cl)
+      cv_perf <- .run_replicated_cv(args$std_data,
+                                    cv_k = cv_k,
+                                    cv_repl = cv_repl,
+                                    metric = cv_metric,
+                                    cv_est_fun = cv_fun,
+                                    par_cluster = cl,
+                                    handler_args = list(args = args,
+                                                        alpha = alpha,
+                                                        lambda = lambda))
 
       data.frame(lambda = lambda, alpha = alpha,
                  cvavg = rowMeans(cv_perf),

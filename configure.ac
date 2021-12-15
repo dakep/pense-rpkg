@@ -1,4 +1,4 @@
-AC_INIT(pense, 2.0.2)
+AC_INIT(pense, 2.1.1)
 AC_PREREQ(2.62)
 
 : ${R_HOME=`R RHOME`}
@@ -223,6 +223,23 @@ fi
 
 AC_SUBST(OPENMP_CXXFLAGS)
 AC_SUBST(R_HAVE_OPENMP)
+
+## Enable/disable metrics
+AC_ARG_ENABLE([metrics],
+              AS_HELP_STRING([--enable-metrics],
+                             [enable collection of metrics in C++ code
+                              (e.g., iteration statistics)]))
+
+if test "x$enable_metrics" = "xyes"; then
+  AC_MSG_NOTICE([Metrics enabled])
+  AC_DEFINE([NSOPTIM_METRICS_ENABLED], [1], [Set to 1 to enable metrics collection])
+elif test "x${enable_metrics}" = "xdetailed"; then
+  AC_MSG_NOTICE([Metrics enabled (detailed)])
+  AC_DEFINE([NSOPTIM_METRICS_DETAILED], [1], [Set to 1 to enable detailed metrics collection])
+else
+  AC_MSG_NOTICE([Metrics disabled])
+  AC_DEFINE([NSOPTIM_METRICS_DISABLED], [1], [Set to 1 to disable metrics collection])
+fi
 
 ##
 ## Write output

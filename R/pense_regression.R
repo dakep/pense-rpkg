@@ -65,9 +65,10 @@
 #' @param intercept include an intercept in the model.
 #' @param bdp desired breakdown point of the estimator, between 0 and 0.5. The actual
 #'    breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.
-#' @param cc tuning constant for the S-estimator. Default is to chosen based on the breakdown
-#'   point \code{bdp}. Does *not* affect the estimated coefficients, only the estimated scale of
-#'   the residuals.
+#' @param cc tuning constant for the S-estimator. Default is chosen based on the breakdown
+#'   point \code{bdp}. This affects the estimated coefficients only if
+#'   `standardize=TRUE`. Otherwise only the estimated scale of the residuals
+#'   would be affected.
 #' @param eps numerical tolerance.
 #' @param explore_solutions number of solutions to compute up to the desired precision `eps`.
 #' @param explore_tol,explore_it numerical tolerance and maximum number of iterations for
@@ -132,7 +133,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
                   intercept = TRUE, bdp = 0.25, cc,
                   add_zero_based = TRUE, enpy_specific = FALSE, other_starts,
                   eps = 1e-6, explore_solutions = 10, explore_tol = 0.1,
-                  explore_it = 20, max_solutions = 10,
+                  explore_it = 20, max_solutions = 1,
                   comparison_tol = sqrt(eps), sparse = FALSE,
                   ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(),
@@ -149,9 +150,9 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
   }
 
   call <- match.call(expand.dots = TRUE)
-  args <- as.list(call[-1L])
-  args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
-  args <- do.call(.pense_args, args, envir = parent.frame())
+  call[[1]] <- quote(pense:::.pense_args)
+  call$standardize <- isTRUE(standardize)
+  args <- eval.parent(call)
 
   # Update BDP for numerical stability
   stable_bdp <- .find_stable_bdb_bisquare(
@@ -160,33 +161,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
   args$pense_opts$mscale$delta <- stable_bdp
 
   # Call internal function
-  fits <- mapply(
-    args$alpha, args$lambda, args$enpy_lambda_inds,
-    SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda, enpy_lambda_inds) {
-      fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
-                             alpha = alpha,
-                             lambda = lambda,
-                             enpy_lambda_inds = enpy_lambda_inds,
-                             penalty_loadings = args$penalty_loadings,
-                             pense_opts = args$pense_opts,
-                             enpy_opts = args$enpy_opts,
-                             optional_args = args$optional_args)
-
-      # Retain only the best solution:
-      fit$estimates <- lapply(fit$estimates, function (ests) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-      })
-      # Handle metrics
-      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`,
-                                  FUN.VALUE = numeric(1),
-                                  'lambda'), use.names = FALSE,
-                           recursive = FALSE)
-      fit$alpha <- alpha
-
-      fit
-    })
+  fits <- .pense_internal_multi(args)
 
   structure(list(
     call = call,
@@ -205,17 +180,27 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
 #' Perform (repeated) K-fold cross-validation for [pense()].
 #'
 #' @inheritParams pense
-#' @param standardize whether to standardize the `x` variables prior to fitting the PENSE estimates.
-#'    Can also be set to `"cv_only"`, in which case the input data is not standardized, but the
-#'    training data in the CV folds is scaled to match the scaling of the input data.
+#' @param standardize whether to standardize the `x` variables prior to fitting
+#'    the PENSE estimates. Can also be set to `"cv_only"`, in which case the
+#'    input data is not standardized, but the training data in the CV folds is
+#'    scaled to match the scaling of the input data.
 #'    Coefficients are always returned on the original scale.
 #'    This can fail for variables with a large proportion of a single value
 #'    (e.g., zero-inflated data).
-#'    In this case, either compute with `standardize = FALSE` or standardize the data manually.
+#'    In this case, either compute with `standardize = FALSE` or standardize
+#'    the data manually.
+#' @param fold_starts how to determine starting values in the
+#'    cross-validation folds. If `"full"` (default), use the best solution from
+#'    the fit to the full data as starting value. This implies
+#'    `fit_all=TRUE`.
+#'    If `"enpy"` compute separate ENPY initial estimates in each fold.
+#'    The option `"both"` uses both.
+#'    These starts are in addition to the starts provided in `other_starts`.
 #' @template cv_params
 #' @inheritDotParams pense -standardize
 #'
-#' @seealso [pense()] for computing regularized S-estimates without cross-validation.
+#' @seealso [pense()] for computing regularized S-estimates without
+#'   cross-validation.
 #'
 #' @return a list-like object with the same components as returned by [pense()],
 #'    plus the following:
@@ -226,21 +211,25 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
 #' @example examples/adapense_fit.R
 #' @family functions to compute robust estimates with CV
 #' @seealso [coef.pense_cvfit()] for extracting coefficient estimates.
-#' @seealso [plot.pense_cvfit()] for plotting the CV performance or the regularization path.
+#' @seealso [plot.pense_cvfit()] for plotting the CV performance or the
+#'    regularization path.
 #' @aliases adapense_cv
 #' @export
 #' @importFrom lifecycle deprecate_warn deprecated is_present
 #' @importFrom stats sd
 #' @importFrom rlang abort
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
-                     cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'), fit_all = TRUE,
+                     cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'),
+                     fit_all = TRUE,
+                     fold_starts = c('full', 'enpy', 'both'),
                      cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
-  args <- do.call(.pense_args, as.list(call[-1L]), envir = parent.frame())
+  call[[1]] <- quote(pense:::.pense_args)
+  args <- eval.parent(call)
 
   fit_ses <- if (is.character(fit_all)) {
-    unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L), only_fact = TRUE,
-                  USE.NAMES = FALSE))
+    unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L),
+                  only_fact = TRUE, USE.NAMES = FALSE))
   } else if (isFALSE(fit_all)) {
     .parse_se_string('min', only_fact = TRUE)
   } else {
@@ -262,7 +251,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("`cv_repl` must be greater than 0.")
   }
 
-  if (identical(cv_repl, 1L) && any(fit_ses > 0)) {
+  if (identical(cv_repl, 1L) && !isTRUE(fit_ses) && any(fit_ses > 0)) {
     warn("To use `fit_all = \"se\"`, `cv_repl` must be 2 or greater.")
     fit_ses <- 0
   }
@@ -296,39 +285,115 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("Function `cv_metric` must accept at least 1 argument.")
   }
 
+  fold_starts <- match.arg(fold_starts)
+
+  if (identical(fold_starts, 'full') || identical(fold_starts, 'both')) {
+    fit_ses <- TRUE
+  }
+
+  # Determine "stable" bdp
+  stable_bdp <- .find_stable_bdb_bisquare(
+    n = length(args$std_data$y),
+    desired_bdp = args$pense_opts$mscale$delta)
+  args$pense_opts$mscale$delta <- stable_bdp
+
+  # If we need to estimate solutions for all lambda, do it prior to CV.
+  fits <- list()
+  other_starts <- NULL
+
+  if (isTRUE(fit_ses)) {
+    fits <- .pense_internal_multi(args)
+  }
+
+  other_starts <- if (isTRUE(fit_ses)) {
+    lapply(fits, function (fit_alpha) {
+      # If there are other individual starts, only use the ones with
+      # correct `alpha`
+      old_starts <- if (length(args$optional_args$individual_starts) > 0L) {
+        .filter_list(args$optional_args$individual_starts, 'alpha',
+                     fit_alpha$alpha)
+      } else {
+        list()
+      }
+
+      std_ests <- lapply(fit_alpha$estimates, function (est) {
+        est$beta <- est$std_beta
+        est$intercept <- est$std_intercept
+        est$std_beta <- NULL
+        est$std_intercept <- NULL
+        est
+      })
+
+      .make_initest_list(c(old_starts, std_ests),
+                         lambda = fit_alpha$lambda,
+                         alpha = fit_alpha$alpha,
+                         sparse = args$pense_opts$sparse)$starting_points
+    })
+  } else {
+    lapply(args$alpha, function (alpha) {
+      if (length(args$optional_args$individual_starts) > 0L) {
+        .filter_list(args$optional_args$individual_starts, 'alpha', alpha)
+      } else {
+        list()
+      }
+    })
+  }
+
   # Get a common seed to be used for every alpha value
   fit_seed <- sample.int(.Machine$integer.max, 1L)
 
   cv_curves <- mapply(
-    args$alpha, args$lambda, args$enpy_lambda_inds,
+    args$alpha, args$lambda, args$enpy_lambda_inds, other_starts,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda, enpy_lambda_inds) {
-      cv_fun <- function (train_data, test_ind) {
+    FUN = function (alpha, lambda, enpy_lambda_inds, other_starts) {
+      cv_fun <- function (train_data, test_ind, handler_args) {
+        # Determine stable bdp separately for this fold
         stable_bdp <- .find_stable_bdb_bisquare(
           n = length(train_data$y),
-          desired_bdp = args$pense_opts$mscale$delta)
-        args$pense_opts$mscale$delta <- stable_bdp
+          desired_bdp = handler_args$args$pense_opts$mscale$delta)
 
-        cv_fit <- .pense_internal(x = train_data$x, y = train_data$y,
-                                  alpha = alpha,
-                                  lambda = lambda,
-                                  enpy_lambda_inds = enpy_lambda_inds,
-                                  penalty_loadings = args$penalty_loadings,
-                                  pense_opts = args$pense_opts,
-                                  enpy_opts = args$enpy_opts,
-                                  optional_args = args$optional_args)
+        handler_args$args$pense_opts$mscale$delta <- stable_bdp
+
+        cv_fit <- .pense_internal(
+          x = train_data$x,
+          y = train_data$y,
+          alpha = handler_args$alpha,
+          lambda = handler_args$lambda,
+          enpy_lambda_inds = handler_args$enpy_lambda_inds,
+          penalty_loadings = handler_args$args$penalty_loadings,
+          pense_opts = handler_args$args$pense_opts,
+          enpy_opts = handler_args$args$enpy_opts,
+          optional_args = handler_args$args$optional_args)
 
         # Return only best local optima
         lapply(cv_fit$estimates, `[[`, 1L)
       }
 
+      handler_args <- list(alpha = alpha,
+                           lambda = lambda,
+                           enpy_lambda_inds = enpy_lambda_inds,
+                           args = args)
+
+      if (identical(fold_starts, 'full')) {
+        handler_args$enpy_lambda_inds <- integer(0L)
+      }
+
+      if (!identical(fold_starts, 'enpy')) {
+        handler_args$args$pense_opts$strategy_other_individual <- TRUE
+      }
+
+      handler_args$args$optional_args$individual_starts <- other_starts
+
       set.seed(fit_seed)
-      cv_perf <- .run_replicated_cv(args$std_data,
-                                    cv_k = cv_k,
-                                    cv_repl = cv_repl,
-                                    metric = cv_metric,
-                                    cv_est_fun = cv_fun,
-                                    par_cluster = cl)
+      cv_perf <- .run_replicated_cv(
+        args$std_data,
+        cv_k = cv_k,
+        cv_repl = cv_repl,
+        metric = cv_metric,
+        cv_est_fun = cv_fun,
+        par_cluster = cl,
+        handler_args = handler_args)
+
       data.frame(lambda = lambda, alpha = alpha,
                  cvavg = rowMeans(cv_perf),
                  cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
@@ -336,81 +401,64 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
 
   cv_curves <- do.call(rbind, cv_curves)
 
-  if (isTRUE(fit_ses)) {
-    fit_lambda <- args$lambda
-    fit_enpy_lambda_inds <- args$enpy_lambda_inds
-  } else {
+  # if fit_all is not TRUE, compute only the fit for the "best" lambda
+  if (!isTRUE(fit_ses)) {
     fit_lambda <- lapply(args$alpha, function (alpha) {
       rows <- which((cv_curves$alpha - alpha)^2 < .Machine$double.eps)
 
-      lambda_inds <- vapply(fit_ses, FUN.VALUE = numeric(1L), FUN = function (se_fact) {
-        which(.cv_se_selection(cv_curves$cvavg[rows], cv_curves$cvse[rows], se_fact) == 'se_fact')
-      })
+      lambda_inds <- vapply(
+        fit_ses, FUN.VALUE = numeric(1L),
+        FUN = function (se_fact) {
+          which(.cv_se_selection(cv_curves$cvavg[rows],
+                                 cv_curves$cvse[rows], se_fact) == 'se_fact')
+        })
       unique(cv_curves$lambda[rows[lambda_inds]])
     })
+
     fit_enpy_lambda_inds <- lapply(fit_lambda, seq_along)
+
+    fits <- .pense_internal_multi(args, lambda_list = fit_lambda,
+                                  enpy_lambda_inds_list = fit_enpy_lambda_inds)
   }
-
-  stable_bdp <- .find_stable_bdb_bisquare(
-    n = length(args$std_data$y),
-    desired_bdp = args$pense_opts$mscale$delta)
-  args$pense_opts$mscale$delta <- stable_bdp
-
-  # Call internal function
-  fits <- mapply(
-    args$alpha, fit_lambda, fit_enpy_lambda_inds,
-    SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda, enpy_lambda_inds) {
-      fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
-                             alpha = alpha,
-                             lambda = lambda,
-                             enpy_lambda_inds = enpy_lambda_inds,
-                             penalty_loadings = args$penalty_loadings,
-                             pense_opts = args$pense_opts,
-                             enpy_opts = args$enpy_opts,
-                             optional_args = args$optional_args)
-
-      # Retain only the best solution:
-      fit$estimates <- lapply(fit$estimates, function (ests) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-      })
-      # Handle metrics
-      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                  'lambda'), use.names = FALSE, recursive = FALSE)
-      fit$alpha <- alpha
-      fit
-    })
 
   structure(list(
     call = call,
     bdp = stable_bdp,
     lambda = lapply(fits, `[[`, 'lambda'),
-    alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE),
+    alpha = vapply(fits, FUN.VALUE = numeric(1L),
+                   FUN = `[[`, 'alpha', USE.NAMES = FALSE),
     cvres = cv_curves,
     cv_measure = cv_measure_str,
-    estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE)),
+    metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
+    estimates = unlist(lapply(fits, `[[`, 'estimates'),
+                       recursive = FALSE, use.names = FALSE)),
     class = c('pense', 'pense_cvfit'))
 }
 
-#' @description `adapense_cv()` is a convenience wrapper to compute adaptive PENSE estimates.
+#' @description `adapense_cv()` is a convenience wrapper to compute adaptive
+#'    PENSE estimates.
 #'
 #' @details
 #' `adapense_cv()` is a convenience wrapper which performs 3 steps:
 #'
-#' 1. compute preliminary estimates via `pense_cv(..., alpha = alpha_preliminary)`,
-#' 2. computes the penalty loadings from the estimate `beta` with best prediction performance by
+#' 1. compute preliminary estimates via
+#'    `pense_cv(..., alpha = alpha_preliminary)`,
+#' 2. computes the penalty loadings from the estimate `beta` with best
+#'    prediction performance by
 #'    `adapense_loadings = 1 / abs(beta)^exponent`, and
-#' 3. compute the adaptive PENSE estimates via `pense_cv(..., penalty_loadings = adapense_loadings)`.
+#' 3. compute the adaptive PENSE estimates via
+#'    `pense_cv(..., penalty_loadings = adapense_loadings)`.
 #'
 #' @param alpha_preliminary `alpha` parameter for the preliminary estimate.
-#' @param exponent the exponent for computing the penalty loadings based on the preliminary estimate.
+#' @param exponent the exponent for computing the penalty loadings based on
+#'     the preliminary estimate.
 #'
 #' @return a list-like object as returned by [pense_cv()] plus the following
 #'    \describe{
 #'      \item{`preliminary`}{the CV results for the preliminary estimate.}
 #'      \item{`exponent`}{exponent used to compute the penalty loadings.}
-#'      \item{`penalty_loadings`}{the penalty loadings used for the adaptive PENSE estimate.}
+#'      \item{`penalty_loadings`}{penalty loadings used for the
+#'                                adaptive PENSE estimate.}
 #'    }
 #'
 #' @family functions to compute robust estimates with CV
@@ -436,7 +484,8 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
   prelim_coef <- coef(prelim, sparse = FALSE, concat = FALSE)
   pen_loadings <- abs(prelim_coef$beta)^(-exponent)
 
-  adapense <- pense_cv(x, y, alpha = alpha, penalty_loadings = pen_loadings, ...)
+  adapense <- pense_cv(x, y, alpha = alpha, penalty_loadings = pen_loadings,
+                       ...)
   adapense$call <- call
   adapense$exponent <- exponent
   adapense$preliminary <- prelim
@@ -445,92 +494,9 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
   return(adapense)
 }
 
-## Make a list of initial estimates
-##
-## @return a list with 2 components:
-##   `extended_lambda` an extended grid of penalization levels to contain both the given
-##                     lambda values plus the lambda values in `other_starts`
-##   `starting_points` a list the same length as `extended_lambda` with a list of initial estimates
-##                     for each value in `extended_lambda`.
-#' @importFrom rlang warn
-.make_initest_list <- function (other_starts, lambda, alpha, sparse) {
-  if (length(other_starts) == 0L) {
-    return(list(extended_lambda = lambda, starting_points = rep.int(list(list()), length(lambda))))
-  }
-
-  # Check for wrong starting points without lambda
-  init_est_lambda <- unlist(lapply(other_starts, `[[`, 'lambda'),
-                            use.names = FALSE, recursive = FALSE)
-
-  if (length(init_est_lambda) != length(other_starts)) {
-    abort(paste("Some starting points in `other_starts` are marked as \"specific\"",
-                "but do not have a `lambda` component."))
-  }
-
-  init_est_lambda <- .as(init_est_lambda, 'numeric')
-
-  # Check for wrong starting points without alpha
-  init_est_alpha <- unlist(lapply(other_starts, `[[`, 'alpha'),
-                           use.names = FALSE, recursive = FALSE)
-
-  if (length(init_est_alpha) != length(other_starts)) {
-    abort(paste("Some starting points in `other_starts` are marked as \"specific\"",
-                "but do not have an `alpha` component."))
-  }
-
-  init_est_alpha <- .as(init_est_alpha, 'numeric')
-  correct_alpha <- which(abs(init_est_alpha - alpha) < sqrt(.Machine$double.eps))
-
-  if (length(correct_alpha) == 0L) {
-    return(list(extended_lambda = lambda, starting_points = rep.int(list(list()), length(lambda))))
-  }
-  init_est_lambda <- init_est_lambda[correct_alpha]
-  other_starts <- other_starts[correct_alpha]
-
-  init_est_inds <- .approx_match(init_est_lambda, lambda)
-  new_initest_lambda <- which(is.na(init_est_inds))
-
-  if (length(new_initest_lambda) > 0L) {
-    # Some starts are for unknown lambda. Add lambdas to the grid!
-    lambda <- sort(c(lambda, unique(init_est_lambda[new_initest_lambda])), decreasing = TRUE)
-    init_est_inds <- .approx_match(init_est_lambda, lambda)
-  }
-
-  starting_points <- lapply(seq_along(lambda), function (i) {
-    matches <- which(i == init_est_inds)
-    if (length(matches) > 0L) {
-      return(other_starts[matches])
-    } else {
-      return(list())
-    }
-  })
-
-  return(list(extended_lambda = lambda, starting_points = starting_points))
-}
-
-## Get the smallest lambda such that the PENSE estimate gives the empty model.
-.pense_max_lambda <- function (x, y, alpha, pense_options, penalty_loadings = NULL) {
-  optional_args <- list()
-  if (!is.null(penalty_loadings)) {
-    optional_args$pen_loadings <- penalty_loadings
-  }
-  .Call(C_pense_max_lambda, x, y, pense_options, optional_args) / max(0.01, alpha)
-}
-
-## Generate a log-spaced grid of decreasing lambda values
-.pense_lambda_grid <- function (x, y, alpha, nlambda, lambda_min_ratio, pense_options,
-                                penalty_loadings) {
-  alpha <- max(0.01, alpha)
-  x_dim <- dim(x)
-  if (is.null(lambda_min_ratio)) {
-    lambda_min_ratio <- alpha * if (x_dim[[1L]] > x_dim[[2L]]) { 1e-3 } else { 1e-2 }
-  }
-  max_lambda <- .pense_max_lambda(x, y, alpha, pense_options, penalty_loadings)
-  rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda), length.out = nlambda)))
-}
-
 ## Perform some final input adjustments and call the internal C++ code.
-.pense_internal <- function(x, y, alpha, lambda, enpy_lambda_inds, penalty_loadings = NULL,
+.pense_internal <- function(x, y, alpha, lambda, enpy_lambda_inds,
+                            penalty_loadings = NULL,
                             pense_opts, enpy_opts, optional_args) {
   # Create penalties-list, without sorting the lambda sequence
   penalties <- lapply(lambda, function (l) { list(lambda = l, alpha = alpha) })
@@ -539,339 +505,52 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
     optional_args$pen_loadings <- penalty_loadings
   }
 
-  .Call(C_pense_regression, x, y, penalties, enpy_lambda_inds, pense_opts, enpy_opts, optional_args)
+  .Call(C_pense_regression, x, y, penalties, enpy_lambda_inds, pense_opts,
+        enpy_opts, optional_args)
 }
 
-#' @importFrom lifecycle deprecated is_present deprecate_stop
-#' @importFrom rlang warn abort
-#' @importFrom methods is
-#' @importFrom stats runif
-.pense_args <- function (x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda, lambda_min_ratio,
-                         enpy_lambda, penalty_loadings, intercept = TRUE, bdp = 0.25, cc = NULL,
-                         add_zero_based = TRUE, enpy_specific = FALSE, other_starts,
-                         eps = 1e-6, explore_solutions = 10, explore_tol = 0.1, explore_it = 20,
-                         max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,
-                         ncores = 1, standardize = TRUE,
-                         algorithm_opts = mm_algorithm_options(),
-                         mscale_opts = mscale_algorithm_options(),
-                         enpy_opts = enpy_options(),
-                         options = deprecated(), init_options = deprecated(),
-                         en_options = deprecated(),
-                         initial = deprecated(), warm_reset = deprecated(), ...) {
-  args_call <- match.call(expand.dots = FALSE)
-  optional_args <- list()
+## A wrapper to call `.pense_internal` for a list of `alpha` values,
+## a list of corresponding `lambda` sequences and ENPY lambda indices.
+## This wrapper filters the individual starts to only include the starts
+## for the appropriate `alpha` value, and adds extra information to the
+## returned fit.
+.pense_internal_multi <- function (args, alpha_seq = args$alpha,
+                                   lambda_list = args$lambda,
+                                   enpy_lambda_inds_list = args$enpy_lambda_inds) {
+  mapply(alpha_seq, lambda_list, enpy_lambda_inds_list,
+         SIMPLIFY = FALSE, USE.NAMES = FALSE,
+         FUN = function (alpha, lambda, enpy_lambda_inds) {
+           # If there are other individual starts, only use the ones with
+           # correct `alpha`
+           if (length(args$optional_args$individual_starts) > 0L) {
+             args$optional_args$individual_starts <-
+               .filter_list(args$optional_args$individual_starts, 'alpha',
+                            alpha)
+           }
 
-  ## Check presence of deprecated arguments
-  # Translate options for initial estimates
-  if (is_present(warm_reset)) {
-    if (is.null(args_call$nlambda_enpy)) {
-      deprecate_warn('2.0.0', 'pense(warm_reset=)', 'pense(nlambda_enpy=)')
-      nlambda_enpy <- warm_reset
-    } else {
-      deprecate_warn('2.0.0', 'pense(warm_reset=)',
-                     details = paste("Superseding argument `nlambda_enpy` is also present",
-                                     "and will be used instead of `warm_reset`."))
-    }
-  }
-  if (is_present(initial)) {
-    if (!is.null(args_call$nlambda_enpy)) {
-      abort(paste("The `initial` argument of `pense()` is deprecated as of pense 2.0.0",
-                  "and conflicts with the provided `nlambda_enpy` argument."))
-    }
-    if (!is.null(args_call$enpy_lambda)) {
-      abort(paste("The `initial` argument of `pense()` is deprecated as of pense 2.0.0",
-                  "and conflicts with the provided `enpy_lambda` argument."))
-    }
+           fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,
+                                  alpha = alpha,
+                                  lambda = lambda,
+                                  enpy_lambda_inds = enpy_lambda_inds,
+                                  penalty_loadings = args$penalty_loadings,
+                                  pense_opts = args$pense_opts,
+                                  enpy_opts = args$enpy_opts,
+                                  optional_args = args$optional_args)
 
-    deprecate_warn('2.0.0', 'pense(initial=)',
-                   details = paste("Please use arguments `nlambda_enpy`, `enpy_specific`,",
-                                   "`add_zero_based` and `other_starts` instead."))
-    initial <- match.arg(initial, c('warm', 'cold'))
-    add_zero_based <- TRUE
-    enpy_specific <- TRUE
-    if (initial == 'cold') {
-      nlambda_enpy <- if (missing(lambda)) { nlambda } else { length(lambda) }
-    }
-  }
+           # Flatten the list of estimates and un-standardize
+           fit$estimates <- lapply(
+             unlist(fit$estimates, recursive = FALSE),
+             function (ests) {
+               args$restore_coef_length(
+                 args$std_data$unstandardize_coefs(ests))
+             })
 
-  # Translate algorithm options
-  if (is_present(en_options)) {
-    deprecate_warn('2.0.0', 'pense(en_options=)',
-                   details = paste("Please specify the LS-EN algorithm with arguments",
-                                   "`algorithm_opts` and `enpy_opts`."))
-    if (is.null(args_call$algorithm_opts)) {
-      algorithm_opts$en_opts <- en_options
-    }
-  }
-  if (is_present(init_options)) {
-    if (is.null(args_call$enpy_opts)) {
-      deprecate_warn('2.0.0', 'pense(init_options=)', 'pense(enpy_opts=)')
-      enpy_opts <- enpy_options(max_it = init_options$maxit,
-                                keep_psc_proportion = init_options$keepPSCProportion,
-                                keep_residuals_measure = init_options$keepResidualsMethod,
-                                keep_residuals_proportion = init_options$keepResidualsProportion,
-                                keep_residuals_threshold = init_options$keepResidualsThreshold,
-                                en_algorithm_opts = if (is_present(en_options)) {
-                                  en_options
-                                } else {
-                                  NULL
-                                })
-      explore_solutions <- init_options$keepSolutions
-    } else {
-      deprecate_warn('2.0.0', 'pense(init_options=)',
-                     details = paste("Superseding argument `enpy_opts` is also present and will",
-                                     "be used instead of `init_options`."))
-    }
-  }
-  if (is_present(options)) {
-    deprecate_warn('2.0.0', 'pense(options=)',
-                   details = paste("Please use arguments `bdp`, `eps`, `mscale_opts`",
-                                   "and `algorithm_opts` to `pense()` instead"))
-    if (is.null(args_call$bdp)) { bdp <- options$bdp }
-    if (is.null(args_call$cc)) { cc <- options$cc }
-    if (is.null(args_call$eps)) { eps <- options$eps }
-    if (is.null(args_call$mscale_opts)) { mscale_opts <- options$mscale_opts }
-    if (is.null(args_call$algorithm_opts) && !is.null(algorithm_opts$max_it)) {
-      algorithm_opts$max_it <- options$maxit
-    }
-  }
-
-  ## Process input arguments
-  response <- .validate_response(y)
-  y <- response$values
-  x_dim <- dim(x)
-
-  if (length(y) != x_dim[[1L]]) {
-    abort("Number of observations in `x` and `y` does not match.")
-  } else if (x_dim[[2L]] <= 1L) {
-    abort("`x` must be a matrix with at least 2 columns.")
-  }
-
-  alpha <- .as(alpha, 'numeric')
-  if (any(alpha < 0 | alpha > 1)) {
-    abort("`alpha` is outside 0 and 1.")
-  } else if (any(alpha < sqrt(.Machine$double.eps))) {
-    alpha[which(alpha < sqrt(.Machine$double.eps))] <- 0
-    if (any(alpha > 0)) {
-      abort("`alpha=0` cannot be mixed with other `alpha` values.")
-    }
-  }
-
-  if (!missing(enpy_lambda)) {
-    nlambda_enpy <- length(enpy_lambda)
-  }
-
-  pense_opts <- list(algo_opts = algorithm_opts,
-                     strategy_0 = isTRUE(add_zero_based),
-                     strategy_enpy_individual = isTRUE(enpy_specific) && (nlambda_enpy > 0L),
-                     strategy_enpy_shared = !isTRUE(enpy_specific) && (nlambda_enpy > 0L),
-                     strategy_other_individual = FALSE,
-                     strategy_other_shared = FALSE,
-                     algorithm = .pense_algorithm_id(algorithm_opts),
-                     intercept = !isFALSE(intercept),
-                     eps = .as(eps[[1L]], 'numeric'),
-                     comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
-                     explore_tol = .as(explore_tol[[1L]], 'numeric'),
-                     explore_it = .as(explore_it[[1L]], 'integer'),
-                     nr_tracks = .as(explore_solutions[[1L]], 'integer'),
-                     max_optima = .as(max_solutions[[1L]], 'integer'),
-                     num_threads = max(1L, .as(ncores[[1L]], 'integer')),
-                     sparse = isTRUE(sparse),
-                     mscale = .full_mscale_algo_options(bdp = bdp, cc = cc,
-                                                        mscale_opts = mscale_opts))
-
-  if (pense_opts$explore_tol < pense_opts$eps) {
-    abort("`explore_tol` must not be less than `eps`")
-  }
-  if (pense_opts$comparison_tol < pense_opts$eps) {
-    abort("`comparison_tol` must not be less than `eps`")
-  }
-  if (pense_opts$explore_it < 1L) {
-    abort("`explore_it` must not be less than 0")
-  }
-
-  # Check EN algorithm for ENPY
-  enpy_opts$en_options <- .select_en_algorithm(enpy_opts$en_options, alpha, pense_opts$sparse, eps)
-  pense_opts$sparse <- enpy_opts$en_options$sparse
-
-  # If using the MM algorithm, ensure that the EN options are set.
-  if (pense_opts$algorithm == 1L) {
-    pense_opts$algo_opts$en_options <- .select_en_algorithm(pense_opts$algo_opts$en_options, alpha,
-                                                            pense_opts$sparse, eps)
-    if (!isTRUE(pense_opts$sparse == pense_opts$algo_opts$en_options$sparse)) {
-      abort("The `sparse` option for the EN-PY algorithm and the MM algorithm for PENSE disagree.")
-    }
-  }
-
-  # Set the number of cores for the ENPY options
-  if (pense_opts$num_threads > 1L && !isTRUE(.k_multithreading_support)) {
-    warn("Multithreading not supported. Using only 1 core.")
-    pense_opts$num_threads <- 1L
-  }
-  enpy_opts$num_threads <- pense_opts$num_threads
-
-  # Standardizing the data
-  standardize <- if (is.character(standardize)) {
-    if (pmatch(standardize[[1L]], 'cv_only', nomatch = 0L) == 1L) {
-      standardize <- 'cv_only'
-    } else {
-      abort("`standardize` must be either TRUE/FALSE or \"cv_only\".")
-    }
-  } else {
-    isTRUE(standardize)
-  }
-
-  # Check penalty loadings
-  if (!missing(penalty_loadings) && !is.null(penalty_loadings)) {
-    checked_pls <- .prepare_penalty_loadings(penalty_loadings, x = x, alpha = alpha,
-                                             sparse = pense_opts$sparse)
-    penalty_loadings <- checked_pls$loadings
-    restore_coef_length <- checked_pls$restore_fun
-    x <- checked_pls$trimmed_x
-  } else {
-    restore_coef_length <- function (coef) coef
-    penalty_loadings <- NULL
-  }
-
-  if (ncol(x) == 0L) {
-    pense_opts$intercept <- TRUE
-    warn("All values in `penalty_loadings` are infinite. Only computing the intercept.")
-    std_data <- .standardize_data(matrix(runif(x_dim[[1L]]), ncol = 1L), y, intercept = TRUE,
-                                  sparse = pense_opts$sparse, standardize = standardize,
-                                  robust = TRUE, mscale_opts = mscale_opts,
-                                  bdp = pense_opts$mscale$delta, scale_cc = pense_opts$mscale$cc)
-    # Compute only the 0-based solution.
-    pense_opts$strategy_enpy_individual <- FALSE
-    pense_opts$strategy_enpy_shared <- FALSE
-    pense_opts$strategy_0 <- TRUE
-    lambda <- lapply(alpha, FUN = .pense_lambda_grid,
-                     x = std_data$x, y = std_data$y, nlambda = 1, lambda_min_ratio = 1,
-                     pense_options = pense_opts, penalty_loadings = NULL)
-
-    return(list(std_data = std_data,
-                alpha = alpha,
-                lambda = lambda,
-                enpy_lambda_inds = integer(0L),
-                penalty_loadings = NULL,
-                pense_opts = pense_opts,
-                enpy_opts = enpy_opts,
-                optional_args = optional_args,
-                restore_coef_length = restore_coef_length))
-  }
-
-  std_data <- .standardize_data(x, y, intercept = pense_opts$intercept, standardize = standardize,
-                                robust = TRUE, sparse = pense_opts$sparse,
-                                mscale_opts = mscale_opts, bdp = pense_opts$mscale$delta,
-                                scale_cc = pense_opts$mscale$cc)
-
-  # Scale penalty loadings appropriately
-  penalty_loadings <- penalty_loadings / std_data$scale_x
-  if (length(penalty_loadings) == 0L) {
-    penalty_loadings <- NULL
-  }
-
-  # Determine lambda grid
-  lambda <- if (missing(lambda) || is.null(lambda)) {
-    if (missing(lambda_min_ratio)) {
-      lambda_min_ratio <- NULL
-    }
-    lapply(alpha, FUN = .pense_lambda_grid,
-           x = std_data$x, y = std_data$y, nlambda = nlambda,
-           lambda_min_ratio = lambda_min_ratio, pense_options = pense_opts,
-           penalty_loadings = penalty_loadings)
-  } else if (!is.list(lambda)) {
-    rep.int(list(sort(.as(lambda, 'numeric'), decreasing = TRUE)), length(alpha))
-  } else if (identical(length(lambda), length(alpha))) {
-    lapply(lambda, function (l) {
-      sort(.as(l, 'numeric'), decreasing = TRUE)
-    })
-  } else {
-    abort("`lambda` must either be a numeric vector or a list the same length as `alpha`.")
-  }
-
-  # Split the `other_starts` into individual and shared starts.
-  if (!missing(other_starts)) {
-    if (is(other_starts, 'starting_point')) {
-      other_starts <- structure(list(other_starts), class = 'starting_points')
-    } else if (!is(other_starts, 'starting_points')) {
-      abort(paste("`other_starts` must be a list of starting points created by",
-                  "`starting_point()`, `enpy_initial_estimates()`, or a combination thereof."))
-    }
-
-    # Identify which other starts are shared and which are specific.
-    other_starts_shared <- vapply(other_starts, FUN.VALUE = logical(1L),
-                                  FUN = is, 'shared_starting_point')
-    other_starts_specific <- vapply(other_starts, FUN.VALUE = logical(1L),
-                                    FUN = is, 'specific_starting_point')
-
-    # Ensure the `beta` coefficients in `other_starts` agree with the desired vector class
-    # (sparse vs. dense) and standardize them.
-    other_starts <- lapply(.sparsify_other_starts(other_starts, pense_opts$sparse),
-                           std_data$standardize_coefs)
-
-    if (any(other_starts_shared)) {
-      pense_opts$strategy_other_shared <- TRUE
-      optional_args$shared_starts <- other_starts[other_starts_shared]
-    }
-    if (any(other_starts_specific)) {
-      pense_opts$strategy_other_individual <- TRUE
-      ind_starts <- list()
-      for (ai in seq_along(alpha)) {
-        new_ind_starts <- .make_initest_list(other_starts[other_starts_specific], lambda[[ai]],
-                                             alpha = alpha[[ai]], sparse = pense_opts$sparse)
-        ind_starts <- c(ind_starts, new_ind_starts$starting_points)
-        lambda[[ai]] <- new_ind_starts$extended_lambda
-      }
-      optional_args$individual_starts <- ind_starts
-    }
-  }
-
-  # Determine ENPY lambda grid
-  enpy_lambda_inds <- if (pense_opts$strategy_enpy_individual || pense_opts$strategy_enpy_shared) {
-    if (missing(enpy_lambda) || is.null(enpy_lambda)) {
-      lapply(lambda, function (l) {
-        nlambda_enpy <- min(length(l), nlambda_enpy)
-        as.integer(ceiling(seq(1, length(l), length.out = nlambda_enpy + 1))[-(nlambda_enpy + 1)])
-      })
-    } else if (is.list(enpy_lambda)) {
-      mapply(enpy_lambda, lambda, SIMPLIFY = FALSE, USE.NAMES = FALSE, FUN = .approx_match)
-    } else if (is.numeric(enpy_lambda)) {
-      vapply(lambda, FUN.VALUE = integer(length(enpy_lambda)),
-             FUN = .approx_match, x = enpy_lambda)
-    } else {
-      abort("`enpy_lambda` must either be a numeric vector or a list the same length as `alpha`.")
-    }
-  } else {
-    integer(0L)
-  }
-
-  # Extend lambda grids if necessary
-  for (ai in seq_along(alpha)) {
-    if (anyNA(enpy_lambda_inds[[ai]])) {
-      if (is.list(enpy_lambda)) {
-        lambda[[ai]] <- sort(c(lambda[[ai]], enpy_lambda[[ai]]), decreasing = TRUE)
-        enpy_lambda_inds[[ai]] <- .approx_match(enpy_lambda[[ai]], lambda[[ai]])
-      } else if (is.numeric(enpy_lambda)) {
-        lambda[[ai]] <- sort(c(lambda[[ai]], enpy_lambda), decreasing = TRUE)
-        enpy_lambda_inds[[ai]] <- .approx_match(enpy_lambda, lambda[[ai]])
-      }
-    }
-  }
-
-  for (lambda_grid in lambda) {
-    if (any(lambda_grid < .Machine$double.eps)) {
-      abort("All values in `lambda` must be positive.")
-    }
-  }
-
-  return(list(std_data = std_data,
-              binary_response = response$binary,
-              alpha = alpha,
-              lambda = lambda,
-              enpy_lambda_inds = enpy_lambda_inds,
-              penalty_loadings = penalty_loadings,
-              pense_opts = pense_opts,
-              enpy_opts = enpy_opts,
-              optional_args = optional_args,
-              restore_coef_length = restore_coef_length))
+           # Handle metrics
+           fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+           fit$lambda <- unlist(vapply(fit$estimates, FUN.VALUE = numeric(1),
+                                       FUN = `[[`, 'lambda'),
+                                use.names = FALSE, recursive = FALSE)
+           fit$alpha <- alpha
+           fit
+         })
 }

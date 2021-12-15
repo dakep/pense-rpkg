@@ -56,6 +56,10 @@
 ## @param precision granularity of the grid of considered bdp's.
 .find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
                                        interval = c(0.05, 0.5)) {
+  if (isTRUE(attr(desired_bdp, 'fixed', TRUE))) {
+    return(desired_bdp)
+  }
+
   numeric_tol <- sqrt(.Machine$double.eps)
 
   bdp_range <- seq(from = max(desired_bdp - tolerance, interval[[1L]]),
@@ -133,17 +137,22 @@ extract_metric <- function (metrics, attr, node) {
 
 ## Run replicated K-fold CV with random splits
 ##
-## @param std_data standardized full data set (standardized by `.standardize_data`)
+## @param std_data standardized full data set
+##    (standardized by `.standardize_data`)
 ## @param cv_k number of folds per CV split
 ## @param cv_repl number of CV replications.
-## @param cv_est_fun function taking the standardized training set and the indices of
-##    the left-out observations and returns a list of estimates.
+## @param cv_est_fun function taking the standardized training set and
+##    the indices of the left-out observations and returns a list of estimates.
 ##    The function always needs to return the same number of estimates!
-## @param metric function taking a vector of prediction errors and returning the scale
-##    of the prediction error.
+## @param metric function taking a vector of prediction errors and
+##    returning the scale of the prediction error.
+## @param par_cluster parallel cluster to parallelize computations.
+## @param handler_args additional arguments to the handler function.
 #' @importFrom Matrix drop
 #' @importFrom rlang abort
-.run_replicated_cv <- function (std_data, cv_k, cv_repl, cv_est_fun, metric, par_cluster = NULL) {
+.run_replicated_cv <- function (std_data, cv_k, cv_repl, cv_est_fun, metric,
+                                par_cluster = NULL,
+                                handler_args = list()) {
   est_fun <- match.fun(cv_est_fun)
   call_with_errors <- isTRUE(length(formals(metric)) == 1L)
 
@@ -152,25 +161,29 @@ extract_metric <- function (metrics, attr, node) {
   }
 
   test_segments_list <- lapply(integer(cv_repl), function (repl_id) {
-    split(seq_along(std_data$y), sample(rep_len(seq_len(cv_k), length(std_data$y))))
+    split(seq_along(std_data$y),
+          sample(rep_len(seq_len(cv_k), length(std_data$y))))
   })
-  test_segments <- unlist(test_segments_list, recursive = FALSE, use.names = FALSE)
+  test_segments <- unlist(test_segments_list, recursive = FALSE,
+                          use.names = FALSE)
 
   cl_handler <- .make_cluster_handler(par_cluster)
 
-  predictions_all <- cl_handler(test_segments, function (test_ind, est_fun) {
-    train_x <- std_data$x[-test_ind, , drop = FALSE]
-    train_y <- std_data$y[-test_ind]
-    test_x <- std_data$x[test_ind, , drop = FALSE]
+  predictions_all <- cl_handler(
+    test_segments,
+    function (test_ind, est_fun, handler_args) {
+      train_x <- std_data$x[-test_ind, , drop = FALSE]
+      train_y <- std_data$y[-test_ind]
+      test_x <- std_data$x[test_ind, , drop = FALSE]
 
-    train_std <- std_data$cv_standardize(train_x, train_y)
-    cv_ests <- est_fun(train_std, test_ind)
+      train_std <- std_data$cv_standardize(train_x, train_y)
+      cv_ests <- est_fun(train_std, test_ind, handler_args)
 
-    matrix(unlist(lapply(cv_ests, function (est) {
-      unstd_est <- train_std$unstandardize_coef(est)
-      drop(test_x %*% unstd_est$beta) - unstd_est$intercept
-    }), use.names = FALSE, recursive = FALSE), ncol = length(cv_ests))
-  }, est_fun = est_fun)
+      matrix(unlist(lapply(cv_ests, function (est) {
+        unstd_est <- train_std$unstandardize_coef(est)
+        drop(test_x %*% unstd_est$beta) - unstd_est$intercept
+      }), use.names = FALSE, recursive = FALSE), ncol = length(cv_ests))
+    }, est_fun = est_fun, handler_args = handler_args)
 
   predictions_all <- split(predictions_all, rep(seq_len(cv_repl), each = cv_k))
   prediction_metrics <- mapply(
@@ -593,3 +606,16 @@ extract_metric <- function (metrics, attr, node) {
   }
 }
 
+## Filter a list to only include items with matching values.
+.filter_list <- function (x, what, value, eps = sqrt(.Machine$double.eps),
+                          comp_fun, ...) {
+  comp_fun <- if (missing(comp_fun)) {
+    function (v) { abs(v - value) < eps }
+  } else {
+    match.fun(comp_fun)
+  }
+  matches <- vapply(x, FUN.VALUE = logical(1L), FUN = function (el) {
+    comp_fun(el[[what]], ...)
+  })
+  x[matches]
+}

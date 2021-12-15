@@ -9,6 +9,7 @@
 #ifndef NSOPTIM_FORWARD_HPP_
 #define NSOPTIM_FORWARD_HPP_
 
+#include "autoconfig.hpp"
 #include "nsoptim/config.hpp"
 #include "nsoptim/armadillo_forward.hpp"
 #include "nsoptim/container/forward.hpp"

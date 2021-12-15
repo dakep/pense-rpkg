@@ -57,13 +57,15 @@ mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
 ## @param cc the cutoff threshold for the bisquare rho function.
 ##
 ## @return full options for the M-scale estimation algorithm.
+#' @importFrom rlang is_missing
 .full_mscale_algo_options <- function (bdp, cc = NULL, mscale_opts) {
   mscale_opts$delta <- .as(bdp, 'numeric')
-  if (isTRUE(mscale_opts$delta < .Machine$double.eps) || isTRUE(mscale_opts$delta > 0.5)) {
+  if (isTRUE(mscale_opts$delta < .Machine$double.eps) ||
+      isTRUE(mscale_opts$delta > 0.5)) {
     stop("`bdp` is outside of 0 and 0.5")
   }
 
-  mscale_opts$cc <- if (is.null(cc)) {
+  mscale_opts$cc <- if (is_missing(cc) || is.null(cc)) {
     .bisquare_consistency_const(mscale_opts$delta)
   } else {
     .as(cc, 'numeric')

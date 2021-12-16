@@ -75,21 +75,26 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
   .Call(C_mscale, x, opts)
 }
 
-#' Compute the Derivative of the M-Scale Function
+#' Compute the Gradient and Hessian of the M-Scale Function
 #'
-#' Compute the derivative of the M-scale function with respect to each element.
+#' Compute the derivative (gradient) or the Hessian of the M-scale function
+#' evaluated at the point `x`.
 #'
 #' @param x numeric values. Missing values are verbosely ignored.
 #' @param bdp desired breakdown point (between 0 and 0.5).
 #' @param cc cutoff value for the bisquare rho function.
-#'    By default, chosen to yield a consistent estimate for the Normal distribution.
+#'    By default, chosen to yield a consistent estimate for the
+#'    Normal distribution.
+#' @param order compute the gradient (`order=1`) or the gradient and the
+#'    Hessian (`order=2`).
 #' @param opts a list of options for the M-scale estimation algorithm,
 #'    see [mscale_algorithm_options()] for details.
 #' @return a vector of derivatives of the M-scale function, one per element in `x`.
 #'
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
-mscale_derivative <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
+mscale_derivative <- function (x, bdp = 0.25, order = 1,
+                               cc = consistency_const(bdp, 'bisquare'),
                                opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
@@ -98,15 +103,42 @@ mscale_derivative <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisqu
     .as(x, 'numeric')
   }
 
+  order <- .as(order[[1L]], 'integer')
+  if (order < 1L) {
+    order <- 1L
+  } else if (order > 2L) {
+    order <- 2L
+  }
+
   if (missing(cc)) {
     cc <- NULL
   }
   opts <- .full_mscale_algo_options(bdp, cc, opts)
-  derivatives <- .Call(C_mscale_derivative, x, opts, 1L)
-  if (length(derivatives) < length(x)) {
-    derivatives <- rep_len(NA_real_, length(x))
+  grad_hess <- .Call(C_mscale_derivative, x, opts, order)
+
+  if (identical(order, 1L)) {
+    if (length(grad_hess) < length(x)) {
+      grad_hess <- rep_len(NA_real_, length(x))
+    }
+    return(grad_hess)
+  } else {
+    if (length(grad_hess) < length(x)) {
+      return(list(gradient = rep_len(NA_real_, length(x)),
+                  rho_2nd = rep_len(NA_real_, length(x)),
+                  denom = NA_real_,
+                  scale = grad_hess[[1L]],
+                  violation = NA_real_,
+                  hessian = matrix(NA_real_, length(x), length(x))))
+    }
+    grad_hess <- list(gradient = grad_hess[, 1L],
+                      rho_2nd = grad_hess[, 2L],
+                      denom = grad_hess[2L, 3L],
+                      scale = grad_hess[3L, 3L],
+                      violation = grad_hess[4L, 3L],
+                      hessian = grad_hess[, -(1:2)])
+    grad_hess$hessian[2:4, 1L] <- 0
+    return(grad_hess)
   }
-  derivatives
 }
 
 #' @description
@@ -116,7 +148,7 @@ mscale_derivative <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisqu
 #' @param n_change the number of elements in `x` to replace with each value in `grid`.
 #' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
 #' @return the maximum absolute derivative over the entire grid.
-#' @describeIn mscale_derivative
+#' @describeIn mscale_derivative maximum of the gradient
 max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
                                    cc = consistency_const(bdp, 'bisquare'),
                                    opts = mscale_algorithm_options()) {
@@ -133,6 +165,32 @@ max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
   opts <- .full_mscale_algo_options(bdp, cc, opts)
 
   .Call(C_max_mscale_derivative, x, grid, n_change, opts)
+}
+
+#' @description
+#' Compute the maximum element in the gradient and Hessian of the M-scale
+#' function with respect to each element over a grid of values.
+#'
+#' @param n_change the number of elements in `x` to replace with each value in `grid`.
+#' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
+#' @return the maximum absolute derivative over the entire grid.
+#' @describeIn mscale_derivative maximum of the gradient and hessian
+max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
+                                  cc = consistency_const(bdp, 'bisquare'),
+                                  opts = mscale_algorithm_options()) {
+  x <- if (anyNA(x)) {
+    warn("Missing values are ignored.")
+    .as(na.omit(x), 'numeric')
+  } else {
+    .as(x, 'numeric')
+  }
+
+  if (missing(cc)) {
+    cc <- NULL
+  }
+  opts <- .full_mscale_algo_options(bdp, cc, opts)
+
+  .Call(C_max_mscale_grad_hess, x, grid, n_change, opts)
 }
 
 #' Compute the M-estimate of Location

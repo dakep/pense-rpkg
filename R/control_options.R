@@ -41,12 +41,16 @@ enpy_options <- function (max_it = 10, keep_psc_proportion = 0.5,
 #'
 #' @param max_it maximum number of iterations.
 #' @param eps numerical tolerance to check for convergence.
+#' @param max_violation maximum allowed (squared!) violation of the
+#'   M-scale estimating equation.
 #'
 #' @return options for the M-scale estimation algorithm.
 #' @export
-mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
+mscale_algorithm_options <- function (max_it = 200, eps = 1e-8,
+                                      max_violation = 1e-8) {
   list(max_it = .as(max_it[[1L]], 'integer'),
-       eps = .as(eps[[1L]], 'numeric'))
+       eps = .as(eps[[1L]], 'numeric'),
+       max_violation = .as(max_violation[[1L]], 'numeric'))
 }
 
 

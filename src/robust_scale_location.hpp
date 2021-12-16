@@ -23,6 +23,8 @@ namespace robust_scale_location {
 constexpr double kDefaultMscaleDelta = 0.5;
 //! Default number of iterations for the M-scale algorithm.
 constexpr int kDefaultMscaleMaxIt = 100;
+//! Default maximum allowable violation of the M-scale estimating equation.
+constexpr double kDefaultMscaleMaxViolation = 1e-8;
 
 template <typename T>
 struct DefaultMscaleConstant {
@@ -72,10 +74,15 @@ class Mscale {
   //!
   //! @param user_options an R list of user options.
   explicit Mscale(const Rcpp::List& user_options) noexcept
-    : rho_(GetFallback(user_options, "cc", robust_scale_location::DefaultMscaleConstant<RhoFunction>::value)),
-      delta_(GetFallback(user_options, "delta", robust_scale_location::kDefaultMscaleDelta)),
-      max_it_(GetFallback(user_options, "max_it", robust_scale_location::kDefaultMscaleMaxIt)),
+    : rho_(GetFallback(user_options, "cc",
+        robust_scale_location::DefaultMscaleConstant<RhoFunction>::value)),
+      delta_(GetFallback(user_options, "delta",
+        robust_scale_location::kDefaultMscaleDelta)),
+      max_it_(GetFallback(user_options, "max_it",
+        robust_scale_location::kDefaultMscaleMaxIt)),
       eps_(GetFallback(user_options, "eps", kDefaultConvergenceTolerance)),
+      max_violation_(GetFallback(user_options, "max_violation",
+        robust_scale_location::kDefaultMscaleMaxViolation)),
       scale_(-1) {}
 
   //! Construct the M-scale function.
@@ -133,7 +140,7 @@ class Mscale {
     }
     const auto sum_diff = rho_.SumStd(values, scale) - values.n_elem * delta_;
 
-    if (sum_diff * sum_diff > values.n_elem * values.n_elem * eps_) {
+    if (sum_diff * sum_diff > max_violation_) {
       return arma::vec();
     }
 
@@ -144,6 +151,117 @@ class Mscale {
     } else {
       return deriv_rho / denom;
     }
+  }
+
+  //! Compute the gradient and Hessian of the M-scale
+  //! function evaluated at the given vector.
+  //!
+  //! @param values vector of values
+  //! @return a matrix of dimension n x n + 1, where the 1st column is the
+  //!    gradient and the other columns are the Hessian matrix.
+  //!    If the scale is 0 or the M-scale equation
+  //!    is violated, an empty matrix is returned.
+  arma::mat GradientHessian(const arma::vec& values) {
+    const double scale = this->operator()(values);
+    if (scale < eps_) {
+      return arma::mat(1, 1, arma::fill::value(scale));
+    }
+    const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
+
+    if (violation * violation > max_violation_) {
+      return arma::mat(1, 1, arma::fill::value(scale));
+    }
+
+    arma::mat grad_hess(values.n_elem, values.n_elem + 2, arma::fill::zeros);
+
+    // Compute the gradient and its maximum
+    grad_hess.col(0) = rho_.Derivative(values, scale);
+    const auto denom = arma::sum(grad_hess.col(0) % values) / scale;
+    if (denom < eps_) {
+      grad_hess.col(0).fill(R_PosInf);
+    }
+
+    // Compute the Hessian and its maximum
+    const auto rho_2nd = rho_.SecondDerivative(values, scale);
+    const auto sum_2nd = arma::sum(rho_2nd % values % values) / (denom * scale);
+    grad_hess.col(1) = rho_2nd;
+    grad_hess.at(1, 2) = denom;
+    grad_hess.at(2, 2) = scale;
+    grad_hess.at(3, 2) = violation;
+    double diag_offset;
+    for (int i = 0; i < values.n_elem; ++i) {
+      diag_offset = denom * rho_2nd[i] / scale;
+      for (int k = i; k < values.n_elem; ++k) {
+        grad_hess(i, k + 2) = grad_hess[i] * rho_2nd[k] * values[k] +
+          grad_hess[k] * rho_2nd[i] * values[i] -
+          grad_hess[i] * grad_hess[k] * sum_2nd -
+          diag_offset;
+
+        grad_hess(i, k + 2) /= (denom * denom * scale * scale);
+
+        diag_offset = 0;
+      }
+    }
+
+    // Final pass to get gradient right
+    grad_hess.col(0) /= denom;
+
+    return grad_hess;
+  }
+
+  //! Compute the maximum of the 1st and 2nd derivatives of the M-scale
+  //! function evaluated at all elements in the given vector.
+  //!
+  //! @param values vector of values
+  //! @return a vector with 2 elements: the maximum element of the gradient
+  //!   and the maximum element in the Hessian.
+  //!    If the scale is 0 or the M-scale equation
+  //!    is violated, an empty vector is returned.
+  arma::vec MaxGradientHessian(const arma::vec& values) {
+    const double scale = this->operator()(values, InitialEstimate(values));
+    if (scale < eps_) {
+      return arma::vec();
+    }
+    const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
+
+    if (violation * violation > max_violation_) {
+      return arma::vec();
+    }
+
+    arma::vec maxima(2);
+
+    // Compute the gradient and its maximum
+    const auto rho_1st = rho_.Derivative(values, scale);
+    const auto denom = sum(rho_1st % values) / scale;
+    if (denom < eps_) {
+      maxima[0] = R_PosInf;
+    } else {
+      maxima[0] = arma::max(rho_1st) / denom;
+    }
+
+    // Compute the Hessian and its maximum
+    const auto rho_2nd = rho_.SecondDerivative(values, scale);
+    const auto sum_2nd = sum(rho_2nd % values % values) / scale;
+    double diag_offset;
+
+    maxima[1] = 0;
+    for (int i = 0; i < values.n_elem; ++i) {
+      diag_offset = denom * rho_2nd[i] / scale;
+      for (int k = i; k < values.n_elem; ++k) {
+        const auto tmp = std::abs(rho_1st[i] * rho_2nd[k] * values[k] +
+          rho_1st[k] * rho_2nd[i] * values[i] -
+          rho_1st[i] * rho_1st[k] * sum_2nd -
+          diag_offset);
+
+        diag_offset = 0;
+        if (tmp > maxima[1]) {
+          maxima[1] = tmp;
+        }
+      }
+    }
+    maxima[1] /= (denom * denom * scale * scale);
+
+    return maxima;
   }
 
   //! Get the rho function object.
@@ -198,6 +316,7 @@ class Mscale {
   double delta_;
   int max_it_;
   double eps_;
+  double max_violation_;
   double scale_;
 };
 

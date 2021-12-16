@@ -26,7 +26,7 @@ SEXP TauSize(SEXP x) noexcept;
 //! @return the M-scale of the centered values.
 SEXP MScale(SEXP x, SEXP mscale_opts) noexcept;
 
-//! Compute the derivative M-scale function with respect to each coordinate.
+//! Compute the derivative of the M-scale function with respect to each coordinate.
 //!
 //! @param x numeric values.
 //! @param mscale_opts a list of options for the M-scale equation.
@@ -42,6 +42,18 @@ SEXP MScaleDerivative(SEXP x, SEXP mscale_opts, SEXP order) noexcept;
 //! @param mscale_opts a list of options for the M-scale equation.
 //! @return the derivative of the M-scale function.
 SEXP MaxMScaleDerivative(SEXP r_x, SEXP r_grid, SEXP r_change, SEXP r_mscale_opts) noexcept;
+
+//! Compute the maximum entry in the gradient and Hessian of the M-scale
+//! function over a grid of values
+//!
+//! @param x original numeric values.
+//! @param grid grid of values to look for maximal derivative.
+//! @param change number of elements in `x` to change.
+//! @param mscale_opts a list of options for the M-scale equation.
+//! @return a vector with 2 elements: the maximum gradient and the maximum
+//!   Hessian of the M-scale function.
+SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
+                              SEXP r_mscale_opts) noexcept;
 
 //! Compute the M-location
 //!

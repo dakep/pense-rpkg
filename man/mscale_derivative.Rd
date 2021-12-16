@@ -2,10 +2,31 @@
 % Please edit documentation in R/utilities.R
 \name{mscale_derivative}
 \alias{mscale_derivative}
-\title{Compute the Derivative of the M-Scale Function}
+\alias{max_mscale_derivative}
+\alias{max_mscale_grad_hess}
+\title{Compute the Gradient and Hessian of the M-Scale Function}
 \usage{
 mscale_derivative(
   x,
+  bdp = 0.25,
+  order = 1,
+  cc = consistency_const(bdp, "bisquare"),
+  opts = mscale_algorithm_options()
+)
+
+max_mscale_derivative(
+  x,
+  grid,
+  n_change,
+  bdp = 0.25,
+  cc = consistency_const(bdp, "bisquare"),
+  opts = mscale_algorithm_options()
+)
+
+max_mscale_grad_hess(
+  x,
+  grid,
+  n_change,
   bdp = 0.25,
   cc = consistency_const(bdp, "bisquare"),
   opts = mscale_algorithm_options()
@@ -16,15 +37,41 @@ mscale_derivative(
 
 \item{bdp}{desired breakdown point (between 0 and 0.5).}
 
+\item{order}{compute the gradient (\code{order=1}) or the gradient and the
+Hessian (\code{order=2}).}
+
 \item{cc}{cutoff value for the bisquare rho function.
-By default, chosen to yield a consistent estimate for the Normal distribution.}
+By default, chosen to yield a consistent estimate for the
+Normal distribution.}
 
 \item{opts}{a list of options for the M-scale estimation algorithm,
 see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+
+\item{grid}{a grid of values to replace the first 1 - \code{n_change} elements in\code{ x}.}
+
+\item{n_change}{the number of elements in \code{x} to replace with each value in \code{grid}.}
 }
 \value{
 a vector of derivatives of the M-scale function, one per element in \code{x}.
+
+the maximum absolute derivative over the entire grid.
+
+the maximum absolute derivative over the entire grid.
 }
 \description{
-Compute the derivative of the M-scale function with respect to each element.
+Compute the derivative (gradient) or the Hessian of the M-scale function
+evaluated at the point \code{x}.
+
+Compute the maximum derivative of the M-scale function with respect to each element over
+a grid of values.
+
+Compute the maximum element in the gradient and Hessian of the M-scale
+function with respect to each element over a grid of values.
 }
+\section{Functions}{
+\itemize{
+\item \code{max_mscale_derivative}: maximum of the gradient
+
+\item \code{max_mscale_grad_hess}: maximum of the gradient and hessian
+}}
+

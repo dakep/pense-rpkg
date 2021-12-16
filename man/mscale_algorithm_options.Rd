@@ -4,12 +4,15 @@
 \alias{mscale_algorithm_options}
 \title{Options for the M-scale Estimation Algorithm}
 \usage{
-mscale_algorithm_options(max_it = 200, eps = 1e-08)
+mscale_algorithm_options(max_it = 200, eps = 1e-08, max_violation = 1e-08)
 }
 \arguments{
 \item{max_it}{maximum number of iterations.}
 
 \item{eps}{numerical tolerance to check for convergence.}
+
+\item{max_violation}{maximum allowed (squared!) violation of the
+M-scale estimating equation.}
 }
 \value{
 options for the M-scale estimation algorithm.

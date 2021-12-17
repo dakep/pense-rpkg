@@ -178,11 +178,7 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
   case RhoFunctionType::kRhoBisquare:
   default:
     auto mscale = Mscale<RhoBisquare>(mscale_opts);
-    arma::vec::fixed<2> maxima(arma::fill::zeros);
-    const auto tmp_maxima = mscale.MaxGradientHessian(x);
-    if (tmp_maxima.n_elem == 2) {
-      maxima = tmp_maxima;
-    }
+    arma::vec::fixed<2> maxima = mscale.MaxGradientHessian(x);
 
     if (change < 1) {
       return Rcpp::wrap(maxima);

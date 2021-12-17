@@ -220,12 +220,12 @@ class Mscale {
   arma::vec::fixed<2> MaxGradientHessian(const arma::vec& values) {
     const double scale = this->operator()(values, InitialEstimate(values));
     if (scale < eps_) {
-      return arma::vec();
+      return arma::vec::fixed<2>(arma::fill::zeros);
     }
     const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
 
     if (violation * violation > max_violation_) {
-      return arma::vec();
+      return arma::vec::fixed<2>(arma::fill::zeros);
     }
 
     arma::vec::fixed<2> maxima;

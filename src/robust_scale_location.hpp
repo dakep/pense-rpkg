@@ -217,7 +217,7 @@ class Mscale {
   //!   and the maximum element in the Hessian.
   //!    If the scale is 0 or the M-scale equation
   //!    is violated, an empty vector is returned.
-  arma::vec MaxGradientHessian(const arma::vec& values) {
+  arma::vec::fixed<2> MaxGradientHessian(const arma::vec& values) {
     const double scale = this->operator()(values, InitialEstimate(values));
     if (scale < eps_) {
       return arma::vec();
@@ -228,7 +228,7 @@ class Mscale {
       return arma::vec();
     }
 
-    arma::vec maxima(2);
+    arma::vec::fixed<2> maxima;
 
     // Compute the gradient and its maximum
     const auto rho_1st = rho_.Derivative(values, scale);

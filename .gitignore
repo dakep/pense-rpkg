@@ -25,3 +25,6 @@ testthat-problems.rds
 /doc/
 /Meta/
 /notes/
+/renv/
+renv.lock
+.Rprofile

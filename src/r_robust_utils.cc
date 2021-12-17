@@ -170,15 +170,22 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
   auto grid = MakeVectorView(r_grid);
   auto change = as<int>(r_change);
   auto mscale_opts = as<Rcpp::List>(r_mscale_opts);
-  switch (static_cast<RhoFunctionType>(GetFallback(mscale_opts, "rho",
-                                                   static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
+  const auto rho_fun = static_cast<RhoFunctionType>(
+    GetFallback(mscale_opts, "rho",
+                static_cast<int>(RhoFunctionType::kRhoBisquare)));
+
+  switch (rho_fun) {
   case RhoFunctionType::kRhoBisquare:
   default:
     auto mscale = Mscale<RhoBisquare>(mscale_opts);
-    arma::vec maxima(2);
+    arma::vec::fixed<2> maxima(arma::fill::zeros);
     const auto tmp_maxima = mscale.MaxGradientHessian(x);
     if (tmp_maxima.n_elem == 2) {
       maxima = tmp_maxima;
+    }
+
+    if (change < 1) {
+      return Rcpp::wrap(maxima);
     }
 
     arma::uvec counters(change, arma::fill::zeros);

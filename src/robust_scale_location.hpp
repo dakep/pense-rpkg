@@ -23,8 +23,6 @@ namespace robust_scale_location {
 constexpr double kDefaultMscaleDelta = 0.5;
 //! Default number of iterations for the M-scale algorithm.
 constexpr int kDefaultMscaleMaxIt = 100;
-//! Default maximum allowable violation of the M-scale estimating equation.
-constexpr double kDefaultMscaleMaxViolation = 1e-8;
 
 template <typename T>
 struct DefaultMscaleConstant {
@@ -81,8 +79,6 @@ class Mscale {
       max_it_(GetFallback(user_options, "max_it",
         robust_scale_location::kDefaultMscaleMaxIt)),
       eps_(GetFallback(user_options, "eps", kDefaultConvergenceTolerance)),
-      max_violation_(GetFallback(user_options, "max_violation",
-        robust_scale_location::kDefaultMscaleMaxViolation)),
       scale_(-1) {}
 
   //! Construct the M-scale function.
@@ -138,11 +134,6 @@ class Mscale {
     if (scale < eps_) {
       return arma::vec();
     }
-    const auto sum_diff = rho_.SumStd(values, scale) - values.n_elem * delta_;
-
-    if (sum_diff * sum_diff > max_violation_) {
-      return arma::vec();
-    }
 
     const auto deriv_rho = rho_.Derivative(values, scale);
     const auto denom = sum(deriv_rho % values) / scale;
@@ -166,28 +157,22 @@ class Mscale {
     if (scale < eps_) {
       return arma::mat(1, 1, arma::fill::value(scale));
     }
-    const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
-
-    if (violation * violation > max_violation_) {
-      return arma::mat(1, 1, arma::fill::value(scale));
-    }
+    const auto violation = rho_.SumStd(values, scale) / values.n_elem - delta_;
 
     arma::mat grad_hess(values.n_elem, values.n_elem + 2, arma::fill::zeros);
 
     // Compute the gradient and its maximum
     grad_hess.col(0) = rho_.Derivative(values, scale);
     const auto denom = arma::sum(grad_hess.col(0) % values) / scale;
-    if (denom < eps_) {
-      grad_hess.col(0).fill(R_PosInf);
-    }
+
+    grad_hess.at(1, 2) = denom;
+    grad_hess.at(2, 2) = scale;
+    grad_hess.at(3, 2) = violation;
 
     // Compute the Hessian and its maximum
     const auto rho_2nd = rho_.SecondDerivative(values, scale);
     const auto sum_2nd = arma::sum(rho_2nd % values % values) / (denom * scale);
     grad_hess.col(1) = rho_2nd;
-    grad_hess.at(1, 2) = denom;
-    grad_hess.at(2, 2) = scale;
-    grad_hess.at(3, 2) = violation;
     double diag_offset;
     for (int i = 0; i < values.n_elem; ++i) {
       diag_offset = denom * rho_2nd[i] / scale;

@@ -207,9 +207,9 @@ class Mscale {
     if (scale < eps_) {
       return arma::vec::fixed<2>(arma::fill::zeros);
     }
-    const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
+    const auto violation = rho_.SumStd(values, scale) / values.n_elem  - delta_;
 
-    if (violation * violation > max_violation_) {
+    if (violation > eps_ || -violation > eps_) {
       return arma::vec::fixed<2>(arma::fill::zeros);
     }
 
@@ -301,7 +301,6 @@ class Mscale {
   double delta_;
   int max_it_;
   double eps_;
-  double max_violation_;
   double scale_;
 };
 

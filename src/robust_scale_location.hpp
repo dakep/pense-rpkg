@@ -163,7 +163,7 @@ class Mscale {
 
     // Compute the gradient and its maximum
     grad_hess.col(0) = rho_.Derivative(values, scale);
-    const auto denom = arma::sum(grad_hess.col(0) % values) / scale;
+    const auto denom = arma::sum(grad_hess.col(0) % values);
 
     grad_hess.at(1, 2) = denom;
     grad_hess.at(2, 2) = scale;
@@ -171,25 +171,22 @@ class Mscale {
 
     // Compute the Hessian and its maximum
     const auto rho_2nd = rho_.SecondDerivative(values, scale);
-    const auto sum_2nd = arma::sum(rho_2nd % values % values) / (denom * scale);
+    const auto sum_2nd = arma::sum(rho_2nd % values % values) / denom;
     grad_hess.col(1) = rho_2nd;
     double diag_offset;
     for (int i = 0; i < values.n_elem; ++i) {
-      diag_offset = denom * rho_2nd[i] / scale;
+      diag_offset = denom * rho_2nd[i];
       for (int k = i; k < values.n_elem; ++k) {
-        grad_hess(i, k + 2) = grad_hess[i] * rho_2nd[k] * values[k] +
-          grad_hess[k] * rho_2nd[i] * values[i] -
-          grad_hess[i] * grad_hess[k] * sum_2nd -
-          diag_offset;
+        grad_hess(i, k + 2) = HessianElementUnscaled(
+          i, k, grad_hess.unsafe_col(0), rho_2nd, values, sum_2nd, diag_offset);
 
-        grad_hess(i, k + 2) /= (denom * denom * scale * scale);
-
+        grad_hess(i, k + 2) *= scale / (denom * denom);
         diag_offset = 0;
       }
     }
 
     // Final pass to get gradient right
-    grad_hess.col(0) /= denom;
+    grad_hess.col(0) *= scale / denom;
 
     return grad_hess;
   }
@@ -207,9 +204,9 @@ class Mscale {
     if (scale < eps_) {
       return arma::vec::fixed<2>(arma::fill::zeros);
     }
-    const auto violation = rho_.SumStd(values, scale) / values.n_elem  - delta_;
+    const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
 
-    if (violation > eps_ || -violation > eps_) {
+    if (violation * violation > values.n_elem * values.n_elem * eps_ * eps_) {
       return arma::vec::fixed<2>(arma::fill::zeros);
     }
 
@@ -217,26 +214,24 @@ class Mscale {
 
     // Compute the gradient and its maximum
     const auto rho_1st = rho_.Derivative(values, scale);
-    const auto denom = sum(rho_1st % values) / scale;
+    const auto denom = sum(rho_1st % values);
     if (denom < eps_) {
       maxima[0] = R_PosInf;
     } else {
-      maxima[0] = arma::max(rho_1st) / denom;
+      maxima[0] = arma::max(rho_1st) * scale / denom;
     }
 
     // Compute the Hessian and its maximum
     const auto rho_2nd = rho_.SecondDerivative(values, scale);
-    const auto sum_2nd = sum(rho_2nd % values % values) / scale;
+    const auto sum_2nd = sum(rho_2nd % values % values) / denom;
     double diag_offset;
 
     maxima[1] = 0;
     for (int i = 0; i < values.n_elem; ++i) {
-      diag_offset = denom * rho_2nd[i] / scale;
+      diag_offset = denom * rho_2nd[i];
       for (int k = i; k < values.n_elem; ++k) {
-        const auto tmp = std::abs(rho_1st[i] * rho_2nd[k] * values[k] +
-          rho_1st[k] * rho_2nd[i] * values[i] -
-          rho_1st[i] * rho_1st[k] * sum_2nd -
-          diag_offset);
+        const auto tmp = std::abs(HessianElementUnscaled(
+          i, k, rho_1st, rho_2nd, values, sum_2nd, diag_offset));
 
         diag_offset = 0;
         if (tmp > maxima[1]) {
@@ -244,7 +239,7 @@ class Mscale {
         }
       }
     }
-    maxima[1] /= (denom * denom * scale * scale);
+    maxima[1] *= scale / (denom * denom);
 
     return maxima;
   }
@@ -295,6 +290,18 @@ class Mscale {
       return scale_;
     }
     return robust_scale_location::InitialScaleEstimate(values, delta_, eps_);
+  }
+
+  double HessianElementUnscaled(const int i, const int k,
+                                const arma::vec& rho_1st,
+                                const arma::vec& rho_2nd,
+                                const arma::vec& values,
+                                const double sum_2nd,
+                                const double diag_offset) const {
+    return diag_offset +
+      rho_1st[i] * rho_1st[k] * sum_2nd -
+      rho_1st[i] * rho_2nd[k] * values[k] -
+      rho_1st[k] * rho_2nd[i] * values[i];
   }
 
   RhoFunction rho_;

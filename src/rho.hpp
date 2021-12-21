@@ -131,7 +131,7 @@ class RhoBisquare {
   void      SecondDerivative(const arma::vec& x, const double scale, arma::vec* out) const noexcept;
 
   //! Get the second derivative of the *standardized* rho function evaluated at x/scale.
-  //! Note that SecondDerivative(x/scale, 1) == SecondDerivative(x, scale)
+  //! Note that SecondDerivativeStd(x/scale, 1) == SecondDerivativeStd(x, scale) * scale^2
   //! This is equivalent to `robustbase::Mchi(x / scale, cc, 'bisquare', deriv = 2)`.
   double    SecondDerivativeStd(double x, const double scale) const noexcept;
   arma::vec SecondDerivativeStd(const arma::vec& x, const double scale) const noexcept;

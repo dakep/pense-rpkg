@@ -178,7 +178,7 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
   case RhoFunctionType::kRhoBisquare:
   default:
     auto mscale = Mscale<RhoBisquare>(mscale_opts);
-    arma::vec::fixed<2> maxima = mscale.MaxGradientHessian(x);
+    auto maxima = mscale.MaxGradientHessian(x);
 
     if (change < 1) {
       return Rcpp::wrap(maxima);
@@ -197,6 +197,9 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
         }
         if (tmp_maxima[1] > maxima[1]) {
           maxima[1] = tmp_maxima[1];
+        }
+        if (tmp_maxima[2] > maxima[2]) {
+          maxima[2] = tmp_maxima[2];
         }
       }
 

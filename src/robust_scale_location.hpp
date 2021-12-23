@@ -195,38 +195,34 @@ class Mscale {
   //! function evaluated at all elements in the given vector.
   //!
   //! @param values vector of values
-  //! @return a vector with 2 elements: the maximum element of the gradient
-  //!   and the maximum element in the Hessian.
+  //! @return a vector with 3 elements: the M-scale,
+  //!    the maximum element of the gradient
+  //!    and the maximum element in the Hessian.
   //!    If the scale is 0 or the M-scale equation
   //!    is violated, an empty vector is returned.
-  arma::vec::fixed<2> MaxGradientHessian(const arma::vec& values) {
-    const double scale = this->operator()(values, InitialEstimate(values));
-    if (scale < eps_) {
-      return arma::vec::fixed<2>(arma::fill::zeros);
+  arma::vec::fixed<3> MaxGradientHessian(const arma::vec& values) {
+    arma::vec::fixed<3> maxima(arma::fill::zeros);
+    maxima[0] = this->operator()(values, InitialEstimate(values));
+    if (maxima[0] < eps_) {
+      return maxima;
     }
-    const auto violation = rho_.SumStd(values, scale) - values.n_elem * delta_;
+    const auto violation = rho_.SumStd(values, maxima[0]) - values.n_elem * delta_;
 
     if (violation * violation > values.n_elem * values.n_elem * eps_ * eps_) {
-      return arma::vec::fixed<2>(arma::fill::zeros);
+      return maxima;
     }
-
-    arma::vec::fixed<2> maxima;
 
     // Compute the gradient and its maximum
-    const auto rho_1st = rho_.Derivative(values, scale);
+    const auto rho_1st = rho_.Derivative(values, maxima[0]);
     const auto denom = sum(rho_1st % values);
-    if (denom < eps_) {
-      maxima[0] = R_PosInf;
-    } else {
-      maxima[0] = arma::max(rho_1st) * scale / denom;
-    }
+    maxima[1] = (denom < eps_) ? R_PosInf :
+      (arma::max(rho_1st) * maxima[0] / denom);
 
     // Compute the Hessian and its maximum
-    const auto rho_2nd = rho_.SecondDerivative(values, scale);
+    const auto rho_2nd = rho_.SecondDerivative(values, maxima[0]);
     const auto sum_2nd = sum(rho_2nd % values % values) / denom;
     double diag_offset;
 
-    maxima[1] = 0;
     for (int i = 0; i < values.n_elem; ++i) {
       diag_offset = denom * rho_2nd[i];
       for (int k = i; k < values.n_elem; ++k) {
@@ -234,12 +230,12 @@ class Mscale {
           i, k, rho_1st, rho_2nd, values, sum_2nd, diag_offset));
 
         diag_offset = 0;
-        if (tmp > maxima[1]) {
-          maxima[1] = tmp;
+        if (tmp > maxima[2]) {
+          maxima[2] = tmp;
         }
       }
     }
-    maxima[1] *= scale / (denom * denom);
+    maxima[2] *= maxima[0] / (denom * denom);
 
     return maxima;
   }

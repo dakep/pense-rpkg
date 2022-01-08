@@ -161,8 +161,11 @@ SEXP MaxMScaleDerivative(SEXP r_x, SEXP r_grid, SEXP r_change, SEXP r_mscale_opt
 //! @param grid grid of values to look for maximal derivative.
 //! @param change number of elements in `x` to change.
 //! @param mscale_opts a list of options for the M-scale equation.
-//! @return a vector with 2 elements: the maximum gradient and the maximum
-//!   Hessian of the M-scale function.
+//! @return a vector with 4 elements:
+//!   [0] the maximum element of the gradient,
+//!   [1] the maximum element of the Hessian,
+//!   [2] the M-scale associated with the maximum gradient,
+//!   [3] the M-scale associated with the maximum Hessian.
 SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
                               SEXP r_mscale_opts) noexcept {
   BEGIN_RCPP
@@ -178,7 +181,14 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
   case RhoFunctionType::kRhoBisquare:
   default:
     auto mscale = Mscale<RhoBisquare>(mscale_opts);
-    auto maxima = mscale.MaxGradientHessian(x);
+    const auto tmp_maxima = mscale.MaxGradientHessian(x);
+
+    if (tmp_maxima.n_elem < 1) {
+      return Rcpp::wrap(tmp_maxima);
+    }
+
+    arma::vec::fixed<4> maxima = { tmp_maxima[1], tmp_maxima[2],
+                                   tmp_maxima[0], tmp_maxima[0] };
 
     if (change < 1) {
       return Rcpp::wrap(maxima);
@@ -191,15 +201,14 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
         x[i] = grid->at(counters[i]);
       }
       const auto tmp_maxima = mscale.MaxGradientHessian(x);
-      if (tmp_maxima.n_elem == 2) {
-        if (tmp_maxima[0] > maxima[0]) {
-          maxima[0] = tmp_maxima[0];
+      if (tmp_maxima.n_elem == 3) {
+        if (tmp_maxima[1] > maxima[0]) {
+          maxima[0] = tmp_maxima[1];
+          maxima[2] = tmp_maxima[0];
         }
-        if (tmp_maxima[1] > maxima[1]) {
-          maxima[1] = tmp_maxima[1];
-        }
-        if (tmp_maxima[2] > maxima[2]) {
-          maxima[2] = tmp_maxima[2];
+        if (tmp_maxima[2] > maxima[1]) {
+          maxima[1] = tmp_maxima[2];
+          maxima[3] = tmp_maxima[0];
         }
       }
 

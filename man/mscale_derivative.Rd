@@ -54,7 +54,13 @@ see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for deta
 \value{
 a vector of derivatives of the M-scale function, one per element in \code{x}.
 
-the maximum absolute derivative over the entire grid.
+a vector with 4 elements:
+\enumerate{
+\item the maximum absolute value of the gradient,
+\item the maximum absolute value of the Hessian elements,
+\item the M-scale associated with 1., and
+\item the M-scale associated with 2.
+}
 
 the maximum absolute derivative over the entire grid.
 }

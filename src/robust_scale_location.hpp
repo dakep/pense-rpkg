@@ -206,7 +206,8 @@ class Mscale {
     if (maxima[0] < eps_) {
       return maxima;
     }
-    const auto violation = rho_.SumStd(values, maxima[0]) - values.n_elem * delta_;
+    const auto violation = rho_.SumStd(values, maxima[0]) -
+      values.n_elem * delta_;
 
     if (violation * violation > values.n_elem * values.n_elem * eps_ * eps_) {
       return maxima;

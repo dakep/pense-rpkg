@@ -147,7 +147,11 @@ mscale_derivative <- function (x, bdp = 0.25, order = 1,
 #'
 #' @param n_change the number of elements in `x` to replace with each value in `grid`.
 #' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
-#' @return the maximum absolute derivative over the entire grid.
+#' @return a vector with 4 elements:
+#'    1. the maximum absolute value of the gradient,
+#'    2. the maximum absolute value of the Hessian elements,
+#'    3. the M-scale associated with 1., and
+#'    4. the M-scale associated with 2.
 #' @describeIn mscale_derivative maximum of the gradient
 max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
                                    cc = consistency_const(bdp, 'bisquare'),

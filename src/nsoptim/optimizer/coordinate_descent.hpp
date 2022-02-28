@@ -46,39 +46,48 @@ struct State {
 
 } // namespace coorddesc
 
-//! Compute the EN regression estimate using the LARS algorithm on the augmented response vector and predictor
-//! matrix.
+//! Compute the EN regression estimate using the LARS algorithm on the
+//! augmented response vector and predictor matrix.
 template<class LossFunction, class PenaltyFunction, class Coefficients>
-class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients> {
+class CoordinateDescentOptimizer : 
+    public Optimizer<LossFunction, PenaltyFunction, Coefficients> {
   using Base = Optimizer<LossFunction, PenaltyFunction, Coefficients>;
   using LossFunctionPtr = std::unique_ptr<LossFunction>;
   using PenaltyPtr = std::unique_ptr<PenaltyFunction>;
   using IsWeightedTag = typename traits::is_weighted<LossFunction>::type;
   using IsAdaptiveTag = typename traits::is_adaptive<PenaltyFunction>::type;
-  using IsSparseTag = typename std::is_same<typename Coefficients::SlopeCoefficient, arma::sp_vec>::type;
-  using EnThreshold = typename std::conditional<IsAdaptiveTag::value, arma::vec, double>::type;
+  using IsSparseTag = typename
+    std::is_same<typename Coefficients::SlopeCoefficient, arma::sp_vec>::type;
+  using EnThreshold = typename
+    std::conditional<IsAdaptiveTag::value, arma::vec, double>::type;
 
-  static_assert(traits::is_en_penalty<PenaltyFunction>::value, "PenaltyFunction must be an EN-type penalty.");
-  static_assert(traits::is_ls_regression_loss<LossFunction>::value, "LossFunction must be an least-squares-type loss.");
+  static_assert(traits::is_en_penalty<PenaltyFunction>::value,
+                "PenaltyFunction must be an EN-type penalty.");
+  static_assert(traits::is_ls_regression_loss<LossFunction>::value,
+                "LossFunction must be an least-squares-type loss.");
 
  public:
   using Optimum = typename Base::Optimum;
 
     //! Ininitialize the optimizer without a loss or penalty function.
-  CoordinateDescentOptimizer(const CDConfiguration& config = coorddesc::kDefaultCDConfiguration) noexcept
+  CoordinateDescentOptimizer(
+    const CDConfiguration& config = coorddesc::kDefaultCDConfiguration) noexcept
       : config_(config) {}
 
-  //! Ininitialize the optimizer using the given (weighted) LS loss function and penalty function.
-  //!
+  //! Ininitialize the optimizer using the given (weighted) LS loss function
+  //! and penalty function.
   //! @param loss a weighted LS loss function.
   //! @param penalty penalty function.
-  CoordinateDescentOptimizer(const LossFunction& loss, const PenaltyFunction& penalty,
-                             const CDConfiguration& config = coorddesc::kDefaultCDConfiguration) noexcept
-    : loss_(new LossFunction(loss)), penalty_(new PenaltyFunction(penalty)), config_(config) {}
+  CoordinateDescentOptimizer(const LossFunction& loss, 
+    const PenaltyFunction& penalty,
+    const CDConfiguration& config = coorddesc::kDefaultCDConfiguration) noexcept
+    : loss_(new LossFunction(loss)),
+      penalty_(new PenaltyFunction(penalty)), config_(config) {}
 
   //! Default copy constructor.
   //!
-  //! The copied optimizer will share the identical loss and penalty functions after construction.
+  //! The copied optimizer will share the identical loss and penalty
+  //! functions after construction.
   CoordinateDescentOptimizer(const CoordinateDescentOptimizer& other) noexcept
     : loss_(other.loss_? new LossFunction(*other.loss_) : nullptr),
       penalty_(other.penalty_ ? new PenaltyFunction(*other.penalty_) : nullptr),
@@ -88,14 +97,18 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
 
   //! Default copy assignment.
   //!
-  //! The copied optimizer will share the identical loss and penalty functions after construction.
-  CoordinateDescentOptimizer& operator=(const CoordinateDescentOptimizer& other) = default;
+  //! The copied optimizer will share the identical loss and penalty
+  //! functions after construction.
+  CoordinateDescentOptimizer& operator=(const CoordinateDescentOptimizer& other)
+    = default;
 
   //! Default move constructor.
-  CoordinateDescentOptimizer(CoordinateDescentOptimizer&& other) = default;
+  CoordinateDescentOptimizer(CoordinateDescentOptimizer&& other)
+    = default;
 
   //! Default move assignment operator.
-  CoordinateDescentOptimizer& operator=(CoordinateDescentOptimizer&& other) = default;
+  CoordinateDescentOptimizer& operator=(CoordinateDescentOptimizer&& other)
+    = default;
 
   ~CoordinateDescentOptimizer() = default;
 
@@ -146,16 +159,16 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
     ls_stepsize_.reset();
   }
 
-  //! Find the minimum of the objective function, using the previous solution (or the 0-vector if no
-  //! previous solution exists) as starting point.
+  //! Find the minimum of the objective function, using the previous solution
+  //! (or the 0-vector if no previous solution exists) as starting point.
   //!
   //! @return information about the optimum.
   Optimum Optimize() {
     return Optimize(config_.max_it);
   }
 
-  //! Find the minimum of the objective function, using the given coefficients as starting point
-  //! and at most ``max_it`` iterations.
+  //! Find the minimum of the objective function, using the given coefficients
+  //! as starting point and at most ``max_it`` iterations.
   //!
   //! @param start where to start the optimization from.
   //! @return information about the optimum.
@@ -164,8 +177,8 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
     return Optimize(config_.max_it);
   }
 
-  //! Find the minimum of the objective function, using the given coefficients as starting point
-  //! and at most ``max_it`` iterations.
+  //! Find the minimum of the objective function, using the given coefficients
+  //! as starting point and at most ``max_it`` iterations.
   //!
   //! @param start where to start the optimization from.
   //! @param max_it maximum number of iterations.
@@ -175,8 +188,9 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
     return Optimize(max_it);
   }
 
-  //! Find the minimum of the objective function, using the previous solution (or the 0-vector if no
-  //! previous solution exists) as starting point and at most ``max_it`` iterations.
+  //! Find the minimum of the objective function, using the previous solution
+  //! (or the 0-vector if no previous solution exists) as starting point and 
+  //! at most ``max_it`` iterations.
   //!
   //! @param max_it maximum number of iterations.
   //! @return information about the optimum.
@@ -229,7 +243,8 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
       if (total_change < data.n_pred() * convergence_tolerance_) {
         metrics->AddMetric("iter", iter);
         state_.residuals = loss_->Residuals(state_.coefs);
-        return MakeOptimum(*loss_, *penalty_, state_.coefs, state_.residuals, std::move(metrics));
+        return MakeOptimum(*loss_, *penalty_, state_.coefs, state_.residuals, 
+                           std::move(metrics));
       }
 
       // Re-compute the residuals after every few cycles to avoid any drifts
@@ -240,8 +255,9 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
 
     metrics->AddMetric("iter", iter);
     state_.residuals = loss_->Residuals(state_.coefs);
-    return MakeOptimum(*loss_, *penalty_, state_.coefs, state_.residuals, std::move(metrics),
-                       OptimumStatus::kWarning, "Coordinate descent did not converge.");
+    return MakeOptimum(*loss_, *penalty_, state_.coefs, state_.residuals, 
+                       std::move(metrics), OptimumStatus::kWarning, 
+                       "Coordinate descent did not converge.");
   }
 
  private:
@@ -250,43 +266,51 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
   }
 
   double UpdateIntercept (std::true_type /* is_weighted */) {
-    return arma::dot(state_.residuals + state_.coefs.intercept, loss_->weights());
+    return arma::mean((state_.residuals + state_.coefs.intercept) % 
+                      arma::square(loss_->sqrt_weights()));
   }
 
   double UpdateSlope (arma::uword j, std::false_type /* is_weighted */,
                       std::false_type /* is_adaptive */) {
     const double dir = (state_.coefs.beta[j] != 0) ?
-      arma::dot(loss_->data().cx().col(j), state_.residuals + state_.coefs.beta[j] * loss_->data().cx().col(j)) :
+      arma::dot(loss_->data().cx().col(j), state_.residuals + 
+                  state_.coefs.beta[j] * loss_->data().cx().col(j)) :
       arma::dot(loss_->data().cx().col(j), state_.residuals);
-    return ls_stepsize_[j] * SoftThreshold(dir, en_softthresh_);
+    return SoftThreshold(dir, en_softthresh_) / ls_stepsize_[j];
   }
 
   double UpdateSlope (arma::uword j, std::true_type /* is_weighted */,
                       std::false_type /* is_adaptive */) {
     const double dir = (state_.coefs.beta[j] != 0) ?
-      arma::dot(loss_->weights() % loss_->data().cx().col(j),
-                state_.residuals + state_.coefs.beta[j] * loss_->data().cx().col(j)) :
-      arma::dot(loss_->weights() % loss_->data().cx().col(j), state_.residuals);
+      arma::dot(arma::square(loss_->sqrt_weights()) % loss_->data().cx().col(j),
+        state_.residuals + state_.coefs.beta[j] * loss_->data().cx().col(j)) :
+      arma::dot(arma::square(loss_->sqrt_weights()) % loss_->data().cx().col(j),
+                state_.residuals);
 
-    return ls_stepsize_[j] * SoftThreshold(dir, en_softthresh_);
+    return SoftThreshold(dir, en_softthresh_ / loss_->mean_weight()) / 
+      ls_stepsize_[j];
   }
 
   double UpdateSlope (arma::uword j, std::false_type /* is_weighted */,
                       std::true_type /* is_adaptive */) {
     const double dir = (state_.coefs.beta[j] != 0) ?
-      arma::dot(loss_->data().cx().col(j), state_.residuals + state_.coefs.beta[j] * loss_->data().cx().col(j)) :
+      arma::dot(loss_->data().cx().col(j), state_.residuals + 
+                  state_.coefs.beta[j] * loss_->data().cx().col(j)) :
       arma::dot(loss_->data().cx().col(j), state_.residuals);
-    return ls_stepsize_[j] * SoftThreshold(dir, en_softthresh_[j]);
+    return SoftThreshold(dir, en_softthresh_[j]) / ls_stepsize_[j];
   }
 
   double UpdateSlope (arma::uword j, std::true_type /* is_weighted */,
                       std::true_type /* is_adaptive */) {
     const double dir = (state_.coefs.beta[j] != 0) ?
-      arma::dot(loss_->weights() % loss_->data().cx().col(j),
-                state_.residuals + state_.coefs.beta[j] * loss_->data().cx().col(j)) :
-      arma::dot(loss_->weights() % loss_->data().cx().col(j), state_.residuals);
+      arma::dot(arma::square(loss_->sqrt_weights()) % loss_->data().cx().col(j), 
+                state_.residuals + state_.coefs.beta[j] * 
+                  loss_->data().cx().col(j)) :
+      arma::dot(arma::square(loss_->sqrt_weights()) % loss_->data().cx().col(j),
+                state_.residuals);
 
-    return ls_stepsize_[j] * SoftThreshold(dir, en_softthresh_[j]);
+    return SoftThreshold(dir, en_softthresh_[j] / loss_->mean_weight()) / 
+      ls_stepsize_[j];
   }
 
   void ResetState (const Coefficients &coefs) {
@@ -305,33 +329,46 @@ class CoordinateDescentOptimizer : public Optimizer<LossFunction, PenaltyFunctio
     en_softthresh_.reset();
   }
 
-  void UpdateLsStepSize(std::false_type /* is_weighted */, std::false_type /* is_adaptive */) {
-    ls_stepsize_ = 1 / (arma::sum(arma::square(loss_->data().cx())).t() +
-                          loss_->data().n_obs() * penalty_->lambda() * (1 - penalty_->alpha()));
+  void UpdateLsStepSize(std::false_type /* is_weighted */, 
+                        std::false_type /* is_adaptive */) {
+    ls_stepsize_ = arma::sum(arma::square(loss_->data().cx())).t() +
+      loss_->data().n_obs() * penalty_->lambda() * (1 - penalty_->alpha());
   }
 
-  void UpdateLsStepSize(std::true_type /* is_weighted */, std::false_type /* is_adaptive */) {
-    ls_stepsize_ = 1 / (arma::square(loss_->data().cx()).t() * loss_->weights() +
-                          penalty_->lambda() * (1 - penalty_->alpha() / loss_->mean_weight()));
+  void UpdateLsStepSize(std::true_type /* is_weighted */,
+                        std::false_type /* is_adaptive */) {
+    const arma::vec ls = arma::sum(arma::square(loss_->data().cx().each_col() % 
+      loss_->sqrt_weights())).t();
+    const double en = loss_->data().n_obs() * penalty_->lambda() * 
+      (1 - penalty_->alpha()) / loss_->mean_weight();
+    ls_stepsize_ = ls + en;
   }
 
-  void UpdateLsStepSize(std::false_type /* is_weighted */, std::true_type /* is_adaptive */) {
-    ls_stepsize_ = 1 / (arma::sum(arma::square(loss_->data().cx())).t() + penalty_->loadings() *
-                         (loss_->data().n_obs() * penalty_->lambda() * (1 - penalty_->alpha())));
+  void UpdateLsStepSize(std::false_type /* is_weighted */,
+                        std::true_type /* is_adaptive */) {
+    ls_stepsize_ = arma::sum(arma::square(loss_->data().cx())).t() +
+      penalty_->loadings() * loss_->data().n_obs() * penalty_->lambda() * 
+        (1 - penalty_->alpha());
   }
 
-  void UpdateLsStepSize(std::true_type /* is_weighted */, std::true_type /* is_adaptive */) {
-    ls_stepsize_ = 1 / (arma::square(loss_->data().cx()).t() * loss_->weights() + penalty_->loadings() *
-                          (penalty_->lambda() * (1 - penalty_->alpha())));
+  void UpdateLsStepSize(std::true_type /* is_weighted */,
+                        std::true_type /* is_adaptive */) {
+    const arma::vec ls = arma::sum(arma::square(loss_->data().cx().each_col() % 
+      loss_->sqrt_weights())).t();
+    const arma::vec adaen = penalty_->loadings() * loss_->data().n_obs() * 
+      penalty_->lambda() * (1 - penalty_->alpha()) / loss_->mean_weight();
+    ls_stepsize_ = ls + adaen;
   }
 
   void UpdateEnThreshold(std::false_type /* is_adaptive */) {
-    en_softthresh_ = loss_->data().n_obs() * penalty_->lambda() * penalty_->alpha();
+    en_softthresh_ = loss_->data().n_obs() * penalty_->lambda() * 
+      penalty_->alpha();
   }
 
   void UpdateEnThreshold(std::true_type /* is_adaptive */) {
     if (en_softthresh_.n_elem == 0) {
-      en_softthresh_ = loss_->data().n_obs() * penalty_->loadings() * penalty_->lambda() * penalty_->alpha();
+      en_softthresh_ = loss_->data().n_obs() * penalty_->loadings() * 
+        penalty_->lambda() * penalty_->alpha();
     }
   }
 

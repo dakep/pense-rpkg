@@ -17,5 +17,6 @@
 #include "optimizer/mm.hpp"
 #include "optimizer/dal.hpp"
 #include "optimizer/admm.hpp"
+#include "optimizer/coordinate_descent.hpp"
 
 #endif  // NSOPTIM_OPTIMIZER_HPP_

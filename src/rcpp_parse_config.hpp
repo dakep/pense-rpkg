@@ -31,6 +31,15 @@ template<> class Exporter< nsoptim::DalEnConfiguration > {
   SEXP r_obj_;
 };
 
+//! Converter for an R-list to configuration options for the CD-LS algorithm.
+template<> class Exporter< nsoptim::CDConfiguration > {
+ public:
+  explicit Exporter(SEXP r_obj) noexcept : r_obj_(r_obj) {}
+  nsoptim::CDConfiguration get() const;
+ private:
+  SEXP r_obj_;
+};
+
 //! Converter for an R-list to configuration options for the MM algorithm.
 template<> class Exporter< nsoptim::MMConfiguration > {
  public:

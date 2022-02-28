@@ -411,7 +411,6 @@ class AugmentedLarsOptimizer : public Optimizer<LossFunction, PenaltyFunction, C
   //!
   //! @param loss a weighted LS loss function.
   //! @param penalty penalty function.
-  //! @param eps tolerance for numerical comparisons.
   AugmentedLarsOptimizer(const LossFunction& loss, const PenaltyFunction& penalty) noexcept
     : loss_(new LossFunction(loss)), penalty_(new PenaltyFunction(penalty)) {}
 

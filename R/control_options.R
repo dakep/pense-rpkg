@@ -119,6 +119,19 @@ en_lars_options <- function () {
   list(algorithm = 'lars')
 }
 
+#' Use Coordinate Descent to Solve Elastic Net Problems
+#'
+#' @param max_it maximum number of iterations.
+#' @param reset_iter after this many iterations the accurate residuals are
+#'   re-computed to avoid numeric drift from incremental updates.
+#' @family EN algorithms
+#' @export
+en_cd_options <- function (max_it = 1000, reset_iter = 8) {
+  list(algorithm = 'cdls',
+       max_it = .as(max_it[[1L]], 'integer'),
+       reset_iter = .as(reset_iter[[1L]], 'integer'))
+}
+
 #' Use the ADMM Elastic Net Algorithm
 #'
 #'
@@ -174,18 +187,6 @@ en_ridge_options <- function () {
   list(algorithm = 'augridge', sparse = FALSE)
 }
 
-## Check if the selected EN algorithm can handle the given penalty.
-.check_en_algorithm <- function (en_algorithm_opts, alpha) {
-  if (en_algorithm_opts$algorithm == 'dal') {
-    if(!isTRUE(alpha > 0)) {
-      warning('The DAL algorithm can not handle a Ridge penalty. Using default
-              algorithm as fallback.')
-      return(FALSE)
-    }
-  }
-  return(TRUE)
-}
-
 ## Choose the appropriate ADMM algorithm type based on the penalty and
 ## the problem size.
 .choose_admm_algorithm <- function (en_algorithm_opts, alpha, x) {
@@ -198,6 +199,7 @@ en_ridge_options <- function () {
           dal = 3L,
           augridge = 4L,
           lars = 5L,
+          cdls = 6L,
           5L)
 }
 
@@ -223,8 +225,9 @@ en_ridge_options <- function () {
 .select_en_algorithm <- function (en_options, alpha, sparse, eps) {
   if (!is.null(en_options)) {
     # Check if the EN algorithm can handle the given `alpha`
-    if (identical(en_options$algorithm, 'dal') && !all(alpha > 0)) {
-      warn(paste("The DAL algorithm can not handle an EN penalty with alpha=0.",
+    if (!all(alpha > 0) && (identical(en_options$algorithm, 'dal') ||
+                            identical(en_options$algorithm, 'cdls'))) {
+      warn(paste("The chosen algorithm can not handle an EN penalty with alpha=0.",
                  "Using default algorithm as fallback."))
       en_options <- NULL
     } else if (identical(en_options$algorithm, 'augridge') && !all(alpha < .Machine$double.eps)) {

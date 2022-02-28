@@ -16,6 +16,9 @@ namespace {
 constexpr int kAdmmMaxIt = 1000;
 constexpr double kAdmmAcceleration = 1;
 
+constexpr int kCDLsMaxIt = 1000;
+constexpr int kCDLsResetIt = 8;
+
 constexpr int kDalMaxIt = 100;
 constexpr int kDalMaxInnerIt = 100;
 constexpr double kDalEtaMult = 2;
@@ -49,6 +52,15 @@ nsoptim::DalEnConfiguration Exporter<nsoptim::DalEnConfiguration>::get() const {
       pense::GetFallback(config_list, "eta_start_numerator_aggressive", kDalEtaStartNumeratorAggr),
       pense::GetFallback(config_list, "lambda_relchange_aggressive", kDalLambdaRelChangeAggr),
       pense::GetFallback(config_list, "eta_multiplier", kDalEtaMult)
+  };
+  return tmp;
+}
+
+nsoptim::CDConfiguration Exporter<nsoptim::CDConfiguration>::get() const {
+  const Rcpp::List config_list = as<const Rcpp::List>(r_obj_);
+  nsoptim::CDConfiguration tmp = {
+      pense::GetFallback(config_list, "max_it", kCDLsMaxIt),
+      pense::GetFallback(config_list, "reset_iter", kCDLsResetIt)
   };
   return tmp;
 }

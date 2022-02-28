@@ -110,6 +110,7 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
   structure(list(
     call = call,
     lambda = lapply(fits, `[[`, 'lambda'),
+    metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
     estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
     alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
     class = c('pense_en', 'pense_fit'))
@@ -278,6 +279,7 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
     cvres = cv_curves,
     cv_measure = cv_measure_str,
     lambda = lapply(fits, `[[`, 'lambda'),
+    metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
     estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
     alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
     class = c('pense_en', 'pense_cvfit'))

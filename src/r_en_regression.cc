@@ -28,6 +28,7 @@ using nsoptim::RidgePenalty;
 using nsoptim::LinearizedAdmmOptimizer;
 using nsoptim::AugmentedLarsOptimizer;
 using nsoptim::DalEnOptimizer;
+using nsoptim::CoordinateDescentOptimizer;
 using SparseCoefs = nsoptim::RegressionCoefficients<arma::sp_vec>;
 using DenseCoefs = nsoptim::RegressionCoefficients<arma::vec>;
 
@@ -110,6 +111,14 @@ SEXP LsEnRegressionDispatch(SEXP x, SEXP y, SEXP penalties, SEXP include_interce
           x, y, penalties, include_intercept, optional_args);
       } else {
         return LsEnRegressionImpl<AugmentedLarsOptimizer<LossFunction, PenaltyFunction, DenseCoefs>>(
+          x, y, penalties, include_intercept, optional_args);
+      }
+    case pense::EnAlgorithm::kCoordinateDescent:
+      if (use_sparse_coefs) {
+        return LsEnRegressionImpl<CoordinateDescentOptimizer<LossFunction, PenaltyFunction, SparseCoefs>>(
+          x, y, penalties, include_intercept, optional_args);
+      } else {
+        return LsEnRegressionImpl<CoordinateDescentOptimizer<LossFunction, PenaltyFunction, DenseCoefs>>(
           x, y, penalties, include_intercept, optional_args);
       }
     case pense::EnAlgorithm::kLinearizedAdmm:

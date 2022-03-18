@@ -143,6 +143,17 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
     return result;
   }
 
+  //! Evaluate the S loss function at the given *residuals*.
+  //!
+  //! @param residuals evaluate the S-loss function at the given residuals.
+  //! @return the loss and the scale evaluated at the given residuals.
+  ExtendedEvaluation EvaluateResiduals(const ResidualType& residuals) {
+    ExtendedEvaluation result;
+    result.scale = mscale_(residuals);
+    result.loss = 0.5 * result.scale * result.scale;
+    return result;
+  }
+
   template<typename Coefficients>
   arma::vec Residuals(const Coefficients& where) const {
     return data_->cy() - data_->cx() * where.beta - where.intercept;

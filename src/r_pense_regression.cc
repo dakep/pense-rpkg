@@ -16,6 +16,7 @@
 #include "enpy_initest.hpp"
 #include "robust_scale_location.hpp"
 #include "s_loss.hpp"
+#include "cd_pense.hpp"
 #include "regularization_path.hpp"
 #include "constants.hpp"
 
@@ -403,10 +404,60 @@ SEXP PenseMMDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp:
   }
 }
 
+//! Compute the PENSE Regularization Path for the provided penalty function using the CD algorithm.
+//! Unless the CD optimizer can handle the given PenaltyFunction class, returns `R_NilValue`.
+//!
+//! See `PenseEnRegression` for parameter documentation.
+//! @return `R_NilValue`.
+template<typename PenaltyFunction, typename Coefficients>
+SEXP PenseCDPenaltyImpl(SEXP, SEXP, SEXP, SEXP, const Rcpp::List&, SEXP, const Rcpp::List&,
+                        const Rcpp::List&, double) {
+  return R_NilValue;
+}
+
+//! Compute the PENSE Regularization Path for the provided penalty function using the CD algorithm.
+//! This function is only enabled if the CD optimizer can handle the requested PenaltyFunction class.
+//!
+//! See `PenseEnRegression` for parameter documentation.
+//! @return the regularization path.
+template<typename PenaltyFunction, typename Coefficients, typename = typename
+         std::enable_if<!std::is_same<PenaltyFunction, nsoptim::RidgePenalty>::value>::type >
+SEXP PenseCDPenaltyImpl(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds,
+                        const Rcpp::List& pense_opts, SEXP enpy_opts, const Rcpp::List& optional_args,
+                        const Rcpp::List& cd_options, int) {
+  using Optimizer = pense::CDPense<PenaltyFunction, Coefficients>;
+  return PenseRegressionImpl(MakeOptimizer<Optimizer>(cd_options),
+                             x, y, penalties, enpy_inds, pense_opts, enpy_opts, optional_args);
+}
+
+
+//! Compute the PENSE Regularization Path for the provided penalty function using the CD algorithm direcly on
+//! the S-loss.
+//! If the penalty function is not supported by CD (e.g., the Ridge penalty), returns `R_NilValue`!
+//!
+//! See `PenseEnRegression` for parameter documentation.
+//! @return the regularization path.
+template<typename PenaltyFunction>
+SEXP PenseCDDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp::List& pense_opts,
+                     SEXP enpy_opts, const Rcpp::List& optional_args) {
+  const auto cd_options = GetFallback(pense_opts, "algo_opts", Rcpp::List());
+  const bool use_sparse_coefs = GetFallback(pense_opts, "sparse", pense::kDefaultUseSparse);
+
+  if (use_sparse_coefs) {
+    return PenseCDPenaltyImpl<PenaltyFunction, SparseCoefs>(
+      x, y, penalties, enpy_inds, pense_opts, enpy_opts, optional_args, cd_options, 1);
+  } else {
+    return PenseCDPenaltyImpl<PenaltyFunction, DenseCoefs>(
+      x, y, penalties, enpy_inds, pense_opts, enpy_opts, optional_args, cd_options, 1);
+  }
+}
+
 //! Compute the PENSE Regularization Path for the provided penalty function.
 //! This dispatcher inspects `pense_opts` to determine the PENSE algorithm to use. Can be one of the following:
+//!
 //!  * ADMM ... use ADMM directly for the S-loss and the penalty function.
 //!  * MM   ... use an MM algorithm on the convex surrogate of the S-loss.
+//!  * CD   ... use coordinate descent directly on the S-loss.
 //!
 //! See `PenseEnRegression` for parameter documentation.
 //! @return the regularization path.
@@ -415,6 +466,9 @@ SEXP PensePenaltyDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds,
                           SEXP r_pense_opts, SEXP enpy_opts, const Rcpp::List& optional_args) {
   const auto pense_options = as<Rcpp::List>(r_pense_opts);
   switch (GetFallback(pense_options, "algorithm", pense::kDefaultPenseAlgorithm)) {
+    case pense::PenseAlgorithm::kCoordinateDescent:
+      return PenseCDDispatch<PenaltyFunction>(x, y, penalties, enpy_inds, pense_options,
+                                              enpy_opts, optional_args);
     case pense::PenseAlgorithm::kAdmm:
      // Currently not implemented! Fall through to default MM algorithm.
     case pense::PenseAlgorithm::kMm:

@@ -4,13 +4,14 @@
 \alias{en_cd_options}
 \title{Use Coordinate Descent to Solve Elastic Net Problems}
 \usage{
-en_cd_options(max_it = 1000, reset_iter = 8)
+en_cd_options(max_it = 1000, reset_it = 8)
 }
 \arguments{
 \item{max_it}{maximum number of iterations.}
 
-\item{reset_iter}{after this many iterations the accurate residuals are
-re-computed to avoid numeric drift from incremental updates.}
+\item{reset_it}{number of iterations after which the residuals are
+re-computed from scratch, to prevent numerical drifts from incremental
+updates.}
 }
 \description{
 Use Coordinate Descent to Solve Elastic Net Problems

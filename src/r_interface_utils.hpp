@@ -12,6 +12,7 @@
 #include "rcpp_integration.hpp"
 #include "constants.hpp"
 #include "alias.hpp"
+#include "cd_pense.hpp"
 
 namespace pense {
 namespace r_interface {
@@ -141,6 +142,12 @@ alias::FwdList<T> MakePenalties(SEXP r_penalties, SEXP r_indices, const Rcpp::Li
   return ExtractListSubset<T>(r_penalties, r_indices);
 }
 
+//! Conditional alias for the `CDPense` class.
+//! It is only defined if `T` actually is a specialization of the `CDPense` templated class.
+template<typename T>
+using CDPenseOptimizer = std::enable_if<
+  std::is_same<T, pense::CDPense<typename T::PenaltyFunction, typename T::Coefficients>>::value, T>;
+
 //! Conditional alias for the `nsoptim::CoordinateDescentOptimizer`.
 //! It is only defined if `T` actually is a specialization of the `nsoptim::CoordinateDescentOptimizer` templated class.
 template<typename T>
@@ -202,9 +209,15 @@ Optimizer MakeOptimizer(double, Ts&&... /* options */) {
   return Optimizer();
 }
 
+//! Create an object of the CD optimizer for the S-loss class.
+//!
+//! @param options a list of options for the CDPense optimizer.
+template<typename Optimizer>
+typename CDPenseOptimizer<Optimizer>::type MakeOptimizer(int, const Rcpp::List& options);
+
 //! Create an object of the CD-LS optimizer class.
 //!
-//! @param options a list of options for the variable augmented LARS optimizer.
+//! @param options a list of options for the CD-LS optimizer.
 template<typename Optimizer>
 typename CoordinateDescentOptimizer<Optimizer>::type MakeOptimizer(int, const Rcpp::List& options);
 
@@ -246,6 +259,16 @@ typename MMOptimizer<Optimizer>::type MakeOptimizer(int, const Rcpp::List& optio
 //! @param other_options... further options passed on to the inner optimizer.
 template<typename Optimizer, typename... Ts>
 typename MMOptimizer<Optimizer>::type MakeOptimizer(int, const Rcpp::List& options, Ts&&... other_options);
+
+//! Create an object of the CD optimizer for the S-loss class.
+//!
+//! @param options a list of options for the CDPense optimizer.
+template<typename Optimizer>
+typename CDPenseOptimizer<Optimizer>::type MakeOptimizer(int, const Rcpp::List& options) {
+  Optimizer optim(Rcpp::as<CDPenseConfiguration>(options));
+  optim.convergence_tolerance(pense::GetFallback(options, "eps", pense::kDefaultConvergenceTolerance));
+  return optim;
+}
 
 //! Create an object of the CD-LS optimizer class.
 //!

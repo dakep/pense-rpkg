@@ -43,7 +43,7 @@
   args <- list2env(list(...))
   for (argname in names(defaults)) {
     if (!(exists(argname, args))) {
-      # evaluate the default values in this environmen;t
+      # evaluate the default values in this environment
       args[[argname]] <- if (!is_missing(defaults[[argname]])) {
         eval(defaults[[argname]], envir = args)
       } else {
@@ -119,7 +119,7 @@
   args$pense_opts$sparse <- args$enpy_opts$en_options$sparse
 
   # If using the MM algorithm, ensure that the EN options are set.
-  if (args$pense_opts$algorithm == 1L) {
+  if (identical(args$pense_opts$algorithm, .k_pense_algo_mm)) {
     args$pense_opts$algo_opts$en_options <-
       .select_en_algorithm(args$pense_opts$algo_opts$en_options,
                            args$alpha,

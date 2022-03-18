@@ -14,16 +14,22 @@ mm_algorithm_options(
 \arguments{
 \item{max_it}{maximum number of iterations.}
 
-\item{tightening}{how to make inner iterations more precise as the algorithm approaches a local minimum.}
+\item{tightening}{how to make inner iterations more precise as the algorithm
+approaches a local minimum.}
 
-\item{tightening_steps}{for \emph{adaptive} tightening strategy, how often to tighten until the desired tolerance
-is attained.}
+\item{tightening_steps}{for \emph{adaptive} tightening strategy, how often to
+tighten until the desired tolerance is attained.}
 
-\item{en_algorithm_opts}{options for the inner LS-EN algorithm. See \link{en_algorithm_options} for details.}
+\item{en_algorithm_opts}{options for the inner LS-EN algorithm.
+See \link{en_algorithm_options} for details.}
 }
 \value{
 options for the MM algorithm.
 }
 \description{
 Additional options for the MM algorithm to compute EN S- and M-estimates.
+}
+\seealso{
+cd_algorithm_options for a direct optimization of the non-convex
+PENSE loss.
 }

@@ -211,11 +211,11 @@ class CDPense :
     int iter = 0;
     const auto& data = loss_->data();
 
+    // state_.objf_pen = penalty_->Evaluate(state_.coefs);
+
     while (iter++ < max_it) {
       auto& iteration_metrics = metrics->CreateSubMetrics("cd_iteration");
       iteration_metrics.AddMetric("iter", iter);
-
-      state_.objf_pen = 0;
 
       const double objf_before_iter = state_.objf_loss + state_.objf_pen;
 
@@ -228,8 +228,9 @@ class CDPense :
         double stepsize = config_.linesearch_ss_denom_max * lipschitz_bound_intercept_;
         double updated_coef = state_.coefs.intercept;
         double linesearch_prev = state_.coefs.intercept;
+        const double stepsize_upper = lipschitz_bound_intercept_ * linesearch_mult - kNumericZero;
 
-        while (stepsize <= lipschitz_bound_intercept_) {
+        while (stepsize < stepsize_upper) {
           const double ls_try_value = state_.coefs.intercept - gradient / stepsize;
           const auto total_diff = state_.coefs.intercept - ls_try_value;
 
@@ -242,8 +243,8 @@ class CDPense :
           // Meaningful difference in coefficient value compared to coefficient before taking a step.
           updated_coef = ls_try_value;
           state_.residuals += linesearch_prev - ls_try_value;
-          // state_.residuals = loss_->Residuals(state_.coefs);
           const auto new_objf = loss_->EvaluateResiduals(state_.residuals);
+
           // Check if the objective function improved -- here we only need to care about the
           // loss function as the intercept does not affect the penalty.
           if (new_objf.loss < state_.objf_loss) {
@@ -260,9 +261,13 @@ class CDPense :
         }
 
         if (stepsize < 0) {
-          // The objective did not change at all.
+          // The intercept did not change at all.
           iteration_metrics.AddMetric("stepsize_int", 0);
-        } else if (stepsize > lipschitz_bound_intercept_) {
+          // Check if the residuals have been changed during the line search.
+          if (std::abs(updated_coef - state_.coefs.intercept) > kNumericZero) {
+            state_.residuals += updated_coef - state_.coefs.intercept;
+          }
+        } else if (stepsize >= stepsize_upper) {
           // The objective function value could not be improved by changing the intercept.
           // Revert any changes from the linesearch.
           state_.residuals += updated_coef - state_.coefs.intercept;
@@ -283,8 +288,9 @@ class CDPense :
         double updated_coef = state_.coefs.beta[j];
         double linesearch_prev = state_.coefs.beta[j];
         const double objf_pen_prev = state_.objf_pen - PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
+        const double stepsize_upper = lipschitz_bounds_[j] * linesearch_mult - kNumericZero;
 
-        while (stepsize <= lipschitz_bounds_[j]) {
+        while (stepsize < stepsize_upper) {
           const double ls_try_value = UpdateSlope(j, stepsize, gradient, IsAdaptiveTag{});
           const double total_diff = state_.coefs.beta[j] - ls_try_value;
 
@@ -317,9 +323,13 @@ class CDPense :
         }
 
         if (stepsize < 0) {
-          // The objective function did not change.
+          // The coefficient value did not change.
           cycle_metrics.AddMetric("stepsize", 0.);
-        } else if (stepsize > lipschitz_bounds_[j]) {
+          // Check if the residuals have been changed during the line search.
+          if (std::abs(updated_coef - state_.coefs.beta[j]) > kNumericZero) {
+            state_.residuals += (updated_coef - state_.coefs.beta[j]) * data.cx().col(j);
+          }
+        } else if (stepsize >= stepsize_upper) {
           // The objective function value could not be improved by changing the coefficient.
           // Revert any changes from the linesearch.
           state_.residuals += (updated_coef - state_.coefs.beta[j]) * data.cx().col(j);
@@ -333,7 +343,6 @@ class CDPense :
       if (objf_change * objf_change < convergence_tolerance_ * convergence_tolerance_) {
         // The objective function value did not change. Algorithm converged.
         metrics->AddMetric("iter", iter);
-        state_.residuals = loss_->Residuals(state_.coefs);
         return nsoptim::MakeOptimum(*loss_, *penalty_, state_.coefs, state_.residuals,
                                     std::move(metrics));
       }

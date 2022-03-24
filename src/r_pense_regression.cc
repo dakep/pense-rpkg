@@ -368,8 +368,8 @@ SEXP PenseMMDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp:
   const auto mm_options = GetFallback(pense_opts, "algo_opts", Rcpp::List());
   const auto en_options = GetFallback(mm_options, "en_options", Rcpp::List());
   const bool use_sparse_coefs = GetFallback(pense_opts, "sparse", pense::kDefaultUseSparse);
-
-  switch (GetFallback(en_options, "algorithm", pense::kDefaultEnAlgorithm)) {
+  const auto algorithm = GetFallback(en_options, "algorithm", pense::kDefaultEnAlgorithm);
+  switch (algorithm) {
     case pense::EnAlgorithm::kDal: {
       using Optimizer = nsoptim::DalEnOptimizer<SurrogateLoss, PenaltyFunction>;
       return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
@@ -387,6 +387,16 @@ SEXP PenseMMDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp:
                                                               enpy_opts, optional_args, mm_options, en_options, 1);
       } else {
         using Optimizer = nsoptim::LinearizedAdmmOptimizer<SurrogateLoss, PenaltyFunction, DenseCoefs>;
+        return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
+                                                              enpy_opts, optional_args, mm_options, en_options, 1);
+      }
+    case pense::EnAlgorithm::kCoordinateDescent:
+      if (use_sparse_coefs) {
+        using Optimizer = nsoptim::CoordinateDescentOptimizer<SurrogateLoss, PenaltyFunction, SparseCoefs>;
+        return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
+                                                              enpy_opts, optional_args, mm_options, en_options, 1);
+      } else {
+        using Optimizer = nsoptim::CoordinateDescentOptimizer<SurrogateLoss, PenaltyFunction, DenseCoefs>;
         return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
                                                               enpy_opts, optional_args, mm_options, en_options, 1);
       }

@@ -206,9 +206,8 @@ class CDPense :
     }
 
     int iter = 0;
+    const double stepsize_start_mult = std::pow(config_.linesearch_ss_multiplier, config_.linesearch_ss_num);
     const auto& data = loss_->data();
-
-    // state_.objf_pen = penalty_->Evaluate(state_.coefs);
 
     while (iter++ < max_it) {
       auto& iteration_metrics = metrics->CreateSubMetrics("cd_iteration");
@@ -220,8 +219,11 @@ class CDPense :
         const double gradient = Gradient();
         int total_mscale_iterations = 0;
         double updated_coef = state_.coefs.intercept;
-        double stepsize = lipschitz_bound_intercept_;
+
+        // Start line search with the step in the middle and increase or decrease based on the results.
+        double stepsize = lipschitz_bound_intercept_ * stepsize_start_mult;
         int ls_step = -1;
+        double stepsize_multiplier = 1;
 
         iteration_metrics.AddMetric("gradient_int", gradient);
 
@@ -231,22 +233,42 @@ class CDPense :
           const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
           total_mscale_iterations += loss_->mscale().LastIterations();
 
-          if (eval_loss.loss > state_.objf_loss + convergence_tolerance_ ||
-               (ls_step > 0 && eval_loss.loss > state_.objf_loss)) {
-            // Objective did not improve further. Rewind residuals and stop line search.
-            state_.residuals -= updated_coef - try_coef;
-            loss_->mscale().SetInitial(state_.mscale);
-            break;
+          if (ls_step == 0) {
+            stepsize_multiplier = (eval_loss.loss <= state_.objf_loss) ?
+              config_.linesearch_ss_multiplier : (1 / config_.linesearch_ss_multiplier);
+          }
+
+          if (stepsize_multiplier < 1) {
+            if (eval_loss.loss > state_.objf_loss) {
+              // Objective did not improve further. Rewind residuals and stop line search.
+              state_.residuals -= updated_coef - try_coef;
+              loss_->mscale().SetInitial(state_.mscale);
+              break;
+            }
+
+            // Updating the objective function here ensures that we will go as long as there is more improvement.
+            state_.objf_loss = eval_loss.loss;
+            state_.mscale = eval_loss.scale;
+          } else { // stepsize_multiplier >= 1
+            if (eval_loss.loss < state_.objf_loss) {
+              // We are finally at a point where the objective function improved.
+              // Stop here.
+              state_.objf_loss = eval_loss.loss;
+              state_.mscale = eval_loss.scale;
+              break;
+            } else if (stepsize > lipschitz_bound_intercept_) {
+              // We are at the upper end of the step size range and haven't seen an improvement.
+              // Stop here.
+              ls_step = 0;
+              if (std::abs(updated_coef - state_.coefs.intercept) > kNumericZero) {
+                state_.residuals += try_coef - state_.coefs.intercept;
+              }
+              break;
+            }
           }
 
           updated_coef = try_coef;
-          // Updating the objective function here ensures we will stop as soon as we don't make any more
-          // gains compared to the previous step in the line search!
-          state_.objf_loss = eval_loss.loss;
-          state_.mscale = eval_loss.scale;
-
-          // Increase step size.
-          stepsize *= config_.linesearch_ss_multiplier;
+          stepsize *= stepsize_multiplier;
         }
 
         iteration_metrics.AddMetric("mscale_iterations_int", total_mscale_iterations);
@@ -266,11 +288,12 @@ class CDPense :
         // @TODO -- this iteration is inefficient if we have a sparse vector!
         auto& cycle_metrics = iteration_metrics.CreateSubMetrics("coordinate");
         const double gradient = Gradient(j);
-        double stepsize = lipschitz_bounds_[j];
+        double stepsize = stepsize_start_mult * lipschitz_bounds_[j];
         double updated_coef = state_.coefs.beta[j];
         const double objf_pen_prev = state_.objf_pen - PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
         int ls_step = -1;
         int total_mscale_iterations = 0;
+        double stepsize_multiplier = -1;
 
         cycle_metrics.AddMetric("index", static_cast<int>(j));
         cycle_metrics.AddMetric("gradient", gradient);
@@ -287,22 +310,61 @@ class CDPense :
 
             total_mscale_iterations += loss_->mscale().LastIterations();
 
-            if (new_objf > state_.objf_loss + state_.objf_pen + convergence_tolerance_ ||
-                (ls_step > 0 && new_objf > state_.objf_loss + state_.objf_pen)) {
-              // Objective did not improve further. Rewind residuals and stop line search.
-              state_.residuals -= (updated_coef - try_coef) * data.cx().col(j);
-              loss_->mscale().SetInitial(state_.mscale);
-              break;
+            // After the first step that produces a change in the coefficient, determine
+            // which way we want to go.
+            if (stepsize_multiplier < 0) {
+              stepsize_multiplier = (new_objf <= state_.objf_loss + state_.objf_pen) ?
+                config_.linesearch_ss_multiplier : (1 / config_.linesearch_ss_multiplier);
+
+              if (stepsize_multiplier > 1 && ls_step > 0) {
+                // There were no changes for previous decreases in the step size,
+                // and this change leads to an increase in the objective function.
+                // Stop the line search.
+                stepsize = lipschitz_bounds_[j] + kNumericZero;
+                break;
+              }
+            }
+
+            if (stepsize_multiplier < 1) {
+              if (new_objf > state_.objf_loss + state_.objf_pen) {
+                // Objective did not improve further. Rewind residuals and stop line search.
+                state_.residuals -= (updated_coef - try_coef) * data.cx().col(j);
+                loss_->mscale().SetInitial(state_.mscale);
+                break;
+              }
+
+              // Updating the objective function here ensures that we will go as long as there is more improvement.
+              state_.objf_loss = eval_loss.loss;
+              state_.objf_pen = new_objf_pen;
+              state_.mscale = eval_loss.scale;
+            } else {
+              if (new_objf < state_.objf_loss + state_.objf_pen) {
+                // We are finally at a point where the objective function improved.
+                // Stop here.
+                updated_coef = try_coef;
+                state_.objf_loss = eval_loss.loss;
+                state_.objf_pen = new_objf_pen;
+                state_.mscale = eval_loss.scale;
+                break;
+              } else if (stepsize >= lipschitz_bounds_[j]) {
+                // We are at the upper end of the step size range and haven't seen an improvement.
+                // Stop here.
+                ls_step = 0;
+                state_.residuals += (try_coef - state_.coefs.beta[j]) * data.cx().col(j);
+                break;
+              }
             }
 
             updated_coef = try_coef;
-            state_.objf_loss = eval_loss.loss;
-            state_.objf_pen = new_objf_pen;
-            state_.mscale = eval_loss.scale;
+            stepsize *= stepsize_multiplier;
+          } else if (stepsize_multiplier < 0) {
+            // No change in the coefficient and there hasn't been any change in the objective
+            // function yet.
+            // Reduce the step size.
+            stepsize *= config_.linesearch_ss_multiplier;
+          } else { // stepsize_multiplier > 1 (as < 1 must lead to a change if it did before)
+            break;
           }
-
-          // Increase step size.
-          stepsize *= config_.linesearch_ss_multiplier;
         }
 
         cycle_metrics.AddMetric("mscale_iterations", total_mscale_iterations);

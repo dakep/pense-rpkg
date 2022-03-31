@@ -118,9 +118,9 @@ mm_algorithm_options <- function (max_it = 500,
 #' @param reset_it number of iterations after which the residuals are
 #'   re-computed from scratch, to prevent numerical drifts from incremental
 #'   updates.
-#' @param linesearch_steps maximum number of steps used during linesearch.
-#' @param linesearch_denom smallest denominator for the stepsize considered
-#'   in the linesearch.
+#' @param linesearch_steps maximum number of steps used for line search.
+#' @param linesearch_mult multiplier to adjust the step size in the line
+#'   search.
 #'
 #' @return options for the CD algorithm to compute (adaptive) PENSE estimates.
 #' @seealso mm_algorithm_options to optimize the non-convex PENSE objective
@@ -129,18 +129,18 @@ mm_algorithm_options <- function (max_it = 500,
 #' @importFrom rlang abort
 cd_algorithm_options <- function (max_it = 1000, reset_it = 8,
                                   linesearch_steps = 10,
-                                  linesearch_denom = 1e-7) {
+                                  linesearch_mult = 0.2) {
   opts <- list(algorithm = 'cd',
                max_it = .as(max_it[[1L]], 'integer'),
                linesearch_steps = .as(linesearch_steps[[1L]], 'integer'),
-               linesearch_denom = .as(linesearch_denom[[1L]], 'numeric'),
+               linesearch_mult = .as(linesearch_mult[[1L]], 'numeric'),
                reset_it = .as(reset_it[[1L]], 'integer'))
 
-  if (opts$linesearch_denom >= 1) {
-    abort("`linesearch_denom` must be less than 1.")
+  if (opts$linesearch_mult <= 0 || opts$linesearch_mult >= 1) {
+    abort("`linesearch_mult` must be between 0 and 1.")
   }
-  if (opts$linesearch_steps < 2L) {
-    abort("`linesearch_steps` must be greater than 1.")
+  if (opts$linesearch_steps < 1L) {
+    abort("`linesearch_steps` must be at least 1.")
   }
   if (opts$max_it < 2L) {
     abort("`max_it` must be greater than 1.")

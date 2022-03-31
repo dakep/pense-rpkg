@@ -22,8 +22,8 @@ constexpr int kCDLsResetIt = 8;
 
 constexpr int kCDPenseMaxIt = 1000;
 constexpr int kCDPenseResetIt = 8;
+constexpr double kCDPenseLinesearchMult = 0.;
 constexpr int kCDPenseLinesearchSteps = 10;
-constexpr double kCDPenseLinesearchDenom = 1e-6;
 
 constexpr int kDalMaxIt = 100;
 constexpr int kDalMaxInnerIt = 100;
@@ -66,7 +66,7 @@ pense::CDPenseConfiguration Exporter<pense::CDPenseConfiguration>::get() const {
   const Rcpp::List config_list = as<const Rcpp::List>(r_obj_);
   pense::CDPenseConfiguration tmp = {
       pense::GetFallback(config_list, "max_it", kCDPenseMaxIt),
-      pense::GetFallback(config_list, "linesearch_denom", kCDPenseLinesearchDenom),
+      pense::GetFallback(config_list, "linesearch_mult", kCDPenseLinesearchMult),
       pense::GetFallback(config_list, "linesearch_steps", kCDPenseLinesearchSteps),
       pense::GetFallback(config_list, "reset_it", kCDPenseResetIt)
   };

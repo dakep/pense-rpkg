@@ -238,6 +238,13 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
     return mscale_;
   }
 
+  //! Get the M-scale function used by this S-loss.
+  //!
+  //! @return a constant reference to the M-scale function.
+  Mscale<RhoBisquare>& mscale() noexcept {
+    return mscale_;
+  }
+
  private:
   SLoss(const SLoss& other, ConstDataPtr data) :
       include_intercept_(other.include_intercept_), data_(data), mscale_(other.mscale_),

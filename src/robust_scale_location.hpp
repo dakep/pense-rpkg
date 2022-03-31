@@ -106,10 +106,16 @@ class Mscale {
   //!
   //! @param values a vector of values.
   //! @return the M-scale of the given values.
-  double operator()(const arma::vec& values, double scale = -1) const {
-    if (scale < 0) {
-      scale = InitialEstimate(values);
-    }
+  double operator()(const arma::vec& values) const {
+    return ComputeMscale(values, InitialEstimate(values));
+  }
+
+  //! Compute the M-scale of the given values. The initial guess is either the given scale (if positive),
+  //! the previous scale estimate (if availalbe), or the median of the absolute values (MAD).
+  //!
+  //! @param values a vector of values.
+  //! @return the M-scale of the given values.
+  double operator()(const arma::vec& values, double scale) const {
     return ComputeMscale(values, scale);
   }
 
@@ -122,6 +128,20 @@ class Mscale {
   double operator()(const arma::vec& values) {
     scale_ = ComputeMscale(values, InitialEstimate(values));
     return scale_;
+  }
+
+  //! Set the initial estimate of the scale.
+  //!
+  //! @param scale initial scale estimate (> 0).
+  void SetInitial(const double scale) noexcept {
+    scale_ = scale;
+  }
+
+  //! Get the number of iterations required for the last scale estimate.
+  //!
+  //! @return number of iterations, or -1 if none have been performed yet.
+  int LastIterations() const noexcept {
+    return it_;
   }
 
   //! Compute the 1st derivative of the M-scale function with respect to each element.
@@ -281,6 +301,25 @@ class Mscale {
     return scale;
   }
 
+  double ComputeMscale(const arma::vec& values, double scale) {
+    const double rho_denom = 1. / (delta_ * values.n_elem);
+    if (scale < kNumericZero) {
+      return 0;
+    }
+
+    it_ = 0;
+    double err = eps_;
+    // Start iterations
+    do {
+      const double rho_sum = rho_.SumStd(values, scale);
+      const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
+      err = std::abs(new_scale - scale);
+      scale = new_scale;
+    } while (++it_ < max_it_ && err > eps_ * scale);
+
+    return scale;
+  }
+
   double InitialEstimate(const arma::vec& values) const {
     // If the internal scale is already set, use it as initial estimate.
     if (scale_ > eps_) {
@@ -304,6 +343,7 @@ class Mscale {
   RhoFunction rho_;
   double delta_;
   int max_it_;
+  int it_ = -1;
   double eps_;
   double scale_;
 };

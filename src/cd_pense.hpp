@@ -253,6 +253,7 @@ class CDPense :
             if (eval_loss.loss < state_.objf_loss) {
               // We are finally at a point where the objective function improved.
               // Stop here.
+              updated_coef = try_coef;
               state_.objf_loss = eval_loss.loss;
               state_.mscale = eval_loss.scale;
               break;

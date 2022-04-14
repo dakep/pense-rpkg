@@ -128,7 +128,7 @@ mm_algorithm_options <- function (max_it = 500,
 #' @export
 #' @importFrom rlang abort
 cd_algorithm_options <- function (max_it = 1000, reset_it = 8,
-                                  linesearch_steps = 10,
+                                  linesearch_steps = 4,
                                   linesearch_mult = 0.2) {
   opts <- list(algorithm = 'cd',
                max_it = .as(max_it[[1L]], 'integer'),

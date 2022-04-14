@@ -500,7 +500,7 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
                                   sparse = mest_opts$sparse,
                                   standardize = standardize, robust = TRUE,
                                   mscale_opts = mscale_opts,
-                                  bdp = mscale_opts$delta, scale_cc = mscale_opts$cc)
+                                  bdp = mscale_opts$delta, cc = mscale_opts$cc)
     # Compute only the 0-based solution.
     mest_opts$strategy_0 <- TRUE
     lambda <- lapply(args$alpha, FUN = .regmest_lambda_grid,
@@ -524,7 +524,7 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
                                 sparse = mest_opts$sparse,
                                 mscale_opts = mscale_opts,
                                 bdp = mscale_opts$delta,
-                                scale_cc = mscale_opts$cc)
+                                cc = mscale_opts$cc)
 
   # Scale penalty loadings appropriately
   penalty_loadings <- penalty_loadings / std_data$scale_x

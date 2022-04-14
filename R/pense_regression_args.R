@@ -178,7 +178,7 @@
       robust = TRUE,
       mscale_opts = args$mscale_opts,
       bdp = args$pense_opts$mscale$delta,
-      scale_cc = args$pense_opts$mscale$cc)
+      cc = args$pense_opts$mscale$cc)
 
     # Compute only the 0-based solution.
     args$pense_opts$strategy_enpy_individual <- FALSE
@@ -206,7 +206,7 @@
     sparse = args$pense_opts$sparse,
     mscale_opts = args$mscale_opts,
     bdp = args$pense_opts$mscale$delta,
-    scale_cc = args$pense_opts$mscale$cc)
+    cc = args$pense_opts$mscale$cc)
 
   # Scale penalty loadings appropriately
   args$penalty_loadings <- args$penalty_loadings / args$std_data$scale_x

@@ -210,6 +210,7 @@ class CDPense :
     const auto& data = loss_->data();
 
     while (iter++ < max_it) {
+      double coef_change = 0;
       auto& iteration_metrics = metrics->CreateSubMetrics("cd_iteration");
       iteration_metrics.AddMetric("iter", iter);
 
@@ -275,6 +276,7 @@ class CDPense :
         iteration_metrics.AddMetric("mscale_iterations_int", total_mscale_iterations);
 
         if (ls_step > 0) {
+          coef_change += std::abs(state_.coefs.intercept - updated_coef);
           state_.coefs.intercept = updated_coef;
           iteration_metrics.AddMetric("ls_stepsize_int", stepsize / lipschitz_bound_intercept_);
           iteration_metrics.AddMetric("ls_steps_int", ls_step);
@@ -370,18 +372,20 @@ class CDPense :
 
         cycle_metrics.AddMetric("mscale_iterations", total_mscale_iterations);
         if (ls_step > 0 && std::abs(updated_coef - state_.coefs.beta[j]) > kNumericZero) {
+          coef_change += std::abs(state_.coefs.beta[j] - updated_coef);
           state_.coefs.beta[j] = updated_coef;
           cycle_metrics.AddMetric("ls_stepsize", stepsize / lipschitz_bounds_[j]);
           cycle_metrics.AddMetric("ls_steps", ls_step);
         } else {
           // The coefficient value did not change.
           cycle_metrics.AddMetric("ls_steps", 0);
-          cycle_metrics.AddMetric("stepsize", 0.);
+          cycle_metrics.AddMetric("ls_stepsize", 0.);
         }
       }
 
       const double objf_change = (state_.objf_loss + state_.objf_pen) - objf_before_iter;
-      iteration_metrics.AddMetric("change", objf_change * objf_change);
+      iteration_metrics.AddMetric("change", objf_change);
+      iteration_metrics.AddMetric("coef_change", coef_change);
 
       if (objf_change * objf_change < convergence_tolerance_ * convergence_tolerance_) {
         // The objective function value did not change. Algorithm converged.

@@ -178,7 +178,8 @@ class AdaptiveTightening : public InnerToleranceTightening<Optimizer> {
   explicit AdaptiveTightening(Optimizer* optimizer, const double outer_tolerance, const double inner_tolerance,
                               const int steps) noexcept
       : InnerToleranceTightening<Optimizer>(optimizer, inner_tolerance),
-        multiplier_(std::pow(inner_tolerance / std::sqrt(outer_tolerance), 1. / steps)) {
+        multiplier_(std::pow(inner_tolerance / std::sqrt(outer_tolerance), 1. / steps)),
+        min_inner_tolerance_(inner_tolerance * 0.1) {
     // Start with the sqrt of the outer tolerance.
     this->PropagateUpdate(std::sqrt(outer_tolerance));
   }
@@ -187,16 +188,17 @@ class AdaptiveTightening : public InnerToleranceTightening<Optimizer> {
   void Tighten(const double outer_change) noexcept override {
     const double tol = this->current_tolerance();
     if (outer_change < tol) {
-      this->PropagateUpdate(tol * multiplier_);
+      this->PropagateUpdate(std::max(tol * multiplier_, min_inner_tolerance_));
     }
   }
 
   void FastTighten() noexcept override {
-    this->PropagateUpdate(this->current_tolerance() * multiplier_ * multiplier_);
+    this->PropagateUpdate(std::max(this->current_tolerance() * multiplier_ * multiplier_, min_inner_tolerance_));
   }
 
  private:
   const double multiplier_;
+  const double min_inner_tolerance_;
 };
 
 }  // namespace mm_optimizer
@@ -536,7 +538,7 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
   }
 
   double InnerConvergenceTolerance(std::true_type) const noexcept {
-    return optimizer_.convergence_tolerance();
+    return 0.5 * optimizer_.convergence_tolerance();
   }
 
   constexpr double InnerConvergenceTolerance(std::false_type) const noexcept {

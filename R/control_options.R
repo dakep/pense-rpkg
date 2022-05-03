@@ -118,6 +118,7 @@ mm_algorithm_options <- function (max_it = 500,
 #' @param reset_it number of iterations after which the residuals are
 #'   re-computed from scratch, to prevent numerical drifts from incremental
 #'   updates.
+#' @param linesearch perform linesearch to determine a better step-size.
 #' @param linesearch_steps maximum number of steps used for line search.
 #' @param linesearch_mult multiplier to adjust the step size in the line
 #'   search.
@@ -128,10 +129,12 @@ mm_algorithm_options <- function (max_it = 500,
 #' @export
 #' @importFrom rlang abort
 cd_algorithm_options <- function (max_it = 1000, reset_it = 8,
+                                  linesearch = FALSE,
                                   linesearch_steps = 4,
                                   linesearch_mult = 0.2) {
   opts <- list(algorithm = 'cd',
                max_it = .as(max_it[[1L]], 'integer'),
+               linesearch = .as(linesearch[[1L]], 'logical'),
                linesearch_steps = .as(linesearch_steps[[1L]], 'integer'),
                linesearch_mult = .as(linesearch_mult[[1L]], 'numeric'),
                reset_it = .as(reset_it[[1L]], 'integer'))

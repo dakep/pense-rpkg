@@ -236,13 +236,16 @@ class CDPense :
         if (!config_.linesearch) {
           state_.coefs.intercept -= gradlip.gradient * gradlip.lipschitz_constant;
           state_.residuals += updated_coef - state_.coefs.intercept;
+
           const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
+          total_mscale_iterations = loss_->mscale().LastIterations();
+
           state_.objf_loss = eval_loss.loss;
           state_.mscale = eval_loss.scale;
-          total_mscale_iterations += loss_->mscale().LastIterations();
           coef_change += std::abs(state_.coefs.intercept - updated_coef);
+
           iteration_metrics.AddMetric("ls_stepsize_int", gradlip.lipschitz_constant);
-          iteration_metrics.AddMetric("ls_stepsize_int_sloss", lipschitz_bound_intercept_);
+          iteration_metrics.AddMetric("ls_stepsize_int_sloss", 1 / lipschitz_bound_intercept_);
         } else {
           // Start line search with the step in the middle and increase or decrease based on the results.
           double stepsize = lipschitz_bound_intercept_ * stepsize_start_mult;
@@ -325,12 +328,14 @@ class CDPense :
           if (std::abs(state_.coefs.beta[j] - updated_coef) > kNumericZero) {
             state_.residuals += (updated_coef - state_.coefs.beta[j]) * data.cx().col(j);
             const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
+            total_mscale_iterations = loss_->mscale().LastIterations();
+
             state_.objf_loss = eval_loss.loss;
             state_.mscale = eval_loss.scale;
-            total_mscale_iterations += loss_->mscale().LastIterations();
             coef_change += std::abs(state_.coefs.beta[j] - updated_coef);
+
             cycle_metrics.AddMetric("ls_stepsize", gradlip.lipschitz_constant);
-            cycle_metrics.AddMetric("ls_stepsize_sloss", lipschitz_bounds_[j]);
+            cycle_metrics.AddMetric("ls_stepsize_sloss", 1 / lipschitz_bounds_[j]);
           }
         } else {
           double stepsize = stepsize_start_mult * lipschitz_bounds_[j];

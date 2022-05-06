@@ -8,6 +8,7 @@ S-estimates}
 cd_algorithm_options(
   max_it = 1000,
   reset_it = 8,
+  linesearch = FALSE,
   linesearch_steps = 4,
   linesearch_mult = 0.2
 )
@@ -18,6 +19,8 @@ cd_algorithm_options(
 \item{reset_it}{number of iterations after which the residuals are
 re-computed from scratch, to prevent numerical drifts from incremental
 updates.}
+
+\item{linesearch}{perform linesearch to determine a better step-size.}
 
 \item{linesearch_steps}{maximum number of steps used for line search.}
 

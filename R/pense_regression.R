@@ -523,9 +523,9 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
            # If there are other individual starts, only use the ones with
            # correct `alpha`
            if (length(args$optional_args$individual_starts) > 0L) {
-             args$optional_args$individual_starts <-
-               .filter_list(args$optional_args$individual_starts, 'alpha',
-                            alpha)
+             args$optional_args$individual_starts <- lapply(
+               args$optional_args$individual_starts,
+               FUN = .filter_list, what = 'alpha', value = alpha)
            }
 
            fit <- .pense_internal(x = args$std_data$x, y = args$std_data$y,

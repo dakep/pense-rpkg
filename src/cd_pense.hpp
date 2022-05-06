@@ -233,6 +233,8 @@ class CDPense :
         int total_mscale_iterations = 0;
         double updated_coef = state_.coefs.intercept;
 
+        iteration_metrics.AddMetric("gradient_int", gradlip.gradient);
+
         if (!config_.linesearch) {
           state_.coefs.intercept -= gradlip.gradient * gradlip.lipschitz_constant;
           state_.residuals += updated_coef - state_.coefs.intercept;
@@ -251,8 +253,6 @@ class CDPense :
           double stepsize = lipschitz_bound_intercept_ * stepsize_start_mult;
           int ls_step = -1;
           double stepsize_multiplier = 1;
-
-          iteration_metrics.AddMetric("gradient_int", gradlip.gradient);
 
           while (ls_step++ < config_.linesearch_ss_num) {
             const double try_coef = state_.coefs.intercept - gradlip.gradient / stepsize;
@@ -299,7 +299,6 @@ class CDPense :
             stepsize *= stepsize_multiplier;
           }
 
-
           if (ls_step > 0) {
             coef_change += std::abs(state_.coefs.intercept - updated_coef);
             state_.coefs.intercept = updated_coef;
@@ -320,7 +319,10 @@ class CDPense :
         auto& cycle_metrics = iteration_metrics.CreateSubMetrics("coordinate");
         auto gradlip = GradientAndSurrogateLipschitz(j);
         int total_mscale_iterations = 0;
+        const double objf_pen_prev = state_.objf_pen - PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
         double updated_coef = state_.coefs.beta[j];
+
+        cycle_metrics.AddMetric("gradient", gradlip.gradient);
 
         if (!config_.linesearch) {
           state_.coefs.beta[j] = UpdateSlope(j, gradlip.lipschitz_constant, gradlip.gradient, IsAdaptiveTag{});
@@ -331,6 +333,7 @@ class CDPense :
             total_mscale_iterations = loss_->mscale().LastIterations();
 
             state_.objf_loss = eval_loss.loss;
+            state_.objf_pen = objf_pen_prev + PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
             state_.mscale = eval_loss.scale;
             coef_change += std::abs(state_.coefs.beta[j] - updated_coef);
 
@@ -339,7 +342,6 @@ class CDPense :
           }
         } else {
           double stepsize = stepsize_start_mult * lipschitz_bounds_[j];
-          const double objf_pen_prev = state_.objf_pen - PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
           int ls_step = -1;
           double stepsize_multiplier = -1;
 

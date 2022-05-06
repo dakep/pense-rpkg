@@ -338,16 +338,6 @@
   }
 
   args
-  # return(list(std_data = std_data,
-  #             binary_response = response$binary,
-  #             alpha = alpha,
-  #             lambda = lambda,
-  #             enpy_lambda_inds = enpy_lambda_inds,
-  #             penalty_loadings = penalty_loadings,
-  #             pense_opts = pense_opts,
-  #             enpy_opts = enpy_opts,
-  #             optional_args = optional_args,
-  #             restore_coef_length = restore_coef_length))
 }
 
 ## Make a list of initial estimates

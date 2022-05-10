@@ -107,7 +107,7 @@
   if (args$pense_opts$comparison_tol < args$pense_opts$eps) {
     abort("`comparison_tol` must not be less than `eps`")
   }
-  if (args$pense_opts$explore_it < 1L) {
+  if (args$pense_opts$explore_it < 0L) {
     abort("`explore_it` must not be less than 0")
   }
 

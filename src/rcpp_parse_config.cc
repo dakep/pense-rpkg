@@ -67,7 +67,6 @@ pense::CDPenseConfiguration Exporter<pense::CDPenseConfiguration>::get() const {
   const Rcpp::List config_list = as<const Rcpp::List>(r_obj_);
   pense::CDPenseConfiguration tmp = {
       pense::GetFallback(config_list, "max_it", kCDPenseMaxIt),
-      pense::GetFallback(config_list, "linesearch", kCDPenseEnableLinesearch),
       pense::GetFallback(config_list, "linesearch_mult", kCDPenseLinesearchMult),
       pense::GetFallback(config_list, "linesearch_steps", kCDPenseLinesearchSteps),
       pense::GetFallback(config_list, "reset_it", kCDPenseResetIt)

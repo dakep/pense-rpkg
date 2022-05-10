@@ -302,9 +302,11 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   }
 
   RList combined_reg_path;
+  auto penalty_it = penalties.cbegin();
   while (!reg_paths.End()) {
     RList solutions;
     Metrics& sub_metrics = metrics.CreateSubMetrics("lambda");
+    sub_metrics.AddMetric("lambda", (penalty_it++)->lambda());
 
     // Compute the optima at the next penalty level.
     for (auto&& optimum : reg_paths.Next()) {

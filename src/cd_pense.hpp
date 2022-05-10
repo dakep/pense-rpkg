@@ -25,8 +25,6 @@ namespace pense {
 struct CDPenseConfiguration {
   //! Maximum number of iterations allowed.
   int max_it;
-  //! Enable/disable linesearch
-  bool linesearch;
   //! Multiplier for adjusting the step size during line search.
   double linesearch_ss_multiplier;
   //! Number of step sizes to be considered for line search.
@@ -36,11 +34,11 @@ struct CDPenseConfiguration {
 };
 
 namespace coorddesc {
-constexpr CDPenseConfiguration kDefaultCDConfiguration = { 1000, false, 1e-6, 10, 8 };
+constexpr CDPenseConfiguration kDefaultCDConfiguration = { 1000, 0.5, 10, 8 };
 
 struct SurrogateGradient {
   const double gradient;
-  const double lipschitz_constant;
+  double lipschitz_constant;
 };
 
 template<class Coefficients>
@@ -213,12 +211,7 @@ class CDPense :
     }
 
     int iter = 0;
-    const double stepsize_start_mult = std::pow(config_.linesearch_ss_multiplier, config_.linesearch_ss_num);
     const auto& data = loss_->data();
-
-    // if (!config_.linesearch) {
-    //   config_.linesearch_ss_num = 1;
-    // }
 
     while (iter++ < max_it) {
       double coef_change = 0;
@@ -226,93 +219,6 @@ class CDPense :
       iteration_metrics.AddMetric("iter", iter);
 
       const double objf_before_iter = state_.objf_loss + state_.objf_pen;
-
-      if (loss_->IncludeIntercept()) {
-        // If we don't do linesearch, also compute the lipschitz constant of the surrogate WLS loss.
-        auto gradlip = GradientAndSurrogateLipschitz();
-        int total_mscale_iterations = 0;
-        double updated_coef = state_.coefs.intercept;
-
-        iteration_metrics.AddMetric("gradient_int", gradlip.gradient);
-
-        if (!config_.linesearch) {
-          state_.coefs.intercept -= gradlip.gradient * gradlip.lipschitz_constant;
-          state_.residuals += updated_coef - state_.coefs.intercept;
-
-          const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
-          total_mscale_iterations = loss_->mscale().LastIterations();
-
-          state_.objf_loss = eval_loss.loss;
-          state_.mscale = eval_loss.scale;
-          coef_change += std::abs(state_.coefs.intercept - updated_coef);
-
-          iteration_metrics.AddMetric("ls_stepsize_int", gradlip.lipschitz_constant);
-          iteration_metrics.AddMetric("ls_stepsize_int_sloss", 1 / lipschitz_bound_intercept_);
-        } else {
-          // Start line search with the step in the middle and increase or decrease based on the results.
-          double stepsize = lipschitz_bound_intercept_ * stepsize_start_mult;
-          int ls_step = -1;
-          double stepsize_multiplier = 1;
-
-          while (ls_step++ < config_.linesearch_ss_num) {
-            const double try_coef = state_.coefs.intercept - gradlip.gradient / stepsize;
-            state_.residuals += updated_coef - try_coef;
-            const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
-            total_mscale_iterations += loss_->mscale().LastIterations();
-
-            if (ls_step == 0) {
-              stepsize_multiplier = (eval_loss.loss <= state_.objf_loss) ?
-                config_.linesearch_ss_multiplier : (1 / config_.linesearch_ss_multiplier);
-            }
-
-            if (stepsize_multiplier < 1) {
-              if (eval_loss.loss > state_.objf_loss) {
-                // Objective did not improve further. Rewind residuals and stop line search.
-                state_.residuals -= updated_coef - try_coef;
-                loss_->mscale().SetInitial(state_.mscale);
-                break;
-              }
-
-              // Updating the objective function here ensures that we will go as long as there is more improvement.
-              state_.objf_loss = eval_loss.loss;
-              state_.mscale = eval_loss.scale;
-            } else { // stepsize_multiplier >= 1
-              if (eval_loss.loss < state_.objf_loss) {
-                // We are finally at a point where the objective function improved.
-                // Stop here.
-                updated_coef = try_coef;
-                state_.objf_loss = eval_loss.loss;
-                state_.mscale = eval_loss.scale;
-                break;
-              } else if (stepsize > lipschitz_bound_intercept_) {
-                // We are at the upper end of the step size range and haven't seen an improvement.
-                // Stop here.
-                ls_step = 0;
-                if (std::abs(updated_coef - state_.coefs.intercept) > kNumericZero) {
-                  state_.residuals += try_coef - state_.coefs.intercept;
-                }
-                break;
-              }
-            }
-
-            updated_coef = try_coef;
-            stepsize *= stepsize_multiplier;
-          }
-
-          if (ls_step > 0) {
-            coef_change += std::abs(state_.coefs.intercept - updated_coef);
-            state_.coefs.intercept = updated_coef;
-            iteration_metrics.AddMetric("ls_stepsize_int", stepsize / lipschitz_bound_intercept_);
-            iteration_metrics.AddMetric("ls_steps_int", ls_step);
-          } else {
-            // The coefficient value did not change.
-            iteration_metrics.AddMetric("ls_stepsize_int", 0.);
-            iteration_metrics.AddMetric("ls_steps_int", 0);
-          }
-        }
-
-        iteration_metrics.AddMetric("mscale_iterations_int", total_mscale_iterations);
-      }
 
       for (arma::uword j = 0; j < data.n_pred(); ++j) {
         // @TODO -- this iteration is inefficient if we have a sparse vector!
@@ -322,114 +228,115 @@ class CDPense :
         const double objf_pen_prev = state_.objf_pen - PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
         double updated_coef = state_.coefs.beta[j];
 
+        cycle_metrics.AddMetric("index", static_cast<int>(j));
         cycle_metrics.AddMetric("gradient", gradlip.gradient);
+        cycle_metrics.AddMetric("lipschitz", lipschitz_bounds_[j]);
+        cycle_metrics.AddMetric("lipschitz_surrogate", gradlip.lipschitz_constant);
 
-        if (!config_.linesearch) {
-          state_.coefs.beta[j] = UpdateSlope(j, gradlip.lipschitz_constant, gradlip.gradient, IsAdaptiveTag{});
+        int ls_step = 0;
+        bool improved = false;
 
-          if (std::abs(state_.coefs.beta[j] - updated_coef) > kNumericZero) {
-            state_.residuals += (updated_coef - state_.coefs.beta[j]) * data.cx().col(j);
+        while (ls_step++ < config_.linesearch_ss_num) {
+          const double try_coef = UpdateSlope(j, gradlip.lipschitz_constant, gradlip.gradient, IsAdaptiveTag{});
+
+          if (std::abs(try_coef - state_.coefs.beta[j]) > kNumericZero) {
+            state_.residuals += (updated_coef - try_coef) * data.cx().col(j);
+
             const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
-            total_mscale_iterations = loss_->mscale().LastIterations();
+            const double new_objf_pen = objf_pen_prev + PenaltyContribution(try_coef, j, IsAdaptiveTag{});
+            const double new_objf = eval_loss.loss + new_objf_pen;
 
-            state_.objf_loss = eval_loss.loss;
-            state_.objf_pen = objf_pen_prev + PenaltyContribution(state_.coefs.beta[j], j, IsAdaptiveTag{});
-            state_.mscale = eval_loss.scale;
-            coef_change += std::abs(state_.coefs.beta[j] - updated_coef);
+            total_mscale_iterations += loss_->mscale().LastIterations();
 
-            cycle_metrics.AddMetric("ls_stepsize", gradlip.lipschitz_constant);
-            cycle_metrics.AddMetric("ls_stepsize_sloss", 1 / lipschitz_bounds_[j]);
-          }
-        } else {
-          double stepsize = stepsize_start_mult * lipschitz_bounds_[j];
-          int ls_step = -1;
-          double stepsize_multiplier = -1;
+            if (new_objf < state_.objf_loss + state_.objf_pen + convergence_tolerance_) {
+              // The objective function improved or did not change much. Stop here.
+              coef_change += std::abs(state_.coefs.beta[j] - try_coef);
 
-          cycle_metrics.AddMetric("index", static_cast<int>(j));
-          cycle_metrics.AddMetric("gradient", gradlip.gradient);
+              state_.coefs.beta[j] = try_coef;
+              state_.objf_loss = eval_loss.loss;
+              state_.objf_pen = new_objf_pen;
+              state_.mscale = eval_loss.scale;
 
-          while (ls_step++ < config_.linesearch_ss_num) {
-            const double try_coef = UpdateSlope(j, stepsize, gradlip.gradient, IsAdaptiveTag{});
-
-            if (std::abs(try_coef - state_.coefs.beta[j]) > kNumericZero) {
-              state_.residuals += (updated_coef - try_coef) * data.cx().col(j);
-
-              const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
-              const double new_objf_pen = objf_pen_prev + PenaltyContribution(try_coef, j, IsAdaptiveTag{});
-              const double new_objf = eval_loss.loss + new_objf_pen;
-
-              total_mscale_iterations += loss_->mscale().LastIterations();
-
-              // After the first step that produces a change in the coefficient, determine
-              // which way we want to go.
-              if (stepsize_multiplier < 0) {
-                stepsize_multiplier = (new_objf <= state_.objf_loss + state_.objf_pen) ?
-                  config_.linesearch_ss_multiplier : (1 / config_.linesearch_ss_multiplier);
-
-                if (stepsize_multiplier > 1 && ls_step > 0) {
-                  // There were no changes for previous decreases in the step size,
-                  // and this change leads to an increase in the objective function.
-                  // Stop the line search.
-                  stepsize = lipschitz_bounds_[j] + kNumericZero;
-                  break;
-                }
-              }
-
-              if (stepsize_multiplier < 1) {
-                if (new_objf > state_.objf_loss + state_.objf_pen) {
-                  // Objective did not improve further. Rewind residuals and stop line search.
-                  state_.residuals -= (updated_coef - try_coef) * data.cx().col(j);
-                  loss_->mscale().SetInitial(state_.mscale);
-                  break;
-                }
-
-                // Updating the objective function here ensures that we will go as long as there is more improvement.
-                state_.objf_loss = eval_loss.loss;
-                state_.objf_pen = new_objf_pen;
-                state_.mscale = eval_loss.scale;
-              } else {
-                if (new_objf < state_.objf_loss + state_.objf_pen) {
-                  // We are finally at a point where the objective function improved.
-                  // Stop here.
-                  updated_coef = try_coef;
-                  state_.objf_loss = eval_loss.loss;
-                  state_.objf_pen = new_objf_pen;
-                  state_.mscale = eval_loss.scale;
-                  break;
-                } else if (stepsize >= lipschitz_bounds_[j]) {
-                  // We are at the upper end of the step size range and haven't seen an improvement.
-                  // Stop here.
-                  ls_step = 0;
-                  state_.residuals += (try_coef - state_.coefs.beta[j]) * data.cx().col(j);
-                  break;
-                }
-              }
-
+              improved = true;
+              cycle_metrics.AddMetric("ls_stepsize", gradlip.lipschitz_constant);
+              break;
+            } else if (gradlip.lipschitz_constant >= lipschitz_bounds_[j]) {
+              // We are at the upper end of the step size range and haven't seen an improvement.
+              // Stop here.
               updated_coef = try_coef;
-              stepsize *= stepsize_multiplier;
-            } else if (stepsize_multiplier < 0) {
-              // No change in the coefficient and there hasn't been any change in the objective
-              // function yet.
-              // Reduce the step size.
-              stepsize *= config_.linesearch_ss_multiplier;
-            } else { // stepsize_multiplier > 1 (as < 1 must lead to a change if it did before)
               break;
             }
-          }
 
-          if (ls_step > 0 && std::abs(updated_coef - state_.coefs.beta[j]) > kNumericZero) {
-            coef_change += std::abs(state_.coefs.beta[j] - updated_coef);
-            state_.coefs.beta[j] = updated_coef;
-            cycle_metrics.AddMetric("ls_stepsize", stepsize / lipschitz_bounds_[j]);
-            cycle_metrics.AddMetric("ls_steps", ls_step);
+            updated_coef = try_coef;
+            gradlip.lipschitz_constant /= config_.linesearch_ss_multiplier;
           } else {
-            // The coefficient value did not change.
-            cycle_metrics.AddMetric("ls_steps", 0);
-            cycle_metrics.AddMetric("ls_stepsize", 0.);
+            break;
           }
         }
 
+        if (!improved) {
+          if (std::abs(updated_coef - state_.coefs.beta[j]) > kNumericZero) {
+            state_.residuals += (updated_coef - state_.coefs.beta[j]) * data.cx().col(j);
+          }
+          cycle_metrics.AddMetric("ls_stepsize", 0.);
+        }
+
+        cycle_metrics.AddMetric("ls_steps", ls_step);
         cycle_metrics.AddMetric("mscale_iterations", total_mscale_iterations);
+      }
+
+      // After updating the slope coefficients, update the intercept.
+      if (loss_->IncludeIntercept()) {
+        // If we don't do linesearch, also compute the lipschitz constant of the surrogate WLS loss.
+        auto gradlip = GradientAndSurrogateLipschitz();
+        int total_mscale_iterations = 0;
+        double updated_coef = state_.coefs.intercept;
+        iteration_metrics.AddMetric("gradient_int", gradlip.gradient);
+        iteration_metrics.AddMetric("lipschitz_int", lipschitz_bound_intercept_);
+        iteration_metrics.AddMetric("lipschitz_int_surrogate", gradlip.lipschitz_constant);
+
+        int ls_step = 0;
+        bool improved = false;
+
+        while (ls_step++ < config_.linesearch_ss_num) {
+          const double try_coef = state_.coefs.intercept - gradlip.gradient / gradlip.lipschitz_constant;
+          state_.residuals += updated_coef - try_coef;
+          const auto eval_loss = loss_->EvaluateResiduals(state_.residuals);
+          total_mscale_iterations += loss_->mscale().LastIterations();
+
+          if (eval_loss.loss < state_.objf_loss + convergence_tolerance_) {
+            // The objective function improved or did not change much. Stop here.
+            coef_change += std::abs(state_.coefs.intercept - try_coef);
+
+            state_.coefs.intercept = try_coef;
+            state_.objf_loss = eval_loss.loss;
+            state_.mscale = eval_loss.scale;
+
+            improved = true;
+
+            iteration_metrics.AddMetric("ls_stepsize_int", gradlip.lipschitz_constant);
+            iteration_metrics.AddMetric("ls_steps_int", ls_step);
+            break;
+          } else if (gradlip.lipschitz_constant > lipschitz_bound_intercept_) {
+            // We are at the upper end of the step size range and haven't seen an improvement.
+            // Stop here.
+            updated_coef = try_coef;
+            state_.residuals += try_coef - state_.coefs.intercept;
+            // The coefficient value did not change.
+            break;
+          }
+
+          updated_coef = try_coef;
+          gradlip.lipschitz_constant /= config_.linesearch_ss_multiplier;
+        }
+
+        if (!improved) {
+          state_.residuals += updated_coef - state_.coefs.intercept;
+          iteration_metrics.AddMetric("ls_stepsize_int", 0.);
+        }
+
+        iteration_metrics.AddMetric("ls_steps_int", ls_step);
+        iteration_metrics.AddMetric("mscale_iterations_int", total_mscale_iterations);
       }
 
       const double objf_change = (state_.objf_loss + state_.objf_pen) - objf_before_iter;
@@ -477,7 +384,7 @@ class CDPense :
     const arma::vec wgt = loss_->mscale().rho().Weight(state_.residuals, state_.mscale);
     const double gradient = -state_.mscale * state_.mscale * arma::dot(wgt, state_.residuals) /
       arma::dot(wgt, arma::square(state_.residuals));
-    const double lipschitz = arma::mean(wgt);
+    const double lipschitz = 2 * arma::mean(wgt);
     return coorddesc::SurrogateGradient { gradient, lipschitz };
   }
 
@@ -486,21 +393,8 @@ class CDPense :
     const arma::vec wgt = loss_->mscale().rho().Weight(state_.residuals, state_.mscale);
     const double gradient = -state_.mscale * state_.mscale * arma::dot(wgt % xmat.col(j), state_.residuals) /
       arma::dot(wgt, arma::square(state_.residuals));
-    const double lipschitz = arma::mean(wgt % arma::square(xmat.col(j)));
+    const double lipschitz = 2 * arma::mean(wgt % arma::square(xmat.col(j)));
     return coorddesc::SurrogateGradient { gradient, lipschitz };
-  }
-
-  double Gradient() {
-    arma::vec psi = loss_->mscale().rho().Derivative(state_.residuals, state_.mscale);
-    return -state_.mscale * state_.mscale *
-      arma::accu(psi) / (arma::dot(psi, state_.residuals));
-  }
-
-  double Gradient(const arma::uword j) {
-    auto&& xmat = loss_->data().cx();
-    arma::vec psi = loss_->mscale().rho().Derivative(state_.residuals, state_.mscale);
-    return -state_.mscale * state_.mscale *
-      arma::dot(psi, xmat.col(j)) / (arma::dot(psi, state_.residuals));
   }
 
   double UpdateSlope (const arma::uword j, const double stepsize, const double gradient,

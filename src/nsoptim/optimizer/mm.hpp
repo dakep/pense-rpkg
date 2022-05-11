@@ -451,9 +451,9 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
       if (rel_difference < convergence_tolerance_) {
         if (final_iterations || !tightener->CanTightenFurther()) {
           coefs_ = std::move(optimum.coefs);
+          metrics->AddMetric("iter", iter);
           metrics->AddDetail("final_rel_difference", rel_difference);
           metrics->AddDetail("final_innner_tol", tightener->current_tolerance());
-          metrics->AddMetric("iter", iter);
           // The value of the convex surrogate should be close enough (actually it should be equal) to the
           // true objective. Therefore, there is no need to re-evaluate the loss.
           return MakeOptimum(*loss_, *penalty_, coefs_, optimum.residuals, optimum.objf_value, std::move(metrics));
@@ -473,9 +473,9 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
           // If the inner convergence tolerance is already ridiculously small. Probably zig-zagging around
           // the optimum.
           if (!tightener->CanTightenFurther()) {
+            metrics->AddMetric("iter", iter);
             metrics->AddDetail("final_rel_difference", rel_difference);
             metrics->AddDetail("final_innner_tol", tightener->current_tolerance());
-            metrics->AddMetric("iter", iter);
             return MakeOptimum(*loss_, *penalty_, coefs_, residuals, objf_value, std::move(metrics),
                                OptimumStatus::kOk, "Possibly imprecise solution.");
           }

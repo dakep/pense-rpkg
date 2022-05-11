@@ -311,6 +311,7 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
     // Compute the optima at the next penalty level.
     for (auto&& optimum : reg_paths.Next()) {
       if (optimum.metrics) {
+        optimum.metrics->AddDetail("objf_value", optimum.objf_value);
         sub_metrics.AddSubMetrics(*optimum.metrics);
       }
       solutions.push_back(WrapOptimum(optimum));

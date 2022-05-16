@@ -42,8 +42,8 @@
   defaults <- formals(pense)
   args <- list2env(list(...))
   for (argname in names(defaults)) {
-    if (!(exists(argname, args))) {
-      # evaluate the default values in this environmen;t
+    if (!(exists(argname, args, inherits = FALSE))) {
+      # evaluate the default values in this environment
       args[[argname]] <- if (!is_missing(defaults[[argname]])) {
         eval(defaults[[argname]], envir = args)
       } else {

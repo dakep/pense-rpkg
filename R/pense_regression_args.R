@@ -42,7 +42,7 @@
   defaults <- formals(pense)
   args <- list2env(list(...))
   for (argname in names(defaults)) {
-    if (!(exists(argname, args))) {
+    if (!(exists(argname, args, inherits = FALSE))) {
       # evaluate the default values in this environment
       args[[argname]] <- if (!is_missing(defaults[[argname]])) {
         eval(defaults[[argname]], envir = args)
@@ -435,4 +435,3 @@
   rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda),
               length.out = nlambda)))
 }
-

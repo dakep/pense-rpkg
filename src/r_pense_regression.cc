@@ -17,7 +17,7 @@
 #include "robust_scale_location.hpp"
 #include "s_loss.hpp"
 #include "cd_pense.hpp"
-#include "regularization_path.hpp"
+#include "regularization_path_new.hpp"
 #include "constants.hpp"
 
 using Rcpp::as;
@@ -41,10 +41,10 @@ using SparseCoefs = nsoptim::RegressionCoefficients<arma::sp_vec>;
 using DenseCoefs = nsoptim::RegressionCoefficients<arma::vec>;
 
 template<typename Optimizer>
-using StartCoefficientsList = FwdList<FwdList<typename Optimizer::Coefficients>>;
+using CoefficientsList = FwdList<typename Optimizer::Coefficients>;
 
 template<typename Optimizer>
-using CoefficientsList = FwdList<typename Optimizer::Coefficients>;
+using StartCoefficientsList = FwdList<CoefficientsList<Optimizer>>;
 
 template<typename Optimizer>
 using PenaltyList = FwdList<typename Optimizer::PenaltyFunction>;
@@ -249,17 +249,24 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   optimizer.convergence_tolerance(eps);
 
   Metrics metrics("pense");
-  pense::RegPathCombined<SOptimizer> reg_paths(optimizer, loss, penalties,
-                                               GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
-                                               GetFallback(pense_opts, "nr_tracks", kDefaultTracks),
-                                               GetFallback(pense_opts, "explore_tol", kDefaultExploreTol),
-                                               GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
-                                               GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
-                                               GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
+  // pense::RegPathCombined<SOptimizer> reg_paths(optimizer, loss, penalties,
+  //                                              GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
+  //                                              GetFallback(pense_opts, "nr_tracks", kDefaultTracks),
+  //                                              GetFallback(pense_opts, "explore_tol", kDefaultExploreTol),
+  //                                              GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
+  //                                              GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
+  //                                              GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
+  pense::RegularizationPath<SOptimizer> reg_path(optimizer, loss, penalties,
+                                                 GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
+                                                 GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
+                                                 GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
+
+  reg_path.ExplorationOptions(GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
+                              GetFallback(pense_opts, "explore_tol", kDefaultExploreTol));
 
   // Compute the initial estimators
-  const auto cold_starts = EnpyInitialEstimates<SOptimizer>(loss, penalties, r_penalties, r_enpy_inds, r_enpy_opts,
-                                                            optional_args, &metrics);
+  auto&& cold_starts = EnpyInitialEstimates<SOptimizer>(loss, penalties, r_penalties, r_enpy_inds, r_enpy_opts,
+                                                        optional_args, &metrics);
 
   Rcpp::checkUserInterrupt();
 
@@ -267,22 +274,22 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   if (!cold_starts.empty()) {
     if (GetFallback(pense_opts, "strategy_enpy_individual", kDefaultStrategyEnpyIndividual)) {
       // Use the EN-PY solutions only for the penalty they were computed for.
-      reg_paths.Add(cold_starts);
+      reg_path.EmplaceIndividualStartingPoints(std::move(cold_starts));
     }
     if (GetFallback(pense_opts, "strategy_enpy_shared", kDefaultStrategyEnpyShared)) {
       // Use every EN-PY solution for all penalties.
       for (auto&& starts_at_lambda : cold_starts) {
         for (auto&& start : starts_at_lambda) {
-          reg_paths.Add(start);
+          reg_path.EmplaceSharedStartingPoint(std::move(start));
         }
       }
     }
   }
 
   // Enable computation of the 0-based solutions, if requested.
-  if (GetFallback(pense_opts, "strategy_0", kDefaultStrategy0)) {
-    reg_paths.Add();
-  }
+  // if (GetFallback(pense_opts, "strategy_0", kDefaultStrategy0)) {
+  //   reg_path.Emplace
+  // }
 
   // Enable computation of the regularization paths using shared starting points (i.e., the same starting
   // point at every penalty).

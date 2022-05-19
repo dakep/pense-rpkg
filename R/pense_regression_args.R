@@ -90,6 +90,7 @@
          strategy_other_shared = FALSE,
          algorithm = .pense_algorithm_id(algorithm_opts),
          intercept = !isFALSE(intercept),
+         warm_starts = !isFALSE(carry_forward[[1L]]),
          eps = .as(eps[[1L]], 'numeric'),
          comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
          explore_tol = .as(explore_tol[[1L]], 'numeric'),

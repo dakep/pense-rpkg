@@ -22,7 +22,6 @@ constexpr int kCDLsResetIt = 8;
 
 constexpr int kCDPenseMaxIt = 1000;
 constexpr int kCDPenseResetIt = 8;
-constexpr bool kCDPenseEnableLinesearch = false;
 constexpr double kCDPenseLinesearchMult = 0.;
 constexpr int kCDPenseLinesearchSteps = 10;
 

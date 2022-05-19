@@ -24,8 +24,8 @@ using Rcpp::as;
 using nsoptim::LsRegressionLoss;
 using nsoptim::Metrics;
 template<class LossFunction>
-using AugmentedRidgeOptimizer = nsoptim::AugmentedLarsOptimizer<LossFunction, nsoptim::RidgePenalty,
-                                                                nsoptim::RegressionCoefficients<arma::vec>>;
+using AugmentedRidgeOptimizer = nsoptim::AugmentedLarsOptimizer<
+  LossFunction, nsoptim::RidgePenalty, nsoptim::RegressionCoefficients<arma::vec>>;
 
 using pense::GetFallback;
 using pense::PyResult;
@@ -54,7 +54,7 @@ constexpr double kDefaultExploreTol = 0.1;
 constexpr double kDefaultComparisonTol = 1e-3;
 constexpr double kDefaultExploreIt = 20;
 constexpr int kDefaultMaxOptima = 25;
-constexpr int kDefaultTracks = 10;
+constexpr bool kDefaultUseWarmStarts = true;
 constexpr bool kDefaultStrategy0 = true;
 constexpr bool kDefaultStrategyEnpyShared = true;
 constexpr bool kDefaultStrategyEnpyIndividual = false;
@@ -66,11 +66,13 @@ constexpr int kDefaultNumberOfThreads = 1;
 //!
 //! @param py_res the results of the ENPY algorithm.
 //! @param penalties a list of the penalties.
-//! @param r_indices vector of 1-based indices in the penalties list at which the PY estimates were computed.
+//! @param r_indices vector of 1-based indices in the penalties list at which the PY estimates
+//!     were computed.
 //! @return a list the same length and order as `penalties`.
 template<typename Optimizer>
-StartCoefficientsList<Optimizer> PyResultToStartCoefficients(const FwdList<PyResult<Optimizer>>& py_res,
-                                                             const PenaltyList<Optimizer>& penalties, SEXP r_indices) {
+StartCoefficientsList<Optimizer> PyResultToStartCoefficients(
+     const FwdList<PyResult<Optimizer>>& py_res, const PenaltyList<Optimizer>& penalties,
+     SEXP r_indices) {
   const Rcpp::IntegerVector indices(r_indices);
   StartCoefficientsList<Optimizer> start_coefs;
 
@@ -99,8 +101,9 @@ StartCoefficientsList<Optimizer> PyResultToStartCoefficients(const FwdList<PyRes
 
 //! Add an estimate to the list of solutions.
 //!
-//! The coefficients at `iterator` are added to the list of solutions and the metrics at `iterator` are added
-//! to the given Metrics object. The iterator will not be incremented past the end.
+//! The coefficients at `iterator` are added to the list of solutions and the metrics at
+//! `iterator` are added to the given Metrics object. The iterator will not be incremented
+//! past the end.
 //!
 //! @param iterator iterator pointing to the estimate(s) to add.
 //! @param end end marker for the given iterator.
@@ -108,8 +111,8 @@ StartCoefficientsList<Optimizer> PyResultToStartCoefficients(const FwdList<PyRes
 //! @param solutions a list to add the estimate to.
 //! @return the updated iterator (if not yet pointing to the end).
 template<typename InputIterator>
-InputIterator AddEstimate(InputIterator iterator, InputIterator end, Metrics* metrics, Rcpp::List* solutions,
-                          const Rcpp::String& origin) {
+InputIterator AddEstimate(InputIterator iterator, InputIterator end, Metrics* metrics,
+                          Rcpp::List* solutions, const Rcpp::String& origin) {
   if (iterator != end) {
     if (iterator->metrics) {
       metrics->AddSubMetrics(std::move(*(iterator->metrics)));
@@ -123,8 +126,9 @@ InputIterator AddEstimate(InputIterator iterator, InputIterator end, Metrics* me
 
 //! Add a list of estimates to the list of solutions.
 //!
-//! The optima at `iterator` are added to the list of solutions and the metrics aof all optima `iterator` are added
-//! to the given Metrics object. The iterator will not be incremented past the end.
+//! The optima at `iterator` are added to the list of solutions and the metrics aof all optima
+//! `iterator` are added to the given Metrics object. The iterator will not be incremented
+//! past the end.
 //!
 //! @param iterator iterator pointing to the estimates to add.
 //! @param end end marker for the given iterator.
@@ -247,22 +251,19 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
 
   const double eps = GetFallback(pense_opts, "eps", pense::kDefaultConvergenceTolerance);
   optimizer.convergence_tolerance(eps);
+  optimizer.loss(loss);
 
   Metrics metrics("pense");
-  // pense::RegPathCombined<SOptimizer> reg_paths(optimizer, loss, penalties,
-  //                                              GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
-  //                                              GetFallback(pense_opts, "nr_tracks", kDefaultTracks),
-  //                                              GetFallback(pense_opts, "explore_tol", kDefaultExploreTol),
-  //                                              GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
-  //                                              GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
-  //                                              GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
-  pense::RegularizationPath<SOptimizer> reg_path(optimizer, loss, penalties,
-                                                 GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
-                                                 GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
-                                                 GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
+  pense::RegularizationPath<SOptimizer> reg_path(
+    optimizer, penalties,
+    GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
+    GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
+    GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
 
   reg_path.ExplorationOptions(GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
                               GetFallback(pense_opts, "explore_tol", kDefaultExploreTol));
+
+  reg_path.EnableWarmStarts(GetFallback(pense_opts, "warm_starts", kDefaultUseWarmStarts));
 
   // Compute the initial estimators
   auto&& cold_starts = EnpyInitialEstimates<SOptimizer>(loss, penalties, r_penalties, r_enpy_inds, r_enpy_opts,
@@ -287,9 +288,11 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   }
 
   // Enable computation of the 0-based solutions, if requested.
-  // if (GetFallback(pense_opts, "strategy_0", kDefaultStrategy0)) {
-  //   reg_path.Emplace
-  // }
+  if (GetFallback(pense_opts, "strategy_0", kDefaultStrategy0)) {
+    StartCoefficientsList<SOptimizer> zeros;
+    zeros.emplace_front(1, loss.ZeroCoefficients<typename SOptimizer::Coefficients>());
+    reg_path.EmplaceIndividualStartingPoints(std::move(zeros));
+  }
 
   // Enable computation of the regularization paths using shared starting points (i.e., the same starting
   // point at every penalty).
@@ -297,7 +300,7 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
       optional_args.containsElementNamed("shared_starts")) {
     auto shared_starts = as<CoefficientsList<SOptimizer>>(optional_args["shared_starts"]);
     for (auto&& start : shared_starts) {
-      reg_paths.Add(start);
+      reg_path.EmplaceSharedStartingPoint(std::move(start));
     }
   }
 
@@ -305,18 +308,22 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   // points, different for every penalty).
   if (GetFallback(pense_opts, "strategy_other_individual", kDefaultStrategyOtherIndividual) &&
       optional_args.containsElementNamed("individual_starts")) {
-    reg_paths.Add(as<StartCoefficientsList<SOptimizer>>(optional_args["individual_starts"]));
+    reg_path.EmplaceIndividualStartingPoints(
+      as<StartCoefficientsList<SOptimizer>>(optional_args["individual_starts"]));
   }
 
   RList combined_reg_path;
-  auto penalty_it = penalties.cbegin();
-  while (!reg_paths.End()) {
+  while (!reg_path.End()) {
     RList solutions;
     Metrics& sub_metrics = metrics.CreateSubMetrics("lambda");
-    sub_metrics.AddMetric("lambda", (penalty_it++)->lambda());
 
     // Compute the optima at the next penalty level.
-    for (auto&& optimum : reg_paths.Next()) {
+    auto next = reg_path.Next();
+
+    sub_metrics.AddMetric("alpha", next.penalty.alpha());
+    sub_metrics.AddMetric("lambda", next.penalty.lambda());
+
+    for (auto&& optimum : next.optima) {
       if (optimum.metrics) {
         optimum.metrics->AddDetail("objf_value", optimum.objf_value);
         sub_metrics.AddSubMetrics(*optimum.metrics);

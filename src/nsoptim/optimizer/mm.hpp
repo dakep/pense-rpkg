@@ -82,7 +82,9 @@ class InnerToleranceTightening {
   virtual void Tighten(const double) noexcept {}
 
   //! Tighten the inner convergence tolerance more aggressively.
-  virtual void FastTighten() noexcept {}
+  virtual void FastTighten() noexcept {
+    FullyTighten(IsIterativeAlgorithmTag{});
+  }
 
   //! Make the inner convergence tolerance as small as possible.
   void FullyTighten() noexcept {
@@ -302,7 +304,7 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
   //! Access the penalty function.
   //!
   //! @return the penalty function currently in use by the optimizer.
-  PenaltyFunction& penalty() const noexcept {
+  PenaltyFunction& penalty() const {
     if (!penalty_) {
       throw std::logic_error("no penalty set");
     }
@@ -496,8 +498,8 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
       try {
         optimizer_.loss(loss_->GetConvexSurrogate(residuals));
       } catch(...) {
-        metrics->AddMetric("final_rel_difference", iter);
-        metrics->AddDetail("rel_difference", rel_difference);
+        metrics->AddMetric("iter", iter);
+        metrics->AddDetail("final_rel_difference", rel_difference);
         metrics->AddDetail("final_innner_tol", tightener->current_tolerance());
         return MakeOptimum(*loss_, *penalty_, coefs_, residuals, std::move(metrics), OptimumStatus::kWarning,
                            "MM-algorithm did not converge");
@@ -508,8 +510,8 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
       objf_value = loss_->Evaluate(residuals) + penalty_->Evaluate(coefs_);
     }
 
-    metrics->AddMetric("final_rel_difference", iter);
-    metrics->AddDetail("rel_difference", rel_difference);
+    metrics->AddMetric("iter", iter);
+    metrics->AddDetail("final_rel_difference", rel_difference);
     metrics->AddDetail("final_innner_tol", tightener->current_tolerance());
     return MakeOptimum(*loss_, *penalty_, coefs_, residuals, std::move(metrics), OptimumStatus::kWarning,
                        "MM-algorithm did not converge");

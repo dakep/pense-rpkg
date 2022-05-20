@@ -93,6 +93,12 @@ class OrderedTuples {
     return size_;
   }
 
+  //! Clear all elements from the list.
+  void Clear() noexcept {
+    elements_.clear();
+    size_ = 0;
+  }
+
   //! Insert coefficients into the container.
   // template<typename... Args>
   InsertResult Emplace(Ts&&... args) {
@@ -288,9 +294,11 @@ class RegularizationPath {
   //! @param explore_it the number of iterations for exploration. If <= 0, no exploration will
   //!   be done and all starting points will be iterated to full convergence.
   //! @param explore_tol the numeric tolerance for exploring solutions.
-  void ExplorationOptions(const int explore_it, const double explore_tol) noexcept {
+  //! @param explored_keep how many explored solutions to keep for full concentration.
+  void ExplorationOptions(const int explore_it, const double explore_tol, const int explored_keep) noexcept {
     explore_it_ = explore_it;
     explore_tol_ = explore_tol;
+    explored_keep_ = explored_keep;
   }
 
   //! Enable/disable carrying forward solutions from the previous penalty.
@@ -343,6 +351,7 @@ class RegularizationPath {
   bool use_warm_start_ = true;
   int explore_it_ = 0;
   double explore_tol_ = 0;
+  int explored_keep_ = 1;
 
   alias::FwdList<UniqueCoefficients> individual_starts_;
   UniqueCoefficients shared_starts_;
@@ -352,7 +361,7 @@ class RegularizationPath {
   typename PenaltyList::const_iterator penalties_it_;
 
   ExploredSolutions Explore() {
-    ExploredSolutions explored_solutions(max_optima_, ExploredSolutionsOrder(comparison_tol_));
+    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(comparison_tol_));
 
     for (auto& start : individual_starts_it_->Elements()) {
       Optimizer optimizer(optimizer_template_);
@@ -379,7 +388,7 @@ class RegularizationPath {
         auto&& optimizer = std::get<1>(start);
         optimizer.convergence_tolerance(explore_tol_);
         optimizer.penalty(optimizer_template_.penalty());
-        auto optimum = optimizer.Optimize(std::get<0>(start).coefs, explore_it_);
+        auto optimum = optimizer.Optimize(explore_it_);
         explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                   std::move(optimizer), std::move(optimum.metrics));
 
@@ -418,6 +427,9 @@ class RegularizationPath {
 
   alias::Optima<Optimizer> Concentrate(ExploredSolutions&& explored) {
     const double conv_threshold = optimizer_template_.convergence_tolerance();
+
+    best_starts_.Clear();
+
     for (auto&& start : explored.Elements()) {
       auto&& optimizer = std::get<2>(start);
       optimizer.convergence_tolerance(conv_threshold);

@@ -53,7 +53,8 @@ namespace {
 constexpr double kDefaultExploreTol = 0.1;
 constexpr double kDefaultComparisonTol = 1e-3;
 constexpr double kDefaultExploreIt = 20;
-constexpr int kDefaultMaxOptima = 25;
+constexpr int kDefaultMaxOptima = 10;
+constexpr int kDefaultExploreSolutions = 10;
 constexpr bool kDefaultUseWarmStarts = true;
 constexpr bool kDefaultStrategy0 = true;
 constexpr bool kDefaultStrategyEnpyShared = true;
@@ -261,7 +262,8 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
     GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
 
   reg_path.ExplorationOptions(GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
-                              GetFallback(pense_opts, "explore_tol", kDefaultExploreTol));
+                              GetFallback(pense_opts, "explore_tol", kDefaultExploreTol),
+                              GetFallback(pense_opts, "nr_tracks", kDefaultExploreSolutions));
 
   reg_path.EnableWarmStarts(GetFallback(pense_opts, "warm_starts", kDefaultUseWarmStarts));
 

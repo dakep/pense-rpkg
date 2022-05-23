@@ -295,7 +295,8 @@ class RegularizationPath {
   //!   be done and all starting points will be iterated to full convergence.
   //! @param explore_tol the numeric tolerance for exploring solutions.
   //! @param explored_keep how many explored solutions to keep for full concentration.
-  void ExplorationOptions(const int explore_it, const double explore_tol, const int explored_keep) noexcept {
+  void ExplorationOptions(const int explore_it, const double explore_tol,
+                          const int explored_keep) noexcept {
     explore_it_ = explore_it;
     explore_tol_ = explore_tol;
     explored_keep_ = explored_keep;
@@ -370,63 +371,62 @@ class RegularizationPath {
 
   ExploredSolutions Explore(std::true_type) {
     ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(comparison_tol_));
+    const auto is_end = individual_starts_it_->Elements().end();
+    const auto sh_end = shared_starts_.Elements().end();
 
-    #pragma omp parallel num_threads(num_threads_) shared(individual_starts_it_, optimizer_template_, explore_tol_, \
-                           explore_it_, explored_solutions) default(none)
+    #pragma omp parallel \
+                num_threads(num_threads_) \
+                default(shared)
     {
-      #pragma omp single
-      for (auto is_it = individual_starts_it_->Elements().begin(), is_end = individual_starts_it_->Elements().end();
-           is_it != is_end; ++is_it) {
-        #pragma omp task firstprivate(is_it) shared(explored_solutions, optimizer_template_) \
-                         const_shared(explore_tol_) const_shared(explore_it_) default(none)
+      #pragma omp single nowait
+      for (auto is_it = individual_starts_it_->Elements().begin(); is_it != is_end; ++is_it) {
+        #pragma omp task \
+                    default(none) \
+                    firstprivate(is_it) \
+                    shared(explore_tol_, explore_it_) \
+                    shared(explored_solutions, optimizer_template_)
         {
           Optimizer optimizer(optimizer_template_);
           optimizer.convergence_tolerance(explore_tol_);
           auto optimum = optimizer.Optimize(std::get<0>(*is_it), explore_it_);
 
-          #pragma omp critical(insert_explored_identical)
+          #pragma omp critical(insert_explored)
           explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
-                                    std::move(optimizer), std::move(optimum.metrics));
+                                     std::move(optimizer), std::move(optimum.metrics));
+
         }
       }
-    }
 
-    Rcpp::checkUserInterrupt();
-
-    #pragma omp parallel num_threads(num_threads_) shared(shared_starts_, optimizer_template_, explore_tol_, \
-                           explore_it_, explored_solutions) default(none)
-    {
-      #pragma omp single
-      for (auto is_it = shared_starts_.Elements().begin(), is_end = shared_starts_.Elements().end();
-           is_it != is_end; ++is_it) {
-        #pragma omp task firstprivate(is_it) shared(explored_solutions, optimizer_template_) \
-                         const_shared(explore_tol_) const_shared(explore_it_) default(none)
+      #pragma omp single nowait
+      for (auto sh_it = shared_starts_.Elements().begin(); sh_it != sh_end; ++sh_it) {
+        #pragma omp task \
+                    firstprivate(sh_it) \
+                    default(none) \
+                    shared(explore_tol_, explore_it_) \
+                    shared(explored_solutions, optimizer_template_)
         {
           Optimizer optimizer(optimizer_template_);
           optimizer.convergence_tolerance(explore_tol_);
-          auto optimum = optimizer.Optimize(std::get<0>(*is_it), explore_it_);
+          auto optimum = optimizer.Optimize(std::get<0>(*sh_it), explore_it_);
 
-          #pragma omp critical(insert_explored_shared)
+          #pragma omp critical(insert_explored)
           explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
-                                    std::move(optimizer), std::move(optimum.metrics));
+                                     std::move(optimizer), std::move(optimum.metrics));
+
         }
       }
-    }
 
-    Rcpp::checkUserInterrupt();
+      #pragma omp single nowait
+      if (use_warm_start_ || explored_solutions.Size() == 0) {
+      const auto bs_end = best_starts_.Elements().end();
 
-
-    if (use_warm_start_ || explored_solutions.Size() == 0) {
-      #pragma omp parallel num_threads(num_threads_) shared(best_starts_, optimizer_template_, explore_tol_, \
-                            explore_it_, explored_solutions) default(none)
-      {
-        #pragma omp single
-        for (auto is_it = best_starts_.Elements().begin(), is_end = best_starts_.Elements().end();
-             is_it != is_end; ++is_it) {
-          #pragma omp task firstprivate(is_it) shared(explored_solutions, optimizer_template_) \
-                          const_shared(explore_tol_) const_shared(explore_it_) default(none)
+        for (auto bs_it = best_starts_.Elements().begin(); bs_it != bs_end; ++bs_it) {
+          #pragma omp task \
+                      firstprivate(bs_it) \
+                      default(none) \
+                      shared(explore_tol_, explore_it_, explored_solutions, optimizer_template_)
           {
-            auto&& optimizer = std::get<1>(*is_it);
+            auto&& optimizer = std::get<1>(*bs_it);
             optimizer.convergence_tolerance(explore_tol_);
             optimizer.penalty(optimizer_template_.penalty());
             auto optimum = optimizer.Optimize(explore_it_);
@@ -434,11 +434,13 @@ class RegularizationPath {
             #pragma omp critical(insert_explored_best)
             explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                       std::move(optimizer), std::move(optimum.metrics));
+
           }
         }
       }
-      Rcpp::checkUserInterrupt();
     }
+
+    Rcpp::checkUserInterrupt();
     return explored_solutions;
   }
 
@@ -546,25 +548,29 @@ class RegularizationPath {
 
   void Concentrate(ExploredSolutions&& explored, std::true_type) {
     const double conv_threshold = optimizer_template_.convergence_tolerance();
+    const auto ex_end = explored.Elements().end();
 
-    #pragma omp parallel num_threads(num_threads_) shared(best_starts_, explored) firstprivate(conv_threshold) \
-      default(none)
+    #pragma omp parallel \
+                num_threads(num_threads_) \
+                default(shared)
     {
-      #pragma omp single
-      for (auto is_it = explored.Elements().begin(), is_end = explored.Elements().end();
-            is_it != is_end; ++is_it) {
-        #pragma omp task firstprivate(is_it, conv_threshold) shared(explored, best_starts_) default(none)
+      #pragma omp single nowait
+      for (auto ex_it = explored.Elements().begin(); ex_it != ex_end; ++ex_it) {
+        #pragma omp task \
+                    default(none) \
+                    firstprivate(ex_it, conv_threshold) \
+                    shared(best_starts_)
         {
-          auto&& optimizer = std::get<2>(*is_it);
+          auto&& optimizer = std::get<2>(*ex_it);
           optimizer.convergence_tolerance(conv_threshold);
-          auto optim = (std::get<1>(*is_it) > 0) ?
+          auto optim = (std::get<1>(*ex_it) > 0) ?
             optimizer.Optimize() :
-            optimizer.Optimize(std::get<0>(*is_it));
+            optimizer.Optimize(std::get<0>(*ex_it));
 
-          if (optim.metrics && std::get<3>(*is_it)) {
+          if (optim.metrics && std::get<3>(*ex_it)) {
             auto&& exploration_metrics = optim.metrics->CreateSubMetrics("exploration");
-            exploration_metrics.AddSubMetrics(std::move(*std::get<3>(*is_it)));
-            std::get<3>(*is_it).reset();
+            exploration_metrics.AddSubMetrics(std::move(*std::get<3>(*ex_it)));
+            std::get<3>(*ex_it).reset();
           }
           #pragma omp critical(insert_concentrated)
           best_starts_.Emplace(std::move(optim), std::move(optimizer));

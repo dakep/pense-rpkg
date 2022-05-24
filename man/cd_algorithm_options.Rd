@@ -8,9 +8,8 @@ S-estimates}
 cd_algorithm_options(
   max_it = 1000,
   reset_it = 8,
-  linesearch = FALSE,
   linesearch_steps = 4,
-  linesearch_mult = 0.2
+  linesearch_mult = 0.5
 )
 }
 \arguments{
@@ -20,12 +19,12 @@ cd_algorithm_options(
 re-computed from scratch, to prevent numerical drifts from incremental
 updates.}
 
-\item{linesearch}{perform linesearch to determine a better step-size.}
-
 \item{linesearch_steps}{maximum number of steps used for line search.}
 
 \item{linesearch_mult}{multiplier to adjust the step size in the line
 search.}
+
+\item{linesearch}{perform linesearch to determine a better step-size.}
 }
 \value{
 options for the CD algorithm to compute (adaptive) PENSE estimates.

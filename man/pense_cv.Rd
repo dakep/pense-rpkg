@@ -119,6 +119,8 @@ squared \eqn{L_2} norm of the difference vector is less than \code{comparison_to
 description.}
     \item{\code{enpy_specific}}{use the EN-PY initial estimates only at the penalization level they
 are computed for. See details for a description.}
+    \item{\code{carry_forward}}{carry the best solutions forward to the next penalty
+level.}
     \item{\code{sparse}}{use sparse coefficient vectors.}
     \item{\code{ncores}}{number of CPU cores to use in parallel. By default, only one CPU core is used.
 Not supported on all platforms, in which case a warning is given.}

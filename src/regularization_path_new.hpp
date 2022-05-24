@@ -431,9 +431,9 @@ class RegularizationPath {
             optimizer.penalty(optimizer_template_.penalty());
             auto optimum = optimizer.Optimize(explore_it_);
 
-            #pragma omp critical(insert_explored_best)
+            #pragma omp critical(insert_explored)
             explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
-                                      std::move(optimizer), std::move(optimum.metrics));
+                                       std::move(optimizer), std::move(optimum.metrics));
 
           }
         }

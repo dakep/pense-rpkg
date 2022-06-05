@@ -444,8 +444,7 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
       iter_metrics.AddDetail("rel_difference", rel_difference);
       // iter_metrics.AddDetail("coef_norm_diff", arma::norm(coefs_.beta - optimum.coefs.beta, 2));
       // iter_metrics.AddDetail("resid_norm_diff", arma::norm(residuals - optimum.residuals, 2));
-      // iter_metrics.AddDetail("objf_value", optimum.objf_value);
-      // iter_metrics.AddDetail("objf_value_improve", objf_value - optimum.objf_value);
+      iter_metrics.AddDetail("objf_value", optimum.objf_value);
       iter_metrics.AddDetail("inner_tol", tightener->current_tolerance());
 
       // The solutions are good enough. If we can make the inner optimizer tighter, add a few iteration and then
@@ -468,18 +467,18 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
       // Check if the value of the convex surrogate decreased. This can only fail if the inner optimizer is using an
       // iterative scheme and the relative tolerance is too large.
       if (IsIterativeAlgorithmTag::value) {
-        if (objf_value > 0 && (objf_value - optimum.objf_value) < 0) {
-          // The value of the objective function has not decreased.
+        if (objf_value > 0 && (objf_value - optimum.objf_value) < -convergence_tolerance_) {
+          // The value of the objective function increased substantially.
           // Decrease the inner convergence tolerance considerably and continue iterating the current surrogate,
           // i.e., don't update the coefficients or the surrogate.
-          // If the inner convergence tolerance is already ridiculously small. Probably zig-zagging around
-          // the optimum.
+          // If the inner convergence tolerance is already very small, return the result as-is.
+          // (Any step increases the objective function, hence we are at a minimum.)
           if (!tightener->CanTightenFurther()) {
             metrics->AddMetric("iter", iter);
             metrics->AddDetail("final_rel_difference", rel_difference);
             metrics->AddDetail("final_innner_tol", tightener->current_tolerance());
             return MakeOptimum(*loss_, *penalty_, coefs_, residuals, objf_value, std::move(metrics),
-                               OptimumStatus::kOk, "Possibly imprecise solution.");
+                               OptimumStatus::kOk);
           }
           iter_metrics.AddDetail("tighten_faster", "yes");
           tightener->FastTighten();

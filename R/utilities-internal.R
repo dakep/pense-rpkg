@@ -315,7 +315,7 @@ extract_metric <- function (metrics, attr, node) {
                         robust = robust,
                         sparse = sparse,
                         location_rho = location_rho,
-                        location_cc = cc,
+                        cc = cc,
                         mscale_opts = mscale_opts,
                         ... = ...)
     }

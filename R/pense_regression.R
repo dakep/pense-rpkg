@@ -63,7 +63,7 @@
 #'    variables with a large proportion of a single value (e.g., zero-inflated data).
 #'    In this case, either compute with `standardize = FALSE` or standardize the data manually.
 #' @param intercept include an intercept in the model.
-#' @param bdp desired breakdown point of the estimator, between 0 and 0.5. The actual
+#' @param bdp desired breakdown point of the estimator, between 0.05 and 0.5. The actual
 #'    breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.
 #' @param cc tuning constant for the S-estimator. Default is chosen based on the breakdown
 #'   point \code{bdp}. This affects the estimated coefficients only if
@@ -288,6 +288,14 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     abort("Function `cv_metric` must accept at least 1 argument.")
   }
 
+  n_total <- length(args$std_data$y)
+  n_in_folds <- n_total - ceiling(n_total / cv_k)
+  if (!isTRUE(args$pense_opts$mscale$delta * n_total / n_in_folds <= 0.5)) {
+    abort(paste("The desired breakdown point cannot be achieved in",
+                "all CV folds. Either increase the number of CV folds",
+                "or decrease the desired breakdown point."))
+  }
+
   fold_starts <- match.arg(fold_starts)
 
   if (identical(fold_starts, 'full') || identical(fold_starts, 'both')) {
@@ -351,9 +359,12 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     FUN = function (alpha, lambda, enpy_lambda_inds, other_starts) {
       cv_fun <- function (train_data, test_ind, handler_args) {
         # Determine stable bdp separately for this fold
+        desired_bdp <- handler_args$args$pense_opts$mscale$delta *
+          (length(train_data$y) + length(test_ind)) / length(train_data$y)
+
         stable_bdp <- .find_stable_bdb_bisquare(
           n = length(train_data$y),
-          desired_bdp = handler_args$args$pense_opts$mscale$delta)
+          desired_bdp = desired_bdp)
 
         handler_args$args$pense_opts$mscale$delta <- stable_bdp
 
@@ -374,6 +385,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
 
       handler_args <- list(alpha = alpha,
                            lambda = lambda,
+                           cv_k = cv_k,
                            enpy_lambda_inds = enpy_lambda_inds,
                            args = args)
 

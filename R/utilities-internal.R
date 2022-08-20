@@ -62,9 +62,11 @@
 
   numeric_tol <- sqrt(.Machine$double.eps)
 
-  bdp_range <- seq(from = max(desired_bdp - tolerance, interval[[1L]]),
-                   to = min(desired_bdp + tolerance, interval[[2L]]),
-                   by = precision)
+  from <- min(max(desired_bdp - tolerance, interval[[1L]]),
+              interval[[2L]])
+  to <- max(min(desired_bdp + tolerance, interval[[2L]]),
+            interval[[1L]])
+  bdp_range <- seq(from, to, by = precision)
 
   # Filter bdp's where the 1st derivative is unbounded
   bdp_range <- bdp_range[abs(bdp_range * n - floor(bdp_range * n)) > numeric_tol]

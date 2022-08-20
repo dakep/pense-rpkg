@@ -58,6 +58,7 @@
   ## Process input arguments
   response <- .validate_response(args$y)
   args$y <- response$values
+  args$binary_response <- response$binary
   x_dim <- dim(args$x)
 
   if (length(args$y) != x_dim[[1L]]) {

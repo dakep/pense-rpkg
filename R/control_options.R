@@ -118,7 +118,6 @@ mm_algorithm_options <- function (max_it = 500,
 #' @param reset_it number of iterations after which the residuals are
 #'   re-computed from scratch, to prevent numerical drifts from incremental
 #'   updates.
-#' @param linesearch perform linesearch to determine a better step-size.
 #' @param linesearch_steps maximum number of steps used for line search.
 #' @param linesearch_mult multiplier to adjust the step size in the line
 #'   search.

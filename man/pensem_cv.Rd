@@ -31,6 +31,7 @@ pensem_cv(x, ...)
   add_zero_based = TRUE,
   explore_solutions = 10,
   explore_tol = 0.1,
+  explore_it = 5,
   max_solutions = 10,
   fit_all = TRUE,
   comparison_tol = sqrt(eps),
@@ -63,6 +64,7 @@ pensem_cv(x, ...)
   add_zero_based = TRUE,
   explore_solutions = 10,
   explore_tol = 0.1,
+  explore_it = 5,
   max_solutions = 10,
   fit_all = TRUE,
   comparison_tol = sqrt(eps),
@@ -74,7 +76,8 @@ pensem_cv(x, ...)
 )
 }
 \arguments{
-\item{x}{either a numeric matrix of predictor values, or a cross-validated PENSE fit from \code{\link[=pense_cv]{pense_cv()}}.}
+\item{x}{either a numeric matrix of predictor values, or a cross-validated
+PENSE fit from \code{\link[=pense_cv]{pense_cv()}}.}
 
 \item{...}{ignored. See the section on deprecated parameters below.}
 
@@ -92,8 +95,10 @@ level (i.e., the smallest value for which all coefficients are zero). The defaul
 the sample size relative to the number of variables and \code{alpha}. If more observations than
 variables are available, the default is \code{1e-3 * alpha}, otherwise \code{1e-2 * alpha}.}
 
-\item{lambda_m, lambda_s}{optional user-supplied sequence of penalization levels for the S- and M-estimates.
-If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored for the respective estimate (S and/or M).}
+\item{lambda_m, lambda_s}{optional user-supplied sequence of penalization
+levels for the S- and M-estimates.
+If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ignored for
+the respective estimate (S and/or M).}
 
 \item{standardize}{logical flag to standardize the \code{x} variables prior to fitting the PENSE
 estimates. Coefficients are always returned on the original scale. This can fail for
@@ -115,7 +120,8 @@ Not supported on all platforms, in which case a warning is given.}
 
 \item{eps}{numerical tolerance.}
 
-\item{cc}{cutoff constant for Tukey's bisquare \eqn{\rho} function in the M-estimation objective function.}
+\item{cc}{cutoff constant for Tukey's bisquare \eqn{\rho} function in the
+M-estimation objective function.}
 
 \item{cv_k}{number of folds per cross-validation.}
 
@@ -138,6 +144,11 @@ The order of the given values corresponds to the order in the input data.}
 description.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
+
+\item{explore_tol, explore_it}{numerical tolerance and maximum number of iterations for
+exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
+and the number of iterations should also be much smaller than the maximum number of
+iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
@@ -165,18 +176,22 @@ for details.}
 \item{enpy_opts}{options for the ENPY initial estimates, created with the
 \code{\link[=enpy_options]{enpy_options()}} function. See \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} for details.}
 
-\item{scale}{initial scale estimate to use in the M-estimation. By default the S-scale from the PENSE fit is used.}
+\item{scale}{initial scale estimate to use in the M-estimation.
+By default the S-scale from the PENSE fit is used.}
 
-\item{x_train, y_train}{override arguments \code{x} and \code{y} as provided in the call to \code{pense_cv()}. This is useful if
-the arguments in the \code{pense_cv()} call are not available in the current environment.}
+\item{x_train, y_train}{override arguments \code{x} and \code{y} as provided in the
+call to \code{pense_cv()}. This is useful if the arguments in the \code{pense_cv()}
+call are not available in the current environment.}
 }
 \value{
-an object of cross-validated regularized M-estimates as returned from \code{\link[=regmest_cv]{regmest_cv()}}.
+an object of cross-validated regularized M-estimates as returned
+from \code{\link[=regmest_cv]{regmest_cv()}}.
 }
 \description{
-This is a convenience wrapper around \code{\link[=pense_cv]{pense_cv()}} and \code{\link[=regmest_cv]{regmest_cv()}}, for the common use-case of computing
-a highly-robust S-estimate followed by a more efficient M-estimate using the scale of the residuals from the
-S-estimate.
+This is a convenience wrapper around \code{\link[=pense_cv]{pense_cv()}} and \code{\link[=regmest_cv]{regmest_cv()}}, for
+the common use-case of computing
+a highly-robust S-estimate followed by a more efficient M-estimate using
+the scale of the residuals from the S-estimate.
 }
 \details{
 The built-in CV metrics are

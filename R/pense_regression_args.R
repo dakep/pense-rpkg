@@ -194,7 +194,7 @@
                           lambda_min_ratio = 1,
                           pense_options = args$pense_opts,
                           penalty_loadings = NULL)
-    args$enpy_lambda_inds <- rep(list(integer(0L)), length(alpha))
+    args$enpy_lambda_inds <- rep(list(integer(0L)), length(args$alpha))
 
     return(args)
   }
@@ -276,7 +276,7 @@
     if (any(other_starts_specific)) {
       args$pense_opts$strategy_other_individual <- TRUE
       ind_starts <- list()
-      for (ai in seq_along(alpha)) {
+      for (ai in seq_along(args$alpha)) {
         new_ind_starts <- .make_initest_list(
           other_starts[other_starts_specific],
           lambda = args$lambda[[ai]],

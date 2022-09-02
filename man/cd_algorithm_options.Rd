@@ -23,8 +23,6 @@ updates.}
 
 \item{linesearch_mult}{multiplier to adjust the step size in the line
 search.}
-
-\item{linesearch}{perform linesearch to determine a better step-size.}
 }
 \value{
 options for the CD algorithm to compute (adaptive) PENSE estimates.

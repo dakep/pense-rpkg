@@ -105,7 +105,7 @@ penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{intercept}{include an intercept in the model.}
 
-\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+\item{bdp}{desired breakdown point of the estimator, between 0.05 and 0.5. The actual
 breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
 \item{ncores}{number of CPU cores to use in parallel. By default, only one CPU core is used.
@@ -138,11 +138,6 @@ The order of the given values corresponds to the order in the input data.}
 description.}
 
 \item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
-
-\item{explore_tol}{numerical tolerance and maximum number of iterations for
-exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
-and the number of iterations should also be much smaller than the maximum number of
-iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 

@@ -31,7 +31,7 @@ Can be a vector of several values, but \code{alpha = 0} cannot be mixed with oth
 
 \item{lambda}{a vector of positive values of penalization levels.}
 
-\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+\item{bdp}{desired breakdown point of the estimator, between 0.05 and 0.5. The actual
 breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
 \item{cc}{cutoff value for the bisquare rho function. By default, chosen to yield a consistent

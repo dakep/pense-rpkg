@@ -19,6 +19,8 @@
 <![endif]-->
 </head>
 <body data-spy="scroll" data-target="#toc">
+    
+
     <div class="container template-article">
       <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
   <div class="container">
@@ -31,23 +33,17 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">2.1.1-100</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.1.1-902</span>
       </span>
     </div>
 
     <div id="navbar" class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
 <li>
-  <a href="../index.html">
-    <span class="fas fa-home fa-lg"></span>
-     
-  </a>
-</li>
-<li>
   <a href="../reference/index.html">Reference</a>
 </li>
 <li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
     Articles
      
     <span class="caret"></span>
@@ -70,7 +66,7 @@
       </ul>
 <ul class="nav navbar-nav navbar-right">
 <li>
-  <a href="https://github.com/dakep/pense-rpkg/">
+  <a href="https://github.com/dakep/pense-rpkg/" class="external-link">
     <span class="fab fa-github fa-lg"></span>
      
   </a>
@@ -89,11 +85,11 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Migrating from pense version 1.x to 2.x</h1>
-                        <h4 class="author">David Kepplinger</h4>
+                        <h4 data-toc-skip class="author">David Kepplinger</h4>
             
-            <h4 class="date">2021-07-07</h4>
+            <h4 data-toc-skip class="date">2022-09-07</h4>
       
-      <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/master/vignettes/migration_guide.Rmd"><code>vignettes/migration_guide.Rmd</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/HEAD/vignettes/migration_guide.Rmd" class="external-link"><code>vignettes/migration_guide.Rmd</code></a></small>
       <div class="hidden name"><code>migration_guide.Rmd</code></div>
 
     </div>
@@ -104,92 +100,92 @@
 <p>The most visible changes are to functions <code><a href="../reference/pense.html">pense()</a></code> and <code><a href="../reference/pensem.html">pensem()</a></code>, which now only fit models but do not evaluate prediction performance anymore. Instead, the new functions <code><a href="../reference/pense_cv.html">pense_cv()</a></code> and <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> are now used for fitting models <em>and</em> estimating their prediction performance.</p>
 <p>First we need to load the new version of the pense package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://dakep.github.io/pense-rpkg/">pense</a></span><span class="op">)</span>
-<span class="co">#&gt; Loading required package: Matrix</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html">packageVersion</a></span><span class="op">(</span><span class="st">"pense"</span><span class="op">)</span>
-<span class="co">#&gt; [1] '2.1.1.100'</span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dakep.github.io/pense-rpkg/" class="external-link">pense</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loading required package: Matrix</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"pense"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] '2.1.1.902'</span></span></code></pre></div>
 <p>This guide uses the following simulated data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
-<span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/TDist.html">rt</a></span><span class="op">(</span><span class="fl">50</span> <span class="op">*</span> <span class="fl">10</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">10</span><span class="op">)</span>
-<span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html">rt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, df <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></code></pre></div>
-<div id="the-new-_cv-family-of-functions" class="section level1">
-<h1 class="hasAnchor">
-<a href="#the-new-_cv-family-of-functions" class="anchor"></a>The new <code>_cv()</code> family of functions</h1>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
+<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">rt</a></span><span class="op">(</span><span class="fl">50</span> <span class="op">*</span> <span class="fl">10</span>, df <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">rt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, df <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<div class="section level2">
+<h2 id="the-new-_cv-family-of-functions">The new <code>_cv()</code> family of functions<a class="anchor" aria-label="anchor" href="#the-new-_cv-family-of-functions"></a>
+</h2>
 <p>The most basic usage in old versions was to call function <code><a href="../reference/pense.html">pense()</a></code> to fit models with <code>nlambda</code> different penalization levels and evaluate each model’s prediction performance with K-fold cross-validation. In the new version, this will now raise an error:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
-<span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, warm_reset <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="co">#&gt; Error: The `cv_k` argument of `pense()` was deprecated in pense 2.0.0 and is now defunct.</span>
-<span class="co">#&gt; Please use `pense_cv()` instead.</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
+<span><span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, warm_reset <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: The `cv_k` argument of `pense()` was deprecated in pense 2.0.0 and is now defunct.</span></span>
+<span><span class="co">#&gt; Please use `pense_cv()` instead.</span></span></code></pre></div>
 <p>As the error message says, if model fitting <em>and</em> cross-validation is required, use <code><a href="../reference/pense_cv.html">pense_cv()</a></code> instead. The simple solution is to replace <code><a href="../reference/pense.html">pense()</a></code> with <code><a href="../reference/pense_cv.html">pense_cv()</a></code>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
-<span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, warm_reset <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="co">#&gt; Warning: The `warm_reset` argument of `pense()` is deprecated as of pense 2.0.0.</span>
-<span class="co">#&gt; Please use the `nlambda_enpy` argument instead.</span>
-<span class="co">#&gt; Warning: To use `fit_all = "se"`, `cv_repl` must be 2 or greater.</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
+<span><span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, warm_reset <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: The `warm_reset` argument of `pense()` was deprecated in pense 2.0.0 and is now defunct.</span></span>
+<span><span class="co">#&gt; Please use the `nlambda_enpy` argument instead.</span></span></code></pre></div>
 <p>However, this raises a warning that the argument <code>warm_reset=</code> is also deprecated in favor of argument <code>nlambda_enpy=</code>. The new version uses more consistent and self-explaining naming for arguments. Therefore, the most basic way for computing regularized S-estimates of linear regression <em>and</em> estimating their prediction performance via CV is the following:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/base/Random.html">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span>
-<span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span>
-<span class="co">#&gt; Warning: To use `fit_all = "se"`, `cv_repl` must be 2 or greater.</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
+<span><span class="va">fitted_with_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, cv_k <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 <p>To only fit the models, without estimating prediction performance, use <code><a href="../reference/pense.html">pense()</a></code> (note the absence of the <code>cv_k=</code> argument):</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="va">fitted_no_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span></code></pre></div>
-<div id="structure-of-returned-objects" class="section level2">
-<h2 class="hasAnchor">
-<a href="#structure-of-returned-objects" class="anchor"></a>Structure of returned objects</h2>
+<code class="sourceCode R"><span><span class="va">fitted_no_cv</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span><span class="op">)</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="structure-of-returned-objects">Structure of returned objects<a class="anchor" aria-label="anchor" href="#structure-of-returned-objects"></a>
+</h3>
 <p>The structure of the returned objects is different from pense versions 1.x. In old versions, the estimated coefficients were stored as a sparse matrix object, with one column per fit (i.e., per penalization level). In new versions, estimates are stored as a list with one entry per penalization level. For fitted models with prediction performance, as in <code>fitted_with_cv</code>, the returned object additionally contains information on the prediction performance of all fitted models:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
-<span class="co">#&gt; List of 5</span>
-<span class="co">#&gt;  $ call     : language pense(x = x, y = y, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
-<span class="co">#&gt;  $ bdp      : num 0.255</span>
-<span class="co">#&gt;  $ lambda   :List of 1</span>
-<span class="co">#&gt;  $ estimates:List of 40</span>
-<span class="co">#&gt;  $ alpha    : num 0.6</span>
-<span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_fit"</span>
-<span class="fu"><a href="https://rdrr.io/r/utils/str.html">str</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>
-<span class="co">#&gt; List of 7</span>
-<span class="co">#&gt;  $ call      : language pense_cv(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span>
-<span class="co">#&gt;  $ bdp       : num 0.255</span>
-<span class="co">#&gt;  $ lambda    :List of 1</span>
-<span class="co">#&gt;  $ alpha     : num 0.6</span>
-<span class="co">#&gt;  $ cvres     :'data.frame':  40 obs. of  4 variables:</span>
-<span class="co">#&gt;  $ cv_measure: chr "tau_size"</span>
-<span class="co">#&gt;  $ estimates :List of 1</span>
-<span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_cvfit"</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 6</span></span>
+<span><span class="co">#&gt;  $ call     : language pense:::.pense_args(x = x, y = y, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L,      standardize = TRUE)</span></span>
+<span><span class="co">#&gt;  $ bdp      : num 0.255</span></span>
+<span><span class="co">#&gt;  $ lambda   :List of 1</span></span>
+<span><span class="co">#&gt;  $ metrics  :List of 1</span></span>
+<span><span class="co">#&gt;  $ estimates:List of 40</span></span>
+<span><span class="co">#&gt;  $ alpha    : num 0.6</span></span>
+<span><span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_fit"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 8</span></span>
+<span><span class="co">#&gt;  $ call      : language pense:::.pense_args(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40,      nlambda_enpy = 5L)</span></span>
+<span><span class="co">#&gt;  $ bdp       : num 0.255</span></span>
+<span><span class="co">#&gt;  $ lambda    :List of 1</span></span>
+<span><span class="co">#&gt;  $ alpha     : num 0.6</span></span>
+<span><span class="co">#&gt;  $ cvres     :'data.frame':  40 obs. of  4 variables:</span></span>
+<span><span class="co">#&gt;  $ cv_measure: chr "tau_size"</span></span>
+<span><span class="co">#&gt;  $ metrics   :List of 1</span></span>
+<span><span class="co">#&gt;  $ estimates :List of 40</span></span>
+<span><span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_cvfit"</span></span></code></pre></div>
 </div>
 </div>
-<div id="extracting-coefficient-estimates" class="section level1">
-<h1 class="hasAnchor">
-<a href="#extracting-coefficient-estimates" class="anchor"></a>Extracting coefficient estimates</h1>
-<p>As in previous versions, the coefficient estimates are best accessed via the <code><a href="https://rdrr.io/r/stats/coef.html">coefficients()</a></code> method. For fits with estimated prediction performance, the method returns the coefficients of the model yielding the lowest prediction error:</p>
+<div class="section level2">
+<h2 id="extracting-coefficient-estimates">Extracting coefficient estimates<a class="anchor" aria-label="anchor" href="#extracting-coefficient-estimates"></a>
+</h2>
+<p>As in previous versions, the coefficient estimates are best accessed via the <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients()</a></code> method. For fits with estimated prediction performance, the method returns the coefficients of the model yielding the lowest prediction error:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span><span class="op">)</span>
-<span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span>
-<span class="co">#&gt;  0.14269066  0.50133063 -1.63047323  1.36756054 -0.07072134  0.14133158 </span>
-<span class="co">#&gt;          X6          X7          X8          X9         X10 </span>
-<span class="co">#&gt;  0.09419159 -0.01291331  0.00000000  0.17531995  0.03509110</span></code></pre></div>
-<p>Fits computed with <code><a href="../reference/pense.html">pense()</a></code>, however, do not have information about prediction performance, hence <code><a href="https://rdrr.io/r/stats/coef.html">coefficients(fitted_no_cv)</a></code> would not know what penalization level to use. In this case, the desired penalization level must be specified manually:</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span><span class="op">)</span></span>
+<span><span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span></span>
+<span><span class="co">#&gt;  0.05854362  0.55173703 -1.76999133  1.44092237 -0.11610022  0.14345728 </span></span>
+<span><span class="co">#&gt;          X6          X7          X8          X9         X10 </span></span>
+<span><span class="co">#&gt;  0.04029808 -0.05397077  0.01579129  0.21060774  0.08155084</span></span></code></pre></div>
+<p>Fits computed with <code><a href="../reference/pense.html">pense()</a></code>, however, do not have information about prediction performance, hence <code>coefficients(fitted_no_cv)</code> would not know what penalization level to use. In this case, the desired penalization level must be specified manually:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, lambda <span class="op">=</span> <span class="va">fitted_no_cv</span><span class="op">$</span><span class="va">lambda</span><span class="op">[</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span>
-<span class="co">#&gt; Error in lambda[[1L]]: subscript out of bounds</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, lambda <span class="op">=</span> <span class="va">fitted_no_cv</span><span class="op">$</span><span class="va">lambda</span><span class="op">[</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error in lambda[[1L]]: subscript out of bounds</span></span></code></pre></div>
 <p>An important difference to previous versions is that new versions <strong>do not correct for the bias</strong> introduced by the Ridge penalty. The correction, which was adopted from the original LS elastic net paper <span class="citation">(Zou and Hastie 2005)</span>, was dropped as it does not adequately counter the effects of the Ridge penalty on the S-estimates. Specifying the <code>correction=</code> argument results in an error in new versions of the package:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="https://rdrr.io/r/stats/coef.html">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, correction <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>
-<span class="co">#&gt; Error: The `correction` argument of `coef()` was deprecated in pense 2.0.0 and is now defunct.</span></code></pre></div>
-<p>The same applies to functions <code><a href="https://rdrr.io/r/stats/residuals.html">residuals()</a></code> and <code><a href="https://rdrr.io/r/stats/predict.html">predict()</a></code> for extracting residuals of the fits and using the estimated coefficients for prediction, respectively.</p>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, correction <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Error: The `correction` argument of `coef()` was deprecated in pense 2.0.0 and is now defunct.</span></span></code></pre></div>
+<p>The same applies to functions <code><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals()</a></code> and <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for extracting residuals of the fits and using the estimated coefficients for prediction, respectively.</p>
 </div>
-<div id="specifying-advanced-options" class="section level1">
-<h1 class="hasAnchor">
-<a href="#specifying-advanced-options" class="anchor"></a>Specifying advanced options</h1>
+<div class="section level2">
+<h2 id="specifying-advanced-options">Specifying advanced options<a class="anchor" aria-label="anchor" href="#specifying-advanced-options"></a>
+</h2>
 <p>Many of the optional arguments to <code><a href="../reference/pense.html">pense()</a></code> and <code><a href="../reference/pensem.html">pensem()</a></code> have been renamed. Options to control the algorithms have been regrouped to remove ambiguity and redundancies. For example, previous versions had several options to specify the numerical tolerance used in different parts of the algorithm. This could have lead to unstable algorithms and undesired results. In new versions, the numerical tolerance is only specified on the top level in the call to <code><a href="../reference/pense.html">pense()</a></code> and friends.</p>
-<div id="controlling-the-pense-algorithm" class="section level2">
-<h2 class="hasAnchor">
-<a href="#controlling-the-pense-algorithm" class="anchor"></a>Controlling the PENSE algorithm</h2>
-<p>In previous versions of the package, all options for the PENSE algorithm have been set via the <code><a href="../reference/pense.html">pense(options=)</a></code> argument and the <code><a href="../reference/pense_options.html">pense_options()</a></code> function.</p>
+<div class="section level3">
+<h3 id="controlling-the-pense-algorithm">Controlling the PENSE algorithm<a class="anchor" aria-label="anchor" href="#controlling-the-pense-algorithm"></a>
+</h3>
+<p>In previous versions of the package, all options for the PENSE algorithm have been set via the <code>pense(options=)</code> argument and the <code><a href="../reference/pense_options.html">pense_options()</a></code> function.</p>
 <p>In new versions, the options are either given directly to the <code><a href="../reference/pense.html">pense()</a></code> function, or supplied via arguments <code>algorithm_opts</code> or <code>mscale_opts</code>:</p>
 <table class="table">
 <thead><tr class="header">
@@ -198,28 +194,28 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left"><code><a href="../reference/pense_options.html">pense_options(eps=)</a></code></td>
-<td align="left"><code><a href="../reference/pense.html">pense(eps=)</a></code></td>
+<td align="left"><code>pense_options(eps=)</code></td>
+<td align="left"><code>pense(eps=)</code></td>
 </tr>
 <tr class="even">
-<td align="left"><code><a href="../reference/pense_options.html">pense_options(delta=)</a></code></td>
-<td align="left"><code><a href="../reference/pense.html">pense(bdp=)</a></code></td>
+<td align="left"><code>pense_options(delta=)</code></td>
+<td align="left"><code>pense(bdp=)</code></td>
 </tr>
 <tr class="odd">
-<td align="left"><code><a href="../reference/pense_options.html">pense_options(cc=)</a></code></td>
-<td align="left"><code><a href="../reference/pense.html">pense(cc=)</a></code></td>
+<td align="left"><code>pense_options(cc=)</code></td>
+<td align="left"><code>pense(cc=)</code></td>
 </tr>
 <tr class="even">
-<td align="left"><code><a href="../reference/pense_options.html">pense_options(maxit=)</a></code></td>
-<td align="left"><code><a href="../reference/mm_algorithm_options.html">mm_algorithm_options(max_it=)</a></code></td>
+<td align="left"><code>pense_options(maxit=)</code></td>
+<td align="left"><code>mm_algorithm_options(max_it=)</code></td>
 </tr>
 <tr class="odd">
-<td align="left"><code><a href="../reference/pense_options.html">pense_options(mscale_maxit=)</a></code></td>
-<td align="left"><code><a href="../reference/mscale_algorithm_options.html">mscale_algorithm_options(max_it=)</a></code></td>
+<td align="left"><code>pense_options(mscale_maxit=)</code></td>
+<td align="left"><code>mscale_algorithm_options(max_it=)</code></td>
 </tr>
 <tr class="even">
-<td align="left"><code><a href="../reference/pense_options.html">pense_options(mscale_eps=)</a></code></td>
-<td align="left"><code><a href="../reference/mscale_algorithm_options.html">mscale_algorithm_options(eps=)</a></code></td>
+<td align="left"><code>pense_options(mscale_eps=)</code></td>
+<td align="left"><code>mscale_algorithm_options(eps=)</code></td>
 </tr>
 <tr class="odd">
 <td align="left">all other options</td>
@@ -227,16 +223,16 @@
 </tr>
 </tbody>
 </table>
-<p>For example, in previous versions the breakdown point of the PENSE estimate was set with <code><a href="../reference/pense_options.html">pense_options(delta=)</a></code>:</p>
+<p>For example, in previous versions the breakdown point of the PENSE estimate was set with <code>pense_options(delta=)</code>:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, options <span class="op">=</span> <span class="fu"><a href="../reference/pense_options.html">pense_options</a></span><span class="op">(</span>delta <span class="op">=</span> <span class="fl">0.33</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, options <span class="op">=</span> <span class="fu"><a href="../reference/pense_options.html">pense_options</a></span><span class="op">(</span>delta <span class="op">=</span> <span class="fl">0.33</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>In the new versions, the breakdown point is set directly in the call to <code><a href="../reference/pense.html">pense()</a></code>:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, bdp <span class="op">=</span> <span class="fl">0.33</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>, bdp <span class="op">=</span> <span class="fl">0.33</span><span class="op">)</span></span></code></pre></div>
 </div>
-<div id="controlling-the-pensem-algorithm" class="section level2">
-<h2 class="hasAnchor">
-<a href="#controlling-the-pensem-algorithm" class="anchor"></a>Controlling the PENSEM algorithm</h2>
+<div class="section level3">
+<h3 id="controlling-the-pensem-algorithm">Controlling the PENSEM algorithm<a class="anchor" aria-label="anchor" href="#controlling-the-pensem-algorithm"></a>
+</h3>
 <p>As with <code><a href="../reference/pense.html">pense()</a></code>, options for controlling the algorithm used by <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> are moved from <code><a href="../reference/mstep_options.html">mstep_options()</a></code> to:</p>
 <table class="table">
 <thead><tr class="header">
@@ -245,16 +241,16 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left"><code><a href="../reference/mstep_options.html">mstep_options(cc=)</a></code></td>
-<td align="left"><code><a href="../reference/pensem_cv.html">pensem_cv(cc=)</a></code></td>
+<td align="left"><code>mstep_options(cc=)</code></td>
+<td align="left"><code>pensem_cv(cc=)</code></td>
 </tr>
 <tr class="even">
-<td align="left"><code><a href="../reference/mstep_options.html">mstep_options(eps=)</a></code></td>
-<td align="left"><code><a href="../reference/pensem_cv.html">pensem_cv(eps=)</a></code></td>
+<td align="left"><code>mstep_options(eps=)</code></td>
+<td align="left"><code>pensem_cv(eps=)</code></td>
 </tr>
 <tr class="odd">
-<td align="left"><code><a href="../reference/mstep_options.html">mstep_options(maxit=)</a></code></td>
-<td align="left"><code><a href="../reference/mm_algorithm_options.html">mm_algorithm_options(max_it=)</a></code></td>
+<td align="left"><code>mstep_options(maxit=)</code></td>
+<td align="left"><code>mm_algorithm_options(max_it=)</code></td>
 </tr>
 <tr class="even">
 <td align="left">all other options</td>
@@ -263,14 +259,14 @@
 </tbody>
 </table>
 </div>
-<div id="selecting-the-en-algorithm" class="section level2">
-<h2 class="hasAnchor">
-<a href="#selecting-the-en-algorithm" class="anchor"></a>Selecting the EN algorithm</h2>
-<p>In previous versions, the EN algorithm (the workhorse to compute PENSE estimates), was specified via <code><a href="../reference/pense.html">pense(en_options=)</a></code>. In new versions, the user can select the EN algorithm separately for computing PENSE estimates and for computing starting points via ENPY separately. Therefore, the algorithm and it’s options are now set through arguments <code>algorithm_opts=</code> and <code>enpy_opts=</code>.</p>
+<div class="section level3">
+<h3 id="selecting-the-en-algorithm">Selecting the EN algorithm<a class="anchor" aria-label="anchor" href="#selecting-the-en-algorithm"></a>
+</h3>
+<p>In previous versions, the EN algorithm (the workhorse to compute PENSE estimates), was specified via <code>pense(en_options=)</code>. In new versions, the user can select the EN algorithm separately for computing PENSE estimates and for computing starting points via ENPY separately. Therefore, the algorithm and it’s options are now set through arguments <code>algorithm_opts=</code> and <code>enpy_opts=</code>.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>,
-      algorithm_opts <span class="op">=</span> <span class="fu"><a href="../reference/mm_algorithm_options.html">mm_algorithm_options</a></span><span class="op">(</span>en_algorithm_opts <span class="op">=</span> <span class="fu"><a href="../reference/en_lars_options.html">en_lars_options</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,
-      enpy_opts <span class="op">=</span> <span class="fu"><a href="../reference/enpy_options.html">enpy_options</a></span><span class="op">(</span>en_algorithm_opts <span class="op">=</span> <span class="fu"><a href="../reference/en_admm_options.html">en_admm_options</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/pense.html">pense</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.6</span>, nlambda <span class="op">=</span> <span class="fl">40</span>, nlambda_enpy <span class="op">=</span> <span class="fl">5L</span>,</span>
+<span>      algorithm_opts <span class="op">=</span> <span class="fu"><a href="../reference/mm_algorithm_options.html">mm_algorithm_options</a></span><span class="op">(</span>en_algorithm_opts <span class="op">=</span> <span class="fu"><a href="../reference/en_lars_options.html">en_lars_options</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>      enpy_opts <span class="op">=</span> <span class="fu"><a href="../reference/enpy_options.html">enpy_options</a></span><span class="op">(</span>en_algorithm_opts <span class="op">=</span> <span class="fu"><a href="../reference/en_admm_options.html">en_admm_options</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Moreover, functions <code><a href="../reference/deprecated_en_options.html">en_options_aug_lars()</a></code> and <code><a href="../reference/deprecated_en_options.html">en_options_dal()</a></code> are replaced by <code><a href="../reference/en_lars_options.html">en_lars_options()</a></code> and <code><a href="../reference/en_dal_options.html">en_dal_options()</a></code>, respectively. The new functions accept similar arguments, but with slightly different names. They do not accept the numerical tolerance <code>eps</code> anymore, as this is now set directly in <code><a href="../reference/pense.html">pense()</a></code> and friends. The LARS algorithm now always uses the Gram matrix, afforded by a more efficient implementation (argument <code>use_gram</code> is now ignored). Similarly, the DAL algorithm always uses a conjugate gradient pre-conditioner, doesn’t print status information, and adaptively chooses the initial step size as either <code>eta_start_conservative</code> or <code>eta_start_aggressive</code>, based on the change in penalization level. Hence, arguments <code>verbosity</code>, <code>preconditioner</code>, and <code>eta_start</code> are now defunct:</p>
 <table class="table">
 <thead><tr class="header">
@@ -279,20 +275,20 @@
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td align="left"><code><a href="../reference/deprecated_en_options.html">en_options_dal(eps=)</a></code></td>
-<td align="left"><code><a href="../reference/pense.html">pense(eps=)</a></code></td>
+<td align="left"><code>en_options_dal(eps=)</code></td>
+<td align="left"><code>pense(eps=)</code></td>
 </tr>
 <tr class="even">
-<td align="left"><code><a href="../reference/deprecated_en_options.html">en_options_dal(maxit=)</a></code></td>
-<td align="left"><code><a href="../reference/en_dal_options.html">en_dal_options(max_it=)</a></code></td>
+<td align="left"><code>en_options_dal(maxit=)</code></td>
+<td align="left"><code>en_dal_options(max_it=)</code></td>
 </tr>
 <tr class="odd">
-<td align="left"><code><a href="../reference/deprecated_en_options.html">en_options_dal(eta_mult=)</a></code></td>
-<td align="left"><code><a href="../reference/en_dal_options.html">en_dal_options(eta_multiplier=)</a></code></td>
+<td align="left"><code>en_options_dal(eta_mult=)</code></td>
+<td align="left"><code>en_dal_options(eta_multiplier=)</code></td>
 </tr>
 <tr class="even">
-<td align="left"><code><a href="../reference/deprecated_en_options.html">en_options_dal(eta_start=)</a></code></td>
-<td align="left"><code><a href="../reference/en_dal_options.html">en_dal_options(eta_start_conservative=, eta_start_aggressive=)</a></code></td>
+<td align="left"><code>en_options_dal(eta_start=)</code></td>
+<td align="left"><code>en_dal_options(eta_start_conservative=, eta_start_aggressive=)</code></td>
 </tr>
 <tr class="odd">
 <td align="left">all other options</td>
@@ -302,12 +298,12 @@
 </table>
 </div>
 </div>
-<div id="references" class="section level1 unnumbered">
-<h1 class="hasAnchor">
-<a href="#references" class="anchor"></a>References</h1>
-<div id="refs" class="references">
-<div id="ref-Zou2005">
-<p>Zou, Hui, and Trevor Hastie. 2005. “Regularization and Variable Selection via the Elastic Net.” <em>Journal of the Royal Statistical Society. Series B (Statistical Methodology)</em> 67. Royal Statistical Society, Wiley: 301–20. <a href="http://www.jstor.org/stable/3647580" class="uri">http://www.jstor.org/stable/3647580</a>.</p>
+<div class="section level2">
+<h2 class="unnumbered" id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-Zou2005" class="csl-entry">
+Zou, Hui, and Trevor Hastie. 2005. <span>“Regularization and Variable Selection via the Elastic Net.”</span> <em>Journal of the Royal Statistical Society. Series B (Statistical Methodology)</em> 67: 301–20. <a href="http://www.jstor.org/stable/3647580" class="external-link">http://www.jstor.org/stable/3647580</a>.
 </div>
 </div>
 </div>
@@ -324,11 +320,13 @@
 
 
       <footer><div class="copyright">
-  <p>Developed by David Kepplinger, Matías Salibián-Barrera, Gabriela Cohen Freue.</p>
+  <p></p>
+<p>Developed by David Kepplinger, Matías Salibián-Barrera, Gabriela Cohen Freue.</p>
 </div>
 
 <div class="pkgdown">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/">pkgdown</a> 1.6.1.</p>
+  <p></p>
+<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.0.6.</p>
 </div>
 
       </footer>
@@ -336,6 +334,8 @@
 
   
 
+
+  
 
   </body>
 </html>

@@ -1,9 +1,9 @@
-pandoc: '2.2'
-pkgdown: 1.6.1
+pandoc: 2.14.2
+pkgdown: 2.0.6
 pkgdown_sha: ~
 articles:
   computing_adapense: computing_adapense.html
   lambda_grids: lambda_grids.html
   migration_guide: migration_guide.html
-last_built: 2021-07-07T21:50Z
+last_built: 2022-09-07T14:57Z
 

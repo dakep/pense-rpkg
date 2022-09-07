@@ -3,9 +3,8 @@
 
 <!-- begin badges -->
 
-[![CRAN\_Status\_Badge](https://www.r-pkg.org/badges/version/pense)](https://CRAN.R-project.org/package=pense)
-[![Build
-Status](https://travis-ci.com/dakep/pense-rpkg.svg?branch=main)](https://travis-ci.com/dakep/pense-rpkg)
+[![R CMD check](https://github.com/dakep/pense-rpkg/actions/workflows/check-package-extended.yml/badge.svg)](https://github.com/dakep/pense-rpkg/actions/workflows/check-package-extended.yml)
+
 <!-- end badges -->
 
 This R package implements the penalized elastic net S-estimator (PENSE)

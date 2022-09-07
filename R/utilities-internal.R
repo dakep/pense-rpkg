@@ -1,7 +1,8 @@
-## Get the Constant for Consistency for the M-Scale Using the Bisquare Rho Function
-## @param delta desired breakdown point (between 0 and 0.5)
-##
-## @return consistency constant
+#' Get the Constant for Consistency for the M-Scale Using the Bisquare Rho Function
+#' @param delta desired breakdown point (between 0 and 0.5)
+#'
+#' @return consistency constant
+#' @keywords internal
 #' @importFrom stats pnorm uniroot
 .bisquare_consistency_const <- function (delta) {
   ##
@@ -39,21 +40,22 @@
   uniroot(expectation, interval = integral_interval, delta)$root
 }
 
-## Determine a breakdown point with stable numerical properties of the M-scale
-## with Tukey's bisquare rho function.
-##
-## The M-scale objective (and hence the S-loss) can have unbounded or very high
-## 1st derivative. This can lead to numerical instability of the algorithms and
-## in turn excessive computation time.
-## This function chooses the breakdown point with lowest upper bound of the 1st
-## derivative from a range of bdp's in the vicinity of the desired bdp.
-##
-## @param n number of observations in the sample
-## @param desired_bdp the desired breakdown point (between 0.05 and 0.5)
-## @param tolerance how far can the chosen bdp be away from the desired bdp.
-##                  The chosen bdp is guaranteed to be in the range given by `interval`.
-## @param interval restrict the chosen bdp to this interval.
-## @param precision granularity of the grid of considered bdp's.
+#' Determine a breakdown point with stable numerical properties of the M-scale
+#' with Tukey's bisquare rho function.
+#'
+#' The M-scale objective (and hence the S-loss) can have unbounded or very high
+#' 1st derivative. This can lead to numerical instability of the algorithms and
+#' in turn excessive computation time.
+#' This function chooses the breakdown point with lowest upper bound of the 1st
+#' derivative from a range of bdp's in the vicinity of the desired bdp.
+#'
+#' @param n number of observations in the sample
+#' @param desired_bdp the desired breakdown point (between 0.05 and 0.5)
+#' @param tolerance how far can the chosen bdp be away from the desired bdp.
+#'                  The chosen bdp is guaranteed to be in the range given by `interval`.
+#' @param interval restrict the chosen bdp to this interval.
+#' @param precision granularity of the grid of considered bdp's.
+#' @keywords internal
 .find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
                                        interval = c(0.05, 0.5)) {
   if (isTRUE(attr(desired_bdp, 'fixed', TRUE))) {
@@ -94,13 +96,14 @@
   bdp_range[[which.min(first_deriv_bound)]]
 }
 
-## Approximate Value Matching
-##
-## @param x,table see [base::match] for details.
-## @param eps numerical tolerance for matching.
-## @return a vector the same length as `x` with integers giving the position in
-##         `table` of the first match if there is a match, or `NA_integer_`
-##         otherwise.
+#' Approximate Value Matching
+#'
+#' @param x,table see [base::match] for details.
+#' @param eps numerical tolerance for matching.
+#' @return a vector the same length as `x` with integers giving the position in
+#'         `table` of the first match if there is a match, or `NA_integer_`
+#'         otherwise.
+#' @keywords internal
 .approx_match <- function(x, table, eps) {
   if (missing(eps)) {
     eps <- max(.Machine$double.eps, min(sqrt(.Machine$double.eps), 0.5 * min(x, table)))
@@ -137,21 +140,22 @@ extract_metric <- function (metrics, attr, node) {
   return(estimates)
 }
 
-## Run replicated K-fold CV with random splits
-##
-## @param std_data standardized full data set
-##    (standardized by `.standardize_data`)
-## @param cv_k number of folds per CV split
-## @param cv_repl number of CV replications.
-## @param cv_est_fun function taking the standardized training set and
-##    the indices of the left-out observations and returns a list of estimates.
-##    The function always needs to return the same number of estimates!
-## @param metric function taking a vector of prediction errors and
-##    returning the scale of the prediction error.
-## @param par_cluster parallel cluster to parallelize computations.
-## @param handler_args additional arguments to the handler function.
+#' Run replicated K-fold CV with random splits
+#'
+#' @param std_data standardized full data set
+#'    (standardized by `.standardize_data`)
+#' @param cv_k number of folds per CV split
+#' @param cv_repl number of CV replications.
+#' @param cv_est_fun function taking the standardized training set and
+#'    the indices of the left-out observations and returns a list of estimates.
+#'    The function always needs to return the same number of estimates!
+#' @param metric function taking a vector of prediction errors and
+#'    returning the scale of the prediction error.
+#' @param par_cluster parallel cluster to parallelize computations.
+#' @param handler_args additional arguments to the handler function.
 #' @importFrom Matrix drop
 #' @importFrom rlang abort
+#' @keywords internal
 .run_replicated_cv <- function (std_data, cv_k, cv_repl, cv_est_fun, metric,
                                 par_cluster = NULL,
                                 handler_args = list()) {
@@ -203,21 +207,22 @@ extract_metric <- function (metrics, attr, node) {
   matrix(unlist(prediction_metrics, recursive = FALSE, use.names = FALSE), ncol = cv_repl)
 }
 
-## Standardize data
-##
-## @param x predictor matrix. Can also be a list with components `x` and `y`,
-##    in which case `y` is ignored.
-## @param y response vector.
-## @param intercept is an intercept included (i.e., should `y` be centered?)
-## @param standardize standardize or not.
-## @param robust use robust standardization.
-## @param location_rho,location_cc rho function and cutoff supplied to `mlocscale()` and `mloc()`
-## @param ... passed on to `mlocscale()`.
-## @return a list with the following entries:
+#' Standardize data
+#'
+#' @param x predictor matrix. Can also be a list with components `x` and `y`,
+#'    in which case `y` is ignored.
+#' @param y response vector.
+#' @param intercept is an intercept included (i.e., should `y` be centered?)
+#' @param standardize standardize or not.
+#' @param robust use robust standardization.
+#' @param location_rho,location_cc rho function and cutoff supplied to `mlocscale()` and `mloc()`
+#' @param ... passed on to `mlocscale()`.
+#' @return a list with the following entries:
 #' @importFrom Matrix drop
 #' @importFrom methods is
 #' @importFrom rlang abort
 #' @importFrom stats sd
+#' @keywords internal
 .standardize_data <- function (x, y, intercept, standardize, robust, sparse, mscale_opts,
                                location_rho = 'bisquare', location_cc = 4.5,
                                target_scale_x = NULL, ...) {

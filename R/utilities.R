@@ -93,6 +93,7 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
 #'
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
+#' @keywords internal
 mscale_derivative <- function (x, bdp = 0.25, order = 1,
                                cc = consistency_const(bdp, 'bisquare'),
                                opts = mscale_algorithm_options()) {
@@ -153,6 +154,7 @@ mscale_derivative <- function (x, bdp = 0.25, order = 1,
 #'    3. the M-scale associated with 1., and
 #'    4. the M-scale associated with 2.
 #' @describeIn mscale_derivative maximum of the gradient
+#' @keywords internal
 max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
                                    cc = consistency_const(bdp, 'bisquare'),
                                    opts = mscale_algorithm_options()) {
@@ -179,6 +181,7 @@ max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
 #' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
 #' @return the maximum absolute derivative over the entire grid.
 #' @describeIn mscale_derivative maximum of the gradient and hessian
+#' @keywords internal
 max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
                                   cc = consistency_const(bdp, 'bisquare'),
                                   opts = mscale_algorithm_options()) {

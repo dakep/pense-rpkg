@@ -9,12 +9,7 @@ name: 'Build pkgdown site'
 
 jobs:
   pkgdown:
-    runs-on: macOS-latest
-
-    name: macOS-latest R release
-
-    strategy:
-      fail-fast: false
+    runs-on: ubuntu-latest
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -28,7 +23,7 @@ jobs:
         with:
           use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v1
+      - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::pkgdown, local::.
           needs: website

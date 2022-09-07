@@ -88,11 +88,8 @@ devtools::install_github("dakep/pense-rpkg")
 
 ## References
 
-  - Kepplinger, D. (2020). *Robust estimation and variable selection in
-    high-dimensional linear regression models.* University of British
-    Columbia. [available online](https://hdl.handle.net/2429/75637).
+  - Kepplinger, D. (2021). Robust Variable Selection and Estimation Via Adaptive Elastic Net S-Estimators for Linear Regression (arXiv:2107.03325; Version 2). *arXiv preprint*. [doi:10.48550/arXiv.2107.03325](https://doi.org/10.48550/arXiv.2107.03325).
   - Cohen Freue, GV. Kepplinger D, Salibián-Barrera M, Smucler E.
     (2019). Robust elastic net estimators for variable selection and
     identification of proteomic biomarkers. *Annals of Applied
-    Statistics*. 13(4). [available
-    online](https://projecteuclid.org/euclid.aoas/1574910036).
+    Statistics*. 13(4). [doi:10.1214/19-AOAS1269](https://doi.org/10.1214/19-AOAS1269).

@@ -45,11 +45,11 @@ Options for computing EN estimates.
 }
 \section{Functions}{
 \itemize{
-\item \code{en_options_aug_lars}: Superseded by \code{\link[=en_lars_options]{en_lars_options()}}.
+\item \code{en_options_aug_lars()}: Superseded by \code{\link[=en_lars_options]{en_lars_options()}}.
 
-\item \code{en_options_dal}: Superseded by \code{\link[=en_dal_options]{en_dal_options()}}
+\item \code{en_options_dal()}: Superseded by \code{\link[=en_dal_options]{en_dal_options()}}
+
 }}
-
 \section{Warning}{
 Do not use these functions in new code.
 They may be removed from future versions of the package.

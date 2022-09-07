@@ -93,7 +93,7 @@ level is added to the grid of penalization levels (either the manually specified
 \code{lambda} or the automatically generated grid of size \code{nlambda}).
 If \code{standardize = TRUE}, the starting points are also scaled.}
     \item{\code{intercept}}{include an intercept in the model.}
-    \item{\code{bdp}}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+    \item{\code{bdp}}{desired breakdown point of the estimator, between 0.05 and 0.5. The actual
 breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
     \item{\code{cc}}{tuning constant for the S-estimator. Default is chosen based on the breakdown
 point \code{bdp}. This affects the estimated coefficients only if
@@ -101,11 +101,7 @@ point \code{bdp}. This affects the estimated coefficients only if
 would be affected.}
     \item{\code{eps}}{numerical tolerance.}
     \item{\code{explore_solutions}}{number of solutions to compute up to the desired precision \code{eps}.}
-    \item{\code{explore_tol}}{numerical tolerance and maximum number of iterations for
-exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
-and the number of iterations should also be much smaller than the maximum number of
-iterations given via \code{algorithm_opts}.}
-    \item{\code{explore_it}}{numerical tolerance and maximum number of iterations for
+    \item{\code{explore_tol,explore_it}}{numerical tolerance and maximum number of iterations for
 exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
 and the number of iterations should also be much smaller than the maximum number of
 iterations given via \code{algorithm_opts}.}
@@ -128,7 +124,7 @@ See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
 for details.}
     \item{\code{enpy_opts}}{options for the ENPY initial estimates, created with the
 \code{\link[=enpy_options]{enpy_options()}} function. See \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} for details.}
-    \item{\code{cv_objective}}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating
+    \item{\code{cv_k,cv_objective}}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating
 prediction performance via cross-validation.}
   }}
 

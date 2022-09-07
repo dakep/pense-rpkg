@@ -95,9 +95,7 @@ squared difference of the intercepts is less than \code{comparison_tol} and the 
 Not supported on all platforms, in which case a warning is given.}
     \item{\code{algorithm_opts}}{options for the MM algorithm to compute estimates.
 See \code{\link[=mm_algorithm_options]{mm_algorithm_options()}} for details.}
-    \item{\code{mscale_bdp}}{options for the M-scale estimate used to standardize
-the predictors (if \code{standardize = TRUE}).}
-    \item{\code{mscale_opts}}{options for the M-scale estimate used to standardize
+    \item{\code{mscale_bdp,mscale_opts}}{options for the M-scale estimate used to standardize
 the predictors (if \code{standardize = TRUE}).}
   }}
 

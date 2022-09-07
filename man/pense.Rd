@@ -68,7 +68,7 @@ penalization of each coefficient. Only allowed for \code{alpha} > 0.}
 
 \item{intercept}{include an intercept in the model.}
 
-\item{bdp}{desired breakdown point of the estimator, between 0 and 0.5. The actual
+\item{bdp}{desired breakdown point of the estimator, between 0.05 and 0.5. The actual
 breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
 \item{cc}{tuning constant for the S-estimator. Default is chosen based on the breakdown

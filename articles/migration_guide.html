@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.1.1-902</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0-0928</span>
       </span>
     </div>
 
@@ -87,7 +87,7 @@
       <h1 data-toc-skip>Migrating from pense version 1.x to 2.x</h1>
                         <h4 data-toc-skip class="author">David Kepplinger</h4>
             
-            <h4 data-toc-skip class="date">2022-09-07</h4>
+            <h4 data-toc-skip class="date">2022-09-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/HEAD/vignettes/migration_guide.Rmd" class="external-link"><code>vignettes/migration_guide.Rmd</code></a></small>
       <div class="hidden name"><code>migration_guide.Rmd</code></div>
@@ -103,7 +103,7 @@
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dakep.github.io/pense-rpkg/" class="external-link">pense</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">packageVersion</a></span><span class="op">(</span><span class="st">"pense"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] '2.1.1.902'</span></span></code></pre></div>
+<span><span class="co">#&gt; [1] '2.2.0.928'</span></span></code></pre></div>
 <p>This guide uses the following simulated data:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
@@ -138,7 +138,7 @@
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ call     : language pense:::.pense_args(x = x, y = y, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L,      standardize = TRUE)</span></span>
+<span><span class="co">#&gt;  $ call     : language pense(x = x, y = y, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span></span>
 <span><span class="co">#&gt;  $ bdp      : num 0.255</span></span>
 <span><span class="co">#&gt;  $ lambda   :List of 1</span></span>
 <span><span class="co">#&gt;  $ metrics  :List of 1</span></span>
@@ -146,13 +146,14 @@
 <span><span class="co">#&gt;  $ alpha    : num 0.6</span></span>
 <span><span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_fit"</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">fitted_with_cv</span>, max.level <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 8</span></span>
-<span><span class="co">#&gt;  $ call      : language pense:::.pense_args(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40,      nlambda_enpy = 5L)</span></span>
+<span><span class="co">#&gt; List of 9</span></span>
+<span><span class="co">#&gt;  $ call      : language pense_cv(x = x, y = y, cv_k = 5, alpha = 0.6, nlambda = 40, nlambda_enpy = 5L)</span></span>
 <span><span class="co">#&gt;  $ bdp       : num 0.255</span></span>
 <span><span class="co">#&gt;  $ lambda    :List of 1</span></span>
 <span><span class="co">#&gt;  $ alpha     : num 0.6</span></span>
 <span><span class="co">#&gt;  $ cvres     :'data.frame':  40 obs. of  4 variables:</span></span>
 <span><span class="co">#&gt;  $ cv_measure: chr "tau_size"</span></span>
+<span><span class="co">#&gt;  $ cv_repl   : int 1</span></span>
 <span><span class="co">#&gt;  $ metrics   :List of 1</span></span>
 <span><span class="co">#&gt;  $ estimates :List of 40</span></span>
 <span><span class="co">#&gt;  - attr(*, "class")= chr [1:2] "pense" "pense_cvfit"</span></span></code></pre></div>
@@ -164,10 +165,12 @@
 <p>As in previous versions, the coefficient estimates are best accessed via the <code><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients()</a></code> method. For fits with estimated prediction performance, the method returns the coefficients of the model yielding the lowest prediction error:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients</a></span><span class="op">(</span><span class="va">fitted_with_cv</span><span class="op">)</span></span>
-<span><span class="co">#&gt; (Intercept)          X1          X2          X3          X4          X5 </span></span>
-<span><span class="co">#&gt;  0.05854362  0.55173703 -1.76999133  1.44092237 -0.11610022  0.14345728 </span></span>
-<span><span class="co">#&gt;          X6          X7          X8          X9         X10 </span></span>
-<span><span class="co">#&gt;  0.04029808 -0.05397077  0.01579129  0.21060774  0.08155084</span></span></code></pre></div>
+<span><span class="co">#&gt;   (Intercept)            X1            X2            X3            X4 </span></span>
+<span><span class="co">#&gt;  0.0765173199  0.5425122759 -1.7468867043  1.4313164083 -0.1059470272 </span></span>
+<span><span class="co">#&gt;            X5            X6            X7            X8            X9 </span></span>
+<span><span class="co">#&gt;  0.1411503529  0.0471168631 -0.0456858704  0.0005689751  0.2026214548 </span></span>
+<span><span class="co">#&gt;           X10 </span></span>
+<span><span class="co">#&gt;  0.0734261101</span></span></code></pre></div>
 <p>Fits computed with <code><a href="../reference/pense.html">pense()</a></code>, however, do not have information about prediction performance, hence <code>coefficients(fitted_no_cv)</code> would not know what penalization level to use. In this case, the desired penalization level must be specified manually:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coefficients</a></span><span class="op">(</span><span class="va">fitted_no_cv</span>, lambda <span class="op">=</span> <span class="va">fitted_no_cv</span><span class="op">$</span><span class="va">lambda</span><span class="op">[</span><span class="fl">10</span><span class="op">]</span><span class="op">)</span></span>

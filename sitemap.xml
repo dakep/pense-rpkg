@@ -28,6 +28,9 @@
     <loc>/news/index.html</loc>
   </url>
   <url>
+    <loc>/reference/cd_algorithm_options.html</loc>
+  </url>
+  <url>
     <loc>/reference/coef.pense_cvfit.html</loc>
   </url>
   <url>
@@ -65,6 +68,9 @@
   </url>
   <url>
     <loc>/reference/en_algorithm_options.html</loc>
+  </url>
+  <url>
+    <loc>/reference/en_cd_options.html</loc>
   </url>
   <url>
     <loc>/reference/en_dal_options.html</loc>

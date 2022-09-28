@@ -33,7 +33,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.1.1-902</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0-0928</span>
       </span>
     </div>
 
@@ -87,7 +87,7 @@
       <h1 data-toc-skip>Estimating predictive models</h1>
                         <h4 data-toc-skip class="author">David Kepplinger</h4>
             
-            <h4 data-toc-skip class="date">2022-09-07</h4>
+            <h4 data-toc-skip class="date">2022-09-28</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/HEAD/vignettes/computing_adapense.Rmd" class="external-link"><code>vignettes/computing_adapense.Rmd</code></a></small>
       <div class="hidden name"><code>computing_adapense.Rmd</code></div>
@@ -161,7 +161,7 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <p>Once we are happy with the stability of the estimated prediction performance, we can extract summary information from the predictive model with</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_075</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by 10 replications of </span></span>
+<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by replications of </span></span>
 <span><span class="co">#&gt; 5-fold cross-validation.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 15 out of 40 predictors have non-zero coefficients:</span></span>
@@ -189,7 +189,7 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <p>This model corresponds to the model with smallest scale of the prediction error (the blue dot in the plot above). There are a total of 15 predictors in the model. If you think a sparser model may be more appropriate for your application, you can also apply the <em>q</em>-standard-error rule as in the plots. The default, the one-standard-error rule leads to the following predictive model:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_075</span>, lambda <span class="op">=</span> <span class="st">"2-se"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by 10 replications of </span></span>
+<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by replications of </span></span>
 <span><span class="co">#&gt; 5-fold cross-validation.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 7 out of 40 predictors have non-zero coefficients:</span></span>
@@ -264,7 +264,7 @@ Estimated prediction accuracy using 10 replications of 5-fold CV.
 <p>This relaxation still leads to the combination of hyper-parameters <code>alpha=0.75</code> and <code>exponent=3</code>, but now with only 7 relevant predictors; including all truly relevant predictors. We can see that the estimated coefficients and estimated relevant predictors are close to the truth:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_exp_3</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda <span class="op">=</span> <span class="st">'3-se'</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by 10 replications of </span></span>
+<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by replications of </span></span>
 <span><span class="co">#&gt; 5-fold cross-validation.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; 7 out of 40 predictors have non-zero coefficients:</span></span>

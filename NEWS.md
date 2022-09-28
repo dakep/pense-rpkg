@@ -1,5 +1,6 @@
 # HEAD
  * Fix bug that the argument `max_solutions` is not used correctly.
+ * Add new numerical algorithms
 
 # pense 2.1.0
   * Penalty loadings are now applied to both the L1 and L2 parts of the EN penalty.

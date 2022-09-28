@@ -10,6 +10,7 @@
 #define RCPP_PARSE_CONFIG_HPP_
 
 #include "nsoptim_forward.hpp"
+#include "cd_pense.hpp"
 
 namespace Rcpp {
 namespace traits {
@@ -27,6 +28,24 @@ template<> class Exporter< nsoptim::DalEnConfiguration > {
  public:
   explicit Exporter(SEXP r_obj) noexcept : r_obj_(r_obj) {}
   nsoptim::DalEnConfiguration get() const;
+ private:
+  SEXP r_obj_;
+};
+
+//! Converter for an R-list to configuration options for the CD-Pense algorithm.
+template<> class Exporter< pense::CDPenseConfiguration > {
+ public:
+  explicit Exporter(SEXP r_obj) noexcept : r_obj_(r_obj) {}
+  pense::CDPenseConfiguration get() const;
+ private:
+  SEXP r_obj_;
+};
+
+//! Converter for an R-list to configuration options for the CD-LS algorithm.
+template<> class Exporter< nsoptim::CDConfiguration > {
+ public:
+  explicit Exporter(SEXP r_obj) noexcept : r_obj_(r_obj) {}
+  nsoptim::CDConfiguration get() const;
  private:
   SEXP r_obj_;
 };

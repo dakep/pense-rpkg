@@ -29,13 +29,15 @@ enum class EnAlgorithm {
   kVarStepAdmm = 2,
   kDal = 3,
   kRidge = 4,
-  kLars = 5
+  kLars = 5,
+  kCoordinateDescent = 6
 };
 
 //! Integer IDs for supported EN algorithms
 enum class PenseAlgorithm {
   kMm = 1,
-  kAdmm = 2
+  kAdmm = 2,
+  kCoordinateDescent = 3
 };
 
 //! Integer IDs for supported EN algorithms

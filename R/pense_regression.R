@@ -85,6 +85,8 @@
 #'    description.
 #' @param enpy_specific use the EN-PY initial estimates only at the penalization level they
 #'    are computed for. See details for a description.
+#' @param carry_forward carry the best solutions forward to the next penalty
+#'   level.
 #' @param sparse use sparse coefficient vectors.
 #' @param ncores number of CPU cores to use in parallel. By default, only one CPU core is used.
 #'    Not supported on all platforms, in which case a warning is given.
@@ -132,8 +134,9 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
                   lambda_min_ratio, enpy_lambda, penalty_loadings,
                   intercept = TRUE, bdp = 0.25, cc,
                   add_zero_based = TRUE, enpy_specific = FALSE, other_starts,
+                  carry_forward = TRUE,
                   eps = 1e-6, explore_solutions = 10, explore_tol = 0.1,
-                  explore_it = 20, max_solutions = 1,
+                  explore_it = 5, max_solutions = 1,
                   comparison_tol = sqrt(eps), sparse = FALSE,
                   ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(),
@@ -164,7 +167,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
   fits <- .pense_internal_multi(args)
 
   structure(list(
-    call = call,
+    call = match.call(expand.dots = TRUE),
     bdp = stable_bdp,
     lambda = lapply(fits, `[[`, 'lambda'),
     metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
@@ -434,13 +437,14 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   structure(list(
-    call = call,
+    call = match.call(expand.dots = TRUE),
     bdp = stable_bdp,
     lambda = lapply(fits, `[[`, 'lambda'),
     alpha = vapply(fits, FUN.VALUE = numeric(1L),
                    FUN = `[[`, 'alpha', USE.NAMES = FALSE),
     cvres = cv_curves,
     cv_measure = cv_measure_str,
+    cv_repl = cv_repl,
     metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
     estimates = unlist(lapply(fits, `[[`, 'estimates'),
                        recursive = FALSE, use.names = FALSE)),

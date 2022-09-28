@@ -223,15 +223,16 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom rlang abort
 #' @importFrom stats sd
 #' @keywords internal
-.standardize_data <- function (x, y, intercept, standardize, robust, sparse, mscale_opts,
-                               location_rho = 'bisquare', location_cc = 4.5,
+.standardize_data <- function (x, y, intercept, standardize, robust, sparse,
+                               mscale_opts, location_rho = 'bisquare', cc,
                                target_scale_x = NULL, ...) {
   if (is.list(x) && !is.null(x$x) && !is.null(x$y)) {
     y <- x$y
     x <- x$x
   }
 
-  ret_list <- list(scale_x = rep.int(1, ncol(x)), mux = numeric(ncol(x)), muy = 0, x = x, y = y)
+  ret_list <- list(scale_x = rep.int(1, ncol(x)), mux = numeric(ncol(x)),
+                   muy = 0, x = x, y = y)
 
   ## Center data for numerical convenience
   if (isTRUE(intercept)) {
@@ -240,9 +241,16 @@ extract_metric <- function (metrics, attr, node) {
       ret_list$muy <- mean(y)
     } else {
       ret_list$mux <- apply(x, 2, function (xj) {
-        mloc(xj, rho = location_rho, cc = location_cc, opts = mscale_opts)
+        mloc(xj, rho = location_rho, cc = cc, opts = mscale_opts)
       })
-      ret_list$muy <- mloc(y, rho = location_rho, cc = location_cc, opts = mscale_opts)
+      # Center the response using the S-estimate of regression for the
+      # 0-slope.
+      y_locscale <- mlocscale(y, location_rho = location_rho, location_cc = cc,
+                              scale_cc = cc, opts = mscale_opts, ...)
+      if (!isTRUE(y_locscale[['scale']] > .Machine$double.eps)) {
+        abort("M-scale of response is 0.")
+      }
+      ret_list$muy <- y_locscale[['location']]
       if (!is.finite(ret_list$muy)) {
         # In case the response has more than 50% equal values.
         ret_list$muy <- 0
@@ -259,24 +267,27 @@ extract_metric <- function (metrics, attr, node) {
       apply(ret_list$x, 2, sd)
     } else {
       locscale <- apply(ret_list$x, 2, function (xj) {
-        mlocscale(xj, location_rho = location_rho, location_cc = location_cc,
-                  opts = mscale_opts, ...)
+        mlocscale(xj, location_rho = location_rho, location_cc = cc,
+                  scale_cc = cc, opts = mscale_opts, ...)
       })
       if (isTRUE(intercept)) {
         # Re-center the predictors with the updated centers
         ret_list$mux <- ret_list$mux + locscale[1L, ]
-        ret_list$x <- sweep(x, 2L, ret_list$mux, FUN = `-`, check.margin = FALSE)
+        ret_list$x <- sweep(x, 2L, ret_list$mux, FUN = `-`,
+                            check.margin = FALSE)
       }
       locscale[2L, ]
     }
 
     if (!isTRUE(all(ret_list$scale_x > 0))) {
-      abort("Standardization failed. One or more variables in `x` have a scale of 0.")
+      abort(paste("Standardization failed. One or more variables in `x`",
+                  "have a scale of 0."))
     }
 
     if (isTRUE(standardize)) {
       ret_list$x <- if (!is.null(target_scale_x)) {
-        sweep(ret_list$x, 2L, target_scale_x / ret_list$scale_x, FUN = `*`, check.margin = FALSE)
+        sweep(ret_list$x, 2L, target_scale_x / ret_list$scale_x, FUN = `*`,
+              check.margin = FALSE)
       } else {
         sweep(ret_list$x, 2L, ret_list$scale_x, FUN = `/`, check.margin = FALSE)
       }
@@ -298,10 +309,11 @@ extract_metric <- function (metrics, attr, node) {
       # In case of "CV only" standardization, match the original scaling
       .standardize_data(x, y,
                         intercept = intercept,
-                        standardize = TRUE, robust = robust,
+                        standardize = TRUE,
+                        robust = robust,
                         sparse = sparse,
                         location_rho = location_rho,
-                        location_cc = location_cc,
+                        cc = cc,
                         mscale_opts = mscale_opts,
                         target_scale_x = ret_list$scale_x,
                         ... = ...)
@@ -312,7 +324,7 @@ extract_metric <- function (metrics, attr, node) {
                         robust = robust,
                         sparse = sparse,
                         location_rho = location_rho,
-                        location_cc = location_cc,
+                        cc = cc,
                         mscale_opts = mscale_opts,
                         ... = ...)
     }
@@ -327,7 +339,8 @@ extract_metric <- function (metrics, attr, node) {
     }
     if (isTRUE(intercept)) {
       # Adjust intercept
-      coef_obj$intercept <- coef_obj$intercept - ret_list$muy + sum(ret_list$mux * coef_obj$beta)
+      coef_obj$intercept <- coef_obj$intercept - ret_list$muy +
+        sum(ret_list$mux * coef_obj$beta)
     }
     if (isTRUE(standardize)) {
       coef_obj$beta <- coef_obj$beta * (ret_list$scale_x / target_scale_x)
@@ -348,7 +361,8 @@ extract_metric <- function (metrics, attr, node) {
       coef_obj$std_intercept <- coef_obj$intercept
 
       if (isTRUE(standardize)) {
-        coef_obj$beta@x <- coef_obj$beta@x * target_scale_x / ret_list$scale_x[coef_obj$beta@i]
+        coef_obj$beta@x <- coef_obj$beta@x * target_scale_x /
+          ret_list$scale_x[coef_obj$beta@i]
       }
       if (isTRUE(intercept)) {
         # Recreate intercept
@@ -374,7 +388,8 @@ extract_metric <- function (metrics, attr, node) {
       }
       if (isTRUE(intercept)) {
         # Recreate intercept
-        coef_obj$intercept <- coef_obj$intercept + ret_list$muy - sum(ret_list$mux * coef_obj$beta)
+        coef_obj$intercept <- coef_obj$intercept + ret_list$muy -
+          sum(ret_list$mux * coef_obj$beta)
       }
       return(coef_obj)
     }

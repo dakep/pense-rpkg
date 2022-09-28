@@ -1,4 +1,3 @@
-
 #' Options for the ENPY Algorithm
 #'
 #' Additional control options for the elastic net Peña-Yohai procedure.
@@ -24,11 +23,17 @@
 #' @return options for the ENPY algorithm.
 #' @export
 enpy_options <- function (max_it = 10, keep_psc_proportion = 0.5,
-                          en_algorithm_opts, keep_residuals_measure = c('threshold', 'proportion'),
-                          keep_residuals_proportion = 0.5,  keep_residuals_threshold = 2,
+                          en_algorithm_opts,
+                          keep_residuals_measure = c('threshold', 'proportion'),
+                          keep_residuals_proportion = 0.5,
+                          keep_residuals_threshold = 2,
                           retain_best_factor = 2, retain_max = 500) {
   list(max_it = .as(max_it[[1L]], 'integer'),
-       en_options = if (missing(en_algorithm_opts)) { NULL } else { en_algorithm_opts },
+       en_options = if (missing(en_algorithm_opts)) {
+         NULL
+       } else {
+         en_algorithm_opts
+       },
        keep_psc_proportion = .as(keep_psc_proportion[[1L]], 'numeric'),
        use_residual_threshold = match.arg(keep_residuals_measure) == 'threshold',
        keep_residuals_proportion = .as(keep_residuals_proportion[[1L]], 'numeric'),
@@ -78,35 +83,98 @@ mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
 #' Additional options for the MM algorithm to compute EN S- and M-estimates.
 #'
 #' @param max_it maximum number of iterations.
-#' @param tightening how to make inner iterations more precise as the algorithm approaches a local minimum.
-#' @param tightening_steps for *adaptive* tightening strategy, how often to tighten until the desired tolerance
-#'    is attained.
-#' @param en_algorithm_opts options for the inner LS-EN algorithm. See [en_algorithm_options] for details.
+#' @param tightening how to make inner iterations more precise as the algorithm
+#'   approaches a local minimum.
+#' @param tightening_steps for *adaptive* tightening strategy, how often to
+#'   tighten until the desired tolerance is attained.
+#' @param en_algorithm_opts options for the inner LS-EN algorithm.
+#'   See [en_algorithm_options] for details.
 #'
 #' @return options for the MM algorithm.
+#' @seealso cd_algorithm_options for a direct optimization of the non-convex
+#'   PENSE loss.
 #' @export
-mm_algorithm_options <- function (max_it = 500, tightening = c('adaptive', 'exponential', 'none'),
-                                  tightening_steps = 2, en_algorithm_opts) {
+mm_algorithm_options <- function (max_it = 500,
+                                  tightening = c('adaptive', 'exponential',
+                                                 'none'),
+                                  tightening_steps = 2,
+                                  en_algorithm_opts) {
   list(algorithm = 'mm', max_it = .as(max_it[[1L]], 'integer'),
        tightening = .tightening_id(match.arg(tightening)),
        tightening_steps = .as(tightening_steps[[1L]], 'integer'),
-       en_options = if (missing(en_algorithm_opts)) { NULL } else { en_algorithm_opts })
+       en_options = if (missing(en_algorithm_opts)) {
+         NULL
+       } else {
+         en_algorithm_opts
+       })
 }
 
+#' Coordinate Descent (CD) Algorithm to Compute Penalized Elastic Net
+#' S-estimates
+#'
+#' Set options for the CD algorithm to compute adaptive EN S-estimates.
+#'
+#' @param max_it maximum number of iterations.
+#' @param reset_it number of iterations after which the residuals are
+#'   re-computed from scratch, to prevent numerical drifts from incremental
+#'   updates.
+#' @param linesearch_steps maximum number of steps used for line search.
+#' @param linesearch_mult multiplier to adjust the step size in the line
+#'   search.
+#'
+#' @return options for the CD algorithm to compute (adaptive) PENSE estimates.
+#' @seealso mm_algorithm_options to optimize the non-convex PENSE objective
+#'   function via a sequence of convex problems.
+#' @export
+#' @importFrom rlang abort
+cd_algorithm_options <- function (max_it = 1000, reset_it = 8,
+                                  linesearch_steps = 4,
+                                  linesearch_mult = 0.5) {
+  opts <- list(algorithm = 'cd',
+               max_it = .as(max_it[[1L]], 'integer'),
+               linesearch_steps = .as(linesearch_steps[[1L]], 'integer'),
+               linesearch_mult = .as(linesearch_mult[[1L]], 'numeric'),
+               reset_it = .as(reset_it[[1L]], 'integer'))
 
-#' Control the Algorithm to Compute (Weighted) Least-Squares Elastic Net Estimates
+  if (opts$linesearch_mult <= 0 || opts$linesearch_mult >= 1) {
+    abort("`linesearch_mult` must be between 0 and 1.")
+  }
+  if (opts$linesearch_steps < 1L) {
+    abort("`linesearch_steps` must be at least 1.")
+  }
+  if (opts$max_it < 2L) {
+    abort("`max_it` must be greater than 1.")
+  }
+  if (opts$reset_it < 2L) {
+    abort("`reset_it` must be greater than 1.")
+  }
+
+  opts
+}
+
+#' Control the Algorithm to Compute (Weighted) Least-Squares Elastic
+#' Net Estimates
 #'
-#' The package supports different algorithms to compute the EN estimate for weighted LS loss functions.
-#' Each algorithm has certain characteristics that make it useful for some problems.
-#' To select a specific algorithm and adjust the options, use any of the `en_***_options` functions.
+#' The package supports different algorithms to compute the EN estimate
+#' for weighted LS loss functions.
+#' Each algorithm has certain characteristics that make it useful for some
+#' problems.
+#' To select a specific algorithm and adjust the options, use any of
+#' the `en_***_options` functions.
 #'
-#' * [en_lars_options()]: Use the tuning-free LARS algorithm. This computes _exact_ (up to numerical errors) solutions
-#'    to the EN-LS problem. It is not iterative and therefore can not benefit from approximate
+#' * [en_lars_options()]: Use the tuning-free LARS algorithm.
+#'    This computes _exact_ (up to numerical errors) solutions to the EN-LS
+#'    problem.
+#'    It is not iterative and therefore can not benefit from approximate
 #'    solutions, but in turn guarantees that a solution will be found.
-#' * [en_admm_options()]: Use an iterative ADMM-type algorithm which needs \eqn{O(n p)} operations per iteration and
-#'    converges sub-linearly.
-#' * [en_dal_options()]: Use the iterative Dual Augmented Lagrangian (DAL) method. DAL needs \eqn{O(n^3 p^2)} operations
-#'    per iteration, but converges exponentially.
+#' * [en_cd_options()]: Use an iterative coordinate descent algorithm which
+#'    needs \eqn{O(n p)} operations per iteration and converges sub-linearly.
+#' * [en_admm_options()]: Use an iterative ADMM-type algorithm which needs
+#'    \eqn{O(n p)} operations per iteration and converges sub-linearly.
+#' * [en_dal_options()]: Use the iterative Dual Augmented Lagrangian (DAL)
+#'    method.
+#'    DAL needs \eqn{O(n^3 p^2)} operations per iteration, but converges
+#'    exponentially.
 #'
 #' @name en_algorithm_options
 NULL
@@ -117,6 +185,20 @@ NULL
 #' @export
 en_lars_options <- function () {
   list(algorithm = 'lars')
+}
+
+#' Use Coordinate Descent to Solve Elastic Net Problems
+#'
+#' @param max_it maximum number of iterations.
+#' @param reset_it number of iterations after which the residuals are
+#'   re-computed from scratch, to prevent numerical drifts from incremental
+#'   updates.
+#' @family EN algorithms
+#' @export
+en_cd_options <- function (max_it = 1000, reset_it = 8) {
+  list(algorithm = 'cdls',
+       max_it = .as(max_it[[1L]], 'integer'),
+       reset_it = .as(reset_it[[1L]], 'integer'))
 }
 
 #' Use the ADMM Elastic Net Algorithm
@@ -130,7 +212,11 @@ en_lars_options <- function () {
 #' @family EN algorithms
 #' @export
 en_admm_options <- function (max_it = 1000, step_size, acceleration = 1) {
-  tau <- if (missing(step_size) || is.null(step_size)) { -1 } else { .as(step_size[[1L]], 'numeric') }
+  tau <- if (missing(step_size) || is.null(step_size)) {
+    -1
+  } else {
+    .as(step_size[[1L]], 'numeric')
+  }
   list(algorithm = 'admm',
        admm_type = 'linearized',
        max_it = .as(max_it[[1L]], 'integer'),
@@ -160,9 +246,12 @@ en_dal_options <- function (max_it = 100, max_inner_it = 100, eta_multiplier = 2
        sparse = TRUE,
        max_it = .as(max_it[[1L]], 'integer'),
        max_inner_it = .as(max_inner_it[[1L]], 'integer'),
-       eta_start_numerator_conservative = .as(eta_start_conservative[[1L]], 'numeric'),
-       eta_start_numerator_aggressive = .as(eta_start_aggressive[[1L]], 'numeric'),
-       lambda_relchange_aggressive = .as(lambda_relchange_aggressive[[1L]], 'numeric'),
+       eta_start_numerator_conservative = .as(eta_start_conservative[[1L]],
+                                              'numeric'),
+       eta_start_numerator_aggressive = .as(eta_start_aggressive[[1L]],
+                                            'numeric'),
+       lambda_relchange_aggressive = .as(lambda_relchange_aggressive[[1L]],
+                                         'numeric'),
        eta_multiplier = .as(eta_multiplier[[1L]], 'numeric'))
 }
 
@@ -174,18 +263,6 @@ en_ridge_options <- function () {
   list(algorithm = 'augridge', sparse = FALSE)
 }
 
-## Check if the selected EN algorithm can handle the given penalty.
-.check_en_algorithm <- function (en_algorithm_opts, alpha) {
-  if (en_algorithm_opts$algorithm == 'dal') {
-    if(!isTRUE(alpha > 0)) {
-      warning('The DAL algorithm can not handle a Ridge penalty. Using default
-              algorithm as fallback.')
-      return(FALSE)
-    }
-  }
-  return(TRUE)
-}
-
 ## Choose the appropriate ADMM algorithm type based on the penalty and
 ## the problem size.
 .choose_admm_algorithm <- function (en_algorithm_opts, alpha, x) {
@@ -194,24 +271,28 @@ en_ridge_options <- function () {
 
 .en_algorithm_id <- function (en_algorithm_opts) {
   switch (en_algorithm_opts$algorithm,
-          admm = switch(en_algorithm_opts$admm_type, `var-stepsize` = 2L, 1L),
-          dal = 3L,
-          augridge = 4L,
-          lars = 5L,
-          5L)
+          admm = switch(en_algorithm_opts$admm_type,
+                        `var-stepsize` = .k_en_algo_admm_var,
+                        .k_en_algo_admm_lin),
+          dal = .k_en_algo_dal,
+          augridge = .k_en_algo_augridge,
+          lars = .k_en_algo_lars,
+          cdls = .k_en_algo_cdls,
+          .k_en_algo_lars)
 }
 
 .pense_algorithm_id <- function (opts) {
   switch (opts$algorithm,
-          admm = 2L,
-          mm = 1L,
-          1L)
+          cd = .k_pense_algo_cd,
+          admm = .k_pense_algo_admm,
+          mm = .k_pense_algo_mm,
+          .k_pense_algo_mm)
 }
 
 .regmest_algorithm_id <- function (opts) {
   switch (opts$algorithm,
-          mm = 1L,
-          1L)
+          mm = .k_regm_algo_mm,
+          .k_regm_algo_mm)
 }
 
 .tightening_id <- function (tightening) {
@@ -223,8 +304,9 @@ en_ridge_options <- function () {
 .select_en_algorithm <- function (en_options, alpha, sparse, eps) {
   if (!is.null(en_options)) {
     # Check if the EN algorithm can handle the given `alpha`
-    if (identical(en_options$algorithm, 'dal') && !all(alpha > 0)) {
-      warn(paste("The DAL algorithm can not handle an EN penalty with alpha=0.",
+    if (!all(alpha > 0) && (identical(en_options$algorithm, 'dal') ||
+                            identical(en_options$algorithm, 'cdls'))) {
+      warn(paste("The chosen algorithm can not handle an EN penalty with alpha=0.",
                  "Using default algorithm as fallback."))
       en_options <- NULL
     } else if (identical(en_options$algorithm, 'augridge') && !all(alpha < .Machine$double.eps)) {

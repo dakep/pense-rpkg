@@ -81,4 +81,7 @@ function with respect to each element over a grid of values.
 \item \code{max_mscale_grad_hess()}: maximum of the gradient and hessian
 
 }}
+<<<<<<< HEAD
 \keyword{internal}
+=======
+>>>>>>> research/coorddescent

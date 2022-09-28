@@ -1,10 +1,12 @@
 #' Compute Penalized Elastic Net M-Estimates from PENSE
 #'
-#' This is a convenience wrapper around [pense_cv()] and [regmest_cv()], for the common use-case of computing
-#' a highly-robust S-estimate followed by a more efficient M-estimate using the scale of the residuals from the
-#' S-estimate.
+#' This is a convenience wrapper around [pense_cv()] and [regmest_cv()], for
+#' the common use-case of computing
+#' a highly-robust S-estimate followed by a more efficient M-estimate using
+#' the scale of the residuals from the S-estimate.
 #'
-#' @param x either a numeric matrix of predictor values, or a cross-validated PENSE fit from [pense_cv()].
+#' @param x either a numeric matrix of predictor values, or a cross-validated
+#'  PENSE fit from [pense_cv()].
 #' @family functions to compute robust estimates with CV
 #' @export
 pensem_cv <- function (x, ...) {
@@ -27,12 +29,16 @@ pensem <- function (x, ...) {
 
 
 #' @inheritParams pense
-#' @param cc cutoff constant for Tukey's bisquare \eqn{\rho} function in the M-estimation objective function.
-#' @param lambda_m,lambda_s optional user-supplied sequence of penalization levels for the S- and M-estimates.
-#'    If given and not `NULL`, `nlambda` and `lambda_min_ratio` are ignored for the respective estimate (S and/or M).
+#' @param cc cutoff constant for Tukey's bisquare \eqn{\rho} function in the
+#'  M-estimation objective function.
+#' @param lambda_m,lambda_s optional user-supplied sequence of penalization
+#'  levels for the S- and M-estimates.
+#'  If given and not `NULL`, `nlambda` and `lambda_min_ratio` are ignored for
+#'  the respective estimate (S and/or M).
 #' @template cv_params
 #'
-#' @return an object of cross-validated regularized M-estimates as returned from [regmest_cv()].
+#' @return an object of cross-validated regularized M-estimates as returned
+#'  from [regmest_cv()].
 #'
 #' @export
 #'
@@ -40,16 +46,24 @@ pensem <- function (x, ...) {
 #' @importFrom rlang abort
 #' @importFrom methods is
 #' @importFrom stats coef
-pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50, lambda_min_ratio, lambda_m, lambda_s,
-                               standardize = TRUE, penalty_loadings, intercept = TRUE, bdp = 0.25, ncores = 1,
-                               sparse = FALSE, eps = 1e-6, cc = 4.7, cv_k = 5, cv_repl = 1, cl = NULL,
-                               cv_metric = c('tau_size', 'mape', 'rmspe'), add_zero_based = TRUE,
-                               explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
-                               fit_all = TRUE, comparison_tol = sqrt(eps), algorithm_opts = mm_algorithm_options(),
-                               mscale_opts = mscale_algorithm_options(), nlambda_enpy = 10, enpy_opts = enpy_options(),
+pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50,
+                               lambda_min_ratio, lambda_m, lambda_s,
+                               standardize = TRUE, penalty_loadings,
+                               intercept = TRUE, bdp = 0.25, ncores = 1,
+                               sparse = FALSE, eps = 1e-6, cc = 4.7,
+                               cv_k = 5, cv_repl = 1, cl = NULL,
+                               cv_metric = c('tau_size', 'mape', 'rmspe'),
+                               add_zero_based = TRUE,
+                               explore_solutions = 10, explore_tol = 0.1,
+                               explore_it = 5, max_solutions = 10,
+                               fit_all = TRUE, comparison_tol = sqrt(eps),
+                               algorithm_opts = mm_algorithm_options(),
+                               mscale_opts = mscale_algorithm_options(),
+                               nlambda_enpy = 10, enpy_opts = enpy_options(),
                                ...) {
   if (is(x, 'pense_fit')) {
-    abort("A `pense()` fit can not be used for `pensem()`. Use `pense_cv()` instead.")
+    abort(paste("A `pense()` fit can not be used for `pensem()`.",
+                "Use `pense_cv()` instead."))
   }
 
   cl <- match.call(expand.dots = TRUE)
@@ -94,21 +108,30 @@ pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50, lambda_min_ratio
 
 #' @rdname pensem_cv
 #'
-#' @param scale initial scale estimate to use in the M-estimation. By default the S-scale from the PENSE fit is used.
-#' @param x_train,y_train override arguments `x` and `y` as provided in the call to `pense_cv()`. This is useful if
-#'    the arguments in the `pense_cv()` call are not available in the current environment.
+#' @param scale initial scale estimate to use in the M-estimation.
+#'  By default the S-scale from the PENSE fit is used.
+#' @param x_train,y_train override arguments `x` and `y` as provided in the
+#'  call to `pense_cv()`. This is useful if the arguments in the `pense_cv()`
+#'  call are not available in the current environment.
 #'
 #' @importFrom stats coef
 #' @export
 #'
 #' @seealso [pense_cv()] to compute the starting S-estimate.
-pensem_cv.pense_cvfit <- function (x, scale, alpha, nlambda = 50, lambda_min_ratio, lambda_m,
-                                   standardize = TRUE, penalty_loadings, intercept = TRUE, bdp = 0.25, ncores = 1,
-                                   sparse = FALSE, eps = 1e-6, cc = 4.7, cv_k = 5, cv_repl = 1, cl = NULL,
-                                   cv_metric = c('tau_size', 'mape', 'rmspe'), add_zero_based = TRUE,
-                                   explore_solutions = 10, explore_tol = 0.1, max_solutions = 10,
-                                   fit_all = TRUE, comparison_tol = sqrt(eps), algorithm_opts = mm_algorithm_options(),
-                                   mscale_opts = mscale_algorithm_options(), x_train, y_train, ...) {
+pensem_cv.pense_cvfit <- function (x, scale, alpha,
+                                   nlambda = 50, lambda_min_ratio, lambda_m,
+                                   standardize = TRUE, penalty_loadings,
+                                   intercept = TRUE, bdp = 0.25, ncores = 1,
+                                   sparse = FALSE, eps = 1e-6, cc = 4.7,
+                                   cv_k = 5, cv_repl = 1, cl = NULL,
+                                   cv_metric = c('tau_size', 'mape', 'rmspe'),
+                                   add_zero_based = TRUE,
+                                   explore_solutions = 10, explore_tol = 0.1,
+                                   explore_it = 5, max_solutions = 10,
+                                   fit_all = TRUE, comparison_tol = sqrt(eps),
+                                   algorithm_opts = mm_algorithm_options(),
+                                   mscale_opts = mscale_algorithm_options(),
+                                   x_train, y_train, ...) {
   cl <- match.call(expand.dots = TRUE)
 
   if (missing(cv_k)) {
@@ -131,7 +154,8 @@ pensem_cv.pense_cvfit <- function (x, scale, alpha, nlambda = 50, lambda_min_rat
   # Determine the scale of the residuals from the best PENSE fit
   if (missing(scale)) {
     pense_coefs <- coef(x, lambda = 'min')
-    resids <- as.numeric(y_train - x_train %*% pense_coefs[-1L] - pense_coefs[[1L]])
+    resids <- as.numeric(y_train - x_train %*% pense_coefs[-1L] -
+                           pense_coefs[[1L]])
     cc <- if (!is.null(x$call$cc)) {
       eval.parent(x$call$cc)
     } else {

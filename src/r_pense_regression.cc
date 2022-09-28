@@ -16,15 +16,16 @@
 #include "enpy_initest.hpp"
 #include "robust_scale_location.hpp"
 #include "s_loss.hpp"
-#include "regularization_path.hpp"
+#include "cd_pense.hpp"
+#include "regularization_path_new.hpp"
 #include "constants.hpp"
 
 using Rcpp::as;
 using nsoptim::LsRegressionLoss;
 using nsoptim::Metrics;
 template<class LossFunction>
-using AugmentedRidgeOptimizer = nsoptim::AugmentedLarsOptimizer<LossFunction, nsoptim::RidgePenalty,
-                                                                nsoptim::RegressionCoefficients<arma::vec>>;
+using AugmentedRidgeOptimizer = nsoptim::AugmentedLarsOptimizer<
+  LossFunction, nsoptim::RidgePenalty, nsoptim::RegressionCoefficients<arma::vec>>;
 
 using pense::GetFallback;
 using pense::PyResult;
@@ -40,10 +41,10 @@ using SparseCoefs = nsoptim::RegressionCoefficients<arma::sp_vec>;
 using DenseCoefs = nsoptim::RegressionCoefficients<arma::vec>;
 
 template<typename Optimizer>
-using StartCoefficientsList = FwdList<FwdList<typename Optimizer::Coefficients>>;
+using CoefficientsList = FwdList<typename Optimizer::Coefficients>;
 
 template<typename Optimizer>
-using CoefficientsList = FwdList<typename Optimizer::Coefficients>;
+using StartCoefficientsList = FwdList<CoefficientsList<Optimizer>>;
 
 template<typename Optimizer>
 using PenaltyList = FwdList<typename Optimizer::PenaltyFunction>;
@@ -52,8 +53,9 @@ namespace {
 constexpr double kDefaultExploreTol = 0.1;
 constexpr double kDefaultComparisonTol = 1e-3;
 constexpr double kDefaultExploreIt = 20;
-constexpr int kDefaultMaxOptima = 25;
-constexpr int kDefaultTracks = 10;
+constexpr int kDefaultMaxOptima = 10;
+constexpr int kDefaultExploreSolutions = 10;
+constexpr bool kDefaultUseWarmStarts = true;
 constexpr bool kDefaultStrategy0 = true;
 constexpr bool kDefaultStrategyEnpyShared = true;
 constexpr bool kDefaultStrategyEnpyIndividual = false;
@@ -65,11 +67,13 @@ constexpr int kDefaultNumberOfThreads = 1;
 //!
 //! @param py_res the results of the ENPY algorithm.
 //! @param penalties a list of the penalties.
-//! @param r_indices vector of 1-based indices in the penalties list at which the PY estimates were computed.
+//! @param r_indices vector of 1-based indices in the penalties list at which the PY estimates
+//!     were computed.
 //! @return a list the same length and order as `penalties`.
 template<typename Optimizer>
-StartCoefficientsList<Optimizer> PyResultToStartCoefficients(const FwdList<PyResult<Optimizer>>& py_res,
-                                                             const PenaltyList<Optimizer>& penalties, SEXP r_indices) {
+StartCoefficientsList<Optimizer> PyResultToStartCoefficients(
+     const FwdList<PyResult<Optimizer>>& py_res, const PenaltyList<Optimizer>& penalties,
+     SEXP r_indices) {
   const Rcpp::IntegerVector indices(r_indices);
   StartCoefficientsList<Optimizer> start_coefs;
 
@@ -98,8 +102,9 @@ StartCoefficientsList<Optimizer> PyResultToStartCoefficients(const FwdList<PyRes
 
 //! Add an estimate to the list of solutions.
 //!
-//! The coefficients at `iterator` are added to the list of solutions and the metrics at `iterator` are added
-//! to the given Metrics object. The iterator will not be incremented past the end.
+//! The coefficients at `iterator` are added to the list of solutions and the metrics at
+//! `iterator` are added to the given Metrics object. The iterator will not be incremented
+//! past the end.
 //!
 //! @param iterator iterator pointing to the estimate(s) to add.
 //! @param end end marker for the given iterator.
@@ -107,8 +112,8 @@ StartCoefficientsList<Optimizer> PyResultToStartCoefficients(const FwdList<PyRes
 //! @param solutions a list to add the estimate to.
 //! @return the updated iterator (if not yet pointing to the end).
 template<typename InputIterator>
-InputIterator AddEstimate(InputIterator iterator, InputIterator end, Metrics* metrics, Rcpp::List* solutions,
-                          const Rcpp::String& origin) {
+InputIterator AddEstimate(InputIterator iterator, InputIterator end, Metrics* metrics,
+                          Rcpp::List* solutions, const Rcpp::String& origin) {
   if (iterator != end) {
     if (iterator->metrics) {
       metrics->AddSubMetrics(std::move(*(iterator->metrics)));
@@ -122,8 +127,9 @@ InputIterator AddEstimate(InputIterator iterator, InputIterator end, Metrics* me
 
 //! Add a list of estimates to the list of solutions.
 //!
-//! The optima at `iterator` are added to the list of solutions and the metrics aof all optima `iterator` are added
-//! to the given Metrics object. The iterator will not be incremented past the end.
+//! The optima at `iterator` are added to the list of solutions and the metrics aof all optima
+//! `iterator` are added to the given Metrics object. The iterator will not be incremented
+//! past the end.
 //!
 //! @param iterator iterator pointing to the estimates to add.
 //! @param end end marker for the given iterator.
@@ -246,19 +252,24 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
 
   const double eps = GetFallback(pense_opts, "eps", pense::kDefaultConvergenceTolerance);
   optimizer.convergence_tolerance(eps);
+  optimizer.loss(loss);
 
   Metrics metrics("pense");
-  pense::RegPathCombined<SOptimizer> reg_paths(optimizer, loss, penalties,
-                                               GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
-                                               GetFallback(pense_opts, "nr_tracks", kDefaultTracks),
-                                               GetFallback(pense_opts, "explore_tol", kDefaultExploreTol),
-                                               GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
-                                               GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
-                                               GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
+  pense::RegularizationPath<SOptimizer> reg_path(
+    optimizer, penalties,
+    GetFallback(pense_opts, "max_optima", kDefaultMaxOptima),
+    GetFallback(pense_opts, "comparison_tol", kDefaultComparisonTol),
+    GetFallback(pense_opts, "num_threads", kDefaultNumberOfThreads));
+
+  reg_path.ExplorationOptions(GetFallback(pense_opts, "explore_it", kDefaultExploreIt),
+                              GetFallback(pense_opts, "explore_tol", kDefaultExploreTol),
+                              GetFallback(pense_opts, "nr_tracks", kDefaultExploreSolutions));
+
+  reg_path.EnableWarmStarts(GetFallback(pense_opts, "warm_starts", kDefaultUseWarmStarts));
 
   // Compute the initial estimators
-  const auto cold_starts = EnpyInitialEstimates<SOptimizer>(loss, penalties, r_penalties, r_enpy_inds, r_enpy_opts,
-                                                            optional_args, &metrics);
+  auto&& cold_starts = EnpyInitialEstimates<SOptimizer>(loss, penalties, r_penalties, r_enpy_inds, r_enpy_opts,
+                                                        optional_args, &metrics);
 
   Rcpp::checkUserInterrupt();
 
@@ -266,13 +277,13 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   if (!cold_starts.empty()) {
     if (GetFallback(pense_opts, "strategy_enpy_individual", kDefaultStrategyEnpyIndividual)) {
       // Use the EN-PY solutions only for the penalty they were computed for.
-      reg_paths.Add(cold_starts);
+      reg_path.EmplaceIndividualStartingPoints(std::move(cold_starts));
     }
     if (GetFallback(pense_opts, "strategy_enpy_shared", kDefaultStrategyEnpyShared)) {
       // Use every EN-PY solution for all penalties.
       for (auto&& starts_at_lambda : cold_starts) {
         for (auto&& start : starts_at_lambda) {
-          reg_paths.Add(start);
+          reg_path.EmplaceSharedStartingPoint(std::move(start));
         }
       }
     }
@@ -280,7 +291,9 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
 
   // Enable computation of the 0-based solutions, if requested.
   if (GetFallback(pense_opts, "strategy_0", kDefaultStrategy0)) {
-    reg_paths.Add();
+    StartCoefficientsList<SOptimizer> zeros;
+    zeros.emplace_front(1, loss.ZeroCoefficients<typename SOptimizer::Coefficients>());
+    reg_path.EmplaceIndividualStartingPoints(std::move(zeros));
   }
 
   // Enable computation of the regularization paths using shared starting points (i.e., the same starting
@@ -289,7 +302,7 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
       optional_args.containsElementNamed("shared_starts")) {
     auto shared_starts = as<CoefficientsList<SOptimizer>>(optional_args["shared_starts"]);
     for (auto&& start : shared_starts) {
-      reg_paths.Add(start);
+      reg_path.EmplaceSharedStartingPoint(std::move(start));
     }
   }
 
@@ -297,17 +310,24 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
   // points, different for every penalty).
   if (GetFallback(pense_opts, "strategy_other_individual", kDefaultStrategyOtherIndividual) &&
       optional_args.containsElementNamed("individual_starts")) {
-    reg_paths.Add(as<StartCoefficientsList<SOptimizer>>(optional_args["individual_starts"]));
+    reg_path.EmplaceIndividualStartingPoints(
+      as<StartCoefficientsList<SOptimizer>>(optional_args["individual_starts"]));
   }
 
   RList combined_reg_path;
-  while (!reg_paths.End()) {
+  while (!reg_path.End()) {
     RList solutions;
     Metrics& sub_metrics = metrics.CreateSubMetrics("lambda");
 
     // Compute the optima at the next penalty level.
-    for (auto&& optimum : reg_paths.Next()) {
+    auto next = reg_path.Next();
+
+    sub_metrics.AddMetric("alpha", next.penalty.alpha());
+    sub_metrics.AddMetric("lambda", next.penalty.lambda());
+
+    for (auto&& optimum : next.optima) {
       if (optimum.metrics) {
+        optimum.metrics->AddDetail("objf_value", optimum.objf_value);
         sub_metrics.AddSubMetrics(*optimum.metrics);
       }
       solutions.push_back(WrapOptimum(optimum));
@@ -367,8 +387,8 @@ SEXP PenseMMDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp:
   const auto mm_options = GetFallback(pense_opts, "algo_opts", Rcpp::List());
   const auto en_options = GetFallback(mm_options, "en_options", Rcpp::List());
   const bool use_sparse_coefs = GetFallback(pense_opts, "sparse", pense::kDefaultUseSparse);
-
-  switch (GetFallback(en_options, "algorithm", pense::kDefaultEnAlgorithm)) {
+  const auto algorithm = GetFallback(en_options, "algorithm", pense::kDefaultEnAlgorithm);
+  switch (algorithm) {
     case pense::EnAlgorithm::kDal: {
       using Optimizer = nsoptim::DalEnOptimizer<SurrogateLoss, PenaltyFunction>;
       return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
@@ -389,6 +409,16 @@ SEXP PenseMMDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp:
         return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
                                                               enpy_opts, optional_args, mm_options, en_options, 1);
       }
+    case pense::EnAlgorithm::kCoordinateDescent:
+      if (use_sparse_coefs) {
+        using Optimizer = nsoptim::CoordinateDescentOptimizer<SurrogateLoss, PenaltyFunction, SparseCoefs>;
+        return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
+                                                              enpy_opts, optional_args, mm_options, en_options, 1);
+      } else {
+        using Optimizer = nsoptim::CoordinateDescentOptimizer<SurrogateLoss, PenaltyFunction, DenseCoefs>;
+        return PenseMMPenaltyImpl<Optimizer, PenaltyFunction>(x, y, penalties, enpy_inds, pense_opts,
+                                                              enpy_opts, optional_args, mm_options, en_options, 1);
+      }
     case pense::EnAlgorithm::kLars:
     default:
       if (use_sparse_coefs) {
@@ -403,10 +433,60 @@ SEXP PenseMMDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp:
   }
 }
 
+//! Compute the PENSE Regularization Path for the provided penalty function using the CD algorithm.
+//! Unless the CD optimizer can handle the given PenaltyFunction class, returns `R_NilValue`.
+//!
+//! See `PenseEnRegression` for parameter documentation.
+//! @return `R_NilValue`.
+template<typename PenaltyFunction, typename Coefficients>
+SEXP PenseCDPenaltyImpl(SEXP, SEXP, SEXP, SEXP, const Rcpp::List&, SEXP, const Rcpp::List&,
+                        const Rcpp::List&, double) {
+  return R_NilValue;
+}
+
+//! Compute the PENSE Regularization Path for the provided penalty function using the CD algorithm.
+//! This function is only enabled if the CD optimizer can handle the requested PenaltyFunction class.
+//!
+//! See `PenseEnRegression` for parameter documentation.
+//! @return the regularization path.
+template<typename PenaltyFunction, typename Coefficients, typename = typename
+         std::enable_if<!std::is_same<PenaltyFunction, nsoptim::RidgePenalty>::value>::type >
+SEXP PenseCDPenaltyImpl(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds,
+                        const Rcpp::List& pense_opts, SEXP enpy_opts, const Rcpp::List& optional_args,
+                        const Rcpp::List& cd_options, int) {
+  using Optimizer = pense::CDPense<PenaltyFunction, Coefficients>;
+  return PenseRegressionImpl(MakeOptimizer<Optimizer>(cd_options),
+                             x, y, penalties, enpy_inds, pense_opts, enpy_opts, optional_args);
+}
+
+
+//! Compute the PENSE Regularization Path for the provided penalty function using the CD algorithm direcly on
+//! the S-loss.
+//! If the penalty function is not supported by CD (e.g., the Ridge penalty), returns `R_NilValue`!
+//!
+//! See `PenseEnRegression` for parameter documentation.
+//! @return the regularization path.
+template<typename PenaltyFunction>
+SEXP PenseCDDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds, const Rcpp::List& pense_opts,
+                     SEXP enpy_opts, const Rcpp::List& optional_args) {
+  const auto cd_options = GetFallback(pense_opts, "algo_opts", Rcpp::List());
+  const bool use_sparse_coefs = GetFallback(pense_opts, "sparse", pense::kDefaultUseSparse);
+
+  if (use_sparse_coefs) {
+    return PenseCDPenaltyImpl<PenaltyFunction, SparseCoefs>(
+      x, y, penalties, enpy_inds, pense_opts, enpy_opts, optional_args, cd_options, 1);
+  } else {
+    return PenseCDPenaltyImpl<PenaltyFunction, DenseCoefs>(
+      x, y, penalties, enpy_inds, pense_opts, enpy_opts, optional_args, cd_options, 1);
+  }
+}
+
 //! Compute the PENSE Regularization Path for the provided penalty function.
 //! This dispatcher inspects `pense_opts` to determine the PENSE algorithm to use. Can be one of the following:
+//!
 //!  * ADMM ... use ADMM directly for the S-loss and the penalty function.
 //!  * MM   ... use an MM algorithm on the convex surrogate of the S-loss.
+//!  * CD   ... use coordinate descent directly on the S-loss.
 //!
 //! See `PenseEnRegression` for parameter documentation.
 //! @return the regularization path.
@@ -415,6 +495,9 @@ SEXP PensePenaltyDispatch(SEXP x, SEXP y, SEXP penalties, SEXP enpy_inds,
                           SEXP r_pense_opts, SEXP enpy_opts, const Rcpp::List& optional_args) {
   const auto pense_options = as<Rcpp::List>(r_pense_opts);
   switch (GetFallback(pense_options, "algorithm", pense::kDefaultPenseAlgorithm)) {
+    case pense::PenseAlgorithm::kCoordinateDescent:
+      return PenseCDDispatch<PenaltyFunction>(x, y, penalties, enpy_inds, pense_options,
+                                              enpy_opts, optional_args);
     case pense::PenseAlgorithm::kAdmm:
      // Currently not implemented! Fall through to default MM algorithm.
     case pense::PenseAlgorithm::kMm:

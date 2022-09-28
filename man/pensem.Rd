@@ -7,7 +7,8 @@
 pensem(x, ...)
 }
 \arguments{
-\item{x}{either a numeric matrix of predictor values, or a cross-validated PENSE fit from \code{\link[=pense_cv]{pense_cv()}}.}
+\item{x}{either a numeric matrix of predictor values, or a cross-validated
+PENSE fit from \code{\link[=pense_cv]{pense_cv()}}.}
 
 \item{...}{ignored. See the section on deprecated parameters below.}
 }

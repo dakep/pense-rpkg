@@ -21,6 +21,7 @@ Use the ADMM Elastic Net Algorithm
 }
 \seealso{
 Other EN algorithms: 
+\code{\link{en_cd_options}()},
 \code{\link{en_dal_options}()},
 \code{\link{en_lars_options}()}
 }

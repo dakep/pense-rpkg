@@ -91,6 +91,7 @@
          strategy_other_shared = FALSE,
          algorithm = .pense_algorithm_id(algorithm_opts),
          intercept = !isFALSE(intercept),
+         warm_starts = !isFALSE(carry_forward[[1L]]),
          eps = .as(eps[[1L]], 'numeric'),
          comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
          explore_tol = .as(explore_tol[[1L]], 'numeric'),
@@ -108,7 +109,7 @@
   if (args$pense_opts$comparison_tol < args$pense_opts$eps) {
     abort("`comparison_tol` must not be less than `eps`")
   }
-  if (args$pense_opts$explore_it < 1L) {
+  if (args$pense_opts$explore_it < 0L) {
     abort("`explore_it` must not be less than 0")
   }
 
@@ -120,7 +121,7 @@
   args$pense_opts$sparse <- args$enpy_opts$en_options$sparse
 
   # If using the MM algorithm, ensure that the EN options are set.
-  if (args$pense_opts$algorithm == 1L) {
+  if (identical(args$pense_opts$algorithm, .k_pense_algo_mm)) {
     args$pense_opts$algo_opts$en_options <-
       .select_en_algorithm(args$pense_opts$algo_opts$en_options,
                            args$alpha,
@@ -179,7 +180,7 @@
       robust = TRUE,
       mscale_opts = args$mscale_opts,
       bdp = args$pense_opts$mscale$delta,
-      scale_cc = args$pense_opts$mscale$cc)
+      cc = args$pense_opts$mscale$cc)
 
     # Compute only the 0-based solution.
     args$pense_opts$strategy_enpy_individual <- FALSE
@@ -193,7 +194,7 @@
                           lambda_min_ratio = 1,
                           pense_options = args$pense_opts,
                           penalty_loadings = NULL)
-    args$enpy_lambda_inds <- rep(list(integer(0L)), length(alpha))
+    args$enpy_lambda_inds <- rep(list(integer(0L)), length(args$alpha))
 
     return(args)
   }
@@ -207,7 +208,7 @@
     sparse = args$pense_opts$sparse,
     mscale_opts = args$mscale_opts,
     bdp = args$pense_opts$mscale$delta,
-    scale_cc = args$pense_opts$mscale$cc)
+    cc = args$pense_opts$mscale$cc)
 
   # Scale penalty loadings appropriately
   args$penalty_loadings <- args$penalty_loadings / args$std_data$scale_x
@@ -275,7 +276,7 @@
     if (any(other_starts_specific)) {
       args$pense_opts$strategy_other_individual <- TRUE
       ind_starts <- list()
-      for (ai in seq_along(alpha)) {
+      for (ai in seq_along(args$alpha)) {
         new_ind_starts <- .make_initest_list(
           other_starts[other_starts_specific],
           lambda = args$lambda[[ai]],
@@ -421,6 +422,7 @@
 }
 
 ## Generate a log-spaced grid of decreasing lambda values
+#' @importFrom rlang abort
 .pense_lambda_grid <- function (x, y, alpha, nlambda, lambda_min_ratio,
                                 pense_options, penalty_loadings) {
   alpha <- max(0.01, alpha)
@@ -433,7 +435,11 @@
     }
   }
   max_lambda <- .pense_max_lambda(x, y, alpha, pense_options, penalty_loadings)
+
+  if (!isTRUE(max_lambda > .Machine$double.eps)) {
+    abort("Cannot determine maximum lambda. Scale of response is likely 0.")
+  }
+
   rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda),
               length.out = nlambda)))
 }
-

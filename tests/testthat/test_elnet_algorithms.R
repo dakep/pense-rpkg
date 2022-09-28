@@ -119,6 +119,10 @@ test_that("Elastic Net Algorithm `DAL`", {
   check_en_algorithm(en_dal_options(), num_tol_comp = 1e-6, num_tol = 1e-9)
 })
 
+test_that("Elastic Net Algorithm `CD-LS`", {
+  check_en_algorithm(en_cd_options(), num_tol_comp = 1e-6, num_tol = 1e-9)
+})
+
 test_that("Elastic Net Algorithm `linearized ADMM`", {
   check_en_algorithm(en_admm_options(), num_tol_comp = 1e-3, num_tol = 1e-12)
 })

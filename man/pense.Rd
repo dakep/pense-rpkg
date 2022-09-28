@@ -21,10 +21,11 @@ pense(
   add_zero_based = TRUE,
   enpy_specific = FALSE,
   other_starts,
+  carry_forward = TRUE,
   eps = 1e-06,
   explore_solutions = 10,
   explore_tol = 0.1,
-  explore_it = 20,
+  explore_it = 5,
   max_solutions = 1,
   comparison_tol = sqrt(eps),
   sparse = FALSE,
@@ -89,6 +90,9 @@ Note that if a the starting point is \emph{specific} to a penalization level, th
 level is added to the grid of penalization levels (either the manually specified grid in
 \code{lambda} or the automatically generated grid of size \code{nlambda}).
 If \code{standardize = TRUE}, the starting points are also scaled.}
+
+\item{carry_forward}{carry the best solutions forward to the next penalty
+level.}
 
 \item{eps}{numerical tolerance.}
 

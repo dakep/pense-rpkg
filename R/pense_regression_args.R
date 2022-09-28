@@ -422,6 +422,7 @@
 }
 
 ## Generate a log-spaced grid of decreasing lambda values
+#' @importFrom rlang abort
 .pense_lambda_grid <- function (x, y, alpha, nlambda, lambda_min_ratio,
                                 pense_options, penalty_loadings) {
   alpha <- max(0.01, alpha)
@@ -434,6 +435,11 @@
     }
   }
   max_lambda <- .pense_max_lambda(x, y, alpha, pense_options, penalty_loadings)
+
+  if (!isTRUE(max_lambda > .Machine$double.eps)) {
+    abort("Cannot determine maximum lambda. Scale of response is likely 0.")
+  }
+
   rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda),
               length.out = nlambda)))
 }

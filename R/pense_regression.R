@@ -167,7 +167,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
   fits <- .pense_internal_multi(args)
 
   structure(list(
-    call = call,
+    call = match.call(expand.dots = TRUE),
     bdp = stable_bdp,
     lambda = lapply(fits, `[[`, 'lambda'),
     metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
@@ -437,13 +437,14 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   structure(list(
-    call = call,
+    call = match.call(expand.dots = TRUE),
     bdp = stable_bdp,
     lambda = lapply(fits, `[[`, 'lambda'),
     alpha = vapply(fits, FUN.VALUE = numeric(1L),
                    FUN = `[[`, 'alpha', USE.NAMES = FALSE),
     cvres = cv_curves,
     cv_measure = cv_measure_str,
+    cv_repl = cv_repl,
     metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
     estimates = unlist(lapply(fits, `[[`, 'estimates'),
                        recursive = FALSE, use.names = FALSE)),

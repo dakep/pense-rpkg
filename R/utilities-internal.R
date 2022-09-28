@@ -243,6 +243,9 @@ extract_metric <- function (metrics, attr, node) {
       # 0-slope.
       y_locscale <- mlocscale(y, location_rho = location_rho, location_cc = cc,
                               scale_cc = cc, opts = mscale_opts, ...)
+      if (!isTRUE(y_locscale[['scale']] > .Machine$double.eps)) {
+        abort("M-scale of response is 0.")
+      }
       ret_list$muy <- y_locscale[['location']]
       if (!is.finite(ret_list$muy)) {
         # In case the response has more than 50% equal values.

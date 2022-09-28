@@ -76,8 +76,8 @@ function with respect to each element over a grid of values.
 }
 \section{Functions}{
 \itemize{
-\item \code{max_mscale_derivative}: maximum of the gradient
+\item \code{max_mscale_derivative()}: maximum of the gradient
 
-\item \code{max_mscale_grad_hess}: maximum of the gradient and hessian
+\item \code{max_mscale_grad_hess()}: maximum of the gradient and hessian
+
 }}
-

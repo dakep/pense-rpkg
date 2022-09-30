@@ -215,7 +215,9 @@ extract_metric <- function (metrics, attr, node) {
 #' @param intercept is an intercept included (i.e., should `y` be centered?)
 #' @param standardize standardize or not.
 #' @param robust use robust standardization.
-#' @param location_rho,location_cc rho function and cutoff supplied to `mlocscale()` and `mloc()`
+#' @param location_rho rho function for location estimate
+#' @param cc cutoff value for the rho functions used in scale and location
+#'  estimates.
 #' @param ... passed on to `mlocscale()`.
 #' @return a list with the following entries:
 #' @importFrom Matrix drop

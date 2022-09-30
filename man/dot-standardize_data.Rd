@@ -13,7 +13,7 @@
   sparse,
   mscale_opts,
   location_rho = "bisquare",
-  location_cc = 4.5,
+  cc,
   target_scale_x = NULL,
   ...
 )
@@ -30,7 +30,10 @@ in which case \code{y} is ignored.}
 
 \item{robust}{use robust standardization.}
 
-\item{location_rho, location_cc}{rho function and cutoff supplied to \code{mlocscale()} and \code{mloc()}}
+\item{location_rho}{rho function for location estimate}
+
+\item{cc}{cutoff value for the rho functions used in scale and location
+estimates.}
 
 \item{...}{passed on to \code{mlocscale()}.}
 }

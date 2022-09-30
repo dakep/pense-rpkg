@@ -78,7 +78,7 @@
 <span>  <span class="va">sparse</span>,</span>
 <span>  <span class="va">mscale_opts</span>,</span>
 <span>  location_rho <span class="op">=</span> <span class="st">"bisquare"</span>,</span>
-<span>  location_cc <span class="op">=</span> <span class="fl">4.5</span>,</span>
+<span>  <span class="va">cc</span>,</span>
 <span>  target_scale_x <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
@@ -107,8 +107,13 @@ in which case <code>y</code> is ignored.</p></dd>
 <dd><p>use robust standardization.</p></dd>
 
 
-<dt>location_rho, location_cc</dt>
-<dd><p>rho function and cutoff supplied to <code><a href="mlocscale.html">mlocscale()</a></code> and <code><a href="mloc.html">mloc()</a></code></p></dd>
+<dt>location_rho</dt>
+<dd><p>rho function for location estimate</p></dd>
+
+
+<dt>cc</dt>
+<dd><p>cutoff value for the rho functions used in scale and location
+estimates.</p></dd>
 
 
 <dt>...</dt>

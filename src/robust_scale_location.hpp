@@ -282,13 +282,14 @@ class Mscale {
   }
 
  private:
-  double ComputeMscale(const arma::vec& values, double scale) const {
-    if (scale < kNumericZero) {
+  double ComputeMscale(const arma::vec& values, const double init_scale) const {
+    if (init_scale < kNumericZero) {
       return 0;
     }
 
     int iter = 0;
     double step;
+    double scale = init_scale;
     // Start Newton's iterations
     do {
       step = rho_.DerivativeFixedPoint(values, scale, delta_);
@@ -296,24 +297,47 @@ class Mscale {
     } while (++iter < max_it_ && std::abs(step) > eps_ && scale >= kNumericZero);
 
     if (scale < kNumericZero) {
-      scale = 0;
+      return ComputeMscaleFallback(values, max_it_ - iter, init_scale);
     }
 
     return scale;
   }
 
-  double ComputeMscale(const arma::vec& values, double scale) {
-    if (scale < kNumericZero) {
+  double ComputeMscale(const arma::vec& values, const double init_scale) {
+    if (init_scale < kNumericZero) {
       return 0;
     }
 
     it_ = 0;
     double step;
+    double scale = init_scale;
     // Start Newton's iterations
     do {
       step = rho_.DerivativeFixedPoint(values, scale, delta_);
       scale += scale * step;
     } while (++it_ < max_it_ && std::abs(step) > eps_ && scale >= kNumericZero);
+
+    if (scale < kNumericZero) {
+      return ComputeMscaleFallback(values, max_it_ - it_, init_scale);
+    }
+
+    return scale;
+  }
+
+  //! The Newton iterations are unstable if outliers have a strong effect on the scale estimate.
+  //! In these cases, the sublinear method works more reliably, but it is slow.
+  double ComputeMscaleFallback(const arma::vec& values, const int max_it, double scale) const {
+    const double rho_denom = 1. / (delta_ * values.n_elem);
+
+    int iter = 0;
+    double err = eps_;
+    // Start iterations
+    do {
+      const double rho_sum = rho_.SumStd(values, scale);
+      const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
+      err = std::abs(new_scale - scale);
+      scale = new_scale;
+    } while (++iter < max_it && err > eps_ * scale);
 
     if (scale < kNumericZero) {
       scale = 0;

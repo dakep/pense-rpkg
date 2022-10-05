@@ -218,6 +218,16 @@ void RhoBisquare::DerivativeStd(const arma::vec& x, const double scale, arma::ve
   }
 }
 
+double RhoBisquare::DerivativeFixedPoint(const arma::vec& x, const double scale, const double delta) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  double numerator = 0, denominator = 0;
+   for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
+    numerator += BisquareFunctionValueStd(*read_it, cc_scaled);
+    denominator += BisquareDerivativeValue(*read_it, cc_scaled) * (*read_it);
+  }
+  return UpperBound() * scale * scale * (numerator - x.n_elem * delta) / denominator;
+}
+
 double RhoBisquare::SecondDerivative(double x, const double scale) const noexcept {
   return BisquareSecondDerivativeValue(x, cc_ * scale);
 }

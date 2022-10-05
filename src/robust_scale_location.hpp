@@ -283,39 +283,41 @@ class Mscale {
 
  private:
   double ComputeMscale(const arma::vec& values, double scale) const {
-    const double rho_denom = 1. / (delta_ * values.n_elem);
     if (scale < kNumericZero) {
       return 0;
     }
 
     int iter = 0;
-    double err = eps_;
-    // Start iterations
+    double step;
+    // Start Newton's iterations
     do {
-      const double rho_sum = rho_.SumStd(values, scale);
-      const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
-      err = std::abs(new_scale - scale);
-      scale = new_scale;
-    } while (++iter < max_it_ && err > eps_ * scale);
+      step = rho_.DerivativeFixedPoint(values, scale, delta_);
+      scale += scale * step;
+    } while (++iter < max_it_ && std::abs(step) > eps_ && scale >= kNumericZero);
+
+    if (scale < kNumericZero) {
+      scale = 0;
+    }
 
     return scale;
   }
 
   double ComputeMscale(const arma::vec& values, double scale) {
-    const double rho_denom = 1. / (delta_ * values.n_elem);
     if (scale < kNumericZero) {
       return 0;
     }
 
     it_ = 0;
-    double err = eps_;
-    // Start iterations
+    double step;
+    // Start Newton's iterations
     do {
-      const double rho_sum = rho_.SumStd(values, scale);
-      const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
-      err = std::abs(new_scale - scale);
-      scale = new_scale;
-    } while (++it_ < max_it_ && err > eps_ * scale);
+      step = rho_.DerivativeFixedPoint(values, scale, delta_);
+      scale += scale * step;
+    } while (++it_ < max_it_ && std::abs(step) > eps_ && scale >= kNumericZero);
+
+    if (scale < kNumericZero) {
+      scale = 0;
+    }
 
     return scale;
   }

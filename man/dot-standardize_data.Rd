@@ -13,7 +13,7 @@
   sparse,
   mscale_opts,
   location_rho = "bisquare",
-  location_cc = 4.5,
+  cc,
   target_scale_x = NULL,
   ...
 )

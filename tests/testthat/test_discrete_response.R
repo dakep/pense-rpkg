@@ -20,7 +20,8 @@ test_that("Response with no variation", {
     pense_cv(x, factor(y), alpha = 0.9, nlambda = 10, cv_k = 3, bdp = 0.5),
     regexp = 'M-scale of response is 0.')
 
-  fit_bin <- pense_cv(x, factor(y), alpha = 0.9, nlambda = 10, cv_k = 3, bdp = 0.25)
+  fit_bin <- pense_cv(x, factor(y), alpha = 0.9, nlambda = 10, cv_k = 3,
+                      bdp = 0.25)
   expect_is(fit_bin, 'pense_cvfit')
   expect_equal(fit_bin$cv_measure, 'auroc')
 })

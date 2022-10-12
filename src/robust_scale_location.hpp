@@ -11,6 +11,7 @@
 
 #include <exception>
 #include <string>
+#include <cmath>
 
 #include "nsoptim.hpp"
 #include "rho.hpp"
@@ -294,9 +295,9 @@ class Mscale {
     do {
       step = rho_.DerivativeFixedPoint(values, scale, delta_);
       scale += scale * step;
-    } while (++iter < max_it_ && std::abs(step) > eps_ && scale >= kNumericZero);
+    } while (++iter < max_it_ && std::abs(step) > eps_ && scale > kNumericZero && std::isfinite(scale));
 
-    if (scale < kNumericZero) {
+    if (scale < kNumericZero || !std::isfinite(scale)) {
       return ComputeMscaleFallback(values, max_it_ - iter, init_scale);
     }
 
@@ -315,9 +316,9 @@ class Mscale {
     do {
       step = rho_.DerivativeFixedPoint(values, scale, delta_);
       scale += scale * step;
-    } while (++it_ < max_it_ && std::abs(step) > eps_ && scale >= kNumericZero);
+    } while (++it_ < max_it_ && std::abs(step) > eps_ && scale > kNumericZero && std::isfinite(scale));
 
-    if (scale < kNumericZero) {
+    if (scale < kNumericZero || !std::isfinite(scale)) {
       return ComputeMscaleFallback(values, max_it_ - it_, init_scale);
     }
 
@@ -337,9 +338,9 @@ class Mscale {
       const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
       err = std::abs(new_scale - scale);
       scale = new_scale;
-    } while (++iter < max_it && err > eps_ * scale);
+    } while (++iter < max_it && err > eps_ * scale && std::isfinite(scale));
 
-    if (scale < kNumericZero) {
+    if (scale < kNumericZero || !std::isfinite(scale)) {
       scale = 0;
     }
 

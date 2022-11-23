@@ -85,9 +85,10 @@
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
       <h1 data-toc-skip>Controlling the grid of penalization levels</h1>
-                        <h4 data-toc-skip class="author">David Kepplinger</h4>
+                        <h4 data-toc-skip class="author">David
+Kepplinger</h4>
             
-            <h4 data-toc-skip class="date">2022-09-30</h4>
+            <h4 data-toc-skip class="date">2022-11-23</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/HEAD/vignettes/lambda_grids.Rmd" class="external-link"><code>vignettes/lambda_grids.Rmd</code></a></small>
       <div class="hidden name"><code>lambda_grids.Rmd</code></div>
@@ -96,61 +97,117 @@
 
     
     
-<p>The functions to compute (adaptive) PENSE and PENSEM estimates automatically select a grid of penalization levels. In many cases, this grid is well focused on the interesting range of penalization levels, but sometimes it needs to be adjusted. This guide shows how to adjust the grid of penalization levels for the the function <code><a href="../reference/pense_cv.html">adapense_cv()</a></code>, i.e., for computing adaptive PENSE estimates. The steps, however, apply to <em>all</em> functions for computing robust regularized estimates in the pense package (using or not using cross-validation).</p>
+<p>The functions to compute (adaptive) PENSE and PENSEM estimates
+automatically select a grid of penalization levels. In many cases, this
+grid is well focused on the interesting range of penalization levels,
+but sometimes it needs to be adjusted. This guide shows how to adjust
+the grid of penalization levels for the the function
+<code><a href="../reference/pense_cv.html">adapense_cv()</a></code>, i.e., for computing adaptive PENSE
+estimates. The steps, however, apply to <em>all</em> functions for
+computing robust regularized estimates in the pense package (using or
+not using cross-validation).</p>
 <p>For this guide we first need to load the pense package:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dakep.github.io/pense-rpkg/" class="external-link">pense</a></span><span class="op">)</span></span>
 <span><span class="co">#&gt; Loading required package: Matrix</span></span></code></pre></div>
-<p>For demonstration purposes, let’s simulate data with 50 observations and 40 available predictors. The error distribution is a heavy-tailed <em>t</em>-distribution and only the first 3 predictors are truly relevant for predicting the response <em>y</em>:</p>
+<p>For demonstration purposes, let’s simulate data with 50 observations
+and 40 available predictors. The error distribution is a heavy-tailed
+<em>t</em>-distribution and only the first 3 predictors are truly
+relevant for predicting the response <em>y</em>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Weibull.html" class="external-link">rweibull</a></span><span class="op">(</span><span class="fl">50</span> <span class="op">*</span> <span class="fl">40</span>, <span class="fl">2</span>, <span class="fl">3</span><span class="op">)</span>, ncol <span class="op">=</span> <span class="fl">40</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">-</span> <span class="fl">1.1</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fl">1.2</span> <span class="op">*</span> <span class="va">x</span><span class="op">[</span>, <span class="fl">3</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/TDist.html" class="external-link">rt</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span>, df <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
-<p>To make the demonstration more realistic, let’s add some contamination to the response value of the first 3 observations and to some predictors:</p>
+<p>To make the demonstration more realistic, let’s add some
+contamination to the response value of the first 3 observations and to
+some predictors:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">y</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">x</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, <span class="op">]</span>, <span class="fl">1</span>, <span class="va">max</span><span class="op">)</span></span>
 <span><span class="va">x</span><span class="op">[</span><span class="fl">3</span><span class="op">:</span><span class="fl">6</span>, <span class="fl">4</span><span class="op">:</span><span class="fl">6</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">1.5</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/Extremes.html" class="external-link">max</a></span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Cauchy.html" class="external-link">rcauchy</a></span><span class="op">(</span><span class="fl">4</span> <span class="op">*</span> <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="adjusting-the-grid-of-penalization-levels">Adjusting the grid of penalization levels<a class="anchor" aria-label="anchor" href="#adjusting-the-grid-of-penalization-levels"></a>
 </h2>
-<p>By default, <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> creates a grid of 50 penalization levels. The grid spans from the “largest” penalization level (i.e., the penalization level where the solution is the intercept-only model) to a multiple of 10<sup>-3</sup> of this largest penalization level.</p>
-<p>The number of grid points is controlled with argument <code>nlambda=</code>. The more grid points, the more models are explored, but computation time increases accordingly. For most applications “meaningful” change is only observed between models differing in at least one predictor.</p>
-<p>Particularly in the lower end of the grid, the estimated models often don’t differ in the number of predictors and exhibit only marginal differences in the coefficient estimates. This may waste computational resources on exploring an area of little interest. You can adjust the lower endpoint of the automatic grid by changing the multiplier with argument <code>lambda_min_ratio=</code>. The ratio must be less than 1, and the closer to 1 the narrower the grid. If you need to re-focus the grid on larger values of the penalization level, you can increase the ratio, for example, to 10<sup>-1</sup>:</p>
+<p>By default, <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> creates a grid of 50
+penalization levels. The grid spans from the “largest” penalization
+level (i.e., the penalization level where the solution is the
+intercept-only model) to a multiple of 10<sup>-3</sup> of this largest
+penalization level.</p>
+<p>The number of grid points is controlled with argument
+<code>nlambda=</code>. The more grid points, the more models are
+explored, but computation time increases accordingly. For most
+applications “meaningful” change is only observed between models
+differing in at least one predictor.</p>
+<p>Particularly in the lower end of the grid, the estimated models often
+don’t differ in the number of predictors and exhibit only marginal
+differences in the coefficient estimates. This may waste computational
+resources on exploring an area of little interest. You can adjust the
+lower endpoint of the automatic grid by changing the multiplier with
+argument <code>lambda_min_ratio=</code>. The ratio must be less than 1,
+and the closer to 1 the narrower the grid. If you need to re-focus the
+grid on larger values of the penalization level, you can increase the
+ratio, for example, to 10<sup>-1</sup>:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">fit_grid_narrow</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-1</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
-<p>If the model at the lowest penalization level is still fairly sparse and the best model seems to be in this range, you may need to decrease the ratio, e.g., to 10<sup>-4</sup> or even to 10<sup>-6</sup>:</p>
+<p>If the model at the lowest penalization level is still fairly sparse
+and the best model seems to be in this range, you may need to decrease
+the ratio, e.g., to 10<sup>-4</sup> or even to 10<sup>-6</sup>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">fit_grid_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-6</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="lambda_grids_files/figure-html/unnamed-chunk-6-1.png" alt="Prediction performance of models estimated on different grids of the penalization level: (a) narrow grid with `lambda_min_ratio=1e-1`, (b) wide grid with `lambda_min_ratio=1e-6`." width="624"><p class="caption">
-Prediction performance of models estimated on different grids of the penalization level: (a) narrow grid with <code>lambda_min_ratio=1e-1</code>, (b) wide grid with <code>lambda_min_ratio=1e-6</code>.
+Prediction performance of models estimated on different grids of the
+penalization level: (a) narrow grid with
+<code>lambda_min_ratio=1e-1</code>, (b) wide grid with
+<code>lambda_min_ratio=1e-6</code>.
 </p>
 </div>
-<p>From these plots we can see that the grid in the left plot is too narrow, as a smaller penalization level than 0.02 would likely lead to a better predictive model. On the right, however, the grid is too wide. Penalization levels less than 10<sup>-3</sup> lead to very similar estimates with similar prediction accuracy, while the range with meaningful change seems to be covered too coarsely.</p>
-<p>From this, we can compute adaptive PENSE estimates on a better focused grid with:</p>
+<p>From these plots we can see that the grid in the left plot is too
+narrow, as a smaller penalization level than 0.02 would likely lead to a
+better predictive model. On the right, however, the grid is too wide.
+Penalization levels less than 10<sup>-3</sup> lead to very similar
+estimates with similar prediction accuracy, while the range with
+meaningful change seems to be covered too coarsely.</p>
+<p>From this, we can compute adaptive PENSE estimates on a better
+focused grid with:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">fit_grid_focused</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-2</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
-<p>Indeed, the plot shows that the range of interest (around the minimum) is covered by several penalization levels:</p>
+<p>Indeed, the plot shows that the range of interest (around the
+minimum) is covered by several penalization levels:</p>
 <div class="figure">
 <img src="lambda_grids_files/figure-html/unnamed-chunk-8-1.png" alt="Prediction performance of models estimated over a well-focused grid of penalization levels." width="480"><p class="caption">
-Prediction performance of models estimated over a well-focused grid of penalization levels.
+Prediction performance of models estimated over a well-focused grid of
+penalization levels.
 </p>
 </div>
 <div class="section level3">
 <h3 id="manually-supplying-a-grid-of-penalization-levels">Manually supplying a grid of penalization levels<a class="anchor" aria-label="anchor" href="#manually-supplying-a-grid-of-penalization-levels"></a>
 </h3>
-<p>The function <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> and friends also allows you to specify your own grid of penalization levels via the <code>lambda=</code> argument.</p>
-<p>Note that for <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> the argument <code>lambda=</code> applies to both the preliminary PENSE estimate and the adaptive PENSE estimate. In most cases, however, this is not what you want. A sensible grid of penalization levels for the preliminary estimate is in general quite different from a good grid of penalization levels for the adaptive estimate.</p>
-<p>To compute adaptive PENSE estimates with separately specified manual grids for the preliminary and the adaptive PENSE estimates, you need to compute them manually via</p>
+<p>The function <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> and friends also allows you
+to specify your own grid of penalization levels via the
+<code>lambda=</code> argument.</p>
+<p>Note that for <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> the argument
+<code>lambda=</code> applies to both the preliminary PENSE estimate and
+the adaptive PENSE estimate. In most cases, however, this is not what
+you want. A sensible grid of penalization levels for the preliminary
+estimate is in general quite different from a good grid of penalization
+levels for the adaptive estimate.</p>
+<p>To compute adaptive PENSE estimates with separately specified manual
+grids for the preliminary and the adaptive PENSE estimates, you need to
+compute them manually via</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_preliminary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1e-5</span>, <span class="fl">1e-4</span>, <span class="fl">1e-3</span>, <span class="fl">1e-2</span>, <span class="fl">1e-1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">exponent</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">penalty_loadings</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_preliminary</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">^</span><span class="va">exponent</span></span>
 <span><span class="va">fit_adaptive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5e-5</span>, <span class="fl">5e-4</span>, <span class="fl">5e-3</span>, <span class="fl">5e-2</span>, <span class="fl">5e-1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The function <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> allows finer control over the grids. It supports the argument <code>lambda=</code>, which would use the same grid of penalization levels for the S- and M-estimates. But <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> additionally supports arguments <code>lambda_s=</code> and <code>lambda_m=</code> to manually specify separate grids for the S- and the M-estimates.</p>
+<p>The function <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> allows finer control over the
+grids. It supports the argument <code>lambda=</code>, which would use
+the same grid of penalization levels for the S- and M-estimates. But
+<code><a href="../reference/pensem_cv.html">pensem_cv()</a></code> additionally supports arguments
+<code>lambda_s=</code> and <code>lambda_m=</code> to manually specify
+separate grids for the S- and the M-estimates.</p>
 </div>
 </div>
   </div>

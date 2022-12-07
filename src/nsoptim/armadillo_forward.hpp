@@ -19,7 +19,7 @@
 
 #ifdef HAVE_RCPP
 // For RCPP
-# include <RcppArmadilloForward.h>
+# include <RcppArmadillo/interface/RcppArmadilloForward.h>
 #else
 // For stand-alone
 # include <armadillo>

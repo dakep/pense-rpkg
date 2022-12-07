@@ -159,9 +159,9 @@ hyper-parameters chosen by cross-validation</p>
 <span class="r-in"><span><span class="co"># Extract the coefficients at a certain penalization level</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">regpath</span>, lambda <span class="op">=</span> <span class="va">regpath</span><span class="op">$</span><span class="va">lambda</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">40</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            -8.3853375             0.1972708            -0.7199197 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            -7.9064997             0.2125014            -0.7070107 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7050575             1.1357652 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7141099             1.0796662 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># What penalization level leads to good prediction performance?</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
@@ -174,16 +174,16 @@ hyper-parameters chosen by cross-validation</p>
 <span class="r-in"><span><span class="co"># smallest prediction error ...</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            -8.3853375             0.1972708            -0.7199197 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            -7.9064997             0.2125014            -0.7070107 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7050575             1.1357652 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7141099             1.0796662 </span>
 <span class="r-in"><span><span class="co"># ... or at the penalization level with prediction error</span></span></span>
 <span class="r-in"><span><span class="co"># statistically indistinguishable from the minimum.</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cv_results</span>, lambda <span class="op">=</span> <span class="st">'1-se'</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            -8.2951404             0.1999427            -0.7179105 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            -7.8652589             0.2141280            -0.7053433 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7035184             1.1269839 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7126978             1.0754335 </span>
 </code></pre></div>
     </div>
   </div>

@@ -4,13 +4,14 @@
 #' @return consistency constant
 #' @keywords internal
 #' @importFrom stats pnorm uniroot
+#' @importFrom rlang abort
 .bisquare_consistency_const <- function (delta) {
   ##
   ## Pre-computed values for some delta values
   ##
   eps <- sqrt(.Machine$double.eps)
   if (!isTRUE(delta < 0.5 + eps && delta > -eps)) {
-    stop("`delta` is outside valid bounds")
+    abort("`delta` is outside valid bounds")
   }
 
   if (abs(delta - 0.5) < eps) {
@@ -55,6 +56,7 @@
 #'                  The chosen bdp is guaranteed to be in the range given by `interval`.
 #' @param interval restrict the chosen bdp to this interval.
 #' @param precision granularity of the grid of considered bdp's.
+#' @importFrom rlang warn
 #' @keywords internal
 .find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
                                        interval = c(0.05, 0.5)) {
@@ -88,9 +90,9 @@
   good_bounds <- which(is.finite(first_deriv_bound))
 
   if (length(good_bounds) == 0L) {
-    warning(paste("The chosen breakdown point may lead to numerical instability and",
-                  "excessive computation time.",
-                  "Consider changing the breakdown point via argument `bdp`."))
+    warn(paste("The chosen breakdown point may lead to numerical instability and",
+               "excessive computation time.",
+               "Consider changing the breakdown point via argument `bdp`."))
     return(desired_bdp)
   }
   bdp_range[[which.min(first_deriv_bound)]]

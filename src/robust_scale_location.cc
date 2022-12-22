@@ -41,7 +41,12 @@ double TauSize(const vec& values) noexcept {
 namespace robust_scale_location {
 double InitialScaleEstimate(const vec& values, const double delta, const double eps) {
   // Try the MAD of the uncentered values.
-  const double mad = kMadScaleConsistencyConstant * median(abs(values));
+  double mad = 0;
+  try {
+    mad = kMadScaleConsistencyConstant * median(abs(values));
+  } catch (...) {
+    mad = 0;
+  }
   if (mad > eps) {
     return mad;
   } else if (static_cast<uword>((1 - delta) * values.n_elem) > values.n_elem / 2) {

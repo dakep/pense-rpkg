@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include "nsoptim.hpp"
+#include "constants.hpp"
 
 #include "rho.hpp"
 
@@ -216,6 +217,22 @@ void RhoBisquare::DerivativeStd(const arma::vec& x, const double scale, arma::ve
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
     *write_it = BisquareDerivativeValue(*read_it, cc_scaled) / rho_inf;
   }
+}
+
+double RhoBisquare::DerivativeFixedPoint(const arma::vec& x, const double scale, const double delta) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  double numerator = -x.n_elem * delta;
+  double denominator = 0;
+   for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
+    numerator += BisquareFunctionValueStd(*read_it, cc_scaled);
+    denominator += BisquareDerivativeValue(*read_it, cc_scaled) * (*read_it);
+  }
+
+  if (numerator < kNumericZero) {
+    return 0;
+  }
+
+  return UpperBound() * scale * scale * numerator / denominator;
 }
 
 double RhoBisquare::SecondDerivative(double x, const double scale) const noexcept {

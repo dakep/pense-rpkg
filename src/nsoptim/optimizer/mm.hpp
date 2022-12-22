@@ -386,7 +386,16 @@ class MMOptimizer : public Optimizer<LossFunction, PenaltyFunction, Coefficients
 
     // Set the convex surrogates for the internal optimizer.
     auto residuals = loss_->Residuals(coefs_);
-    optimizer_.loss(loss_->GetConvexSurrogate(residuals));
+
+    try {
+      optimizer_.loss(loss_->GetConvexSurrogate(residuals));
+    } catch(...) {
+      metrics->AddMetric("iter", 0);
+      metrics->AddDetail("final_rel_difference", 0);
+      metrics->AddDetail("final_innner_tol", 0);
+      return MakeOptimum(*loss_, *penalty_, coefs_, residuals, std::move(metrics), OptimumStatus::kWarning,
+                          "MM-algorithm did not converge");
+    }
     optimizer_.penalty(penalty_->GetConvexSurrogate(coefs_));
 
     std::unique_ptr<mm_optimizer::InnerToleranceTightening<InnerOptimizerType>> tightener;

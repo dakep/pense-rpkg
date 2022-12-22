@@ -153,9 +153,12 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
   }
 
   call <- match.call(expand.dots = TRUE)
-  call[[1]] <- quote(pense:::.pense_args)
   call$standardize <- isTRUE(standardize)
-  args <- eval.parent(call)
+
+  args_env <- new.env(parent = parent.frame())
+  args_env$pense <- .pense_args
+  call[[1]] <- quote(pense)
+  args <- eval(call, envir = args_env)
 
   # Update BDP for numerical stability
   stable_bdp <- .find_stable_bdb_bisquare(
@@ -227,8 +230,10 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
                      fold_starts = c('full', 'enpy', 'both'),
                      cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
-  call[[1]] <- quote(pense:::.pense_args)
-  args <- eval.parent(call)
+  args_env <- new.env(parent = parent.frame())
+  args_env$pense_cv <- .pense_args
+  call[[1]] <- quote(pense_cv)
+  args <- eval(call, envir = args_env)
 
   fit_ses <- if (is.character(fit_all)) {
     unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L),

@@ -50,6 +50,8 @@ test_that("PENSE Algorithm (2 threads)", {
   skip_if_not_installed('jsonlite')
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
+  skip_if_not(pense:::.k_multithreading_support,
+              message = "System does not support multithreading.")
 
   requireNamespace('jsonlite')
 
@@ -87,7 +89,7 @@ test_that("PENSE Algorithm (2 threads)", {
     for (name in names(ref_estimates[[i]])) {
       expect_success(expect_equal(drop(pr$estimates[[!!i]][[!!name]]),
                                   unlist(ref_estimates[[!!i]][[!!name]]),
-                                  tolerance = 1e-4))
+                                  tolerance = 1e-3))
     }
   }
 })

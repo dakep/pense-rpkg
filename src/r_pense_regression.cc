@@ -17,7 +17,7 @@
 #include "robust_scale_location.hpp"
 #include "s_loss.hpp"
 #include "cd_pense.hpp"
-#include "regularization_path_new.hpp"
+#include "regularization_path.hpp"
 #include "constants.hpp"
 
 using Rcpp::as;
@@ -332,9 +332,7 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
       }
       solutions.push_back(WrapOptimum(optimum));
     }
-
     combined_reg_path.push_back(solutions);
-
     Rcpp::checkUserInterrupt();
   }
 

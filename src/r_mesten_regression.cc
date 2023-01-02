@@ -157,29 +157,33 @@ SEXP MestEnRegressionImpl(MMOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_scal
   using pense::alias::ConstRegressionDataPtr;
   using MLoss = pense::MLoss<pense::RhoBisquare>;
   using CoefficientsList = pense::alias::FwdList<typename MMOptimizer::Coefficients>;
+  using StartCoefficientsList = pense::alias::FwdList<CoefficientsList>;
 
   ConstRegressionDataPtr data(MakePredictorResponseData(r_x, r_y));
   const pense::RhoBisquare rho(GetFallback(mest_opts, "cc", kDefaultRhoCc));
   const double scale = as<double>(r_scale);
-  MLoss loss(data, rho, scale, GetFallback(mest_opts, "intercept", kDefaultIncludeIntercept));
 
+  MLoss loss(data, rho, scale, GetFallback(mest_opts, "intercept", kDefaultIncludeIntercept));
   auto penalties = MakePenalties<MMOptimizer>(r_penalties, optional_args);
 
   const double eps = GetFallback(mest_opts, "eps", pense::kDefaultConvergenceTolerance);
   optimizer.convergence_tolerance(eps);
+  optimizer.loss(loss);
 
   Metrics metrics("mstep");
-  pense::RegPathCombined<MMOptimizer> reg_paths(optimizer, loss, penalties,
-                                                GetFallback(mest_opts, "max_optima", kDefaultMaxOptima),
-                                                GetFallback(mest_opts, "nr_tracks", kDefaultTracks),
-                                                GetFallback(mest_opts, "explore_tol", kDefaultExploreTol),
-                                                GetFallback(mest_opts, "explore_it", kDefaultExploreIt),
-                                                GetFallback(mest_opts, "comparison_tol", kDefaultComparisonTol),
-                                                GetFallback(mest_opts, "num_threads", kDefaultNumberOfThreads));
+  pense::RegularizationPath<MMOptimizer> reg_paths(optimizer, penalties,
+                                                   GetFallback(mest_opts, "max_optima", kDefaultMaxOptima),
+                                                   GetFallback(mest_opts, "comparison_tol", kDefaultComparisonTol),
+                                                   GetFallback(mest_opts, "num_threads", kDefaultNumberOfThreads));
+  reg_paths.ExplorationOptions(GetFallback(mest_opts, "explore_it", kDefaultExploreIt),
+                               GetFallback(mest_opts, "explore_tol", kDefaultExploreTol),
+                               GetFallback(mest_opts, "nr_tracks", kDefaultTracks));
 
   // Enable computation of the 0-based solutions, if requested.
   if (GetFallback(mest_opts, "strategy_0", kDefaultStrategy0)) {
-    reg_paths.Add();
+    StartCoefficientsList zeros;
+    zeros.emplace_front(1, loss.ZeroCoefficients<typename MMOptimizer::Coefficients>());
+    reg_paths.EmplaceIndividualStartingPoints(std::move(zeros));
   }
 
   // Enable computation of the regularization paths using shared starting points (i.e., the same starting
@@ -187,7 +191,7 @@ SEXP MestEnRegressionImpl(MMOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_scal
   if (optional_args.containsElementNamed("shared_starts")) {
     auto shared_starts = Rcpp::as<CoefficientsList>(optional_args["shared_starts"]);
     for (auto&& start : shared_starts) {
-      reg_paths.Add(start);
+      reg_paths.EmplaceSharedStartingPoint(std::move(start));
     }
   }
 
@@ -196,16 +200,20 @@ SEXP MestEnRegressionImpl(MMOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_scal
     List solutions;
     Metrics& sub_metrics = metrics.CreateSubMetrics("lambda");
 
+    auto next = reg_paths.Next();
+
+    sub_metrics.AddMetric("alpha", next.penalty.alpha());
+    sub_metrics.AddMetric("lambda", next.penalty.lambda());
+
     // Compute the optima at the next penalty level.
-    for (auto&& optimum : reg_paths.Next()) {
+    for (auto&& optimum : next.optima) {
       if (optimum.metrics) {
+        optimum.metrics->AddDetail("objf_value", optimum.objf_value);
         sub_metrics.AddSubMetrics(*optimum.metrics);
       }
       solutions.push_back(WrapOptimum(optimum));
     }
-
     combined_reg_path.push_back(solutions);
-
     Rcpp::checkUserInterrupt();
   }
 

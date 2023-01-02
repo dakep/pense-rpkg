@@ -97,9 +97,11 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
                              intercept = args$intercept,
                              optional_args = args$optional_args)
 
-      fit$estimates <- lapply(fit$estimates, function (est) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(est))
-      })
+      fit$estimates <- lapply(
+        unlist(fit$estimates, recursive = FALSE),
+        function (est) {
+          args$restore_coef_length(args$std_data$unstandardize_coefs(est))
+        })
       fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
       fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
                                   'lambda'), use.names = FALSE, recursive = FALSE)
@@ -264,9 +266,11 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
                              intercept = args$intercept,
                              optional_args = args$optional_args)
 
-      fit$estimates <- lapply(fit$estimates, function (est) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(est))
-      })
+      fit$estimates <- lapply(
+        unlist(fit$estimates, recursive = FALSE),
+        function (est) {
+          args$restore_coef_length(args$std_data$unstandardize_coefs(est))
+        })
       fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
       fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
                                   'lambda'), use.names = FALSE, recursive = FALSE)

@@ -6,8 +6,8 @@
 //  Copyright © 2019 David Kepplinger. All rights reserved.
 //
 
-#ifndef REGULARIZATION_PATH_HPP_
-#define REGULARIZATION_PATH_HPP_
+#ifndef REGULARIZATION_PATH_NEW_HPP_
+#define REGULARIZATION_PATH_NEW_HPP_
 
 #include <memory>
 #include <tuple>
@@ -20,660 +20,575 @@
 #include "omp_utils.hpp"
 
 namespace pense {
-namespace regularization_path {
-template<class Optimizer, typename... Ts>
-class UniqueOptima {
-  using LossFunction = typename Optimizer::LossFunction;
-  using PenaltyFunction = typename Optimizer::PenaltyFunction;
-  using Coefficients = typename Optimizer::Coefficients;
-  using Optimum = typename Optimizer::Optimum;
-  using Element = std::tuple<Optimum, Ts...>;
+namespace regpath {
 
+//! Test two coefficients for approximate equivalence.
+//!
+//! The function assumes that the coefficient vectors are of the same dimension.
+//!
+//! @param a coefficients to be compared
+//! @param b coefficients to be compared
+//! @param eps numerical tolerance for comparison
+//! @return true if the two coefficient vectors are approximately equivalent, false otherwise.
+template<class Coefficients>
+bool CoefficientsEquivalent(const Coefficients& a, const Coefficients& b,
+                            const double eps) noexcept {
+  const double int_diff = a.intercept - b.intercept;
+  if (int_diff * int_diff < a.beta.n_elem * eps) {
+    // The intercept is similar. Check if the slope is also similar.
+    const double beta_diff = arma::norm(a.beta - b.beta, 2);
+    if (int_diff * int_diff + beta_diff * beta_diff < eps) {
+      // The slope is also similar.
+      return true;
+    }
+  }
+  return false;
+}
+
+//! A list of starting points with associated optimizer.
+template<class Ordering, typename... Ts>
+class OrderedTuples {
  public:
+  using Element = std::tuple<Ts...>;
+
   enum class InsertResult { kGood, kBad, kDuplicate };
 
-  UniqueOptima(const size_t max_size, const double eps) noexcept
-      : max_size_(max_size), eps_(eps), size_(0), optima_() {}
+  //! Create a new list of unique elements.
+  explicit OrderedTuples() noexcept
+    : max_size_(0), order_(), size_(0), elements_() {}
+
+  //! Create a new list of unique items of unlimited size using the given ordering.
+  //!
+  //! @param order ordering of the elements.
+  explicit OrderedTuples(const Ordering& order) noexcept
+    : max_size_(0), order_(order), size_(0), elements_() {}
+
+  //! Create a new list of unique items of limited size.
+  //!
+  //! @param max_size maximum number of coefficients retained.
+  explicit OrderedTuples(const size_t max_size) noexcept
+    : max_size_(max_size), order_(), size_(0), elements_() {}
+
+  //! Create a new list of unique items of limited size.
+  //!
+  //! @param max_size maximum number of coefficients retained.
+  //! @param order instance of the ordering class.
+  OrderedTuples(const size_t max_size, const Ordering& order) noexcept
+    : max_size_(max_size), order_(order), size_(0), elements_() {}
 
   //! Default copy constructor. Copy assignment is not possible.
-  UniqueOptima(const UniqueOptima&) = default;
-  UniqueOptima& operator=(const UniqueOptima&) = delete;
+  OrderedTuples(const OrderedTuples&) = default;
+  OrderedTuples& operator=(const OrderedTuples&) = delete;
 
   //! Move constructor.
-  UniqueOptima(UniqueOptima&& other) noexcept : max_size_(other.max_size_), eps_(other.eps_), size_(other.size_),
-                                                optima_(std::move(other.optima_)) {
+  OrderedTuples(OrderedTuples&& other) noexcept :
+      max_size_(other.max_size_), order_(std::move(other.order_)),
+      size_(other.size_), elements_(std::move(other.elements_)) {
     other.size_ = 0;
   }
-  UniqueOptima& operator=(UniqueOptima&&) = delete;
+  OrderedTuples& operator=(OrderedTuples&&) = delete;
 
-  //! Check if an optimum is good enough to be potentially inserted into the container.
-  bool IsGoodEnough(const Optimum& optimum) {
-    // Check if the optimum's objective function value is good enough.
-    if (size_ >= max_size_ && optimum.objf_value > std::get<0>(optima_.front()).objf_value) {
-      return false;
-    }
-    return true;
+  //! Get the number of elements in the list.
+  size_t Size() const noexcept {
+    return size_;
   }
 
-  //! Insert an optimum and associated information into the container, if the optimum is good enough.
-  template<typename T, typename... Args>
-  InsertResult Insert(T&& optimum, Args&&... args) {
-    // Ensure that `T` is of type `Optimum`.
-    static_assert(std::is_same<typename std::decay<T>::type, Optimum>::value, "Optimum is of wrong type.");
+  //! Clear all elements from the list.
+  void Clear() noexcept {
+    elements_.clear();
+    size_ = 0;
+  }
 
+  //! Insert coefficients into the container.
+  // template<typename... Args>
+  InsertResult Emplace(Ts&&... args) {
     // Check if the optimum's objective function value is good enough.
-    if (size_ == max_size_ && optimum.objf_value > std::get<0>(optima_.front()).objf_value) {
+    if (max_size_ > 0 && size_ >= max_size_ &&
+          order_.after(elements_.front(), std::forward<Ts>(args)...)) {
       return InsertResult::kBad;
     }
 
     // Determine insert position.
-    const auto optima_end = optima_.end();
-    const auto optima_before_begin = optima_.before_begin();
-    auto after_it = optima_.begin();
-    auto insert_it = optima_before_begin;
-    while (after_it != optima_end) {
-      // Check if the two optima are equal.
-      if (Equal(optimum, std::get<0>(*after_it))) {
-        // Don't add.
+    const auto elements_end = elements_.end();
+    auto current_it = elements_.begin();
+    auto insert_it = elements_.before_begin();
+
+    while (current_it != elements_end) {
+      const bool better = order_.before(*current_it, std::forward<Ts>(args)...);
+
+      // Check if the coefficients are equal to the element at question.
+      if (!better && !order_.after(*current_it, std::forward<Ts>(args)...) &&
+          order_.equivalent(*current_it, std::forward<Ts>(args)...)) {
         return InsertResult::kDuplicate;
+      } else if (!better) {
+        break;
       }
 
-      // Check that the objective value of the given optimum is larger than the next optimum but smaller than
-      // the current optimum.
-      if ((optimum.objf_value > std::get<0>(*after_it).objf_value) &&
-          (insert_it == optima_before_begin || std::get<0>(*insert_it).objf_value > optimum.objf_value)) {
-        // Insert here.
-        optima_.emplace_after(insert_it, std::forward<T>(optimum), std::forward<Args>(args)...);
-
-        // Ensure that the size keeps within the limits.
-        if (++size_ > max_size_) {
-          optima_.erase_after(optima_.before_begin());
-          --size_;
-        }
-        return InsertResult::kGood;
-      }
-      ++after_it;
+      ++current_it;
       ++insert_it;
     }
 
-    // All other optima have larger objective function value than the given optimum. Add at the end.
-    optima_.emplace_after(insert_it, std::forward<T>(optimum), std::forward<Args>(args)...);
-    // Ensure that the size keeps within the limits.
-    if (++size_ > max_size_) {
-      optima_.erase_after(optima_.before_begin());
+    // No duplicate has been detected. Add after the insert position.
+    elements_.emplace_after(insert_it, std::forward<Ts>(args)...);
+    // Ensure that the size stays within the limits.
+    if (++size_ > max_size_ && max_size_ > 0) {
+      elements_.erase_after(elements_.before_begin());
       --size_;
     }
     return InsertResult::kGood;
   }
 
   const alias::FwdList<Element>& Elements() const noexcept {
-    return optima_;
+    return elements_;
   }
 
   alias::FwdList<Element>& Elements() noexcept {
-    return optima_;
-  }
-
-  template<size_t I>
-  alias::FwdList<typename std::tuple_element<I, Element>::type > Elements() const noexcept {
-    alias::FwdList<typename std::tuple_element<I, Element>::type > out;
-
-    for (auto&& el : optima_) {
-      out.push_front(std::get<I>(el));
-    }
-
-    return out;
+    return elements_;
   }
 
  private:
   const size_t max_size_;
-  const double eps_;
+  Ordering order_;
   size_t size_;
-  alias::FwdList<Element> optima_;
+  alias::FwdList<Element> elements_;
+};
 
-  bool Equal(const Optimum& a, const Optimum& b) const noexcept {
-    // First check if the value of the objective function is similar.
-    if (std::abs(a.objf_value - b.objf_value) < eps_) {
-      // Value of the objective function is similar. Check if the intercept is similar.
-      const double int_diff = a.coefs.intercept - b.coefs.intercept;
-      if (int_diff * int_diff < eps_) {
-        // The intercept is similar. Check if the slope is also similar.
-        const double beta_diff = arma::norm(a.coefs.beta - b.coefs.beta, 2);
-        if (beta_diff * beta_diff < eps_) {
-          // The slope is also similar. Return true.
-          return true;
-        }
-      }
-    }
+template<class Coefficients>
+class DuplicateCoefficients {
+ public:
+  explicit DuplicateCoefficients(const double eps) noexcept : eps_(eps) {}
+
+  //! Does the existing element come before the new element?
+  template<typename Element, typename... Args>
+  bool before(const Element&, const Coefficients&, Args&&...) const noexcept {
     return false;
   }
+
+  //! Does the existing element come before the new element?
+  template<typename Element, typename... Args>
+  bool after(const Element&, const Coefficients&, Args&&...) const noexcept {
+    return false;
+  }
+
+  //! Is the existing element equivalent to new element?
+  template<typename Element, typename... Args>
+  bool equivalent(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
+    return CoefficientsEquivalent(std::get<0>(el), coefs, eps_);
+  }
+
+ private:
+  const double eps_;
 };
 
-template<typename Optimizer>
-using StartCoefficientsList = alias::FwdList<alias::FwdList<typename Optimizer::Coefficients>>;
-
-//! A fixed-length list keeping track of optimizers and the value of the most recent optimum.
-template<typename T>
-class OptimizerList {
- private:
-  using Optimum = typename T::Optimum;
-  using Coefficients = typename T::Coefficients;
-  using UOptima = UniqueOptima<T, T>;
-
+template<class Optimizer>
+class OptimaOrder {
+  using Coefficients = typename Optimizer::Coefficients;
+  using Optimum = typename Optimizer::Optimum;
  public:
-  //! Initialize an optimizer-list with size `max_size` and numerical tolerance `eps`.
-  //!
-  //! @param max_size the maximum number of optimizers in the list.
-  //! @param compare_tol_ the numerical tolerance for comparing two optima.
-  OptimizerList(const int max_size, const double explore_tol, const int explore_it, const double compare_tol,
-                const int num_threads) noexcept
-      : max_size_(max_size), explore_tol_(explore_tol), explore_it_(explore_it), compare_tol_(compare_tol),
-        num_threads_(num_threads), items_(max_size_, compare_tol) {}
+  explicit OptimaOrder(const double eps) noexcept : eps_(eps) {}
 
-  //! Add optimizer to the list.
-  //!
-  //! The list only retains the `max_size` best optima!
-  //!
-  //! @param optimizer the optimizer to compute the optimum starting from the different start points in `starts`.
-  //! @param starts a list of start coefficients.
-  //! @return a list of optima that have been attained from the given start points.
-  alias::Optima<T> AddNew(T* optimizer, const alias::FwdList<Coefficients>& starts) {
-    if (omp::Enabled(num_threads_)) {
-      return AddNew(optimizer, starts, std::true_type{});
-    } else {
-      return AddNew(optimizer, starts, std::false_type{});
-    }
+  //! Does the existing element come before the new element?
+  template<typename Element, typename... Args>
+  bool before(const Element& el, const Coefficients& coefs, const double objf_value,
+              Args&&...) const noexcept {
+    return std::get<1>(el) > objf_value + eps_;
   }
 
-  //! Compute the unique optimum at the updated penalty.
-  //!
-  //! @param penalty the updated penalty function.
-  //! @return a list of unique optima attained by the optimizers in the list.
-  alias::Optima<T> UpdateAll(const typename T::PenaltyFunction& penalty) {
-    if (omp::Enabled(num_threads_)) {
-      UpdateAll(penalty, std::true_type{});
-    } else {
-      UpdateAll(penalty, std::false_type{});
-    }
-    return items_.template Elements<0>();
+  //! Does the existing element come before the new element?
+  template<typename Element, typename... Args>
+  bool before(const Element& el, const Optimum& opt, Args&&...) const noexcept {
+    return std::get<0>(el).objf_value > opt.objf_value + eps_;
+  }
+
+  //! Does the existing element come before the new element?
+  template<typename Element, typename... Args>
+  bool after(const Element& el, const Coefficients& coefs, const double objf_value,
+             Args&&...) const noexcept {
+    return std::get<1>(el) < objf_value - eps_;
+  }
+
+  //! Does the existing element come before the new element?
+  template<typename Element, typename... Args>
+  bool after(const Element& el, const Optimum& opt, Args&&...) const noexcept {
+    return std::get<0>(el).objf_value < opt.objf_value - eps_;
+  }
+
+  //! Is the existing element equivalent to new element?
+  template<typename Element, typename... Args>
+  bool equivalent(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
+    return CoefficientsEquivalent(std::get<0>(el), coefs, eps_);
+  }
+
+  //! Is the existing element equivalent to new element?
+  template<typename Element, typename... Args>
+  bool equivalent(const Element& el, const Optimum& opt, Args&&...) const noexcept {
+    return CoefficientsEquivalent(std::get<0>(el).coefs, opt.coefs, eps_);
   }
 
  private:
-  const int max_size_;
-  const double explore_tol_;
-  const int explore_it_;
-  const double compare_tol_;
-  int num_threads_;
-  UOptima items_;
-
-  //! UpdateAll if OpenMP support is enabled and needed.
-  void UpdateAll(const typename T::PenaltyFunction& penalty, std::true_type) {
-    UOptima old_optima = std::move(items_);
-    #pragma omp parallel num_threads(num_threads_) shared(old_optima, items_, penalty) default(none)
-    {
-      #pragma omp single nowait
-      for (auto item_it = old_optima.Elements().begin(), item_end = old_optima.Elements().end();
-           item_it != item_end; ++item_it) {
-        #pragma omp task firstprivate(item_it) default(shared)
-        {
-          auto&& optimizer = std::get<1>(std::move(*item_it));
-          optimizer.penalty(penalty);
-          auto&& optimum = optimizer.Optimize();
-
-          #pragma omp critical(regpath_insert_optimum)
-          items_.Insert(std::move(optimum), std::move(optimizer));
-        }
-      }
-    }
-  }
-
-  //! UpdateAll if OpenMP support is disabled or not needed.
-  void UpdateAll(const typename T::PenaltyFunction& penalty, std::false_type) {
-    UOptima old_optima = std::move(items_);
-    for (auto&& item : old_optima.Elements()) {
-      auto&& optimizer = std::get<1>(item);
-      optimizer.penalty(penalty);
-      items_.Insert(optimizer.Optimize(), std::move(optimizer));
-    }
-  }
-
-  //! AddNew if OpenMP support is enabled and needed.
-  alias::Optima<T> AddNew(T* optimizer, const alias::FwdList<Coefficients>& starts, std::true_type) {
-    // First briefly explore all starting points
-    UOptima cold_items(max_size_, compare_tol_);
-    alias::Optima<T> cold_optima;
-    // Change to "approximating".
-    const double original_tol = optimizer->convergence_tolerance();
-    optimizer->convergence_tolerance(explore_tol_);
-
-    #pragma omp parallel num_threads(num_threads_) default(none) shared(optimizer, starts, cold_items, cold_optima) \
-      firstprivate(original_tol)
-    {
-      #pragma omp single
-      for (auto start_it = starts.begin(), start_end = starts.end(); start_it != start_end; ++start_it) {
-        #pragma omp task default(none) firstprivate(start_it) shared(optimizer, cold_items)
-        {
-          auto tmp_optimizer = *optimizer;
-          auto cold_optimum = tmp_optimizer.Optimize(*start_it, explore_it_);
-          if (cold_optimum.status != nsoptim::OptimumStatus::kError) {
-            #pragma omp critical(regpath_insert_optimum)
-            cold_items.Insert(std::move(cold_optimum), std::move(tmp_optimizer));
-          }
-        }
-      }
-
-      #pragma omp single nowait
-      {
-        // Fully iterate the best cold candidates and retain those that are better than the updated optima.
-        for (auto cand_it = cold_items.Elements().begin(), cand_end = cold_items.Elements().end();
-            cand_it != cand_end; ++cand_it) {
-          #pragma omp task default(none) shared(cold_optima) firstprivate(cand_it, original_tol)
-          {
-            auto&& optimizer = std::get<1>(*cand_it);
-            optimizer.convergence_tolerance(original_tol);
-            auto&& optimum = optimizer.Optimize();
-
-            #pragma omp critical(regpath_insert_optimum)
-            {
-              cold_optima.emplace_front(std::move(optimum));
-              items_.Insert(cold_optima.front(), std::move(optimizer));
-            }
-          }
-        }
-      }
-    }
-
-    // Revert to original tolerance level.
-    optimizer->convergence_tolerance(original_tol);
-
-    return cold_optima;
-  }
-
-  //! AddNew if OpenMP support is disabled or not needed.
-  alias::Optima<T> AddNew(T* optimizer, const alias::FwdList<Coefficients>& starts, std::false_type) {
-    // First briefly explore all starting points
-    UOptima cold_items(max_size_, compare_tol_);
-    // Change to "approximating".
-    const double original_tol = optimizer->convergence_tolerance();
-    optimizer->convergence_tolerance(explore_tol_);
-
-    for (auto&& start : starts) {
-      auto tmp_optimizer = *optimizer;
-      auto cold_optimum = tmp_optimizer.Optimize(start, explore_it_);
-      if (cold_optimum.status != nsoptim::OptimumStatus::kError) {
-        cold_items.Insert(std::move(cold_optimum), std::move(tmp_optimizer));
-      }
-    }
-
-    // Revert to original tolerance level.
-    optimizer->convergence_tolerance(original_tol);
-
-    // Fully iterate the best cold candidates and retain those that are better than the updated optima.
-    alias::Optima<T> cold_optima;
-    for (auto&& candidate : cold_items.Elements()) {
-      auto&& optimizer = std::get<1>(candidate);
-      optimizer.convergence_tolerance(original_tol);
-      cold_optima.emplace_front(optimizer.Optimize());
-      const Optimum& cold_optimum = cold_optima.front();
-      items_.Insert(cold_optimum, std::move(optimizer));
-    }
-    return cold_optima;
-  }
+  const double eps_;
 };
-}  // namespace regularization_path
 
-//! 0-based Regularization Path
-//!
-//! Compute the regularization path for the same loss function but different penalties, starting the first optimization
-//! at the 0-vector.
-//! Subsequent solutions are based on starting the optimization at the previous solution.
-template<typename Optimizer>
-class RegPath0 {
+template<class Coefficients, typename... Ts>
+using UniqueCoefficients = OrderedTuples<DuplicateCoefficients<Coefficients>, Coefficients, Ts...>;
+
+template<class Optimizer, typename... Ts>
+using UniqueStartPoints = OrderedTuples<OptimaOrder<Optimizer>, typename Optimizer::Coefficients,
+                                        double, Optimizer, Ts...>;
+
+template<class Optimizer, typename... Ts>
+using UniqueOptima = OrderedTuples<OptimaOrder<Optimizer>, typename Optimizer::Optimum, Optimizer,
+                                   Ts...>;
+
+} // namespace regpath
+
+template<class Optimizer>
+class RegularizationPath {
   using LossFunction = typename Optimizer::LossFunction;
   using PenaltyFunction = typename Optimizer::PenaltyFunction;
   using Coefficients = typename Optimizer::Coefficients;
   using PenaltyList = alias::FwdList<PenaltyFunction>;
+  using IsIterativeAlgorithmTag = typename nsoptim::traits::is_iterative_algorithm<Optimizer>::type;
   using Optimum = typename Optimizer::Optimum;
+  using IndividualStartingPoints = alias::FwdList<alias::FwdList<Coefficients>>;
+  using UniqueCoefficients = regpath::UniqueCoefficients<Coefficients>;
+  using UniqueCoefficientsOrder = regpath::DuplicateCoefficients<Coefficients>;
+  using MetricsPtr = std::unique_ptr<nsoptim::Metrics>;
+  using ExploredSolutions = regpath::UniqueStartPoints<Optimizer, MetricsPtr>;
+  using ExploredSolutionsOrder = regpath::OptimaOrder<Optimizer>;
+  using BestOptima = regpath::UniqueOptima<Optimizer>;
+  using BestOptimaOrder = regpath::OptimaOrder<Optimizer>;
 
  public:
-  //! Create the regularization path using the given optimizer, loss function, and list of penalties.
-  //! @param optimizer the optimizer to use.
-  //! @param loss the loss function to optimize.
-  //! @param penalties a list of penalty functions.
-  RegPath0(const Optimizer& optimizer, const LossFunction& loss, const PenaltyList& penalties) noexcept
-      : penalties_(penalties), optim_(optimizer), penalty_it_(penalties.cbegin()) {
-    optim_.loss(loss);
-  }
+  struct Solutions {
+    const PenaltyFunction& penalty;
+    alias::Optima<Optimizer> optima;
+  };
 
-  Optimum Next() {
-    // At the first penalty, compute the solution from 0.
-    if (penalty_it_ == penalties_.cbegin()) {
-      const auto zero_coef = optim_.loss().template ZeroCoefficients<Coefficients>();
-      optim_.penalty(*penalty_it_++);
-      return optim_.Optimize(zero_coef);
-    }
-    // Otherwise, use the previous solution
-    optim_.penalty(*penalty_it_++);
-    return optim_.Optimize();
-  }
-
-  bool End() const noexcept {
-    return penalty_it_ == penalties_.cend();
-  }
-
- private:
-  const PenaltyList& penalties_;
-  Optimizer optim_;
-  typename PenaltyList::const_iterator penalty_it_;
-};
-
-//! Regularization Path starting at the same starting point for every penalty.
-//!
-//! Compute the regularization path for the same loss function but different penalties.
-//! At each penalty, the optimization is started from the same starting point!
-template<typename Optimizer>
-class RegPathIdentical {
-  using LossFunction = typename Optimizer::LossFunction;
-  using PenaltyFunction = typename Optimizer::PenaltyFunction;
-  using Coefficients = typename Optimizer::Coefficients;
-  using PenaltyList = alias::FwdList<PenaltyFunction>;
-  using Optimum = typename Optimizer::Optimum;
-
- public:
-  //! Create the regularization path using the given optimizer, loss function, and list of penalties.
-  //! @param optimizer the optimizer to use.
-  //! @param loss the loss function to optimize.
-  //! @param penalties a list of penalty functions.
-  //! @param start the coefficients to start the optimization for every penalty.
-  RegPathIdentical(const Optimizer& optimizer, const LossFunction& loss, const PenaltyList& penalties,
-                   const Coefficients& start) noexcept
-      : penalties_(penalties), start_(start), optim_(optimizer), penalty_it_(penalties.cbegin()), explored_(false) {
-    optim_.loss(loss);
-  }
-
-  //! Compute the "exact" optimum at the current penalty level, then move on to the next penalty level.
-  //! @return an "exact" optimum.
-  Optimum Next() {
-    if (explored_) {
-      explored_ = false;
-      // Penalty was incremented before!
-      return optim_.Optimize();
-    }
-    // Increment only now!
-    optim_.penalty(*penalty_it_++);
-    return optim_.Optimize(start_);
-  }
-
-  //! Compute an approximate optimum using *larger than usual* tolerance at the current penalty level.
+  //! Create a regularization paths using the given optimizer, loss function, and list of penalties.
   //!
-  //! @param eps the relaxed convergence tolerance.
-  //! @return an approximate optimum.
-  Optimum Explore(const double eps, const int maxit) {
-    const double original_eps = optim_.convergence_tolerance();
-    optim_.convergence_tolerance(eps);
-    optim_.penalty(*penalty_it_);
-    const Optimum tmp = optim_.Optimize(start_, maxit);
-    optim_.convergence_tolerance(original_eps);
-
-    // Increment
-    ++penalty_it_;
-    explored_ = true;
-
-    return tmp;
-  }
-
-  //! Check if there are more penalties to compute the optimum for.
-  bool End() const noexcept {
-    return penalty_it_ == penalties_.cend();
-  }
-
- private:
-  const PenaltyList& penalties_;
-  Coefficients start_;
-  Optimizer optim_;
-  typename PenaltyList::const_iterator penalty_it_;
-  bool explored_;
-};
-
-//! Parallel Regularization Paths, starting at the best optima from the previous penalty.
-//!
-//! Compute the regularization path for the same loss function but different penalties.
-//! At each penalty, several optimizations are performed:
-//!  * starting from all solutions at the previous penalty (if available)
-//!  * starting at all given starting points for the given penalty
-//! From these solutions, only the best are retained and used in the subsequent optimizations.
-template<typename Optimizer>
-class RegPathCarryForward {
-  using LossFunction = typename Optimizer::LossFunction;
-  using PenaltyFunction = typename Optimizer::PenaltyFunction;
-  using Coefficients = typename Optimizer::Coefficients;
-  using PenaltyList = alias::FwdList<PenaltyFunction>;
-  using Optimum = typename Optimizer::Optimum;
-  using StartCoefficients = alias::FwdList<alias::FwdList<Coefficients>>;
-
- public:
-  class OptimumIterator;
-  using iterator = OptimumIterator;
-
-  //! Create the regularization path using the given optimizer, loss function, and list of penalties.
-  //! @param loss the loss for which to compute the regularization path.
-  //! @param penalties a list of penalty functions.
-  //! @param optimizer the optimizer to use.
-  //! @param starts a list with of starting points, i.e., for every item in `penalties`, `starts` contains a list of
-  //!               coefficients. If the list is empty, the optimization starts at the best solutions at the previous
-  //!               penalty.
-  //! @param explore_tol convergence tolerance to approximate, or "explore", possible optima.
-  //! @param explore_it maximum number of iterations to perform in the exploration state.
-  //! @param nr_retain number of optima to keep track of.
-  //! @param comparison_tol numerical tolerance to distinguish optima.
-  RegPathCarryForward(const Optimizer& optimizer, const LossFunction& loss, const PenaltyList& penalties,
-                      const StartCoefficients& starts, const double explore_tol, const int explore_it,
-                      const int nr_retain, const double comparison_tol, const int num_threads) noexcept
-    : penalties_(penalties), starts_(starts), optim_(optimizer), penalty_it_(penalties.cbegin()),
-      starts_it_(starts_.cbegin()), skip_(starts_it_->empty()),
-      cold_list_(nr_retain, explore_tol, explore_it, comparison_tol, num_threads) {
-    optim_.loss(loss);
-  }
-
-  alias::Optima<Optimizer> Next() {
-    if (skip_ && starts_it_->empty()) {
-      ++penalty_it_;
-      ++starts_it_;
-      return alias::Optima<Optimizer>();
-    }
-    skip_ = false;
-
-    // First update all previous solutions.
-    auto optima = cold_list_.UpdateAll(*penalty_it_);
-
-    // Now add new cold candidates.
-    if (!starts_it_->empty()) {
-      // Fully iterate the "best" optima.
-      optim_.penalty(*penalty_it_);
-      auto cold_optima = cold_list_.AddNew(&optim_, *starts_it_);
-      optima.splice_after(optima.before_begin(), cold_optima);
-    }
-    ++penalty_it_;
-    ++starts_it_;
-
-    return optima;
-  }
-
-  bool End() const noexcept {
-    return penalty_it_ == penalties_.cend();
-  }
-
- private:
-  const PenaltyList& penalties_;
-  StartCoefficients starts_;
-  Optimizer optim_;
-  typename PenaltyList::const_iterator penalty_it_;
-  typename StartCoefficients::const_iterator starts_it_;
-  bool skip_;
-  regularization_path::OptimizerList<Optimizer> cold_list_;
-};
-
-template<typename Optimizer>
-class RegPathCombined {
- private:
-  using LossFunction = typename Optimizer::LossFunction;
-  using PenaltyFunction = typename Optimizer::PenaltyFunction;
-  using Coefficients = typename Optimizer::Coefficients;
-  using PenaltyList = alias::FwdList<PenaltyFunction>;
-  using Optimum = typename Optimizer::Optimum;
-  using StartCoefficients = alias::FwdList<alias::FwdList<Coefficients>>;
-  using UniqueOptima = regularization_path::UniqueOptima<Optimizer>;
-
-  template<typename... Ts>
-  using GenericUniqueOptima = regularization_path::UniqueOptima<Optimizer, Ts...>;
-
- public:
-  //! Create a combination of regularization paths using the given optimizer, loss function, and list of penalties.
-  //! @param optimizer the optimizer to use.
-  //! @param loss the loss function to optimize.
+  //! @param optimizer the optimizer to use. The loss function has to be set already.
   //! @param penalties a list of penalty functions.
   //! @param max_optima the maximum number of optima per penalty level.
-  //! @param explore_tol the numeric tolerance for exploring solutions.
   //! @param comparison_tol numeric tolerance for comparing two optima.
-  RegPathCombined(const Optimizer& optimizer, const LossFunction& loss, const PenaltyList& penalties,
-                  const int max_optima, const int nr_explore, const double explore_tol, const int explore_it,
-                  const double comparison_tol, const int num_threads) noexcept
-      : optimizer_(optimizer), loss_(loss), penalties_(penalties), comparison_tol_(comparison_tol),
-        max_optima_(max_optima), explore_tol_(explore_tol), explore_it_(explore_it), nr_explore_(nr_explore),
-        num_threads_(num_threads) {}
+  //! @param num_threads number of threads to use.
+  RegularizationPath(const Optimizer& optimizer,
+                     const PenaltyList& penalties, const int max_optima,
+                     const double comparison_tol, const int num_threads) :
+      optimizer_template_(optimizer), penalties_(penalties),
+      max_optima_(max_optima), comparison_tol_(comparison_tol), num_threads_(num_threads),
+      shared_starts_(UniqueCoefficientsOrder(comparison_tol_)),
+      best_starts_(max_optima, BestOptimaOrder(comparison_tol)),
+      penalties_it_(penalties_.begin()) {
+        auto penalties_it = penalties_.before_begin();
+        const auto penalties_end = penalties_.end();
 
-  //! Add a 0-based regularization path for exploration.
-  void Add() {
-    if (!rp_0_) {
-      rp_0_.reset(new RegPath0<Optimizer>(optimizer_, loss_, penalties_));
+        while (++penalties_it != penalties_end) {
+          individual_starts_.emplace_front(
+            UniqueCoefficients(UniqueCoefficientsOrder(comparison_tol_)));
+        }
+        individual_starts_it_ = individual_starts_.before_begin();
+      }
+
+  //! Set the exploration options.
+  //!
+  //! @param explore_it the number of iterations for exploration. If <= 0, no exploration will
+  //!   be done and all starting points will be iterated to full convergence.
+  //! @param explore_tol the numeric tolerance for exploring solutions.
+  //! @param explored_keep how many explored solutions to keep for full concentration.
+  void ExplorationOptions(const int explore_it, const double explore_tol,
+                          const int explored_keep) noexcept {
+    explore_it_ = explore_it;
+    explore_tol_ = explore_tol;
+    explored_keep_ = explored_keep;
+  }
+
+  //! Enable/disable carrying forward solutions from the previous penalty.
+  //!
+  //! @param enabled whether to enable warm starts or not.
+  void EnableWarmStarts(const bool enabled) noexcept {
+    use_warm_start_ = enabled;
+  }
+
+  //! Add a starting point to be used only at the specified penalty.
+  //!
+  //! @param penalty penalty at which the starting point should be used.
+  //! @param coefs starting point.
+  void EmplaceIndividualStartingPoints(IndividualStartingPoints&& coefs_lists) {
+    auto emplace_it = individual_starts_.begin();
+    for (auto&& coefs_list : coefs_lists) {
+      for (auto&& coefs : coefs_list) {
+        emplace_it->Emplace(std::move(coefs));
+      }
+      emplace_it++;
     }
   }
 
-  //! Add a regularization path that always uses the given start coefficients, for all penalties.
-  //! @param start the coefficients to start the optimization for every penalty.
-  void Add(const Coefficients& start) {
-    rp_id_.emplace_front(optimizer_, loss_, penalties_, start);
+  //! Add a starting point to be used for all penalties.
+  //!
+  //! @param coefs starting point.
+  void EmplaceSharedStartingPoint(Coefficients&& coefs) {
+    shared_starts_.Emplace(std::move(coefs));
   }
 
-  //! Add a regularization path that carries forward only the best optima.
-  //! @param starts a list with of starting points, i.e., for every item in `penalties`, `starts` contains a list of
-  //!               coefficients. If the list is empty, the optimization starts at the best solutions at the previous
-  //!               penalty.
-  //! @param nr_retain number of optima to keep track of.
-  //! @param eps numerical tolerance to distinguish optima.
-  void Add(const StartCoefficients& starts) {
-    rp_cf_.emplace_front(optimizer_, loss_, penalties_, starts, explore_tol_, explore_it_, nr_explore_, comparison_tol_,
-                         num_threads_);
+  Solutions Next() {
+    ++individual_starts_it_;
+    const auto& current_penalty = *penalties_it_++;
+    optimizer_template_.penalty(current_penalty);
+
+    auto explored_solutions = explore_it_ > 0 ? Explore(IsIterativeAlgorithmTag{}) : SkipExploration();
+    return Solutions { current_penalty, Concentrate(std::move(explored_solutions)) };
   }
 
-  //! Get the unique optima from all regularization paths at the next penalty level.
-  alias::Optima<Optimizer> Next() {
-    UniqueOptima next_optima(max_optima_, comparison_tol_);
+  bool End() const noexcept {
+    return penalties_it_ == penalties_.end();
+  }
 
-    if (rp_0_) {
-      next_optima.Insert(rp_0_->Next());
-      Rcpp::checkUserInterrupt();
-    }
+ private:
+  Optimizer optimizer_template_;
+  const PenaltyList& penalties_;
+  const int max_optima_;
+  const double comparison_tol_;
+  int num_threads_;  //< OpenMP requires it to be an lvalue!
+  bool use_warm_start_ = true;
+  int explore_it_ = 0;
+  double explore_tol_ = 0;
+  int explored_keep_ = 1;
 
+  alias::FwdList<UniqueCoefficients> individual_starts_;
+  UniqueCoefficients shared_starts_;
+  BestOptima best_starts_;
+
+  typename alias::FwdList<UniqueCoefficients>::iterator individual_starts_it_;
+  typename PenaltyList::const_iterator penalties_it_;
+
+  ExploredSolutions Explore(std::false_type) {
+    return SkipExploration();
+  }
+
+  ExploredSolutions Explore(std::true_type) {
     if (omp::Enabled(num_threads_)) {
-      NextIdentical(&next_optima, std::true_type{});
+      return MTExplore(std::true_type{});
     } else {
-      NextIdentical(&next_optima, std::false_type{});
+      return MTExplore(std::false_type{});
+    }
+  }
+
+  ExploredSolutions MTExplore(std::true_type) {
+    const double orig_tol = optimizer_template_.convergence_tolerance();
+    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(comparison_tol_));
+
+    const auto is_end = individual_starts_it_->Elements().end();
+    const auto sh_end = shared_starts_.Elements().end();
+
+    #pragma omp parallel \
+                num_threads(num_threads_) \
+                default(shared)
+    {
+      #pragma omp single nowait
+      for (auto is_it = individual_starts_it_->Elements().begin(); is_it != is_end; ++is_it) {
+        #pragma omp task \
+                    default(none) \
+                    firstprivate(is_it) \
+                    shared(explore_tol_, explore_it_, orig_tol) \
+                    shared(explored_solutions, optimizer_template_)
+        {
+          Optimizer optimizer(optimizer_template_);
+          optimizer.convergence_tolerance(explore_tol_);
+          auto optimum = optimizer.Optimize(std::get<0>(*is_it), explore_it_);
+          optimizer.convergence_tolerance(orig_tol);
+
+          #pragma omp critical(insert_explored)
+          explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                     std::move(optimizer), std::move(optimum.metrics));
+
+        }
+      }
+
+      #pragma omp single nowait
+      for (auto sh_it = shared_starts_.Elements().begin(); sh_it != sh_end; ++sh_it) {
+        #pragma omp task \
+                    firstprivate(sh_it) \
+                    default(none) \
+                    shared(explore_tol_, explore_it_, orig_tol) \
+                    shared(explored_solutions, optimizer_template_)
+        {
+          Optimizer optimizer(optimizer_template_);
+          optimizer.convergence_tolerance(explore_tol_);
+          auto optimum = optimizer.Optimize(std::get<0>(*sh_it), explore_it_);
+          optimizer.convergence_tolerance(orig_tol);
+
+          #pragma omp critical(insert_explored)
+          explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                     std::move(optimizer), std::move(optimum.metrics));
+
+        }
+      }
+
+      #pragma omp single nowait
+      if (use_warm_start_ || explored_solutions.Size() == 0) {
+      const auto bs_end = best_starts_.Elements().end();
+
+        for (auto bs_it = best_starts_.Elements().begin(); bs_it != bs_end; ++bs_it) {
+          #pragma omp task \
+                      firstprivate(bs_it) \
+                      default(none) \
+                      shared(explore_tol_, explore_it_, orig_tol, explored_solutions, optimizer_template_)
+          {
+            auto&& optimizer = std::get<1>(*bs_it);
+            optimizer.convergence_tolerance(explore_tol_);
+            optimizer.penalty(optimizer_template_.penalty());
+            auto optimum = optimizer.Optimize(explore_it_);
+            optimizer.convergence_tolerance(orig_tol);
+
+            #pragma omp critical(insert_explored)
+            explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                       std::move(optimizer), std::move(optimum.metrics));
+
+          }
+        }
+      }
     }
 
     Rcpp::checkUserInterrupt();
+    return explored_solutions;
+  }
 
-    for (auto&& reg_path : rp_cf_) {
-      for (auto&& optimum : reg_path.Next()) {
-        next_optima.Insert(std::move(optimum));
+  ExploredSolutions MTExplore(std::false_type) {
+    const double orig_tol = optimizer_template_.convergence_tolerance();
+    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(comparison_tol_));
+
+    for (auto& start : individual_starts_it_->Elements()) {
+      Optimizer optimizer(optimizer_template_);
+      optimizer.convergence_tolerance(explore_tol_);
+      auto optimum = optimizer.Optimize(std::get<0>(start), explore_it_);
+      optimizer.convergence_tolerance(orig_tol);
+      explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                 std::move(optimizer), std::move(optimum.metrics));
+
+      Rcpp::checkUserInterrupt();
+    }
+
+    for (auto& start : shared_starts_.Elements()) {
+      Optimizer optimizer(optimizer_template_);
+      optimizer.convergence_tolerance(explore_tol_);
+      auto optimum = optimizer.Optimize(std::get<0>(start), explore_it_);
+      optimizer.convergence_tolerance(orig_tol);
+      explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                 std::move(optimizer), std::move(optimum.metrics));
+
+      Rcpp::checkUserInterrupt();
+    }
+
+    if (use_warm_start_ || explored_solutions.Size() == 0) {
+      for (auto& start : best_starts_.Elements()) {
+        auto&& optimizer = std::get<1>(start);
+        optimizer.convergence_tolerance(explore_tol_);
+        optimizer.penalty(optimizer_template_.penalty());
+        auto optimum = optimizer.Optimize(explore_it_);
+        optimizer.convergence_tolerance(orig_tol);
+        explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                  std::move(optimizer), std::move(optimum.metrics));
+
         Rcpp::checkUserInterrupt();
       }
     }
-
-    return next_optima.template Elements<0>();
+    return explored_solutions;
   }
 
-  //! Check if the regularization paths are at their end.
-  bool End() const noexcept {
-    if (rp_0_) {
-      return rp_0_->End();
+  //! Simply add all starts for the current penalty
+  ExploredSolutions SkipExploration() {
+    ExploredSolutions explored_solutions(0, ExploredSolutionsOrder(comparison_tol_));
+
+    for (auto& start : individual_starts_it_->Elements()) {
+      explored_solutions.Emplace(std::move(std::get<0>(start)), -1, Optimizer(optimizer_template_),
+                                 MetricsPtr());
     }
 
-    for (auto&& reg_path : rp_id_) {
-      return reg_path.End();
+    for (auto&& start : shared_starts_.Elements()) {
+      // Shared starts must be copied, not moved!
+      auto coefs = std::get<0>(start);
+      explored_solutions.Emplace(std::move(coefs), -1, Optimizer(optimizer_template_),
+                                 MetricsPtr());
     }
 
-    for (auto&& reg_path : rp_cf_) {
-      return reg_path.End();
+    if (use_warm_start_ || explored_solutions.Size() == 0) {
+      for (auto& start : best_starts_.Elements()) {
+        auto&& optimizer = std::get<1>(start);
+        optimizer.penalty(optimizer_template_.penalty());
+        explored_solutions.Emplace(std::move(std::get<0>(start).coefs), -1, std::move(optimizer),
+                                  MetricsPtr());
+      }
     }
-
-    return true;
+    return explored_solutions;
   }
 
- private:
-  const Optimizer& optimizer_;
-  const LossFunction& loss_;
-  const PenaltyList& penalties_;
-  const double comparison_tol_;
-  const int max_optima_;
-  const double explore_tol_;
-  const int explore_it_;
-  const int nr_explore_;
-  int num_threads_;  //!< Can not be constant, as OpenMP requires it to be an lvalue!
-  std::unique_ptr<RegPath0<Optimizer>> rp_0_;
-  alias::FwdList<RegPathIdentical<Optimizer>> rp_id_;
-  alias::FwdList<RegPathCarryForward<Optimizer>> rp_cf_;
+  alias::Optima<Optimizer> Concentrate(ExploredSolutions&& explored) {
+    best_starts_.Clear();
 
-  //! Compute the next "identical" solutions if OpenMP support is enabled and needed.
-  void NextIdentical(UniqueOptima* next_optima, std::true_type) {
-    GenericUniqueOptima< RegPathIdentical<Optimizer>* > ident_explore_optima(nr_explore_, comparison_tol_);
-    #pragma omp parallel num_threads(num_threads_) shared(rp_id_, next_optima, ident_explore_optima) default(none)
+    if (omp::Enabled(num_threads_)) {
+      Concentrate(std::move(explored), std::true_type{});
+    } else {
+      Concentrate(std::move(explored), std::false_type{});
+    }
+
+    alias::Optima<Optimizer> optima;
+    for (auto&& element : best_starts_.Elements()) {
+      optima.emplace_front(std::get<0>(element));
+    }
+    return optima;
+  }
+
+  void Concentrate(ExploredSolutions&& explored, std::false_type) {
+    for (auto&& start : explored.Elements()) {
+      auto&& optimizer = std::get<2>(start);
+      auto optim = (std::get<1>(start) > 0) ?
+        optimizer.Optimize() :
+        optimizer.Optimize(std::get<0>(start));
+
+      if (optim.metrics && std::get<3>(start)) {
+        auto&& exploration_metrics = optim.metrics->CreateSubMetrics("exploration");
+        exploration_metrics.AddSubMetrics(std::move(*std::get<3>(start)));
+        std::get<3>(start).reset();
+      }
+      best_starts_.Emplace(std::move(optim), std::move(optimizer));
+
+      Rcpp::checkUserInterrupt();
+    }
+  }
+
+  void Concentrate(ExploredSolutions&& explored, std::true_type) {
+    const auto ex_end = explored.Elements().end();
+
+    #pragma omp parallel \
+                num_threads(num_threads_) \
+                default(shared)
     {
-      // First, explore all "identical" reg. paths.
-      #pragma omp single
-      for (auto reg_path_it = rp_id_.begin(), reg_path_end = rp_id_.end(); reg_path_it != reg_path_end; ++reg_path_it) {
-        #pragma omp task firstprivate(reg_path_it) shared(ident_explore_optima) \
-                         const_shared(explore_tol_), const_shared(explore_it_) default(none)
-        {
-          // This takes a while...
-          auto&& optimum = reg_path_it->Explore(explore_tol_, explore_it_);
-          if (ident_explore_optima.IsGoodEnough(optimum)) {
-            // Try to add to the list of unique optima
-            #pragma omp critical(insert_explored_optimum)
-            ident_explore_optima.Insert(std::move(optimum), &(*reg_path_it));
-          }
-        }
-      }
-
-      // Then fully iterate the promising solutions.
       #pragma omp single nowait
-      for (auto optimum_tuple_it = ident_explore_optima.Elements().begin(),
-                optimum_tuple_end = ident_explore_optima.Elements().end(); optimum_tuple_it != optimum_tuple_end;
-                ++optimum_tuple_it) {
-        #pragma omp task firstprivate(optimum_tuple_it) shared(next_optima) default(none)
+      for (auto ex_it = explored.Elements().begin(); ex_it != ex_end; ++ex_it) {
+        #pragma omp task \
+                    default(none) \
+                    firstprivate(ex_it) \
+                    shared(best_starts_)
         {
-          // This takes a while...
-          auto&& optimum = std::get<1>(*optimum_tuple_it)->Next();
-          // Add to the list of unique optima
-          #pragma omp critical(insert_next_optima)
-          next_optima->Insert(std::move(optimum));
+          auto&& optimizer = std::get<2>(*ex_it);
+          auto optim = (std::get<1>(*ex_it) > 0) ?
+            optimizer.Optimize() :
+            optimizer.Optimize(std::get<0>(*ex_it));
+
+          if (optim.metrics && std::get<3>(*ex_it)) {
+            auto&& exploration_metrics = optim.metrics->CreateSubMetrics("exploration");
+            exploration_metrics.AddSubMetrics(std::move(*std::get<3>(*ex_it)));
+            std::get<3>(*ex_it).reset();
+          }
+          #pragma omp critical(insert_concentrated)
+          best_starts_.Emplace(std::move(optim), std::move(optimizer));
         }
       }
     }
-  }
-
-  //! Compute the next "identical" solutions if OpenMP support is disabled or not needed.
-  void NextIdentical(UniqueOptima* next_optima, std::false_type) {
-    GenericUniqueOptima< RegPathIdentical<Optimizer>* > ident_explore_optima(nr_explore_, comparison_tol_);
-    for (auto&& reg_path : rp_id_) {
-      ident_explore_optima.Insert(reg_path.Explore(explore_tol_, explore_it_), &reg_path);
-    }
-
-    for (auto&& optimum_tuple : ident_explore_optima.Elements()) {
-      next_optima->Insert(std::get<1>(optimum_tuple)->Next());
-    }
+    Rcpp::checkUserInterrupt();
   }
 };
-}  // namespace pense
+} // namespace pense
 
-#endif  // REGULARIZATION_PATH_HPP_
+#endif // REGULARIZATION_PATH_NEW_HPP_

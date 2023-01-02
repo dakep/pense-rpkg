@@ -66,25 +66,44 @@ typename Optimizer::LossFunction GetLoss(SEXP r_x, SEXP r_y, SEXP r_include_inte
 template<typename Optimizer>
 SEXP LsEnRegressionImpl(SEXP r_x, SEXP r_y, SEXP r_penalties, SEXP r_include_intercept,
                         const Rcpp::List& optional_args) {
+  using Coefficients = typename Optimizer::Coefficients;
   using is_weighted_tag = typename nsoptim::traits::is_weighted<typename Optimizer::LossFunction>::type;
   const auto en_options = pense::GetFallback(optional_args, "en_options", Rcpp::List());
 
   auto loss = GetLoss<Optimizer>(r_x, r_y, r_include_intercept, optional_args, is_weighted_tag{});
   auto penalties = MakePenalties<Optimizer>(r_penalties, optional_args);
   auto optimizer = MakeOptimizer<Optimizer>(en_options);
+  optimizer.loss(loss);
 
-  Rcpp::List output_reg_path;
+  pense::RegularizationPath<Optimizer> reg_path(optimizer, penalties, 1, 0, 1);
+
+  FwdList< FwdList<Coefficients> > zeros;
+  zeros.emplace_front(1, loss.template ZeroCoefficients<Coefficients>());
+  reg_path.EmplaceIndividualStartingPoints(std::move(zeros));
+
+  Rcpp::List combined_reg_path;
   Metrics all_metrics("reg_path");
-  pense::RegPath0<Optimizer> reg_path(optimizer, loss, penalties);
+
   while (!reg_path.End()) {
-    auto next_optimum = reg_path.Next();
-    if (next_optimum.metrics) {
-      all_metrics.AddSubMetrics(std::move(*next_optimum.metrics));
-      next_optimum.metrics.reset();
+    Rcpp::List solutions;
+    Metrics& sub_metrics = all_metrics.CreateSubMetrics("lambda");
+
+    auto next = reg_path.Next();
+
+    sub_metrics.AddMetric("alpha", next.penalty.alpha());
+    sub_metrics.AddMetric("lambda", next.penalty.lambda());
+
+    for (auto&& optimum : next.optima) {
+      if (optimum.metrics) {
+        optimum.metrics->AddDetail("objf_value", optimum.objf_value);
+        sub_metrics.AddSubMetrics(*optimum.metrics);
+      }
+      solutions.push_back(pense::WrapOptimum(optimum));
     }
-    output_reg_path.push_back(pense::WrapOptimum(next_optimum));
+    combined_reg_path.push_back(solutions);
+    Rcpp::checkUserInterrupt();
   }
-  Rcpp::List en_results = Rcpp::List::create(Rcpp::Named("estimates") = output_reg_path,
+  Rcpp::List en_results = Rcpp::List::create(Rcpp::Named("estimates") = combined_reg_path,
                                              Rcpp::Named("metrics") = wrap(all_metrics));
 
   return wrap(en_results);

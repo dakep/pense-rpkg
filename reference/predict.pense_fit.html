@@ -167,38 +167,18 @@ sequence and coefficients need to be interpolated.</p></dd>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">cv_results</span> <span class="op">&lt;-</span> <span class="fu"><a href="elnet_cv.html">elnet_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">freeny</span><span class="op">$</span><span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.5</span>,</span></span>
 <span class="r-in"><span>                       cv_repl <span class="op">=</span> <span class="fl">10</span>, cv_k <span class="op">=</span> <span class="fl">4</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'x' in selecting a method for function 'drop': non-conformable arguments</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Predict the response using the "best" penalization level</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">cv_results</span>, newdata <span class="op">=</span> <span class="va">freeny</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">2</span><span class="op">:</span><span class="fl">5</span><span class="op">]</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  1962.25   1962.5  1962.75     1963  1963.25 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 8.795162 8.807070 8.824535 8.842175 8.882970 </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in predict(cv_results, newdata = freeny[1:5, 2:5]):</span> object 'cv_results' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Extract the residuals at the "best" penalization level</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>              Qtr1         Qtr2         Qtr3         Qtr4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1962              -0.002801588 -0.015699794 -0.009674689</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1963 -0.029165027  0.024539756  0.012794692  0.013400637</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1964 -0.014177641  0.006727561 -0.001786569  0.012847301</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1965 -0.026214283 -0.003738367 -0.010414370 -0.002497682</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1966 -0.014953173  0.014923561  0.008857587  0.002955549</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1967 -0.002438578  0.011336771 -0.004817002 -0.002203485</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1968 -0.014622332 -0.016038521  0.004783442  0.009509723</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1969  0.008935501  0.025135859  0.011008309  0.028171208</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1970 -0.021812388  0.015300404 -0.005936032 -0.018484409</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1971 -0.011338929  0.005850584  0.003783641  0.007952774</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in residuals(cv_results):</span> object 'cv_results' not found</span>
 <span class="r-in"><span><span class="co"># Extract the residuals at a more parsimonious penalization level</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals</a></span><span class="op">(</span><span class="va">cv_results</span>, lambda <span class="op">=</span> <span class="st">"1.5-se"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               Qtr1          Qtr2          Qtr3          Qtr4</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1962               -0.0133914763 -0.0253025812 -0.0180073467</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1963 -0.0375085950  0.0197904960  0.0063674275  0.0071084444</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1964 -0.0199445085  0.0028559476 -0.0059886764  0.0089958759</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1965 -0.0300906249 -0.0052788324 -0.0128420949 -0.0036364879</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1966 -0.0166186511  0.0137904162  0.0073750895  0.0016121587</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1967 -0.0021618673  0.0116385091 -0.0046227113  0.0002016235</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1968 -0.0117185912 -0.0127504673  0.0088610048  0.0131305182</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1969  0.0114094522  0.0285319822  0.0147126545  0.0325247699</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1970 -0.0158575338  0.0222103711  0.0004937030 -0.0127802705</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1971 -0.0035765461  0.0133307584  0.0117139290  0.0154227310</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in residuals(cv_results, lambda = "1.5-se"):</span> object 'cv_results' not found</span>
 </code></pre></div>
     </div>
   </div>

@@ -254,56 +254,25 @@ Only sensible for binary responses.</p></dd>
 <span class="r-in"><span><span class="va">cv_results</span> <span class="op">&lt;-</span> <span class="fu">elnet_cv</span><span class="op">(</span><span class="va">x</span>, <span class="va">freeny</span><span class="op">$</span><span class="va">y</span>, alpha <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">0.75</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                       cv_repl <span class="op">=</span> <span class="fl">10</span>, cv_k <span class="op">=</span> <span class="fl">4</span>,</span></span>
 <span class="r-in"><span>                       cv_measure <span class="op">=</span> <span class="st">"tau"</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'x' in selecting a method for function 'drop': non-conformable arguments</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cv_results</span>, se_mult <span class="op">=</span> <span class="fl">1.5</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="elnet_cv-3.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in plot(cv_results, se_mult = 1.5):</span> object 'cv_results' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">cv_results</span>, se_mult <span class="op">=</span> <span class="fl">1.5</span>, what <span class="op">=</span> <span class="st">"coef.path"</span><span class="op">)</span></span></span>
-<span class="r-plt img"><img src="elnet_cv-4.png" alt="" width="700" height="433"></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in plot(cv_results, se_mult = 1.5, what = "coef.path"):</span> object 'cv_results' not found</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Extract the coefficients at the penalization level with</span></span></span>
 <span class="r-in"><span><span class="co"># smallest prediction error ...</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> EN fit with prediction performance estimated by replications of 4-fold </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cross-validation.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 out of 4 predictors have non-zero coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               Estimate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept) -9.6491805</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X1           0.1899399</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X2          -0.6858733</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X3           0.7075924</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X4           1.2247539</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Hyper-parameters: lambda=0.003787891, alpha=0.5</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'cv_results' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            -9.6491805             0.1899399            -0.6858733 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7075924             1.2247539 </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in coef(cv_results):</span> object 'cv_results' not found</span>
 <span class="r-in"><span><span class="co"># ... or at the penalization level with prediction error</span></span></span>
 <span class="r-in"><span><span class="co"># statistically indistinguishable from the minimum.</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">cv_results</span>, lambda <span class="op">=</span> <span class="st">"1.5-se"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> EN fit with prediction performance estimated by replications of 4-fold </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> cross-validation.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 out of 4 predictors have non-zero coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               Estimate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept) -9.5875726</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X1           0.2270959</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X2          -0.6216322</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X3           0.6519060</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X4           1.1972788</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Hyper-parameters: lambda=0.01303176, alpha=0.5</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in h(simpleError(msg, call)):</span> error in evaluating the argument 'object' in selecting a method for function 'summary': object 'cv_results' not found</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cv_results</span>, lambda <span class="op">=</span> <span class="st">"1.5-se"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            -9.5875726             0.2270959            -0.6216322 </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.6519060             1.1972788 </span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in coef(cv_results, lambda = "1.5-se"):</span> object 'cv_results' not found</span>
 </code></pre></div>
     </div>
   </div>

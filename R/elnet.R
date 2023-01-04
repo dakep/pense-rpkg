@@ -220,7 +220,7 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
           intercept = handler_args$args$intercept,
           optional_args = handler_args$args$optional_args)
 
-        cv_fit$estimates
+        lapply(cv_fit$estimates, `[[`, 1L)
       }
 
       set.seed(fit_seed)

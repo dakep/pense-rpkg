@@ -322,29 +322,31 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   other_starts <- if (isTRUE(fit_ses)) {
-    lapply(fits, function (fit_alpha) {
-      # If there are other individual starts, only use the ones with
-      # correct `alpha`
-      old_starts <- if (length(args$optional_args$individual_starts) > 0L) {
-        .filter_list(args$optional_args$individual_starts, 'alpha',
-                     fit_alpha$alpha)
-      } else {
-        list()
-      }
+    mapply(fits, args$lambda, SIMPLIFY = FALSE,
+           FUN = function (fit_alpha, lambda_seq) {
+             # If there are other individual starts, only use the ones with
+             # correct `alpha`
+             n_user_ind_starts <- length(args$optional_args$individual_starts)
+             old_starts <- if (n_user_ind_starts > 0L) {
+               .filter_list(args$optional_args$individual_starts, 'alpha',
+                            fit_alpha$alpha)
+             } else {
+               list()
+             }
 
-      std_ests <- lapply(fit_alpha$estimates, function (est) {
-        est$beta <- est$std_beta
-        est$intercept <- est$std_intercept
-        est$std_beta <- NULL
-        est$std_intercept <- NULL
-        est
-      })
+             std_ests <- lapply(fit_alpha$estimates, function (est) {
+               est$beta <- est$std_beta
+               est$intercept <- est$std_intercept
+               est$std_beta <- NULL
+               est$std_intercept <- NULL
+               est
+             })
 
-      .make_initest_list(c(old_starts, std_ests),
-                         lambda = fit_alpha$lambda,
-                         alpha = fit_alpha$alpha,
-                         sparse = args$pense_opts$sparse)$starting_points
-    })
+             .make_initest_list(c(old_starts, std_ests),
+                                lambda = lambda_seq,
+                                alpha = fit_alpha$alpha,
+                                sparse = args$pense_opts$sparse)$starting_points
+           })
   } else {
     lapply(args$alpha, function (alpha) {
       if (length(args$optional_args$individual_starts) > 0L) {

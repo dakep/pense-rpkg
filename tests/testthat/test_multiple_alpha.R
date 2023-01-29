@@ -62,7 +62,7 @@ test_that("pense_cv() with multiple alpha", {
                  alpha = c(0.1, 0.8),
                  nlambda = nlambda,
                  nlambda_enpy = 5,
-                 max_solutions = 1L,
+                 max_solutions = 10L,
                  ncores = 2L,
                  bdp = 0.25,
                  sparse = FALSE, eps = 1e-8,

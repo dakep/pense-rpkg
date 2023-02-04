@@ -11,13 +11,13 @@ RBIN="${R_HOME}/bin/R"
 CC=`"${RBIN}" CMD config CC`
 CPP="$CC -E"
 
-CXX=`"${RBIN}" CMD config CXX14`
+CXX=`"${RBIN}" CMD config CXX17`
 if test -z "$CXX"; then
-  AC_MSG_ERROR([No C++14 compiler is available])
+  AC_MSG_ERROR([No C++17 compiler is available])
 fi
-CXX14STD=`"${RBIN}" CMD config CXX14STD`
-CXX="${CXX} ${CXX14STD}"
-CXXFLAGS=`"${RBIN}" CMD config CXX14FLAGS`
+CXX17STD=`"${RBIN}" CMD config CXX17STD`
+CXX="${CXX} ${CXX17STD}"
+CXXFLAGS=`"${RBIN}" CMD config CXX17FLAGS`
 CPPFLAGS=`"${RBIN}" CMD config CPPFLAGS`
 LDFLAGS=`"${RBIN}" CMD config LDFLAGS`
 

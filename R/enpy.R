@@ -24,7 +24,7 @@
 #'    *Ann. Appl. Stat.* **13** (2019), no. 4, 2065--2090 \doi{10.1214/19-AOAS1269}
 #'
 #'
-#' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
+#' @importFrom lifecycle deprecate_stop deprecate_stop deprecated is_present
 #' @importFrom rlang abort
 enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, intercept = TRUE, penalty_loadings,
                                     enpy_opts = enpy_options(), mscale_opts = mscale_algorithm_options(),
@@ -112,7 +112,7 @@ enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, interce
 #'    A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
 #'    *J. Amer. Statist. Assoc.* **94** (1999). no. 446, 434--445. \doi{10.2307/2670164}
 #'
-#' @importFrom lifecycle deprecate_warn deprecate_stop deprecated is_present
+#' @importFrom lifecycle deprecate_stop deprecate_stop deprecated is_present
 #' @importFrom rlang abort
 prinsens <- function (x, y, alpha, lambda, intercept = TRUE, penalty_loadings, en_algorithm_opts,
                       eps = 1e-6, sparse = FALSE, ncores = 1L, method = deprecated()) {
@@ -127,7 +127,7 @@ prinsens <- function (x, y, alpha, lambda, intercept = TRUE, penalty_loadings, e
 
   if (is_present(method)) {
     if (method == 'en') {
-      deprecate_warn('2.0.0', 'prinsens(method = )')
+      deprecate_stop('2.0.0', 'prinsens(method = )')
     } else {
       deprecate_stop('2.0.0', 'prinsens(method = )', details = 'For unpenalized estimates use the pyinit package.')
     }

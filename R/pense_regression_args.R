@@ -1,4 +1,4 @@
-#' @importFrom lifecycle deprecated is_present deprecate_stop deprecate_warn
+#' @importFrom lifecycle deprecated is_present deprecate_stop deprecate_stop
 #' @importFrom rlang warn abort is_missing
 #' @importFrom methods is
 #' @importFrom stats runif

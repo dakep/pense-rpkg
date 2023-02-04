@@ -172,7 +172,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
   structure(list(
     call = match.call(expand.dots = TRUE),
     bdp = stable_bdp,
-    lambda = lapply(fits, `[[`, 'lambda'),
+    lambda = args$lambda,
     metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
     estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE,
                        use.names = FALSE),
@@ -221,7 +221,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
 #'    regularization path.
 #' @aliases adapense_cv
 #' @export
-#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom stats sd
 #' @importFrom rlang abort
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
@@ -322,31 +322,33 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   other_starts <- if (isTRUE(fit_ses)) {
+    make_other_starts <- function (fit_alpha, lambda_seq) {
+      # If there are other individual starts, only use the ones with
+      # correct `alpha`
+      n_user_ind_starts <- length(args$optional_args$individual_starts)
+      old_starts <- if (n_user_ind_starts > 0L) {
+        .filter_list(args$optional_args$individual_starts, 'alpha',
+                     fit_alpha$alpha)
+      } else {
+        list()
+      }
+
+      std_ests <- lapply(fit_alpha$estimates, function (est) {
+        est$beta <- est$std_beta
+        est$intercept <- est$std_intercept
+        est$std_beta <- NULL
+        est$std_intercept <- NULL
+        est
+      })
+
+      .make_initest_list(c(old_starts, std_ests),
+                         lambda = lambda_seq,
+                         alpha = fit_alpha$alpha,
+                         sparse = args$pense_opts$sparse)$starting_points
+    }
+
     mapply(fits, args$lambda, SIMPLIFY = FALSE,
-           FUN = function (fit_alpha, lambda_seq) {
-             # If there are other individual starts, only use the ones with
-             # correct `alpha`
-             n_user_ind_starts <- length(args$optional_args$individual_starts)
-             old_starts <- if (n_user_ind_starts > 0L) {
-               .filter_list(args$optional_args$individual_starts, 'alpha',
-                            fit_alpha$alpha)
-             } else {
-               list()
-             }
-
-             std_ests <- lapply(fit_alpha$estimates, function (est) {
-               est$beta <- est$std_beta
-               est$intercept <- est$std_intercept
-               est$std_beta <- NULL
-               est$std_intercept <- NULL
-               est
-             })
-
-             .make_initest_list(c(old_starts, std_ests),
-                                lambda = lambda_seq,
-                                alpha = fit_alpha$alpha,
-                                sparse = args$pense_opts$sparse)$starting_points
-           })
+           FUN = make_other_starts)
   } else {
     lapply(args$alpha, function (alpha) {
       if (length(args$optional_args$individual_starts) > 0L) {
@@ -360,66 +362,69 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   # Get a common seed to be used for every alpha value
   fit_seed <- sample.int(.Machine$integer.max, 1L)
 
+  cv_est_fun <- function (train_data, test_ind, handler_args) {
+    # Determine stable bdp separately for this fold
+    desired_bdp <- handler_args$args$pense_opts$mscale$delta *
+      (length(train_data$y) + length(test_ind)) / length(train_data$y)
+
+    stable_bdp <- .find_stable_bdb_bisquare(
+      n = length(train_data$y),
+      desired_bdp = desired_bdp)
+
+    handler_args$args$pense_opts$mscale$delta <- stable_bdp
+
+    cv_fit <- .pense_internal(
+      x = train_data$x,
+      y = train_data$y,
+      alpha = handler_args$alpha,
+      lambda = handler_args$lambda,
+      enpy_lambda_inds = handler_args$enpy_lambda_inds,
+      penalty_loadings = handler_args$args$penalty_loadings,
+      pense_opts = handler_args$args$pense_opts,
+      enpy_opts = handler_args$args$enpy_opts,
+      optional_args = handler_args$args$optional_args)
+
+    # Return only best local optima
+    lapply(cv_fit$estimates, `[[`, 1L)
+  }
+
+  cv_est_dispatch <- function (alpha, lambda, enpy_lambda_inds,
+                               other_starts) {
+    handler_args <- list(alpha = alpha,
+                         lambda = lambda,
+                         cv_k = cv_k,
+                         enpy_lambda_inds = enpy_lambda_inds,
+                         args = args)
+
+    if (identical(fold_starts, 'full')) {
+      handler_args$enpy_lambda_inds <- integer(0L)
+    }
+
+    if (!identical(fold_starts, 'enpy')) {
+      handler_args$args$pense_opts$strategy_other_individual <- TRUE
+    }
+
+    handler_args$args$optional_args$individual_starts <- other_starts
+
+    set.seed(fit_seed)
+    cv_perf <- .run_replicated_cv(
+      args$std_data,
+      cv_k = cv_k,
+      cv_repl = cv_repl,
+      metric = cv_metric,
+      cv_est_fun = cv_est_fun,
+      par_cluster = cl,
+      handler_args = handler_args)
+
+    data.frame(lambda = lambda, alpha = alpha,
+               cvavg = rowMeans(cv_perf),
+               cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
+  }
+
   cv_curves <- mapply(
     args$alpha, args$lambda, args$enpy_lambda_inds, other_starts,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda, enpy_lambda_inds, other_starts) {
-      cv_fun <- function (train_data, test_ind, handler_args) {
-        # Determine stable bdp separately for this fold
-        desired_bdp <- handler_args$args$pense_opts$mscale$delta *
-          (length(train_data$y) + length(test_ind)) / length(train_data$y)
-
-        stable_bdp <- .find_stable_bdb_bisquare(
-          n = length(train_data$y),
-          desired_bdp = desired_bdp)
-
-        handler_args$args$pense_opts$mscale$delta <- stable_bdp
-
-        cv_fit <- .pense_internal(
-          x = train_data$x,
-          y = train_data$y,
-          alpha = handler_args$alpha,
-          lambda = handler_args$lambda,
-          enpy_lambda_inds = handler_args$enpy_lambda_inds,
-          penalty_loadings = handler_args$args$penalty_loadings,
-          pense_opts = handler_args$args$pense_opts,
-          enpy_opts = handler_args$args$enpy_opts,
-          optional_args = handler_args$args$optional_args)
-
-        # Return only best local optima
-        lapply(cv_fit$estimates, `[[`, 1L)
-      }
-
-      handler_args <- list(alpha = alpha,
-                           lambda = lambda,
-                           cv_k = cv_k,
-                           enpy_lambda_inds = enpy_lambda_inds,
-                           args = args)
-
-      if (identical(fold_starts, 'full')) {
-        handler_args$enpy_lambda_inds <- integer(0L)
-      }
-
-      if (!identical(fold_starts, 'enpy')) {
-        handler_args$args$pense_opts$strategy_other_individual <- TRUE
-      }
-
-      handler_args$args$optional_args$individual_starts <- other_starts
-
-      set.seed(fit_seed)
-      cv_perf <- .run_replicated_cv(
-        args$std_data,
-        cv_k = cv_k,
-        cv_repl = cv_repl,
-        metric = cv_metric,
-        cv_est_fun = cv_fun,
-        par_cluster = cl,
-        handler_args = handler_args)
-
-      data.frame(lambda = lambda, alpha = alpha,
-                 cvavg = rowMeans(cv_perf),
-                 cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
-    })
+    FUN = cv_est_dispatch)
 
   cv_curves <- do.call(rbind, cv_curves)
 
@@ -446,7 +451,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   structure(list(
     call = match.call(expand.dots = TRUE),
     bdp = stable_bdp,
-    lambda = lapply(fits, `[[`, 'lambda'),
+    lambda = args$lambda,
     alpha = vapply(fits, FUN.VALUE = numeric(1L),
                    FUN = `[[`, 'alpha', USE.NAMES = FALSE),
     cvres = cv_curves,

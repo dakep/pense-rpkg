@@ -19,14 +19,14 @@
 #' @export
 #'
 #' @importFrom Matrix drop
-#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang abort
 #' @importFrom stats coef
 #'
 predict.pense_fit <- function(object, newdata, alpha = NULL, lambda,
                               exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
-    deprecate_warn('2.0.0', 'residuals(exact=)')
+    deprecate_stop('2.0.0', 'residuals(exact=)')
   }
   if (is_present(correction)) {
     deprecate_stop('2.0.0', 'residuals(correction=)')
@@ -70,13 +70,13 @@ predict.pense_fit <- function(object, newdata, alpha = NULL, lambda,
 #' @export
 #'
 #' @importFrom Matrix drop
-#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 #' @importFrom stats coef
 predict.pense_cvfit <- function(object, newdata, alpha = NULL, lambda = 'min', se_mult = 1,
                                 exact = deprecated(), correction = deprecated(), ...) {
   if (is_present(exact)) {
-    deprecate_warn('2.0.0', 'coef(exact=)')
+    deprecate_stop('2.0.0', 'coef(exact=)')
   }
   if (is_present(correction)) {
     deprecate_stop('2.0.0', 'coef(correction=)')

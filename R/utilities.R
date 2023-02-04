@@ -39,25 +39,25 @@ tau_size <- function (x) {
 #'
 #' @export
 #'
-#' @importFrom lifecycle deprecate_warn deprecated is_present
+#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
 mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
                     opts = mscale_algorithm_options(), delta = deprecated(),
                     rho = deprecated(), eps = deprecated(), maxit = deprecated()) {
   if (is_present(delta)) {
-    deprecate_warn('2.0.0', 'mscale(delta=)', 'mscale(bdp=)')
+    deprecate_stop('2.0.0', 'mscale(delta=)', 'mscale(bdp=)')
     bdp <- delta
   }
   if (is_present(rho)) {
-    deprecate_warn('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
+    deprecate_stop('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
   }
   if (is_present(eps)) {
-    deprecate_warn('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
+    deprecate_stop('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
     opts$eps <- .as(eps[[1L]], 'numeric')
   }
   if (is_present(maxit)) {
-    deprecate_warn('2.0.0', 'mscale(maxit=)', 'mscale(opts=)')
+    deprecate_stop('2.0.0', 'mscale(maxit=)', 'mscale(opts=)')
     opts$max_it <- .as(maxit[[1L]], 'integer')
   }
 

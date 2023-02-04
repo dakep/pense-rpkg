@@ -21,9 +21,10 @@ pensem_cv <- function (x, ...) {
 #'
 #' @family deprecated functions
 #'
+#' @importFrom lifecycle deprecate_stop
 #' @export
 pensem <- function (x, ...) {
-  deprecate_warn('2.0.0', 'pensem()', 'pensem_cv()')
+  deprecate_stop('2.0.0', 'pensem()', 'pensem_cv()')
   UseMethod('pensem_cv')
 }
 

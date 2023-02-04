@@ -87,35 +87,37 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
   args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
   args <- do.call(.regmest_args, args, envir = parent.frame())
 
+  compute_fit <- function (alpha, lambda) {
+    fit <- .regmest_internal(args$std_data$x, args$std_data$y,
+                             alpha = alpha,
+                             lambda = lambda,
+                             scale = args$scale,
+                             penalty_loadings = args$penalty_loadings,
+                             mest_opts = args$mest_opts,
+                             optional_args = args$optional_args)
+
+    # Retain only the best solution:
+    fit$estimates <- lapply(fit$estimates, function (ests) {
+      args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
+    })
+    # Handle metrics
+    fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+    fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
+                                'lambda'), use.names = FALSE, recursive = FALSE)
+    fit$alpha <- alpha
+    fit
+  }
+
   # Call internal function
   fits <- mapply(
     args$alpha, args$lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda) {
-      fit <- .regmest_internal(args$std_data$x, args$std_data$y,
-                               alpha = alpha,
-                               lambda = lambda,
-                               scale = args$scale,
-                               penalty_loadings = args$penalty_loadings,
-                               mest_opts = args$mest_opts,
-                               optional_args = args$optional_args)
-
-      # Retain only the best solution:
-      fit$estimates <- lapply(fit$estimates, function (ests) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-      })
-      # Handle metrics
-      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                  'lambda'), use.names = FALSE, recursive = FALSE)
-      fit$alpha <- alpha
-      fit
-    })
+    FUN = compute_fit)
 
   structure(list(
     call = call,
     scale = args$scale,
-    lambda = lapply(fits, `[[`, 'lambda'),
+    lambda = args$lambda,
     estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
     alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
     class = c('mest', 'pense_fit'))
@@ -218,38 +220,40 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   # Get a common seed to be used for every alpha value
   fit_seed <- sample.int(.Machine$integer.max, 1L)
 
+  cv_est_fun <- function (train_data, test_ind, handler_args) {
+    cv_fit <- .regmest_internal(
+      train_data$x, train_data$y,
+      alpha = handler_args$alpha,
+      lambda = handler_args$lambda,
+      scale = handler_args$args$scale,
+      penalty_loadings = handler_args$args$penalty_loadings,
+      mest_opts = handler_args$args$mest_opts,
+      optional_args = handler_args$args$optional_args)
+
+    # Return only best local optima
+    lapply(cv_fit$estimates, `[[`, 1L)
+  }
+
+  cv_est_dispatch <- function (alpha, lambda) {
+    set.seed(fit_seed)
+    cv_perf <- .run_replicated_cv(args$std_data,
+                                  cv_k = cv_k,
+                                  cv_repl = cv_repl,
+                                  metric = cv_metric,
+                                  cv_est_fun = cv_est_fun,
+                                  par_cluster = cl,
+                                  handler_args = list(args = args,
+                                                      alpha = alpha,
+                                                      lambda = lambda))
+    data.frame(lambda = lambda, alpha = alpha,
+               cvavg = rowMeans(cv_perf),
+               cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
+  }
+
   cv_curves <- mapply(
     args$alpha, args$lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda) {
-      cv_fun <- function (train_data, test_ind, handler_args) {
-        cv_fit <- .regmest_internal(
-          train_data$x, train_data$y,
-          alpha = handler_args$alpha,
-          lambda = handler_args$lambda,
-          scale = handler_args$args$scale,
-          penalty_loadings = handler_args$args$penalty_loadings,
-          mest_opts = handler_args$args$mest_opts,
-          optional_args = handler_args$args$optional_args)
-
-        # Return only best local optima
-        lapply(cv_fit$estimates, `[[`, 1L)
-      }
-
-      set.seed(fit_seed)
-      cv_perf <- .run_replicated_cv(args$std_data,
-                                    cv_k = cv_k,
-                                    cv_repl = cv_repl,
-                                    metric = cv_metric,
-                                    cv_est_fun = cv_fun,
-                                    par_cluster = cl,
-                                    handler_args = list(args = args,
-                                                        alpha = alpha,
-                                                        lambda = lambda))
-      data.frame(lambda = lambda, alpha = alpha,
-                 cvavg = rowMeans(cv_perf),
-                 cvse = if (cv_repl > 1L) { apply(cv_perf, 1, sd) } else { 0 })
-    })
+    FUN = cv_est_dispatch)
 
   cv_curves <- do.call(rbind, cv_curves)
 
@@ -259,45 +263,55 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     fit_lambda <- lapply(args$alpha, function (alpha) {
       rows <- which((cv_curves$alpha - alpha)^2 < .Machine$double.eps)
 
-      lambda_inds <- vapply(fit_ses, FUN.VALUE = numeric(1L), FUN = function (se_fact) {
-        which(.cv_se_selection(cv_curves$cvavg[rows], cv_curves$cvse[rows], se_fact) == 'se_fact')
-      })
+      lambda_inds <- vapply(fit_ses, FUN.VALUE = numeric(1L),
+                            FUN = function (se_fact) {
+                              sel <- .cv_se_selection(cv_curves$cvavg[rows],
+                                                      cv_curves$cvse[rows],
+                                                      se_fact)
+                              which(sel == 'se_fact')
+                            })
       unique(cv_curves$lambda[rows[lambda_inds]])
     })
+  }
+
+  compute_global_fits <- function (alpha, lambda) {
+    fit <- .regmest_internal(args$std_data$x, args$std_data$y,
+                             alpha = alpha,
+                             lambda = lambda,
+                             scale = args$scale,
+                             penalty_loadings = args$penalty_loadings,
+                             mest_opts = args$mest_opts,
+                             optional_args = args$optional_args)
+
+    # Retain only the best solution:
+    fit$estimates <- lapply(fit$estimates, function (ests) {
+      args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
+    })
+    # Handle metrics
+    fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
+    fit$lambda <- unlist(vapply(fit$estimates, FUN.VALUE = numeric(1),
+                                FUN = `[[`, 'lambda'),
+                         use.names = FALSE, recursive = FALSE)
+    fit$alpha <- alpha
+    fit
   }
 
   fits <- mapply(
     args$alpha, fit_lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
-    FUN = function (alpha, lambda) {
-      fit <- .regmest_internal(args$std_data$x, args$std_data$y,
-                               alpha = alpha,
-                               lambda = lambda,
-                               scale = args$scale,
-                               penalty_loadings = args$penalty_loadings,
-                               mest_opts = args$mest_opts,
-                               optional_args = args$optional_args)
-
-      # Retain only the best solution:
-      fit$estimates <- lapply(fit$estimates, function (ests) {
-        args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
-      })
-      # Handle metrics
-      fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                  'lambda'), use.names = FALSE, recursive = FALSE)
-      fit$alpha <- alpha
-      fit
-    })
+    FUN = compute_global_fits)
 
   structure(list(
     call = call,
     scale = args$scale,
     cvres = cv_curves,
     cv_measure = cv_measure_str,
-    lambda = lapply(fits, `[[`, 'lambda'),
-    estimates = unlist(lapply(fits, `[[`, 'estimates'), recursive = FALSE, use.names = FALSE),
-    alpha = vapply(fits, FUN.VALUE = numeric(1L), FUN = `[[`, 'alpha', USE.NAMES = FALSE)),
+    lambda = args$lambda,
+    estimates = unlist(lapply(fits, `[[`, 'estimates'),
+                       recursive = FALSE, use.names = FALSE),
+    alpha = vapply(fits, FUN.VALUE = numeric(1L),
+                   FUN = `[[`, 'alpha',
+                   USE.NAMES = FALSE)),
     class = c('mest', 'pense_cvfit'))
 }
 
@@ -348,7 +362,8 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
   prelim_coef <- coef(prelim, sparse = FALSE, concat = FALSE)
   pen_loadings <- abs(prelim_coef$beta)^(-exponent)
 
-  adamstep <- regmest_cv(x, y, alpha = alpha, penalty_loadings = pen_loadings, ...)
+  adamstep <- regmest_cv(x, y, alpha = alpha,
+                         penalty_loadings = pen_loadings, ...)
   adamstep$call <- call
   adamstep$exponent <- exponent
   adamstep$preliminary <- prelim
@@ -357,16 +372,19 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
 }
 
 ## Get the smallest lambda such that the PENSE estimate gives the empty model.
-.regmest_max_lambda <- function (x, y, alpha, scale, mest_options, penalty_loadings = NULL) {
+.regmest_max_lambda <- function (x, y, alpha, scale, mest_options,
+                                 penalty_loadings = NULL) {
   optional_args <- list()
   if (!is.null(penalty_loadings)) {
     optional_args$pen_loadings <- penalty_loadings
   }
-  .Call(C_mesten_max_lambda, x, y, scale, mest_options, optional_args) / max(0.01, alpha)
+  .Call(C_mesten_max_lambda, x, y, scale, mest_options, optional_args) /
+    max(0.01, alpha)
 }
 
 ## Generate a log-spaced grid of decreasing lambda values
-.regmest_lambda_grid <- function (x, y, alpha, scale, nlambda, lambda_min_ratio, mest_options,
+.regmest_lambda_grid <- function (x, y, alpha, scale, nlambda,
+                                  lambda_min_ratio, mest_options,
                                   penalty_loadings) {
   alpha <- max(0.01, alpha)
   x_dim <- dim(x)

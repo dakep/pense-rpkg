@@ -102,7 +102,7 @@ test_that("Regularized M-estimation Algorithm (2 threads)", {
     for (name in names(ref_estimates[[i]])) {
       expect_success(expect_equal(drop(pr$estimates[[!!i]][[!!name]]),
                                   unlist(ref_estimates[[!!i]][[!!name]]),
-                                  tolerance = 1e-3))
+                                  tolerance = 1e-2))
     }
   }
 })

@@ -383,9 +383,7 @@ class RegularizationPath {
 
     #pragma omp parallel \
                 num_threads(num_threads_) \
-                default(none) \
-                shared(explore_tol_, explore_it_, individual_starts_it_) \
-                shared(explored_solutions, optimizer_template_) const_local_shared(orig_tol, is_end, sh_end)
+                default(shared)
     {
       #pragma omp single nowait
       for (auto is_it = individual_starts_it_->Elements().begin(); is_it != is_end; ++is_it) {
@@ -565,8 +563,7 @@ class RegularizationPath {
 
     #pragma omp parallel \
                 num_threads(num_threads_) \
-                default(none) \
-                shared(explored, best_starts_) const_local_shared(ex_end)
+                default(shared)
     {
       #pragma omp single nowait
       for (auto ex_it = explored.Elements().begin(); ex_it != ex_end; ++ex_it) {

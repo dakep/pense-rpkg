@@ -47,10 +47,16 @@ struct MetricsContainer {
 
 namespace _metrics_internal {
 template<typename T>
-class MetricsIterator : public std::iterator<std::forward_iterator_tag, const Metric<T>> {
+class MetricsIterator {
   using list_iterator = typename MetricList<T>::const_iterator;
 
  public:
+  using iterator_category = std::forward_iterator_tag;
+  using value_type = const Metric<T>;
+  using difference_type = std::ptrdiff_t;
+  using pointer = const Metric<T>*;
+  using reference = const Metric<T>&;
+
   MetricsIterator() noexcept {}
   // Create an iterator pointing to the start of the chained lists.
   MetricsIterator(const MetricList<T>& first, const MetricList<T>& second) noexcept

@@ -59,27 +59,27 @@ PKG_CFLAGS="${OPENMP_CXXFLAGS}" PKG_LIBS="${OPENMP_CXXFLAGS}" "$RBIN" CMD SHLIB 
   "$RBIN" --vanilla -q -e "dyn.load(paste('conftest',.Platform\$dynlib.ext,sep=''))" 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && ac_pkg_openmp_cxx=yes
 AC_MSG_RESULT([${ac_pkg_openmp_cxx}])
 
-# Check if OpenMP supports tasks, reductions, and if constant member variables need to be shared
+# Check if OpenMP supports tasks, reductions, and if constant variables need to be shared
 LDFLAGS="$LDFLAGS $OPENMP_CXXFLAGS"
 ax_check_save_flags="$LDFLAGS"
 if test "${ac_pkg_openmp_cxx}" = yes; then
   AC_MSG_CHECKING([OpenMP support for tasks])
 
-  # Check if tasks are supported with constant member not shared
+  # Check if tasks are supported with constant variables not shared
   AC_LINK_IFELSE([AC_LANG_PROGRAM([[
     #include <omp.h>
-    class Foo {
+    class FooNone {
     public:
-      Foo(const int x) : x_(x) {}
+      FooNone(const int x) : x_(x) {}
       int Test(const int y) {
         int sum = 0;
-        #pragma omp parallel num_threads(2) default(none) firstprivate(y) shared(sum)
+        #pragma omp parallel num_threads(2) default(none) shared(sum)
         {
           #pragma omp single nowait
           for (int i = 0; i < y; ++i) {
             #pragma omp task default(none) firstprivate(i) shared(sum)
             {
-              sum += x_ * i;
+              sum += x_ * i + y;
             }
           }
         }
@@ -91,7 +91,7 @@ if test "${ac_pkg_openmp_cxx}" = yes; then
   ]],
   [[
     const int mult = omp_get_num_threads();
-    Foo f(mult);
+    FooNone f(mult);
     return f.Test(2 * mult);
   ]])],
   [
@@ -105,18 +105,18 @@ if test "${ac_pkg_openmp_cxx}" = yes; then
     # Maybe constant member variables need to be shared
     AC_LINK_IFELSE([AC_LANG_PROGRAM([[
       #include <omp.h>
-      class Foo {
+      class FooMember {
       public:
-        Foo(const int x) : x_(x) {}
+        FooMember(const int x) : x_(x) {}
         int Test(const int y) {
           int sum = 0;
-          #pragma omp parallel num_threads(2) default(none) shared(sum)
+          #pragma omp parallel num_threads(2) default(none) shared(sum, x_)
           {
             #pragma omp single nowait
             for (int i = 0; i < y; ++i) {
               #pragma omp task default(none) firstprivate(i) shared(sum, x_)
               {
-                sum += x_ * i;
+                sum += x_ * i + y;
               }
             }
           }
@@ -128,19 +128,107 @@ if test "${ac_pkg_openmp_cxx}" = yes; then
     ]],
     [[
       const int mult = omp_get_num_threads();
-      Foo f(mult);
+      FooMember f(mult);
       return f.Test(2 * mult);
     ]])],
     [
-      AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED], [1], [
+      AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED_MEMBER], [1], [
         Set to 1 if OpenMP requires constant class members to be shared
       ])
       ac_pkg_openmp_cxx_tasks="yes, with shared constant members"
     ],
     [
       ac_pkg_openmp_cxx_tasks=no
-      ac_pkg_openmp_cxx=no
     ])
+  fi
+
+  if test "${ac_pkg_openmp_cxx_tasks}" = no; then
+    # Maybe constant local variables need to be shared
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+      #include <omp.h>
+      class FooLocal {
+      public:
+        FooLocal(const int x) : x_(x) {}
+        int Test(const int y) {
+          int sum = 0;
+          #pragma omp parallel num_threads(2) default(none) shared(sum, y)
+          {
+            #pragma omp single nowait
+            for (int i = 0; i < y; ++i) {
+              #pragma omp task default(none) firstprivate(i) shared(sum, y)
+              {
+                sum += x_ * i + y;
+              }
+            }
+          }
+          return sum;
+        }
+      private:
+        const int x_;
+      };
+    ]],
+    [[
+      const int mult = omp_get_num_threads();
+      FooLocal f(mult);
+      return f.Test(2 * mult);
+    ]])],
+    [
+      AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED_LOCAL], [1], [
+        Set to 1 if OpenMP requires constant local variables to be shared
+      ])
+      ac_pkg_openmp_cxx_tasks="yes, with shared constant local variables"
+    ],
+    [
+      ac_pkg_openmp_cxx_tasks=no
+    ])
+  fi
+
+  if test "${ac_pkg_openmp_cxx_tasks}" = no; then
+    # Maybe constant local variables and constant members need to be shared
+    AC_LINK_IFELSE([AC_LANG_PROGRAM([[
+      #include <omp.h>
+      class FooBoth {
+      public:
+        FooBoth(const int x) : x_(x) {}
+        int Test(const int y) {
+          int sum = 0;
+          #pragma omp parallel num_threads(2) default(none) shared(sum, y, x_)
+          {
+            #pragma omp single nowait
+            for (int i = 0; i < y; ++i) {
+              #pragma omp task default(none) firstprivate(i) shared(sum, y, x_)
+              {
+                sum += x_ * i + y;
+              }
+            }
+          }
+          return sum;
+        }
+      private:
+        const int x_;
+      };
+    ]],
+    [[
+      const int mult = omp_get_num_threads();
+      FooBoth f(mult);
+      return f.Test(2 * mult);
+    ]])],
+    [
+      AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED_LOCAL], [1], [
+        Set to 1 if OpenMP requires constant local variables and constant members to be shared
+      ])
+      AC_DEFINE([PENSE_OPENMP_ADD_CONST_SHARED_MEMBER], [1], [
+        Set to 1 if OpenMP requires constant class members to be shared
+      ])
+      ac_pkg_openmp_cxx_tasks="yes, with shared constant local variables and constant members"
+    ],
+    [
+      ac_pkg_openmp_cxx_tasks=no
+    ])
+  fi
+
+  if test "${ac_pkg_openmp_cxx_tasks}" = no; then
+    ac_pkg_openmp_cxx=no
   fi
 
   AC_MSG_RESULT([$ac_pkg_openmp_cxx_tasks])

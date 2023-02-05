@@ -19,19 +19,25 @@
 #  undef PENSE_DISABLE_OPENMP
 #endif
 
-#define const_shared(list)
+#define const_member_shared(...)
+#define const_local_shared(...)
 
 #ifdef PENSE_ENABLE_OPENMP
 
 #include <omp.h>
 
+#ifdef PENSE_OPENMP_ADD_CONST_SHARED_MEMBER
+#   undef const_member_shared
+#   define const_member_shared(...) shared(__VA_ARGS__)
+#endif
+
+#ifdef PENSE_OPENMP_ADD_CONST_SHARED_LOCAL
+#   undef const_local_shared
+#   define const_local_shared(...) shared(__VA_ARGS__)
+#endif
+
 namespace pense {
 namespace omp {
-
-#ifdef PENSE_OPENMP_ADD_CONST_SHARED
-#   undef const_shared
-#   define const_shared(list) shared(list)
-#endif
 
 //! Returns ``true`` if OpenMP is enabled.
 inline bool Enabled(const int nr_threads) noexcept {

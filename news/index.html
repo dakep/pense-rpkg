@@ -17,7 +17,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0-1004</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.0</span>
       </span>
     </div>
 
@@ -63,6 +63,14 @@
       <small>Source: <a href="https://github.com/dakep/pense-rpkg/blob/HEAD/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="page-header" data-toc-text="2.2.0" id="pense-220">pense 2.2.0<a class="anchor" aria-label="anchor" href="#pense-220"></a></h2>
+<ul><li>Fix bug where argument <code>max_solutions</code> is not used correctly.</li>
+<li>Add new numerical coordinate-descent algorithms for LS-EN (<code><a href="../reference/en_cd_options.html">en_cd_options()</a></code>).</li>
+<li>Revamp the regularization path and how starting points are used and shared.</li>
+<li>Share starting points across CV folds and replications.</li>
+<li>Address changes in the upcoming Rcpp release.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="page-header" data-toc-text="2.1.0" id="pense-210">pense 2.1.0<small>2021-07-07</small><a class="anchor" aria-label="anchor" href="#pense-210"></a></h2>
 <ul><li>Penalty loadings are now applied to both the L1 and L2 parts of the EN penalty. This will lead to different results for adaptive PENSE and other adaptive estimators when fitted with <em>alpha &lt; 1</em>!</li>

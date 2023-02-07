@@ -1,4 +1,5 @@
 Adds new algorithm for LS-EN, revamps the regularization path and improves CV strategies; addresses anticipated revdep issues with the forthcoming release of Rcpp.
+Make code comply with C++17 and update compiler standards.
 
 ## Test environments
 * local x86_64-apple-darwin17.0, R 4.2.2 Patched (2023-02-03 r83757)

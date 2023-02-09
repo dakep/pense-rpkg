@@ -9,12 +9,18 @@
 #ifndef AUTOCONFIG_HPP_
 #define AUTOCONFIG_HPP_
 
-/* #undef PENSE_DISABLE_OPENMP */
 #define PENSE_ENABLE_OPENMP 1
 /* #undef PENSE_OPENMP_ADD_CONST_SHARED_MEMBER */
 #define PENSE_OPENMP_ADD_CONST_SHARED_LOCAL 1
 #define NSOPTIM_METRICS_DISABLED 1
 /* #undef NSOPTIM_METRICS_ENABLED */
 /* #undef NSOPTIM_METRICS_DETAILED */
+
+/* Test if an old version of GCC is used which requires */
+/* constant variables to be NOT shared (OpenMP v3.1),   */
+/* (https://gcc.gnu.org/gcc-9/porting_to.html)          */
+#if __GNUC__ < 9
+#  undef PENSE_OPENMP_ADD_CONST_SHARED_LOCAL
+#endif
 
 #endif  // AUTOCONFIG_HPP_

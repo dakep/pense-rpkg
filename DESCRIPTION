@@ -2,7 +2,7 @@ Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
 Version: 2.2.1
-Date: 2023-02-09
+Date: 2023-02-11
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),

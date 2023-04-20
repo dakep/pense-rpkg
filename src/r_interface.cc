@@ -43,6 +43,7 @@ const R_CallMethodDef kExportedCallMethods[] = {
   {"C_mesten_max_lambda", (DL_FUNC) &MestEnMaxLambda, 5},
   {"C_penpy", (DL_FUNC) &PenPyInitialEstimator, 6},
   {"C_pscs", (DL_FUNC) &PrincipalSensitivityComponents, 5},
+  {"C_match_solutions_by_weight", (DL_FUNC) &MatchSolutionsByWeight, 6},
   {NULL, NULL, 0}
 };
 }  // namespace

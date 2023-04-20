@@ -565,19 +565,17 @@ adapense_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) 
                                   enpy_opts = args$enpy_opts,
                                   optional_args = args$optional_args)
 
-           # Flatten the list of estimates and un-standardize
-           fit$estimates <- lapply(
-             unlist(fit$estimates, recursive = FALSE),
-             function (ests) {
+           # Un-standardize the estimates
+           fit$estimates <- lapply(fit$estimates, function (lambda_ests) {
+             lapply(lambda_ests, function (ests) {
                args$restore_coef_length(
                  args$std_data$unstandardize_coefs(ests))
              })
+           })
 
            # Handle metrics
            fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-           fit$lambda <- unlist(vapply(fit$estimates, FUN.VALUE = numeric(1),
-                                       FUN = `[[`, 'lambda'),
-                                use.names = FALSE, recursive = FALSE)
+           fit$lambda <- lambda
            fit$alpha <- alpha
            fit
          })

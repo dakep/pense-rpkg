@@ -99,6 +99,12 @@ std::forward_list<nsoptim::AdaptiveLassoPenalty> MakeAdaptiveLassoPenaltyList(SE
 //! @param numeric_vector a numeric R vector
 std::unique_ptr<const arma::vec> MakeVectorView(SEXP numeric_vector) noexcept;
 
+//! Get a **copy** of the given R unsigned integer vector.
+//! Data needs to be copied to cast to 64bit arma::uword types.
+//!
+//! @param integer_vector an R vector of unsigned integers
+arma::uvec MakeUIntVector(SEXP uinteger_vector) noexcept;
+
 namespace utils_internal {
 //! Create a list of penalties with the penalty loadings taken from the list of optional arguments.
 //!

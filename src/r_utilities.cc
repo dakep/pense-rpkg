@@ -186,7 +186,7 @@ void FindBestMatchesForFold (const arma::uword cv_fold_ind,
                              const arma::uvec& sorted_train_ind,
                              const arma::uvec& unsorted_train_ind,
                              const arma::vec& cv_sol_weights,
-                             BestMatch* best_match, const int lambda_ind) {
+                             BestMatch* best_match) {
   for (int global_sol_ind = 0; global_sol_ind < global_wgts.n_cols; ++global_sol_ind) {
     // Now sort the training index according to the global weights.
     // The number of swaps is the number of discordant pairs between the CV weights and the global weights.
@@ -201,12 +201,6 @@ void FindBestMatchesForFold (const arma::uword cv_fold_ind,
     const uword max_swaps = (best_match->kendall_num(global_sol_ind, cv_fold_ind) - numerator_adjustment) / 2;
     const uword swaps = sol_sorter(global_wgts.col(global_sol_ind), max_swaps);
     const uword kendall_num = numerator_adjustment + 2 * swaps;
-
-    #pragma omp master
-    {
-      Rcpp::Rcout << lambda_ind << "," << cv_fold_ind << "," << cv_sol_ind << "," << global_sol_ind
-        << ",\"" << numerator_adjustment << " + 2 * " << swaps << "\"" << std::endl;
-    }
 
     if (kendall_num < best_match->kendall_num(global_sol_ind, cv_fold_ind)) {
       const double kendall_denom = std::sqrt(n_pairs - zeros_dupl.in_x * (zeros_dupl.in_x - 1) / 2) *
@@ -267,9 +261,9 @@ BestMatch FindBestMatchMT (const arma::mat& global_wgts, const Rcpp::List& solut
 
       // Then sort the actual training indices based on the sorted index of the weights (-1 to account
       // for R's 1-based index)
-      const uvec cv_sol_sorted_train_ind = cv_train_indices_fold_it->elem(sol_sorter.SortedIndices()) - 1;
+      const uvec cv_sol_sorted_train_ind = cv_train_indices_fold_it->elem(sol_sorter.SortedIndices());
       FindBestMatchesForFold(cv_fold_ind, sol_ind, global_wgts, cv_sol_sorted_train_ind, *cv_train_indices_fold_it,
-                             cv_sol_weights_fold_it->col(sol_ind), &best_match, lambda_ind);
+                             cv_sol_weights_fold_it->col(sol_ind), &best_match);
     }
   }
 
@@ -300,7 +294,7 @@ BestMatch FindBestMatchST (const arma::mat& global_wgts, const Rcpp::List& solut
       // for R's 1-based index)
       const uvec cv_sol_sorted_train_ind = train_ind.elem(sol_sorter.SortedIndices());
       FindBestMatchesForFold(cv_fold_ind, sol_ind, global_wgts, cv_sol_sorted_train_ind, train_ind, cv_wgts,
-                             &best_match, lambda_ind);
+                             &best_match);
     }
   }
   return best_match;

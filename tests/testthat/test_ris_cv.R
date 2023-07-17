@@ -28,8 +28,7 @@ test_that("RIS-CV", {
                  enpy_opts = enpy_options(retain_max = 5, en_algorithm_opts = en_lars_options()),
                  algorithm_opts = mm_algorithm_options(en_algorithm_opts = en_lars_options()))
 
-  testthat::expect_length(pr$estimates, length(alphas) * nlambda)
-
-  pr$estimates[[1]]$alpha
-  coef(pr)
+  expect_length(pr$estimates, length(alphas) * nlambda)
+  expect_contains(colnames(pr$cvres), c('cvavg', 'cvse', 'lambda', 'alpha'))
+  expect_length(coef(pr), p + 1L)
 })

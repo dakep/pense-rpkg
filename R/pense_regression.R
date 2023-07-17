@@ -282,7 +282,6 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   cv_type <- match.arg(cv_type)
-  cv_measure_str <- match.arg(cv_metric)
 
   if (identical(cv_type, 'ris')) {
     fit_ses <- TRUE
@@ -292,6 +291,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
       cv_measure_str <- 'auroc'
       .cv_auroc
     } else if (is.character(cv_metric)) {
+      cv_measure_str <- match.arg(cv_metric)
       switch(cv_measure_str,
              mape = .cv_mape,
              rmspe = .cv_rmspe,

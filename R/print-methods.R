@@ -143,6 +143,7 @@ prediction_performance <- function (..., alpha = NULL, lambda = 'min', se_mult =
 
   pred_perf <- do.call(rbind, lapply(object_names, function (on) {
     object <- eval(objects[[on]], eval_frame)
+
     if (!is(object, 'pense_cvfit')) {
       abort(sprintf("`%s` must be a cross-validated fit.", on))
     }
@@ -167,18 +168,24 @@ prediction_performance <- function (..., alpha = NULL, lambda = 'min', se_mult =
     cvres <- object$cvres[sel_indices, ]
     cvres$model_size <- vapply(sel_indices, FUN.VALUE = integer(1L), FUN = function (ind) {
       est_ind <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
-        (est$alpha - object$cvres$alpha[[ind]])^2 < .Machine$double.eps &
-          (est$lambda - object$cvres$lambda[[ind]])^2 < .Machine$double.eps
+        (est[[1L]]$alpha - object$cvres$alpha[[ind]])^2 < .Machine$double.eps &
+          (est[[1L]]$lambda - object$cvres$lambda[[ind]])^2 < .Machine$double.eps
       }))
       if (length(est_ind) > 0L) {
-        as.integer(sum(abs(object$estimates[[est_ind]]$beta) > .Machine$double.eps))
+        sol_ind <- if (!is.null(object$cvres$solution_index)) {
+          object$cvres$solution_index[[ind]]
+        } else {
+          1L
+        }
+        beta <- object$estimates[[est_ind]][[sol_ind]]$beta
+        as.integer(sum(abs(beta) > .Machine$double.eps))
       } else {
         NA_integer_
       }
     })
     cvres$name <- rep.int(on, length(sel_indices))
-    cvres$exponent <- rep.int(if (!is.null(object$exponent)) { object$exponent } else { NA_real_ },
-                              length(sel_indices))
+    expo <- if (!is.null(object$exponent)) { object$exponent } else { NA_real_ }
+    cvres$exponent <- rep.int(expo, length(sel_indices))
 
     return(cvres)
   }))

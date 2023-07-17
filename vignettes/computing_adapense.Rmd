@@ -105,7 +105,6 @@ If we repeat step #1, but with 10 CV replications instead of 3, we get a more st
 ```{r, eval=FALSE}
 set.seed(1234)
 fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, cl = cluster)
-plot(fit_075)
 ```
 ```{r, eval=FALSE, include=FALSE}
 fit_075_10repl <- fit_075
@@ -173,21 +172,20 @@ For this, the package includes the function `prediction_performance()`, which ex
 prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3)
 ```
 
-Here we see the combination of hyper-parameters `alpha=0.75` and `exponent=3` (in object `fit_exp_3`) leads to the best prediction accuracy, but all models are based on 12 or more predictors.
+Here we see the combination of hyper-parameters `alpha=1` and `exponent=3` (in object `fit_exp_3`) leads to the best prediction accuracy, but all models are based on 8 or more predictors.
 Instead, we can also compare sparser models with almost the same prediction performance:
 
 ```{r}
 prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3, lambda = '1-se')
 ```
 
-These models are still quite large.
 If we are interested in even sparser models, we can increase the tolerance level to, for instance, 3 standard errors:
 
 ```{r}
 prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3, lambda = '3-se')
 ```
 
-This relaxation still leads to the combination of hyper-parameters `alpha=0.75` and `exponent=3`, but now with only 7 relevant predictors; including all truly relevant predictors.
+This relaxation still leads to the combination of hyper-parameters `alpha=1` and `exponent=2`, but now with only 6 relevant predictors; including all truly relevant predictors.
 We can see that the estimated coefficients and estimated relevant predictors are close to the truth:
 
 ```{r}
@@ -196,9 +194,9 @@ summary(fit_exp_3, alpha = 0.75, lambda = '3-se')
 
 ## Using different measures of prediction performance
 
-By default, `adapense_cv()` uses the τ-scale of the prediction errors to assess prediction accuracy.
-This can be changed by specifying a different metric via `adapense_cv(cv_metric=)`.
-The package supports also the median absolute prediction error (`cv_metric = "mape"`) or the classical root mean squared prediction error (`cv_metric = "rmspe"`).
+By default, `adapense_cv()` uses the robust information sharing (RIS) cross-validation procedure and the corresponding weighted mean squared prediction error to estimate prediction accuracy.
+The user can choose to use standard CV via `adapense_cv(cv_type = "naive")`, which also enables the user to then choose different metrics of prediction performance.
+The package supports the tau-scale estimate of the prediction error (default), the median absolute prediction error (`cv_metric = "mape"`) or the classical root mean squared prediction error (`cv_metric = "rmspe"`).
 You should, however, not use the RMSPE to evaluate prediction performance in the potential presence of contamination.
 Robust methods are not designed to predict contaminated observations well and the RMSPE may be artificially inflated by poor prediction of a few contaminated response values.
 You can also specify your own function which takes as input the vector of prediction errors and returns a single number, measuring the prediction performance.
@@ -210,11 +208,12 @@ mae <- function (prediction_errors) {
 }
 
 set.seed(1234)
-fit_075_mae <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 5, cl = cluster, cv_metric = mae)
+fit_075_mae <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 5, 
+                           cl = cluster, cv_type = "naive", cv_metric = mae)
 ```
 
-A matrix with estimates of the prediction performance are accessible as slot `$cv_replications` in the object returned by `adapense_cv()`.
-The rows correspond to the different penalization levels, and columns correspond to the individual CV replications.
+A matrix with estimates of the prediction performance are accessible as slot `$cvres` in the object returned by `adapense_cv()`.
+The rows correspond to the different penalization levels.
 
 ```{r, eval=FALSE, include=FALSE}
 save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2, fit_exp_3,

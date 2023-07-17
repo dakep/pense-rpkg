@@ -209,6 +209,149 @@ extract_metric <- function (metrics, attr, node) {
   matrix(unlist(prediction_metrics, recursive = FALSE, use.names = FALSE), ncol = cv_repl)
 }
 
+
+#' Run replicated K-fold CV with random splits, matching the global estimates
+#' to the CV estimates by Kendall's tau-b computed on the robustness weights.
+#'
+#' @param std_data standardized full data set
+#'    (standardized by `.standardize_data`)
+#' @param cv_k number of folds per CV split
+#' @param cv_repl number of CV replications.
+#' @param cv_est_fun function taking the standardized training set and
+#'    the indices of the left-out observations and returns a list of estimates.
+#'    The function always needs to return the same number of estimates!
+#' @param global_ests estimates computed on all observations.
+#' @param min_similarity minimum (average) similarity for CV solutions to be considered
+#'   (between 0 and 1).
+#'   If no CV solution satisfies this lower bound, the best CV solution will be used regardless
+#'   of similarity.
+#' @param rho_cc consistency constant for Tukey's bisquare rho function.
+#' @param ncores number of threads to use to match solutions.
+#' @param par_cluster parallel cluster to parallelize computations.
+#' @param handler_args additional arguments to the handler function.
+#' @importFrom Matrix drop
+#' @importFrom rlang abort
+#' @keywords internal
+.run_replicated_cv_ris <- function (std_data, cv_k, cv_repl, cv_est_fun,
+                                    global_ests,
+                                    min_similarity = 0,
+                                    par_cluster = NULL,
+                                    rho_cc,
+                                    ncores,
+                                    handler_args = list()) {
+  est_fun <- match.fun(cv_est_fun)
+  if (!isTRUE(min_similarity >= 0) || !isTRUE(min_similarity <= 1)) {
+    abort("`min_similarity` must be a scalar between 0 and 1.")
+  }
+
+  if (length(std_data$y) / cv_k < 2) {
+    abort("`cv_k` must be chosen to have at least 2 observations in each fold.")
+  }
+
+  test_segments_list <- lapply(integer(cv_repl), function (repl_id) {
+    split(seq_along(std_data$y),
+          sample(rep_len(seq_len(cv_k), length(std_data$y))))
+  })
+  test_segments <- unlist(test_segments_list, recursive = FALSE,
+                          use.names = FALSE)
+
+  cl_handler <- .make_cluster_handler(par_cluster)
+
+  dispatcher <- function (test_ind, est_fun, std_data, handler_args) {
+    train_x <- std_data$x[-test_ind, , drop = FALSE]
+    train_y <- std_data$y[-test_ind]
+    test_x <- std_data$x[test_ind, , drop = FALSE]
+
+    train_std <- std_data$cv_standardize(train_x, train_y)
+    cv_ests <- est_fun(train_std, test_ind, handler_args)
+
+    train_ind <- seq_along(std_data$y)[-test_ind]
+
+    cv_ests <- lapply(cv_ests, function (ests_lambda) {
+      lapply(ests_lambda, function (est) {
+        unstd_est <- train_std$unstandardize_coef(est)
+        unstd_est$test_residuals <- drop(std_data$y[test_ind] -
+                                           test_x %*% unstd_est$beta - unstd_est$intercept)
+
+        # Remove coefficients; they're not needed anymore
+        unstd_est$beta <- NULL
+        unstd_est$intercept <- NULL
+        unstd_est$std_intercept <- NULL
+        unstd_est$std_beta <- NULL
+
+        unstd_est
+      })
+    })
+
+    list(estimates = cv_ests,
+         test_ind = test_ind,
+         train_ind = train_ind)
+  }
+
+  # `estimates_all` will be a flat list of length `cv_repl * cv_k`, each with `nlambda` elements:
+  # [element 1 - cv_repl * cv_k]:
+  #   [lambda 1 - nlambda]
+  #     [solution 1 - Q]
+  cv_ests <- cl_handler(test_segments,
+                        dispatcher,
+                        est_fun = est_fun,
+                        std_data = std_data,
+                        handler_args = handler_args)
+
+  matches <- .Call(pense:::C_match_solutions_by_weight,
+                   cv_ests,
+                   global_ests,
+                   as.integer(cv_k),
+                   length(std_data$y),
+                   rho_cc,
+                   ncores)
+
+  best_match_global <- as.data.frame(t(
+    vapply(matches, FUN.VALUE = numeric(4), FUN = function (lambda_match) {
+      avgs <- vapply(lambda_match, FUN.VALUE = numeric(3), FUN = function (sol_match) {
+        c(cvavg = mean(sol_match$wmspe),
+          cvse = if (length(sol_match$wmspe) > 1L) { sd(sol_match$wmspe) } else { 0 },
+          avg_similarity = median(sol_match$rankcorr))
+      })
+      avgs <- rbind(avgs, solution_index = seq_len(ncol(avgs)))
+
+      candidates <- which(avgs['avg_similarity', ] >= min_similarity)
+      if (length(candidates) > 0L) {
+        avgs <- avgs[, candidates, drop = FALSE]
+      }
+
+      avgs[, which.min(avgs['cvavg', ])]
+    })))
+  best_match_global$lambda_index <- seq_len(nrow(best_match_global))
+
+  full_details <- do.call(rbind, lapply(seq_along(matches), function (lambda_ind) {
+    lambda_match <- matches[[lambda_ind]]
+
+    list2DF(list(lambda_index = rep.int(lambda_ind, length(lambda_match)),
+                 solution_index = seq_along(lambda_match),
+                 avg_wmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                    FUN = function (sol_match) {
+                                      mean(sol_match$wmspe)
+                                    }),
+                 sd_wmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                   FUN = function (sol_match) {
+                                     if (length(sol_match$wmspe) > 1L) {
+                                       sd(sol_match$wmspe)
+                                     } else {
+                                       0
+                                     }
+                                   }),
+                 avg_similarity = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                         FUN = function (sol_match) {
+                                           median(sol_match$rankcorr)
+                                         }),
+                 rankcorr = lapply(lambda_match, `[[`, 'rankcorr')))
+  }))
+
+  list(best = best_match_global, all = full_details)
+}
+
+
 #' Standardize data
 #'
 #' @param x predictor matrix. Can also be a list with components `x` and `y`,

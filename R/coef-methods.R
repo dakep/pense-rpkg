@@ -45,14 +45,15 @@ coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standar
   lambda <- .as(lambda[[1L]], 'numeric')
 
   lambda_index <- .lambda_index_cvfit(object, lambda = lambda, alpha = alpha, se_mult = 0)
-  if (length(lambda_index) > 1L) {
+  if (length(lambda_index$est) > 1L) {
     warn(paste("Requested penalization level not part of the sequence.",
                "Returning interpolated coefficients."))
-    return(.interpolate_coefs(object, indices = lambda_index, lambda = lambda,
+    return(.interpolate_coefs(object, indices = lambda_index$est, lambda = lambda,
                               sparse = sparse, envir = parent.frame(),
                               standardized = standardized, concat = concat))
   } else {
-    return(.concat_coefs(object$estimates[[lambda_index]], object$call,
+    return(.concat_coefs(object$estimates[[lambda_index$est]][[lambda_index$sol]],
+                         object$call,
                          sparse = sparse, envir = parent.frame(),
                          standardized = standardized, concat = concat))
   }
@@ -96,15 +97,16 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
   concat <- !isFALSE(cl$concat)
   lambda_index <- .lambda_index_cvfit(object, lambda = lambda, alpha = alpha, se_mult = se_mult)
 
-  if (length(lambda_index) > 1L) {
+  if (length(lambda_index$est) > 1L) {
     warn(paste("Requested penalization level not part of the sequence.",
                "Returning interpolated coefficients."))
-    .interpolate_coefs(object, indices = lambda_index,
+    .interpolate_coefs(object, indices = lambda_index$est,
                        lambda = .as(lambda[[1L]], 'numeric'),
                        sparse = sparse, envir = parent.frame(),
                        standardized = standardized, concat = concat)
   } else {
-    .concat_coefs(object$estimates[[lambda_index]], call = object$call, sparse = sparse,
+    .concat_coefs(object$estimates[[lambda_index$est]][[lambda_index$sol]],
+                  call = object$call, sparse = sparse,
                   envir = parent.frame(), standardized = standardized, concat = concat)
   }
 }
@@ -115,6 +117,8 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
   if (is.character(lambda) && !identical(lambda, 'se')) {
     se_mult <- .parse_se_string(lambda, only_fact = TRUE)
   }
+
+  solution_index <- 1L
 
   if (is.character(lambda)) {
     if (!any(object$cvres$cvse > 0) && isTRUE(se_mult > 0)) {
@@ -136,18 +140,25 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
       warn("Standard errors not available. Returning estimate for `lambda = \"min\"`.")
     }
 
-    best_per_alpha <- vapply(considered_alpha, FUN.VALUE = numeric(2L), FUN = function (alpha) {
+    best_per_alpha <- vapply(considered_alpha, FUN.VALUE = numeric(3L), FUN = function (alpha) {
       rows <- which((object$cvres$alpha - alpha)^2 < .Machine$double.eps)
       se_selection <- .cv_se_selection(object$cvres$cvavg[rows],
                                        object$cvres$cvse[rows], se_mult)
       sel_index <- rows[[which(se_selection == 'se_fact')]]
+      sol_index <- if (!is.null(object$cvres$solution_index)) {
+        object$cvres$solution_index[[sel_index]]
+      } else {
+        1L
+      }
       c(lambda = object$cvres$lambda[[sel_index]],
+        solution_index = sol_index,
         cvavg = object$cvres$cvavg[[sel_index]])
     })
     best_alpha_index <- which.min(best_per_alpha['cvavg', ])
 
     alpha <- considered_alpha[[best_alpha_index]]
     lambda <- best_per_alpha['lambda', best_alpha_index]
+    solution_index <- best_per_alpha['solution_index', best_alpha_index]
   }
 
   if (missing(alpha) || is.null(alpha)) {
@@ -168,7 +179,8 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
   }
 
   alpha <- .as(alpha[[1L]], 'numeric')
-  est_alpha <- vapply(object$estimates, FUN = `[[`, 'alpha', FUN.VALUE = numeric(1L))
+  est_alpha <- vapply(object$estimates, FUN = function (x) x[[1L]][['alpha']],
+                      FUN.VALUE = numeric(1L))
   alpha_ests_indices <- which((alpha - est_alpha)^2 < .Machine$double.eps)
   if (length(alpha_ests_indices) == 0L) {
     abort("`object` was not fit with the requested `alpha` value.")
@@ -176,7 +188,8 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
 
   lambda <- .as(lambda[[1L]], 'numeric')
   est_lambda <- vapply(object$estimates[alpha_ests_indices],
-                       FUN = `[[`, 'lambda', FUN.VALUE = numeric(1L))
+                       function (x) x[[1L]][['lambda']],
+                       FUN.VALUE = numeric(1L))
 
   # Determine the closest match in the lambda grid
   selected_ests <- alpha_ests_indices[.approx_match(lambda, est_lambda)]
@@ -189,7 +202,7 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
     if (!isTRUE(lambda < est_lambda[[max_lambda_index]])) {
       # If lambda is greater than the highest level return the corresponding index.
       selected_ests <- alpha_ests_indices[[max_lambda_index]]
-      if (!isTRUE(sum(abs(object$estimates[[selected_ests]]$beta)) < .Machine$double.eps)) {
+      if (!isTRUE(sum(abs(object$estimates[[selected_ests]][[1L]]$beta)) < .Machine$double.eps)) {
         warn(paste("Selected `lambda` is larger than highest penalization level in `object`.",
                    "Returning estimate for highest penalization level."))
       }
@@ -206,25 +219,24 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
     }
   }
 
-  selected_ests
+  list(est = selected_ests, sol = solution_index)
 }
 
 ## Interpolate the coefficients at `lambda` using estimates from `object` at `lambda_seq`.
 ## @param ... passed on to `.concat_coefs()`
 .interpolate_coefs <- function (object, indices, lambda, ...) {
-  lambdas <- vapply(object$estimates[indices], FUN = `[[`, 'lambda', FUN.VALUE = numeric(1L))
+  est_1 <- object$estimates[[indices[[1L]]]][[1L]]
+  est_2 <- object$estimates[[indices[[2L]]]][[1L]]
+  lambdas <- c(est_1$lambda, est_2$lambda)
   interp_w <- 1 / abs(lambdas - lambda)
   interp_w <- interp_w / sum(interp_w)
 
-  interp_beta <- interp_w[[1L]] * object$estimates[[indices[[1L]]]]$beta +
-    interp_w[[2L]] * object$estimates[[indices[[2L]]]]$beta
-  interp_int <- interp_w[[1L]] * object$estimates[[indices[[1L]]]]$intercept +
-    interp_w[[2L]] * object$estimates[[indices[[2L]]]]$intercept
 
-  interp_std_beta <- interp_w[[1L]] * object$estimates[[indices[[1L]]]]$std_beta +
-    interp_w[[2L]] * object$estimates[[indices[[2L]]]]$std_beta
-  interp_std_int <- interp_w[[1L]] * object$estimates[[indices[[1L]]]]$std_intercept +
-    interp_w[[2L]] * object$estimates[[indices[[2L]]]]$std_intercept
+  interp_beta <- interp_w[[1L]] * est_1$beta + interp_w[[2L]] * est_2$beta
+  interp_int <- interp_w[[1L]] * est_1$intercept + interp_w[[2L]] * est_2$intercept
+
+  interp_std_beta <- interp_w[[1L]] * est_1$std_beta + interp_w[[2L]] * est_2$std_beta
+  interp_std_int <- interp_w[[1L]] * est_1$std_intercept + interp_w[[2L]] * est_2$std_intercept
 
   return(.concat_coefs(list(intercept = interp_int, beta = interp_beta,
                             std_intercept = interp_std_int, std_beta = interp_std_beta),

@@ -39,7 +39,7 @@ summary.pense_cvfit <- function (object, alpha, lambda = 'min', se_mult = 1, ...
   tryCatch({
     cat(method_name, "fit", "with", "prediction", "performance", "estimated", "by",
         object$cv_repl, "replications", "of", sprintf("%d-fold", object$call$cv_k),
-        "cross-validation.\n", sep = " ", fill = TRUE)
+        object$cv_type, "cross-validation.\n", sep = " ", fill = TRUE)
   }, error = function(...) {
     cat(method_name, "fit", "with", "prediction", "performance", "estimated", "via",
         "cross-validation.\n", sep = " ", fill = TRUE)

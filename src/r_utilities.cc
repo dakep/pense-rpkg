@@ -389,6 +389,7 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
     for (int global_sol_ind = 0; global_sol_ind < global_wgts.n_cols; ++global_sol_ind) {
       arma::vec pred_wmse(cv_repl, arma::fill::zeros);
       arma::mat kendall_taus(cv_k, cv_repl, arma::fill::none);
+      const double wgt_sum = arma::accu(global_wgts.col(global_sol_ind));
 
       int cv_repl_ind = -1;
       for (int cv_fold_ind = 0; cv_fold_ind < solutions_cv.size(); ++cv_fold_ind) {
@@ -405,9 +406,9 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
         if (cv_fold_ind % cv_k == 0) {
           ++cv_repl_ind;
         }
-        // Divide each chunk by *n* to get the overall mean
+        // Divide each chunk by the sum of the weigts to get the overall weighted mean in the end
         pred_wmse(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
-                                            arma::square(*test_residuals)) / global_wgts.n_rows;
+                                            arma::square(*test_residuals)) / wgt_sum;
 
       }
 

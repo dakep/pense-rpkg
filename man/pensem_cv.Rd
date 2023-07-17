@@ -130,7 +130,8 @@ M-estimation objective function.}
 \item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
 
-\item{cv_metric}{either a string specifying the performance metric to use, or a function to
+\item{cv_metric}{only for \code{cv_type='naive'}.
+Either a string specifying the performance metric to use, or a function to
 evaluate prediction errors in a single CV replication.
 If a function, the number of arguments define the data the function receives.
 If the function takes a single argument, it is called with a single numeric vector of
@@ -152,7 +153,8 @@ iterations given via \code{algorithm_opts}.}
 
 \item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
 
-\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels.
+\item{fit_all}{only for \code{cv_type='naive'}.
+If \code{TRUE}, fit the model for all penalization levels.
 Can also be any combination of \code{"min"} and \code{"{x}-se"}, in which case only models at the
 penalization level with smallest average CV accuracy, or within \code{{x}} standard errors,
 respectively.
@@ -182,6 +184,9 @@ By default the S-scale from the PENSE fit is used.}
 \item{x_train, y_train}{override arguments \code{x} and \code{y} as provided in the
 call to \code{pense_cv()}. This is useful if the arguments in the \code{pense_cv()}
 call are not available in the current environment.}
+
+\item{cv_type}{what kind of cross-validation should be performed:
+robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
 }
 \value{
 an object of cross-validated regularized M-estimates as returned

@@ -298,7 +298,7 @@ extract_metric <- function (metrics, attr, node) {
                         std_data = std_data,
                         handler_args = handler_args)
 
-  matches <- .Call(pense:::C_match_solutions_by_weight,
+  matches <- .Call(C_match_solutions_by_weight,
                    cv_ests,
                    global_ests,
                    as.integer(cv_k),

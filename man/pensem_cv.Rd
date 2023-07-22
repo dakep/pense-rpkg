@@ -27,6 +27,7 @@ pensem_cv(x, ...)
   cv_k = 5,
   cv_repl = 1,
   cl = NULL,
+  cv_type = "naive",
   cv_metric = c("tau_size", "mape", "rmspe"),
   add_zero_based = TRUE,
   explore_solutions = 10,
@@ -60,6 +61,7 @@ pensem_cv(x, ...)
   cv_k = 5,
   cv_repl = 1,
   cl = NULL,
+  cv_type = "naive",
   cv_metric = c("tau_size", "mape", "rmspe"),
   add_zero_based = TRUE,
   explore_solutions = 10,
@@ -130,6 +132,9 @@ M-estimation objective function.}
 \item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
 
+\item{cv_type}{what kind of cross-validation should be performed:
+robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
+
 \item{cv_metric}{only for \code{cv_type='naive'}.
 Either a string specifying the performance metric to use, or a function to
 evaluate prediction errors in a single CV replication.
@@ -184,9 +189,6 @@ By default the S-scale from the PENSE fit is used.}
 \item{x_train, y_train}{override arguments \code{x} and \code{y} as provided in the
 call to \code{pense_cv()}. This is useful if the arguments in the \code{pense_cv()}
 call are not available in the current environment.}
-
-\item{cv_type}{what kind of cross-validation should be performed:
-robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
 }
 \value{
 an object of cross-validated regularized M-estimates as returned

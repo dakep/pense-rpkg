@@ -10,6 +10,7 @@ elnet_cv(
   lambda,
   cv_k,
   cv_repl = 1,
+  cv_type = "naive",
   cv_metric = c("rmspe", "tau_size", "mape", "auroc"),
   fit_all = TRUE,
   cl = NULL,
@@ -29,6 +30,9 @@ If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ign
 \item{cv_k}{number of folds per cross-validation.}
 
 \item{cv_repl}{number of cross-validation replications.}
+
+\item{cv_type}{what kind of cross-validation should be performed:
+robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
 
 \item{cv_metric}{only for \code{cv_type='naive'}.
 Either a string specifying the performance metric to use, or a function to
@@ -80,9 +84,6 @@ for details.}
     \item{\code{options}}{deprecated. Use \code{en_algorithm_opts} instead.}
     \item{\code{correction}}{defunct. Correction for EN estimates is not supported anymore.}
   }}
-
-\item{cv_type}{what kind of cross-validation should be performed:
-robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
 }
 \value{
 a list-like object with the same components as returned by \code{\link[=elnet]{elnet()}},

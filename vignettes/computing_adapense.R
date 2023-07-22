@@ -35,7 +35,6 @@ plot(fit_075)
 ## ---- eval=FALSE--------------------------------------------------------------
 #  set.seed(1234)
 #  fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, cl = cluster)
-#  plot(fit_075)
 
 ## ---- eval=FALSE, include=FALSE-----------------------------------------------
 #  fit_075_10repl <- fit_075
@@ -78,7 +77,8 @@ summary(fit_exp_3, alpha = 0.75, lambda = '3-se')
 #  }
 #  
 #  set.seed(1234)
-#  fit_075_mae <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 5, cl = cluster, cv_metric = mae)
+#  fit_075_mae <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 5,
+#                             cl = cluster, cv_type = "naive", cv_metric = mae)
 
 ## ---- eval=FALSE, include=FALSE-----------------------------------------------
 #  save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2, fit_exp_3,

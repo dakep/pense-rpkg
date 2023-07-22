@@ -53,6 +53,7 @@ pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50,
                                intercept = TRUE, bdp = 0.25, ncores = 1,
                                sparse = FALSE, eps = 1e-6, cc = 4.7,
                                cv_k = 5, cv_repl = 1, cl = NULL,
+                               cv_type = 'naive',
                                cv_metric = c('tau_size', 'mape', 'rmspe'),
                                add_zero_based = TRUE,
                                explore_solutions = 10, explore_tol = 0.1,
@@ -70,6 +71,10 @@ pensem_cv.default <- function (x, y, alpha = 0.5, nlambda = 50,
   cl <- match.call(expand.dots = TRUE)
   if (missing(cv_k)) {
     cl$cv_k <- cv_k
+  }
+
+  if (!identical(cv_type, 'naive')) {
+    stop("`elnet()` supports only `cv_type='naive'`")
   }
 
   ## Compute the PENSE fit
@@ -125,6 +130,7 @@ pensem_cv.pense_cvfit <- function (x, scale, alpha,
                                    intercept = TRUE, bdp = 0.25, ncores = 1,
                                    sparse = FALSE, eps = 1e-6, cc = 4.7,
                                    cv_k = 5, cv_repl = 1, cl = NULL,
+                                   cv_type = 'naive',
                                    cv_metric = c('tau_size', 'mape', 'rmspe'),
                                    add_zero_based = TRUE,
                                    explore_solutions = 10, explore_tol = 0.1,
@@ -137,6 +143,10 @@ pensem_cv.pense_cvfit <- function (x, scale, alpha,
 
   if (missing(cv_k)) {
     cl$cv_k <- cv_k
+  }
+
+  if (!identical(cv_type, 'naive')) {
+    stop("`elnet()` supports only `cv_type='naive'`")
   }
 
   # Extract information from pense fit

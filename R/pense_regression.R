@@ -282,15 +282,22 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   cv_type <- match.arg(cv_type)
+  use_binary_response <- isTRUE(is.null(call$cv_type) && is.null(call$cv_metric) &&
+                                   args$binary_response) ||
+    isTRUE(args$binary_response && is.character(cv_metric) &&
+             identical(match.arg(cv_metric), 'auroc'))
 
-  if (identical(cv_type, 'ris')) {
+
+  if (use_binary_response) {
+    cv_type <- 'naive'
+    cv_measure_str <- 'auroc'
+    cv_metric <- .cv_auroc
+  } else if (identical(cv_type, 'ris')) {
+    cv_measure_str <- 'ris'
     fit_ses <- TRUE
     args$pense_opts$return_residuals <- TRUE
   } else {
-    cv_metric <- if (is.null(call$cv_metric) && args$binary_response) {
-      cv_measure_str <- 'auroc'
-      .cv_auroc
-    } else if (is.character(cv_metric)) {
+    cv_metric <- if (is.character(cv_metric)) {
       cv_measure_str <- match.arg(cv_metric)
       switch(cv_measure_str,
              mape = .cv_mape,

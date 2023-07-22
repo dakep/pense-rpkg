@@ -84,7 +84,9 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha = NULL, se_mu
 #' @importFrom graphics plot segments abline
 #' @importFrom rlang abort warn
 .plot_cv_res <- function (object, alpha = NULL, se_mult) {
-  measure_label <- switch(object$cv_measure, mape = "Median absolute prediction error",
+  measure_label <- switch(object$cv_measure,
+                          RIS = "Weighted mean square prediction error",
+                          mape = "Median absolute prediction error",
                           rmspe = "Root mean square prediction error",
                           auroc = "1 - AUROC",
                           tau_size = expression(paste(tau, "-scale of the prediction error")),
@@ -178,16 +180,16 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha = NULL, se_mu
   }
 
   match_ests <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
-    (est$alpha - alpha)^2 < .Machine$double.eps
+    (est[[1L]]$alpha - alpha)^2 < .Machine$double.eps
   }))
   if (length(match_ests) == 0L) {
     abort("Requested `alpha` not available in the fit.")
   }
 
   active_vars <- do.call(rbind, lapply(object$estimates[match_ests], function (est) {
-    actives <- .active_indices_and_values(est)
+    actives <- .active_indices_and_values(est[[1L]])
     if (length(actives$var_index) > 0L) {
-      return(data.frame(actives, lambda = est$lambda, alpha = est$alpha))
+      return(data.frame(actives, lambda = est[[1L]]$lambda, alpha = est[[1L]]$alpha))
     } else {
       return(data.frame(var_index = integer(), value = numeric(),
                         lambda = numeric(), alpha = numeric()))

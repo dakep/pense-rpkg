@@ -154,10 +154,15 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
 #' @importFrom stats sd
 #' @importFrom rlang abort
 regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
+                       cv_type = 'naive',
                        cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'),
                        fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.regmest_args, as.list(call[-1L]), envir = parent.frame())
+
+  if (!identical(cv_type, 'naive')) {
+    stop("`elnet()` supports only `cv_type='naive'`")
+  }
 
   fit_ses <- if (is.character(fit_all)) {
     unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L), only_fact = TRUE,

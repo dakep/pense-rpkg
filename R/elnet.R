@@ -146,10 +146,15 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @importFrom stats sd
 #' @export
 elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
+                      cv_type = 'naive',
                       cv_metric = c('rmspe', 'tau_size', 'mape', 'auroc'), fit_all = TRUE,
                       cl = NULL, ncores = deprecated(), ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.elnet_args, as.list(call[-1L]), envir = parent.frame())
+
+  if (!identical(cv_type, 'naive')) {
+    stop("`elnet()` supports only `cv_type='naive'`")
+  }
 
   fit_ses <- if (is.character(fit_all)) {
     unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L), only_fact = TRUE,

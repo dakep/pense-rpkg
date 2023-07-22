@@ -12,6 +12,7 @@ regmest_cv(
   lambda,
   cv_k,
   cv_repl = 1,
+  cv_type = "naive",
   cv_metric = c("tau_size", "mape", "rmspe", "auroc"),
   fit_all = TRUE,
   cl = NULL,
@@ -40,6 +41,9 @@ If given and not \code{NULL}, \code{nlambda} and \code{lambda_min_ratio} are ign
 \item{cv_k}{number of folds per cross-validation.}
 
 \item{cv_repl}{number of cross-validation replications.}
+
+\item{cv_type}{what kind of cross-validation should be performed:
+robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
 
 \item{cv_metric}{only for \code{cv_type='naive'}.
 Either a string specifying the performance metric to use, or a function to
@@ -108,9 +112,6 @@ the predictors (if \code{standardize = TRUE}).}
 
 \item{exponent}{the exponent for computing the penalty loadings based on the
 preliminary estimate.}
-
-\item{cv_type}{what kind of cross-validation should be performed:
-robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
 }
 \value{
 a list-like object as returned by \code{\link[=regmest]{regmest()}}, plus the following components:

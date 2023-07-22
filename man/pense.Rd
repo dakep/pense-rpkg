@@ -26,7 +26,7 @@ pense(
   explore_solutions = 10,
   explore_tol = 0.1,
   explore_it = 5,
-  max_solutions = 1,
+  max_solutions = 5,
   comparison_tol = sqrt(eps),
   sparse = FALSE,
   ncores = 1,
@@ -212,6 +212,9 @@ set.seed(123)
 cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
                        cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)
+
+# Print a summary of the fit and the cross-validation results.
+summary(cv_results)
 
 # Extract the coefficients at the penalization level with
 # smallest prediction error ...

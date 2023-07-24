@@ -41,8 +41,15 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, local::.
+          extra-packages: |
+            any::rcmdcheck
+            any::remotes
+            local::.
           needs: check
+
+      - name: Install RcppArmadillo from GitHub
+        run: remotes::install_github("rcppcore/rcpparmadillo")
+        shell: Rscript {0}
 
       - uses: r-lib/actions/check-r-package@v2
         with:

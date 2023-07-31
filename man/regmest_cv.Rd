@@ -153,44 +153,32 @@ Only sensible for binary responses.}
 }
 }
 \examples{
-# Compute the adaptive PENSE regularization path for Freeny's
-# revenue data (see ?freeny)
+# Compute the PENSE regularization path for Freeny's revenue data
+# (see ?freeny)
 data(freeny)
 x <- as.matrix(freeny[ , 2:5])
 
-## Either use the convenience function directly ...
+regpath <- regmest(x, freeny$y, alpha = c(0.5, 0.85), scale = 2)
+plot(regpath)
+
+# Extract the coefficients at a certain penalization level
+coef(regpath, alpha = 0.85, lambda = regpath$lambda[[2]][[40]])
+
+# What penalization level leads to good prediction performance?
 set.seed(123)
-ada_convenience <- adapense_cv(x, freeny$y, alpha = 0.5,
-                               cv_repl = 2, cv_k = 4)
+cv_results <- regmest_cv(x, freeny$y, alpha = c(0.5, 0.85), scale = 2,
+                         cv_repl = 2, cv_k = 4)
+plot(cv_results, se_mult = 1)
 
-## ... or compute the steps manually:
-# Step 1: Compute preliminary estimates with CV
-set.seed(123)
-preliminary_estimate <- pense_cv(x, freeny$y, alpha = 0,
-                                 cv_repl = 2, cv_k = 4)
-plot(preliminary_estimate, se_mult = 1)
+# Print a summary of the fit and the cross-validation results.
+summary(cv_results)
 
-# Step 2: Use the coefficients with best prediction performance
-# to define the penalty loadings:
-prelim_coefs <- coef(preliminary_estimate, lambda = 'min')
-pen_loadings <- 1 / abs(prelim_coefs[-1])
-
-# Step 3: Compute the adaptive PENSE estimates and estimate
-# their prediction performance.
-set.seed(123)
-ada_manual <- pense_cv(x, freeny$y, alpha = 0.5,
-                       cv_repl = 2, cv_k = 4,
-                       penalty_loadings = pen_loadings)
-
-# Visualize the prediction performance and coefficient path of
-# the adaptive PENSE estimates (manual vs. automatic)
-def.par <- par(no.readonly = TRUE)
-layout(matrix(1:4, ncol = 2, byrow = TRUE))
-plot(ada_convenience$preliminary)
-plot(preliminary_estimate)
-plot(ada_convenience)
-plot(ada_manual)
-par(def.par)
+# Extract the coefficients at the penalization level with
+# smallest prediction error ...
+coef(cv_results)
+# ... or at the penalization level with prediction error
+# statistically indistinguishable from the minimum.
+coef(cv_results, lambda = '1-se')
 }
 \seealso{
 \code{\link[=regmest]{regmest()}} for computing regularized S-estimates without cross-validation.
@@ -200,11 +188,9 @@ par(def.par)
 \code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the regularization path.
 
 Other functions to compute robust estimates with CV: 
-\code{\link{pense_cv}()},
-\code{\link{pensem_cv}()}
+\code{\link{pense_cv}()}
 
 Other functions to compute robust estimates with CV: 
-\code{\link{pense_cv}()},
-\code{\link{pensem_cv}()}
+\code{\link{pense_cv}()}
 }
 \concept{functions to compute robust estimates with CV}

@@ -30,11 +30,13 @@ jobs:
           extra-packages: any::rcmdcheck, local::.
           needs: check
 
+      - name: Install RcppArmadillo from GitHub
+        run: remotes::install_github("rcppcore/rcpparmadillo")
+        shell: Rscript {0}
+
       - uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: false
         env:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_CRAN_INCOMING_: false
-
-

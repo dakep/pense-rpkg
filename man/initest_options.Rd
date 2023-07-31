@@ -62,7 +62,6 @@ Other deprecated functions:
 \code{\link{deprecated_en_options}},
 \code{\link{enpy}()},
 \code{\link{mstep_options}()},
-\code{\link{pense_options}()},
-\code{\link{pensem}()}
+\code{\link{pense_options}()}
 }
 \concept{deprecated functions}

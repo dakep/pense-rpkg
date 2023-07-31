@@ -19,7 +19,7 @@ regmest(
   eps = 1e-06,
   explore_solutions = 10,
   explore_tol = 0.1,
-  max_solutions = 10,
+  max_solutions = 1,
   comparison_tol = sqrt(eps),
   sparse = FALSE,
   ncores = 1,
@@ -122,6 +122,34 @@ computing the estimate.}
 \description{
 Compute elastic net M-estimates along a grid of penalization levels with optional
 penalty loadings for adaptive elastic net.
+}
+\examples{
+# Compute the PENSE regularization path for Freeny's revenue data
+# (see ?freeny)
+data(freeny)
+x <- as.matrix(freeny[ , 2:5])
+
+regpath <- regmest(x, freeny$y, alpha = c(0.5, 0.85), scale = 2)
+plot(regpath)
+
+# Extract the coefficients at a certain penalization level
+coef(regpath, alpha = 0.85, lambda = regpath$lambda[[2]][[40]])
+
+# What penalization level leads to good prediction performance?
+set.seed(123)
+cv_results <- regmest_cv(x, freeny$y, alpha = c(0.5, 0.85), scale = 2,
+                         cv_repl = 2, cv_k = 4)
+plot(cv_results, se_mult = 1)
+
+# Print a summary of the fit and the cross-validation results.
+summary(cv_results)
+
+# Extract the coefficients at the penalization level with
+# smallest prediction error ...
+coef(cv_results)
+# ... or at the penalization level with prediction error
+# statistically indistinguishable from the minimum.
+coef(cv_results, lambda = '1-se')
 }
 \seealso{
 \code{\link[=regmest_cv]{regmest_cv()}} for selecting hyper-parameters via cross-validation.

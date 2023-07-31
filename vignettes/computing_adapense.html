@@ -12,7 +12,7 @@
 
 <meta name="author" content="David Kepplinger" />
 
-<meta name="date" content="2023-07-22" />
+<meta name="date" content="2023-07-31" />
 
 <title>Estimating predictive models</title>
 
@@ -340,7 +340,7 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <h1 class="title toc-ignore">Estimating predictive models</h1>
 <h4 class="author">David Kepplinger</h4>
-<h4 class="date">2023-07-22</h4>
+<h4 class="date">2023-07-31</h4>
 
 
 
@@ -560,21 +560,42 @@ level, we can compare all the estimates. For this, the package includes
 the function <code>prediction_performance()</code>, which extracts and
 prints the prediction performance of all given objects:</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="fu">prediction_performance</span>(fit_exp_1, fit_exp_2, fit_exp_3)</span>
-<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; Error in vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function(est) {: values must be length 1,</span></span>
-<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt;  but FUN(X[[1]]) result is length 0</span></span></code></pre></div>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
+<span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb11-4"><a href="#cb11-4" tabindex="-1"></a><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
+<span id="cb11-5"><a href="#cb11-5" tabindex="-1"></a><span class="co">#&gt; 1 fit_exp_3 1.536549  0.2156835          8  1.00    3</span></span>
+<span id="cb11-6"><a href="#cb11-6" tabindex="-1"></a><span class="co">#&gt; 2 fit_exp_2 1.569811  0.1978476          8  1.00    2</span></span>
+<span id="cb11-7"><a href="#cb11-7" tabindex="-1"></a><span class="co">#&gt; 3 fit_exp_3 1.597172  0.2207988          9  0.75    3</span></span>
+<span id="cb11-8"><a href="#cb11-8" tabindex="-1"></a><span class="co">#&gt; 4 fit_exp_2 1.708882  0.3019402         10  0.75    2</span></span>
+<span id="cb11-9"><a href="#cb11-9" tabindex="-1"></a><span class="co">#&gt; 5 fit_exp_1 2.084238  0.5280602         16  0.75    1</span></span>
+<span id="cb11-10"><a href="#cb11-10" tabindex="-1"></a><span class="co">#&gt; 6 fit_exp_1 2.086767  0.7439669         12  1.00    1</span></span></code></pre></div>
 <p>Here we see the combination of hyper-parameters <code>alpha=1</code>
 and <code>exponent=3</code> (in object <code>fit_exp_3</code>) leads to
 the best prediction accuracy, but all models are based on 8 or more
 predictors. Instead, we can also compare sparser models with almost the
 same prediction performance:</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">prediction_performance</span>(fit_exp_1, fit_exp_2, fit_exp_3, <span class="at">lambda =</span> <span class="st">&#39;1-se&#39;</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co">#&gt; Error in vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function(est) {: values must be length 1,</span></span>
-<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt;  but FUN(X[[1]]) result is length 0</span></span></code></pre></div>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a><span class="co">#&gt; 1 fit_exp_3 1.681859  0.2307701          6  1.00    3</span></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="co">#&gt; 2 fit_exp_2 1.744242  0.2202281          7  1.00    2</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a><span class="co">#&gt; 3 fit_exp_3 1.804176  0.2798328          7  0.75    3</span></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="co">#&gt; 4 fit_exp_2 1.942573  0.2976639          8  0.75    2</span></span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="co">#&gt; 5 fit_exp_1 2.571231  0.7336148          7  1.00    1</span></span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="co">#&gt; 6 fit_exp_1 2.602608  0.7442279          8  0.75    1</span></span></code></pre></div>
 <p>If we are interested in even sparser models, we can increase the
 tolerance level to, for instance, 3 standard errors:</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="fu">prediction_performance</span>(fit_exp_1, fit_exp_2, fit_exp_3, <span class="at">lambda =</span> <span class="st">&#39;3-se&#39;</span>)</span>
-<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co">#&gt; Error in vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function(est) {: values must be length 1,</span></span>
-<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co">#&gt;  but FUN(X[[1]]) result is length 0</span></span></code></pre></div>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb13-4"><a href="#cb13-4" tabindex="-1"></a><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
+<span id="cb13-5"><a href="#cb13-5" tabindex="-1"></a><span class="co">#&gt; 1 fit_exp_2 1.922823  0.2967857          6  1.00    2</span></span>
+<span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt; 2 fit_exp_3 1.994758  0.3450547          6  1.00    3</span></span>
+<span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt; 3 fit_exp_3 2.122987  0.3218678          6  0.75    3</span></span>
+<span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="co">#&gt; 4 fit_exp_2 2.553757  0.4954332          6  0.75    2</span></span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a><span class="co">#&gt; 5 fit_exp_1 3.592231  0.5544039          6  0.75    1</span></span>
+<span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a><span class="co">#&gt; 6 fit_exp_1 3.898528  0.6307772          3  1.00    1</span></span></code></pre></div>
 <p>This relaxation still leads to the combination of hyper-parameters
 <code>alpha=1</code> and <code>exponent=2</code>, but now with only 6
 relevant predictors; including all truly relevant predictors. We can see

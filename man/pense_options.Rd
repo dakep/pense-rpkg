@@ -50,7 +50,6 @@ Other deprecated functions:
 \code{\link{deprecated_en_options}},
 \code{\link{enpy}()},
 \code{\link{initest_options}()},
-\code{\link{mstep_options}()},
-\code{\link{pensem}()}
+\code{\link{mstep_options}()}
 }
 \concept{deprecated functions}

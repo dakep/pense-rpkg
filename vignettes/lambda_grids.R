@@ -47,6 +47,9 @@ plot(fit_grid_focused)
 #  penalty_loadings <- 1 / abs(coef(fit_preliminary)[-1])^exponent
 #  fit_adaptive <- pense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, lambda = c(5e-5, 5e-4, 5e-3, 5e-2, 5e-1, 5))
 
+## -----------------------------------------------------------------------------
+summary(fit_adaptive)
+
 ## ---- eval=FALSE, include=FALSE-----------------------------------------------
 #  save(fit_grid_narrow, fit_grid_wide, fit_grid_focused, fit_preliminary, fit_adaptive,
 #       file = 'lambda_grids_fits.RData')

@@ -97,15 +97,14 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
                              intercept = args$intercept,
                              optional_args = args$optional_args)
 
-      fit$estimates <- lapply(
-        unlist(fit$estimates, recursive = FALSE),
-        function (est) {
+      fit$estimates <- lapply(fit$estimates, function (lambda_ests) {
+        lapply(lambda_ests, function (est) {
           args$restore_coef_length(args$std_data$unstandardize_coefs(est))
         })
+      })
       fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN.VALUE = numeric(1),
-                                  FUN = `[[`, 'lambda'),
-                           use.names = FALSE, recursive = FALSE)
+      fit$lambda <- vapply(fit$estimates, FUN.VALUE = numeric(1),
+                           FUN = function (x) x[[1]]$lambda)
       fit$alpha <- alpha
       fit
     })
@@ -153,7 +152,7 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
   args <- do.call(.elnet_args, as.list(call[-1L]), envir = parent.frame())
 
   if (!identical(cv_type, 'naive')) {
-    stop("`elnet()` supports only `cv_type='naive'`")
+    stop("`elnet_cv()` supports only `cv_type='naive'`")
   }
 
   fit_ses <- if (is.character(fit_all)) {
@@ -226,7 +225,8 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
           intercept = handler_args$args$intercept,
           optional_args = handler_args$args$optional_args)
 
-        cv_fit$estimates
+        # LS-EN can only have a single solution, hence `unlist()` works
+        unlist(cv_fit$estimates, recursive = FALSE, use.names = FALSE)
       }
 
       set.seed(fit_seed)
@@ -272,15 +272,12 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
                              intercept = args$intercept,
                              optional_args = args$optional_args)
 
-      fit$estimates <- lapply(
-        unlist(fit$estimates, recursive = FALSE),
-        function (est) {
+      fit$estimates <- lapply(fit$estimates, function (lambda_ests) {
+        lapply(lambda_ests, function (est) {
           args$restore_coef_length(args$std_data$unstandardize_coefs(est))
         })
+      })
       fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-      fit$lambda <- unlist(vapply(fit$estimates, FUN.VALUE = numeric(1),
-                                  FUN = `[[`, 'lambda'),
-                           use.names = FALSE, recursive = FALSE)
       fit$alpha <- alpha
       fit
     })

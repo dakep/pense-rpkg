@@ -421,8 +421,10 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
     warn("Some requested `alpha` values are not available in `object`.")
   }
 
-  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
-    any((est$alpha - alpha)^2 < .Machine$double.eps)
+  # Look only at the first solution for each lambda.
+  # All solutions for this lambda will be for the same alpha value.
+  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (ests) {
+    any((ests[[1]]$alpha - alpha)^2 < .Machine$double.eps)
   }))
 
   lambda_indices <- if (missing(lambda)) {
@@ -432,7 +434,7 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
       abort("If `lambda` is given `alpha` must be a single number.")
     }
     ai_lambdas <- vapply(object$estimates[alpha_indices], FUN.VALUE = numeric(1L),
-                         FUN = `[[`, 'lambda')
+                         FUN = function (ests) { ests[[1]]$lambda })
     lambda_indices <- .approx_match(lambda, ai_lambdas)
     bad_lambda_indices <- which(is.na(lambda_indices))
     if (length(bad_lambda_indices) == length(lambda)) {
@@ -453,7 +455,8 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
     c('shared_starting_point', 'starting_point')
   }
 
-  structure(lapply(object$estimates[lambda_indices], structure, class = class_list),
+  structure(lapply(unlist(object$estimates[lambda_indices], recursive = FALSE),
+                   structure, class = class_list),
             class = 'starting_points')
 }
 
@@ -493,8 +496,8 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     warn("Some requested `alpha` values are not available in `object`.")
   }
 
-  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
-    any((est$alpha - alpha)^2 < .Machine$double.eps)
+  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (ests) {
+    any((ests[[1]]$alpha - alpha)^2 < .Machine$double.eps)
   }))
 
   lambda_indices <- if (isFALSE(object$call$fit_all)) {
@@ -525,7 +528,7 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
       abort("If `lambda` is numeric, `alpha` must be a single number.")
     }
     ai_lambdas <- vapply(object$estimates[alpha_indices], FUN.VALUE = numeric(1L),
-                         FUN = `[[`, 'lambda')
+                         FUN = function (ests) { ests[[1]]$lambda })
     lambda_indices <- .approx_match(lambda, ai_lambdas)
     bad_lambda_indices <- which(is.na(lambda_indices))
     if (length(bad_lambda_indices) == length(lambda)) {
@@ -548,7 +551,8 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     c('shared_starting_point', 'starting_point')
   }
 
-  structure(lapply(object$estimates[lambda_indices], structure, class = class_list),
+  structure(lapply(unlist(object$estimates[lambda_indices], recursive = FALSE),
+                   structure, class = class_list),
             class = 'starting_points')
 }
 

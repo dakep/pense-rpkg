@@ -27,7 +27,10 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, local::., remotes
+          extra-packages: |
+            any::rcmdcheck
+            local::.
+            any::remotes
           needs: check
 
       - name: Install RcppArmadillo from GitHub

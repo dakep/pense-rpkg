@@ -28,3 +28,4 @@ testthat-problems.rds
 /renv/
 renv.lock
 .Rprofile
+.renvignore

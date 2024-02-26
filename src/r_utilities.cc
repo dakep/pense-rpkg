@@ -16,6 +16,7 @@
 #include "rho.hpp"
 #include "r_interface_utils.hpp"
 #include "omp_utils.hpp"
+#include "robust_scale_location.hpp"
 
 namespace {
 template<class T>
@@ -388,10 +389,14 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
 
     for (int global_sol_ind = 0; global_sol_ind < global_wgts.n_cols; ++global_sol_ind) {
       arma::vec pred_wmse(cv_repl, arma::fill::zeros);
+      arma::vec pred_tau_size(cv_repl, arma::fill::zeros);
       arma::mat kendall_taus(cv_k, cv_repl, arma::fill::none);
       const double wgt_sum = arma::accu(global_wgts.col(global_sol_ind));
 
       int cv_repl_ind = -1;
+      arma::vec all_test_resids(nobs, arma::fill::none);
+      int insert_index = 0;
+
       for (int cv_fold_ind = 0; cv_fold_ind < solutions_cv.size(); ++cv_fold_ind) {
         const List& cv_fold = solutions_cv[cv_fold_ind];
         const List& cv_fold_solutions = cv_fold["estimates"];
@@ -404,16 +409,28 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
         kendall_taus(cv_fold_ind) = best_match.kendall_tau(global_sol_ind, cv_fold_ind);
 
         if (cv_fold_ind % cv_k == 0) {
+          if (cv_repl_ind >= 0) {
+            pred_tau_size(cv_repl_ind) = pense::TauSize(all_test_resids);
+            insert_index = 0;
+          }
           ++cv_repl_ind;
         }
-        // Divide each chunk by the sum of the weigts to get the overall weighted mean in the end
+        // Divide each chunk by the sum of the weights to get the overall weighted mean in the end
         pred_wmse(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
                                             arma::square(*test_residuals)) / wgt_sum;
 
+        // Copy the test residuals from each chunk to compute the tau-size afterwards.
+        const int upper_index = insert_index + test_residuals->n_elem - 1;
+        all_test_resids.subvec(insert_index, upper_index) = *test_residuals;
+        insert_index += test_residuals->n_elem;
       }
 
+      // Process the tau-size in the last CV replication
+      pred_tau_size(cv_repl_ind) = pense::TauSize(all_test_resids);
+
       lambda_result[global_sol_ind] = List::create(Named("rankcorr") = kendall_taus,
-                                                   Named("wmspe") = pred_wmse);
+                                                   Named("wmspe") = pred_wmse,
+                                                   Named("tau_size") = pred_tau_size);
     }
 
     results[lambda_ind] = lambda_result;

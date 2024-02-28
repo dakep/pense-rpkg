@@ -143,12 +143,10 @@
                                            test_x %*% unstd_est$beta - unstd_est$intercept)
 
         # Remove coefficients; they're not needed anymore
-        ## DEBUG
-        # unstd_est$beta <- NULL
-        # unstd_est$intercept <- NULL
-        # unstd_est$std_intercept <- NULL
-        # unstd_est$std_beta <- NULL
-        ## DEBUG
+        unstd_est$beta <- NULL
+        unstd_est$intercept <- NULL
+        unstd_est$std_intercept <- NULL
+        unstd_est$std_beta <- NULL
 
         unstd_est
       })

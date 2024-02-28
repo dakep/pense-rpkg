@@ -165,18 +165,18 @@ DuplicateCount DuplicateZeros (const arma::vec& x, const arma::vec& y, const uve
 class BestMatch {
  public:
   BestMatch (const int n_global_sol, const int n_cv_folds) :
-    kendall_num(n_global_sol, n_cv_folds, arma::fill::value(std::numeric_limits<uword>::max())),
+    swaps(n_global_sol, n_cv_folds, arma::fill::value(std::numeric_limits<uword>::max())),
     kendall_tau(n_global_sol, n_cv_folds, arma::fill::none),
     sol_ind(n_global_sol, n_cv_folds, arma::fill::none) {}
 
-  void Update(const uword row, const uword col, const uword kendall_num_,
+  void Update(const uword row, const uword col, const uword swaps_,
               const double kendall_tau_, const uword sol_ind_) {
-    kendall_num.at(row, col) = kendall_num_;
+    swaps.at(row, col) = swaps_;
     kendall_tau.at(row, col) = kendall_tau_;
     sol_ind.at(row, col) = sol_ind_;
   }
 
-  arma::umat kendall_num;
+  arma::umat swaps;
   arma::mat kendall_tau;
   arma::umat sol_ind;
 };
@@ -199,15 +199,20 @@ void FindBestMatchesForFold (const arma::uword cv_fold_ind,
       zeros_dupl.in_y * (zeros_dupl.in_y - 1) / 2;
 
     const uword n_pairs = unsorted_train_ind.n_elem * (unsorted_train_ind.n_elem - 1) / 2;
-    const uword max_swaps = (best_match->kendall_num(global_sol_ind, cv_fold_ind) - numerator_adjustment) / 2;
+    // Allow up to 2x as many swaps as for the maximum kendall's tau to
+    // ensure the numerator adjustment for the ties doesn't make the sorting
+    // stop too early.
+    const uword max_swaps = 2 * best_match->swaps(global_sol_ind, cv_fold_ind);
     const uword swaps = sol_sorter(global_wgts.col(global_sol_ind), max_swaps);
-    const uword kendall_num = numerator_adjustment + 2 * swaps;
-
-    if (kendall_num < best_match->kendall_num(global_sol_ind, cv_fold_ind)) {
+    if (swaps < max_swaps) {
+      const uword kendall_num = numerator_adjustment + 2 * swaps;
       const double kendall_denom = std::sqrt(n_pairs - zeros_dupl.in_x * (zeros_dupl.in_x - 1) / 2) *
         std::sqrt(n_pairs - zeros_dupl.in_y * (zeros_dupl.in_y - 1) / 2);
       const double kendall_tau = (n_pairs - kendall_num) / kendall_denom;
-      best_match->Update(global_sol_ind, cv_fold_ind, kendall_num, kendall_tau, cv_sol_ind);
+
+      if (kendall_tau > best_match->kendall_tau(global_sol_ind, cv_fold_ind)) {
+        best_match->Update(global_sol_ind, cv_fold_ind, swaps, kendall_tau, cv_sol_ind);
+      }
     }
   }
 }
@@ -391,7 +396,7 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
       arma::vec pred_wmse(cv_repl, arma::fill::zeros);
       arma::vec pred_tau_size(cv_repl, arma::fill::zeros);
       arma::mat kendall_taus(cv_k, cv_repl, arma::fill::none);
-      const double wgt_sum = arma::accu(global_wgts.col(global_sol_ind));
+      const double sqrt_wgt_sum = arma::accu(arma::sqrt(global_wgts.col(global_sol_ind)));
 
       int cv_repl_ind = -1;
       arma::vec all_test_resids(nobs, arma::fill::none);
@@ -416,8 +421,9 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
           ++cv_repl_ind;
         }
         // Divide each chunk by the sum of the weights to get the overall weighted mean in the end
-        pred_wmse(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
-                                            arma::square(*test_residuals)) / wgt_sum;
+        // Use the sqrt of the weights (as that's the natural parametrization)
+        pred_wmse(cv_repl_ind) += arma::dot(arma::sqrt(global_wgts.unsafe_col(global_sol_ind).elem(test_ind)),
+                                            arma::square(*test_residuals)) / sqrt_wgt_sum;
 
         // Copy the test residuals from each chunk to compute the tau-size afterwards.
         const int upper_index = insert_index + test_residuals->n_elem - 1;

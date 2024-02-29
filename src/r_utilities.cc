@@ -165,7 +165,7 @@ DuplicateCount DuplicateZeros (const arma::vec& x, const arma::vec& y, const uve
 class BestMatch {
  public:
   BestMatch (const int n_global_sol, const int n_cv_folds) :
-    swaps(n_global_sol, n_cv_folds, arma::fill::value(std::numeric_limits<uword>::max())),
+    swaps(n_global_sol, n_cv_folds, arma::fill::value(std::numeric_limits<uword>::max() / 2)),
     kendall_tau(n_global_sol, n_cv_folds, arma::fill::zeros),
     sol_ind(n_global_sol, n_cv_folds, arma::fill::zeros) {}
 
@@ -208,7 +208,7 @@ void FindBestMatchesForFold (const arma::uword cv_fold_ind,
       const uword kendall_num = numerator_adjustment + 2 * swaps;
       const double kendall_denom = std::sqrt(n_pairs - zeros_dupl.in_x * (zeros_dupl.in_x - 1) / 2) *
         std::sqrt(n_pairs - zeros_dupl.in_y * (zeros_dupl.in_y - 1) / 2);
-      const double kendall_tau = (n_pairs - kendall_num) / kendall_denom;
+      const double kendall_tau = (n_pairs > kendall_num) ? (n_pairs - kendall_num) / kendall_denom : 0;
 
       if (kendall_tau > best_match->kendall_tau(global_sol_ind, cv_fold_ind)) {
         best_match->Update(global_sol_ind, cv_fold_ind, swaps, kendall_tau, cv_sol_ind);

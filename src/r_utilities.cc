@@ -166,8 +166,8 @@ class BestMatch {
  public:
   BestMatch (const int n_global_sol, const int n_cv_folds) :
     swaps(n_global_sol, n_cv_folds, arma::fill::value(std::numeric_limits<uword>::max())),
-    kendall_tau(n_global_sol, n_cv_folds, arma::fill::none),
-    sol_ind(n_global_sol, n_cv_folds, arma::fill::none) {}
+    kendall_tau(n_global_sol, n_cv_folds, arma::fill::zeros),
+    sol_ind(n_global_sol, n_cv_folds, arma::fill::zeros) {}
 
   void Update(const uword row, const uword col, const uword swaps_,
               const double kendall_tau_, const uword sol_ind_) {

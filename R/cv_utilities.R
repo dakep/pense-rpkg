@@ -161,11 +161,23 @@
   # [element 1 - cv_repl * cv_k]:
   #   [lambda 1 - nlambda]
   #     [solution 1 - Q]
-  cv_ests <- cl_handler(test_segments,
-                        dispatcher,
-                        est_fun = est_fun,
-                        std_data = std_data,
-                        handler_args = handler_args)
+  # cv_ests <- cl_handler(test_segments,
+  #                       dispatcher,
+  #                       est_fun = est_fun,
+  #                       std_data = std_data,
+  #                       handler_args = handler_args)
+  .RISCV_DEBUG_CACHE_PATH <- Sys.getenv("RISCV_DEBUG_CACHE", "")
+
+  if (nzchar(.RISCV_DEBUG_CACHE_PATH) && file.exists(.RISCV_DEBUG_CACHE_PATH)) {
+    cv_ests <- readRDS(.RISCV_DEBUG_CACHE_PATH)
+  } else {
+    cv_ests <- cl_handler(test_segments,
+                          dispatcher,
+                          est_fun = est_fun,
+                          std_data = std_data,
+                          handler_args = handler_args)
+    saveRDS(cv_ests, file = .RISCV_DEBUG_CACHE_PATH)
+  }
 
   matches <- .Call(C_match_solutions_by_weight,
                    cv_ests,

@@ -176,7 +176,10 @@
                           est_fun = est_fun,
                           std_data = std_data,
                           handler_args = handler_args)
-    saveRDS(cv_ests, file = .RISCV_DEBUG_CACHE_PATH)
+
+    if (nzchar(.RISCV_DEBUG_CACHE_PATH)) {
+      saveRDS(cv_ests, file = .RISCV_DEBUG_CACHE_PATH)
+    }
   }
 
   matches <- .Call(C_match_solutions_by_weight,

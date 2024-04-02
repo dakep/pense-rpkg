@@ -118,7 +118,8 @@ class IndexSort {
 arma::vec ExtractWeightsVector (const Rcpp::List& solution, const pense::RhoBisquare& rho) {
   const double scale = Rcpp::as<double>(solution["scale"]);
   auto residuals = MakeVectorView(solution["residuals"]);
-  return rho.Weight(*residuals, scale);
+  const auto wgts = rho.Weight(*residuals, scale);
+  return wgts / arma::mean(wgts % arma::square(*residuals / scale));
 }
 
 //! @brief Transform a list of solutions into a weight matrix.
@@ -396,7 +397,7 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
       arma::vec pred_wmse(cv_repl, arma::fill::zeros);
       arma::vec pred_tau_size(cv_repl, arma::fill::zeros);
       arma::mat kendall_taus(cv_k, cv_repl, arma::fill::none);
-      const double sqrt_wgt_sum = arma::accu(arma::sqrt(global_wgts.col(global_sol_ind)));
+      const double wgt_sum = arma::accu(global_wgts.col(global_sol_ind));
 
       int cv_repl_ind = -1;
       arma::vec all_test_resids(nobs, arma::fill::none);
@@ -421,9 +422,8 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
           ++cv_repl_ind;
         }
         // Divide each chunk by the sum of the weights to get the overall weighted mean in the end
-        // Use the sqrt of the weights (as that's the natural parametrization)
-        pred_wmse(cv_repl_ind) += arma::dot(arma::sqrt(global_wgts.unsafe_col(global_sol_ind).elem(test_ind)),
-                                            arma::square(*test_residuals)) / sqrt_wgt_sum;
+        pred_wmse(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
+                                            arma::square(*test_residuals)) / wgt_sum;
 
         // Copy the test residuals from each chunk to compute the tau-size afterwards.
         const int upper_index = insert_index + test_residuals->n_elem - 1;

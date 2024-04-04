@@ -82,7 +82,6 @@
 #'   If no CV solution satisfies this lower bound, the best CV solution will be used regardless
 #'   of similarity.
 #' @param rho_cc consistency constant for Tukey's bisquare rho function.
-#' @param ncores number of threads to use to match solutions.
 #' @param par_cluster parallel cluster to parallelize computations.
 #' @param handler_args additional arguments to the handler function.
 #' @importFrom Matrix drop
@@ -93,7 +92,6 @@
                                     min_similarity = 0,
                                     par_cluster = NULL,
                                     rho_cc,
-                                    ncores,
                                     handler_args = list()) {
   est_fun <- match.fun(cv_est_fun)
   if (!isTRUE(min_similarity >= 0) || !isTRUE(min_similarity <= 1)) {
@@ -187,8 +185,7 @@
                    global_ests,
                    as.integer(cv_k),
                    length(std_data$y),
-                   rho_cc,
-                   ncores)
+                   rho_cc)
 
   best_match_global <- as.data.frame(t(
     vapply(matches, FUN.VALUE = numeric(4), FUN = function (lambda_match) {

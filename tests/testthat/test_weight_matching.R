@@ -41,8 +41,7 @@ test_that("Weight matching", {
                    global_ests,
                    as.integer(CV_K),
                    as.integer(N),
-                   2.5, # cc
-                   1L)  # nthreads
+                   2.5)
 
   expect_length(matches, N_LAMBDA)
 
@@ -53,18 +52,6 @@ test_that("Weight matching", {
                    matrix(1, nrow = CV_K, ncol = CV_REPL))
       expect_length(matches[[!!lambda_ind]][[!!sol_ind]]$wmspe, CV_REPL)
     }
-  }
-
-  if (isTRUE(pense:::.k_multithreading_support)) {
-    matches_mt <- .Call(pense:::C_match_solutions_by_weight,
-                        cv_estimates,
-                        global_ests,
-                        as.integer(CV_K),
-                        as.integer(N),
-                        2.5, # cc
-                        2L)  # nthreads
-
-    expect_equal(matches_mt, matches)
   }
 
   # Reverse order of CV solutions
@@ -78,9 +65,8 @@ test_that("Weight matching", {
                        global_ests,
                        as.integer(CV_K),
                        as.integer(N),
-                       2.5, # cc
-                       1L)  # nthreads
-  expect_equal(matches_mt, matches_rev)
+                       2.5)
+  expect_equal(matches, matches_rev)
 })
 
 
@@ -124,8 +110,7 @@ test_that("Weight matching (single lambda/solution)", {
                    global_ests,
                    as.integer(CV_K),
                    as.integer(N),
-                   2.5, # cc
-                   1L)  # nthreads
+                   2.5)
 
   expect_length(matches, N_LAMBDA)
 
@@ -137,17 +122,5 @@ test_that("Weight matching (single lambda/solution)", {
                    matrix(1, nrow = CV_K, ncol = CV_REPL))
       expect_length(matches[[!!lambda_ind]][[!!sol_ind]]$wmspe, CV_REPL)
     }
-  }
-
-  if (isTRUE(pense:::.k_multithreading_support)) {
-    matches_mt <- .Call(pense:::C_match_solutions_by_weight,
-                        cv_estimates,
-                        global_ests,
-                        as.integer(CV_K),
-                        as.integer(N),
-                        2.5, # cc
-                        2L)  # nthreads
-
-    expect_equal(matches_mt, matches)
   }
 })

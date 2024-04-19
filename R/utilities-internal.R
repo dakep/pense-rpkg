@@ -179,7 +179,7 @@ extract_metric <- function (metrics, attr, node) {
     } else {
       ret_list$mux <- apply(x, 2, function (xj) {
         mlocscale(xj, location_rho = location_rho, location_cc = cc,
-                  scale_cc = cc, opts = mscale_opts, ...)
+                  scale_cc = cc, opts = mscale_opts, ...)[['location']]
       })
       # Center the response using the S-estimate of regression for the
       # 0-slope.

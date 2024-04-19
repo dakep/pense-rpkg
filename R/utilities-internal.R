@@ -178,7 +178,8 @@ extract_metric <- function (metrics, attr, node) {
       ret_list$muy <- mean(y)
     } else {
       ret_list$mux <- apply(x, 2, function (xj) {
-        mloc(xj, rho = location_rho, cc = cc, opts = mscale_opts)
+        mlocscale(xj, location_rho = location_rho, location_cc = cc,
+                  scale_cc = cc, opts = mscale_opts, ...)
       })
       # Center the response using the S-estimate of regression for the
       # 0-slope.

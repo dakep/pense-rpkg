@@ -452,7 +452,6 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
         min_similarity = ris_min_similarity,
         rho_cc = cv_handler_args$args$pense_opts$mscale$cc,
         par_cluster = cl,
-        ncores = args$pense_opts$num_threads,
         handler_args = cv_handler_args)
 
       ris_best[[i]] <- ris_results$best

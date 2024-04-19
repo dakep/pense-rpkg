@@ -17,8 +17,8 @@ Compute the \eqn{\tau}-scale without centering the values.
 }
 \seealso{
 Other functions to compute robust estimates of location and scale: 
-\code{\link{mlocscale}()},
 \code{\link{mloc}()},
+\code{\link{mlocscale}()},
 \code{\link{mscale}()}
 }
 \concept{functions to compute robust estimates of location and scale}

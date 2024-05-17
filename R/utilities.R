@@ -160,9 +160,9 @@ max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
                                    opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
 
   if (missing(cc)) {
@@ -187,9 +187,9 @@ max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
                                   opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
 
   if (missing(cc)) {
@@ -223,9 +223,9 @@ max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
 mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
   if (missing(scale)) {
     scale <- mad(x)
@@ -241,7 +241,7 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
   }
   opts <- .full_mscale_algo_options(.5, cc, opts)
   opts$rho <- rho_function(rho)
-  .Call(C_mloc, .as(x, 'numeric'), scale, opts)
+  .Call(C_mloc, x, scale, opts)
 }
 
 #' Compute the M-estimate of Location and Scale
@@ -270,15 +270,15 @@ mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquar
                        location_cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
 
   opts <- .full_mscale_algo_options(bdp, scale_cc, opts)
   loc_opts <- list(rho = rho_function(location_rho))
   if (!missing(location_cc)) {
-    loc_opts$cc <- .as(location_cc[[1L]], 'numeric')
+    loc_opts$cc <- .as(location_cc[[1L]], 'double')
   }
   .Call(C_mlocscale, x, opts, loc_opts)
 }
@@ -362,12 +362,12 @@ rho_function <- function (rho) {
 #' @importFrom Matrix sparseVector
 #' @importFrom rlang abort
 starting_point <- function (beta, intercept, lambda, alpha) {
-  sp <- list(intercept = .as(intercept[[1L]], 'numeric'))
+  sp <- list(intercept = .as(intercept[[1L]], 'double'))
   if (missing(lambda) && missing(alpha)) {
     class(sp) <- c('shared_starting_point', 'starting_point')
   } else {
-    sp$lambda <- .as(lambda[[1L]], 'numeric')
-    sp$alpha <- .as(alpha[[1L]], 'numeric')
+    sp$lambda <- .as(lambda[[1L]], 'double')
+    sp$alpha <- .as(alpha[[1L]], 'double')
     class(sp) <- c('specific_starting_point', 'starting_point')
   }
   if (is(beta, 'dgCMatrix') && ncol(beta) == 1L) {
@@ -413,7 +413,7 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
     object$alpha
   } else {
     orig_alpha_length <- length(alpha)
-    object$alpha[na.omit(.approx_match(.as(alpha, 'numeric'), object$alpha))]
+    object$alpha[na.omit(.approx_match(.as(alpha, 'double'), object$alpha))]
   }
   if (length(alpha) == 0L) {
     abort("No requested `alpha` values are not available in `object`.")
@@ -488,7 +488,7 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     object$alpha
   } else {
     orig_alpha_length <- length(alpha)
-    object$alpha[na.omit(.approx_match(.as(alpha, 'numeric'), object$alpha))]
+    object$alpha[na.omit(.approx_match(.as(alpha, 'double'), object$alpha))]
   }
   if (length(alpha) == 0L) {
     abort("No requested `alpha` values are not available in `object`.")
@@ -515,7 +515,7 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     se_mult <- if (lambda == 'min') {
       0
     } else {
-      .as(se_mult[[1L]], 'numeric')
+      .as(se_mult[[1L]], 'double')
     }
 
     vapply(alpha, FUN.VALUE = integer(1L), FUN = function (al) {

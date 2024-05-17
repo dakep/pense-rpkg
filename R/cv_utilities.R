@@ -55,13 +55,17 @@
     FUN = function (predictions, test_inds) {
       obs_order <- sort.list(unlist(test_inds, recursive = FALSE, use.names = FALSE))
       ordered_predictions <- do.call(rbind, predictions)[obs_order, ]
+      if (is.null(dim(ordered_predictions))) {
+        dim(ordered_predictions) <- c(length(ordered_predictions), 1L)
+      }
 
       if (call_with_errors) {
         apply(ordered_predictions - std_data$y, 2, metric)
       } else {
         apply(ordered_predictions, 2, metric, std_data$y)
       }
-    })
+    },
+    SIMPLIFY = FALSE)
   matrix(unlist(prediction_metrics, recursive = FALSE, use.names = FALSE), ncol = cv_repl)
 }
 
@@ -190,8 +194,8 @@
   best_match_global <- as.data.frame(t(
     vapply(matches, FUN.VALUE = numeric(4), FUN = function (lambda_match) {
       avgs <- vapply(lambda_match, FUN.VALUE = numeric(3), FUN = function (sol_match) {
-        c(cvavg = mean(sol_match$wmspe),
-          cvse = if (length(sol_match$wmspe) > 1L) { sd(sol_match$wmspe) } else { 0 },
+        c(cvavg = mean(sqrt(sol_match$wmspe)),
+          cvse = if (length(sol_match$wmspe) > 1L) { sd(sqrt(sol_match$wmspe)) } else { 0 },
           avg_similarity = median(sol_match$rankcorr))
       })
       avgs <- rbind(avgs, solution_index = seq_len(ncol(avgs)))

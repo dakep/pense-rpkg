@@ -1,7 +1,7 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 2.2.1-40
+Version: 2.2.1-41
 Date: 2024-05-17
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",

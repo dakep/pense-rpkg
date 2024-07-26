@@ -39,8 +39,8 @@ Compute the M-scale without centering the values.
 }
 \seealso{
 Other functions to compute robust estimates of location and scale: 
-\code{\link{mlocscale}()},
 \code{\link{mloc}()},
+\code{\link{mlocscale}()},
 \code{\link{tau_size}()}
 }
 \concept{functions to compute robust estimates of location and scale}

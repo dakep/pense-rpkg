@@ -1,180 +1,62 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/articles/computing_adapense.html</loc>
-  </url>
-  <url>
-    <loc>/articles/index.html</loc>
-  </url>
-  <url>
-    <loc>/articles/lambda_grids.html</loc>
-  </url>
-  <url>
-    <loc>/articles/migration_guide.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/news/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/cd_algorithm_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/coef.pense_cvfit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/coef.pense_fit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/consistency_const.html</loc>
-  </url>
-  <url>
-    <loc>/reference/deprecated_en_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/dot-approx_match.html</loc>
-  </url>
-  <url>
-    <loc>/reference/dot-bisquare_consistency_const.html</loc>
-  </url>
-  <url>
-    <loc>/reference/dot-find_stable_bdb_bisquare.html</loc>
-  </url>
-  <url>
-    <loc>/reference/dot-run_replicated_cv.html</loc>
-  </url>
-  <url>
-    <loc>/reference/dot-standardize_data.html</loc>
-  </url>
-  <url>
-    <loc>/reference/elnet.html</loc>
-  </url>
-  <url>
-    <loc>/reference/elnet_cv.html</loc>
-  </url>
-  <url>
-    <loc>/reference/en_admm_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/en_algorithm_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/en_cd_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/en_dal_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/en_lars_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/en_ridge_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/enpy.html</loc>
-  </url>
-  <url>
-    <loc>/reference/enpy_initial_estimates.html</loc>
-  </url>
-  <url>
-    <loc>/reference/enpy_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/initest_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mloc.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mlocscale.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mm_algorithm_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mscale.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mscale_algorithm_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mscale_derivative.html</loc>
-  </url>
-  <url>
-    <loc>/reference/mstep_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pense.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pense_cv.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pense_options.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pensem.html</loc>
-  </url>
-  <url>
-    <loc>/reference/pensem_cv.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot.pense_cvfit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/plot.pense_fit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/predict.pense_cvfit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/predict.pense_fit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/prediction_performance.html</loc>
-  </url>
-  <url>
-    <loc>/reference/prinsens.html</loc>
-  </url>
-  <url>
-    <loc>/reference/print.nsoptim_metrics.html</loc>
-  </url>
-  <url>
-    <loc>/reference/regmest.html</loc>
-  </url>
-  <url>
-    <loc>/reference/regmest_cv.html</loc>
-  </url>
-  <url>
-    <loc>/reference/residuals.pense_cvfit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/residuals.pense_fit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/rho_function.html</loc>
-  </url>
-  <url>
-    <loc>/reference/starting_point.html</loc>
-  </url>
-  <url>
-    <loc>/reference/summary.pense_cvfit.html</loc>
-  </url>
-  <url>
-    <loc>/reference/tau_size.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/articles/computing_adapense.html</loc></url>
+<url><loc>/articles/index.html</loc></url>
+<url><loc>/articles/lambda_grids.html</loc></url>
+<url><loc>/articles/migration_guide.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/news/index.html</loc></url>
+<url><loc>/reference/cd_algorithm_options.html</loc></url>
+<url><loc>/reference/coef.pense_cvfit.html</loc></url>
+<url><loc>/reference/coef.pense_fit.html</loc></url>
+<url><loc>/reference/consistency_const.html</loc></url>
+<url><loc>/reference/deprecated_en_options.html</loc></url>
+<url><loc>/reference/dot-approx_match.html</loc></url>
+<url><loc>/reference/dot-bisquare_consistency_const.html</loc></url>
+<url><loc>/reference/dot-find_stable_bdb_bisquare.html</loc></url>
+<url><loc>/reference/dot-run_replicated_cv.html</loc></url>
+<url><loc>/reference/dot-standardize_data.html</loc></url>
+<url><loc>/reference/elnet.html</loc></url>
+<url><loc>/reference/elnet_cv.html</loc></url>
+<url><loc>/reference/en_admm_options.html</loc></url>
+<url><loc>/reference/en_algorithm_options.html</loc></url>
+<url><loc>/reference/en_cd_options.html</loc></url>
+<url><loc>/reference/en_dal_options.html</loc></url>
+<url><loc>/reference/en_lars_options.html</loc></url>
+<url><loc>/reference/en_ridge_options.html</loc></url>
+<url><loc>/reference/enpy.html</loc></url>
+<url><loc>/reference/enpy_initial_estimates.html</loc></url>
+<url><loc>/reference/enpy_options.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/initest_options.html</loc></url>
+<url><loc>/reference/mloc.html</loc></url>
+<url><loc>/reference/mlocscale.html</loc></url>
+<url><loc>/reference/mm_algorithm_options.html</loc></url>
+<url><loc>/reference/mscale.html</loc></url>
+<url><loc>/reference/mscale_algorithm_options.html</loc></url>
+<url><loc>/reference/mscale_derivative.html</loc></url>
+<url><loc>/reference/mstep_options.html</loc></url>
+<url><loc>/reference/pense.html</loc></url>
+<url><loc>/reference/pense_cv.html</loc></url>
+<url><loc>/reference/pense_options.html</loc></url>
+<url><loc>/reference/pensem.html</loc></url>
+<url><loc>/reference/pensem_cv.html</loc></url>
+<url><loc>/reference/plot.pense_cvfit.html</loc></url>
+<url><loc>/reference/plot.pense_fit.html</loc></url>
+<url><loc>/reference/predict.pense_cvfit.html</loc></url>
+<url><loc>/reference/predict.pense_fit.html</loc></url>
+<url><loc>/reference/prediction_performance.html</loc></url>
+<url><loc>/reference/prinsens.html</loc></url>
+<url><loc>/reference/print.nsoptim_metrics.html</loc></url>
+<url><loc>/reference/regmest.html</loc></url>
+<url><loc>/reference/regmest_cv.html</loc></url>
+<url><loc>/reference/residuals.pense_cvfit.html</loc></url>
+<url><loc>/reference/residuals.pense_fit.html</loc></url>
+<url><loc>/reference/rho_function.html</loc></url>
+<url><loc>/reference/starting_point.html</loc></url>
+<url><loc>/reference/summary.pense_cvfit.html</loc></url>
+<url><loc>/reference/tau_size.html</loc></url>
 </urlset>
+

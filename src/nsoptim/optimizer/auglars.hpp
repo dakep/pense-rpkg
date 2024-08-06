@@ -871,14 +871,14 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //!
   //! @param loss a weighted LS loss function.
   //! @param penalty the Ridge penalty.
-  AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>() noexcept
+  AugmentedLarsOptimizer() noexcept
     : previous_data_id_(ObjectId::null()), loss_(nullptr), penalty_(nullptr) {}
 
   //! Ininitialize the optimizer using the given (weighted) LS loss function and the Ridge penalty.
   //!
   //! @param loss a weighted LS loss function.
   //! @param penalty the Ridge penalty.
-  AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>(
+  AugmentedLarsOptimizer(
     const LossFunction& loss, const RidgePenalty& penalty) noexcept
       : previous_data_id_(ObjectId::null()), loss_(LossFunctionPtr(new LossFunction(loss))),
         penalty_(RidgePenaltyPtr(new RidgePenalty(penalty))) {}
@@ -889,7 +889,7 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   //! In case the loss or penalty function are mutated in any way, the change will affect both optimizers.
   //! If the loss/penalty function is changed on one of the optimizers (using the `loss()` or `penalty()` methods),
   //! the two optimizers will *not* share the new loss/penalty function.
-  AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>(
+  AugmentedLarsOptimizer(
     const AugmentedRidgeOptimizer& other) noexcept
       : previous_data_id_(other.previous_data_id_),
         loss_(other.loss_? LossFunctionPtr(new LossFunction(*other.loss_)) : nullptr),
@@ -906,13 +906,13 @@ class AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<
   AugmentedRidgeOptimizer& operator=(const AugmentedRidgeOptimizer& other) = default;
 
   //! Default move constructor.
-  AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>(
+  AugmentedLarsOptimizer(
     AugmentedRidgeOptimizer&& other) = default;
 
   //! Default move assignment operator.
   AugmentedRidgeOptimizer& operator=(AugmentedRidgeOptimizer&& other) = default;
 
-  ~AugmentedLarsOptimizer<LossFunction, RidgePenalty, RegressionCoefficients<arma::vec>>() = default;
+  ~AugmentedLarsOptimizer() = default;
 
   void Reset() {}
 

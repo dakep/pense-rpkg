@@ -10,7 +10,6 @@
 #'    Can also be set to `sparse = 'matrix'`, in which case a sparse matrix
 #'    is returned instead of a sparse vector.
 #' @param standardized return the standardized coefficients.
-#' @param exact,correction defunct.
 #' @param ... currently not used.
 #' @return either a numeric vector or a sparse vector of type
 #'    [dsparseVector][Matrix::sparseVector-class]
@@ -27,14 +26,7 @@
 #' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standardized = FALSE,
-                            exact = deprecated(), correction = deprecated(), ...) {
-  if (is_present(exact)) {
-    deprecate_stop('2.0.0', 'coef(exact=)')
-  }
-  if (is_present(correction)) {
-    deprecate_stop('2.0.0', 'coef(correction=)')
-  }
-
+                            ...) {
   if (length(lambda) > 1L) {
     warn("Only first element in `lambda` is used.")
   }
@@ -118,8 +110,6 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
     se_mult <- .parse_se_string(lambda, only_fact = TRUE)
   }
 
-  solution_index <- 1L
-
   if (is.character(lambda)) {
     if (!any(object$cvres$cvse > 0) && isTRUE(se_mult > 0)) {
       warn(paste("Only a single cross-validation replication was performed.",
@@ -145,20 +135,13 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
       se_selection <- .cv_se_selection(object$cvres$cvavg[rows],
                                        object$cvres$cvse[rows], se_mult)
       sel_index <- rows[[which(se_selection == 'se_fact')]]
-      sol_index <- if (!is.null(object$cvres$solution_index)) {
-        object$cvres$solution_index[[sel_index]]
-      } else {
-        1L
-      }
       c(lambda = object$cvres$lambda[[sel_index]],
-        solution_index = sol_index,
         cvavg = object$cvres$cvavg[[sel_index]])
     })
     best_alpha_index <- which.min(best_per_alpha['cvavg', ])
 
     alpha <- considered_alpha[[best_alpha_index]]
     lambda <- best_per_alpha['lambda', best_alpha_index]
-    solution_index <- best_per_alpha['solution_index', best_alpha_index]
   }
 
   if (missing(alpha) || is.null(alpha)) {
@@ -217,6 +200,12 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
       lambda_ind_right <- max(which(lambda_diff >= 0))
       selected_ests <- alpha_ests_indices[est_lambda_ord[c(lambda_ind_left, lambda_ind_right)]]
     }
+  }
+
+  solution_index <- if (!is.null(object$cvres$solution_index)) {
+    object$cvres$solution_index[selected_ests]
+  } else {
+    1L
   }
 
   list(est = selected_ests, sol = solution_index)

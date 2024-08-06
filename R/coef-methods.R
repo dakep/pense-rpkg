@@ -130,7 +130,7 @@ coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1,
       warn("Standard errors not available. Returning estimate for `lambda = \"min\"`.")
     }
 
-    best_per_alpha <- vapply(considered_alpha, FUN.VALUE = numeric(3L), FUN = function (alpha) {
+    best_per_alpha <- vapply(considered_alpha, FUN.VALUE = numeric(2L), FUN = function (alpha) {
       rows <- which((object$cvres$alpha - alpha)^2 < .Machine$double.eps)
       se_selection <- .cv_se_selection(object$cvres$cvavg[rows],
                                        object$cvres$cvse[rows], se_mult)

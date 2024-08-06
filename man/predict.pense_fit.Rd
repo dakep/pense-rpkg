@@ -4,15 +4,7 @@
 \alias{predict.pense_fit}
 \title{Predict Method for PENSE Fits}
 \usage{
-\method{predict}{pense_fit}(
-  object,
-  newdata,
-  alpha = NULL,
-  lambda,
-  exact = deprecated(),
-  correction = deprecated(),
-  ...
-)
+\method{predict}{pense_fit}(object, newdata, alpha = NULL, lambda, ...)
 }
 \arguments{
 \item{object}{PENSE regularization path to extract residuals from.}
@@ -26,11 +18,6 @@ If \code{object} was fit with multiple \code{alpha} values, and no value is prov
 first value in \code{object$alpha} is used with a warning.}
 
 \item{lambda}{a single number for the penalty level.}
-
-\item{exact}{defunct Always gives a warning if \code{lambda} is not part of the fitted
-sequence and coefficients need to be interpolated.}
-
-\item{correction}{defunct.}
 
 \item{...}{currently not used.}
 }

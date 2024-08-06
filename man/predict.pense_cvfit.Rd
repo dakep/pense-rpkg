@@ -4,16 +4,7 @@
 \alias{predict.pense_cvfit}
 \title{Predict Method for PENSE Fits}
 \usage{
-\method{predict}{pense_cvfit}(
-  object,
-  newdata,
-  alpha = NULL,
-  lambda = "min",
-  se_mult = 1,
-  exact = deprecated(),
-  correction = deprecated(),
-  ...
-)
+\method{predict}{pense_cvfit}(object, newdata, alpha = NULL, lambda = "min", se_mult = 1, ...)
 }
 \arguments{
 \item{object}{PENSE with cross-validated hyper-parameters to extract coefficients from.}
@@ -31,11 +22,6 @@ values and no value is provided, the first value in \code{object$alpha} is used 
 or a single numeric value of the penalty parameter. See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
-
-\item{exact}{deprecated. Always gives a warning if \code{lambda} is not part of the
-fitted sequence and coefficients are interpolated.}
-
-\item{correction}{defunct.}
 
 \item{...}{currently not used.}
 }

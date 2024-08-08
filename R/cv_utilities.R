@@ -168,21 +168,12 @@
   #                       est_fun = est_fun,
   #                       std_data = std_data,
   #                       handler_args = handler_args)
-  .RISCV_DEBUG_CACHE_PATH <- Sys.getenv("RISCV_DEBUG_CACHE", "")
 
-  if (nzchar(.RISCV_DEBUG_CACHE_PATH) && file.exists(.RISCV_DEBUG_CACHE_PATH)) {
-    cv_ests <- readRDS(.RISCV_DEBUG_CACHE_PATH)
-  } else {
-    cv_ests <- cl_handler(test_segments,
-                          dispatcher,
-                          est_fun = est_fun,
-                          std_data = std_data,
-                          handler_args = handler_args)
-
-    if (nzchar(.RISCV_DEBUG_CACHE_PATH)) {
-      saveRDS(cv_ests, file = .RISCV_DEBUG_CACHE_PATH)
-    }
-  }
+  cv_ests <- cl_handler(test_segments,
+                        dispatcher,
+                        est_fun = est_fun,
+                        std_data = std_data,
+                        handler_args = handler_args)
 
   matches <- .Call(C_match_solutions_by_weight,
                    cv_ests,

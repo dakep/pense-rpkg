@@ -179,7 +179,6 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
       arma::vec pred_wmse(cv_repl, arma::fill::zeros);
       arma::vec pred_tau_size(cv_repl, arma::fill::zeros);
       arma::mat similarities(cv_k, cv_repl, arma::fill::none);
-      const double wgt_sum = arma::accu(global_wgts.col(global_sol_ind));
 
       int cv_repl_ind = -1;
       arma::vec all_test_resids(nobs, arma::fill::none);

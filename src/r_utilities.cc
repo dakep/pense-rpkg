@@ -180,6 +180,7 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
       arma::vec pred_wmape(cv_repl, arma::fill::zeros);
       arma::vec pred_tau_size(cv_repl, arma::fill::zeros);
       arma::mat similarities(cv_k, cv_repl, arma::fill::none);
+      const double wgt_sum = arma::accu(global_wgts.col(global_sol_ind));
 
       int cv_repl_ind = -1;
       arma::vec all_test_resids(nobs, arma::fill::none);
@@ -205,9 +206,9 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
         }
         // Divide each chunk by the sum of the weights to get the overall weighted mean in the end
         pred_wmspe(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
-                                             arma::square(*test_residuals)) / nobs;
+                                             arma::square(*test_residuals)) / wgt_sum;
         pred_wmape(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
-                                             arma::abs(*test_residuals)) / nobs;
+                                             arma::abs(*test_residuals)) / wgt_sum;
 
         // Copy the test residuals from each chunk to compute the tau-size afterwards.
         const int upper_index = insert_index + test_residuals->n_elem - 1;

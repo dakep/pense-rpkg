@@ -216,6 +216,16 @@
                                         0
                                       }
                                     }),
+                 avg_tau_size = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                       FUN = \(sol_match) { mean(sol_match$tau_size) }),
+                 sd_tau_size = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                      FUN = \(sol_match) {
+                                        if (length(sol_match$tau_size) > 1L) {
+                                          sd(sol_match$tau_size)
+                                        } else {
+                                          0
+                                        }
+                                      }),
                  avg_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),
                                     FUN = \(sol_match) { mean(sol_match$wmape) }),
                  sd_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),

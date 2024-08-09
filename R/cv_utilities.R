@@ -90,6 +90,7 @@
 #' @param handler_args additional arguments to the handler function.
 #' @importFrom Matrix drop
 #' @importFrom rlang abort
+#' @importFrom stats sd
 #' @keywords internal
 .run_replicated_cv_ris <- function (std_data, cv_k, cv_repl, cv_est_fun,
                                     global_ests,
@@ -106,7 +107,7 @@
     abort("`cv_k` must be chosen to have at least 2 observations in each fold.")
   }
 
-  test_segments_list <- lapply(integer(cv_repl), function (repl_id) {
+  test_segments_list <- lapply(integer(cv_repl), \(repl_id) {
     split(seq_along(std_data$y),
           sample(rep_len(seq_len(cv_k), length(std_data$y))))
   })
@@ -126,20 +127,20 @@
     if (!is.null(handler_args$args$optional_args$individual_starts)) {
       handler_args$args$optional_args$individual_starts <- lapply(
         handler_args$args$optional_args$individual_starts,
-        function (starts) { lapply(starts, train_std$standardize_coefs) })
+        \(starts) { lapply(starts, train_std$standardize_coefs) })
     }
     if (!is.null(handler_args$args$optional_args$shared_starts)) {
       handler_args$args$optional_args$shared_starts <- lapply(
         handler_args$args$optional_args$shared_starts,
-        function (starts) { lapply(starts, train_std$standardize_coefs) })
+        \(starts) { lapply(starts, train_std$standardize_coefs) })
     }
 
     cv_ests <- est_fun(train_std, test_ind, handler_args)
 
     train_ind <- seq_along(std_data$y)[-test_ind]
 
-    cv_ests <- lapply(cv_ests, function (ests_lambda) {
-      lapply(ests_lambda, function (est) {
+    cv_ests <- lapply(cv_ests, \(ests_lambda) {
+      lapply(ests_lambda, \(est) {
         unstd_est <- train_std$unstandardize_coef(est)
         unstd_est$test_residuals <- drop(std_data$y[test_ind] -
                                            test_x %*% unstd_est$beta - unstd_est$intercept)
@@ -183,8 +184,8 @@
                    rho_cc)
 
   best_match_global <- as.data.frame(t(
-    vapply(matches, FUN.VALUE = numeric(4), FUN = function (lambda_match) {
-      avgs <- vapply(lambda_match, FUN.VALUE = numeric(3), FUN = function (sol_match) {
+    vapply(matches, FUN.VALUE = numeric(4), FUN = \(lambda_match) {
+      avgs <- vapply(lambda_match, FUN.VALUE = numeric(3), FUN = \(sol_match) {
         c(cvavg = mean(sqrt(sol_match$wmspe)),
           cvse = if (length(sol_match$wmspe) > 1L) { sd(sqrt(sol_match$wmspe)) } else { 0 },
           avg_similarity = median(sol_match$rankcorr))
@@ -200,27 +201,33 @@
     })))
   best_match_global$lambda_index <- seq_len(nrow(best_match_global))
 
-  full_details <- do.call(rbind, lapply(seq_along(matches), function (lambda_ind) {
+  full_details <- do.call(rbind, lapply(seq_along(matches), \(lambda_ind) {
     lambda_match <- matches[[lambda_ind]]
 
     list2DF(list(lambda_index = rep.int(lambda_ind, length(lambda_match)),
                  solution_index = seq_along(lambda_match),
-                 avg_wmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                    FUN = function (sol_match) {
-                                      mean(sol_match$wmspe)
+                 avg_wrmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                     FUN = \(sol_match) { mean(sqrt(sol_match$wmspe)) }),
+                 sd_wrmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                    FUN = \(sol_match) {
+                                      if (length(sol_match$wmspe) > 1L) {
+                                        sd(sqrt(sol_match$wmspe))
+                                      } else {
+                                        0
+                                      }
                                     }),
-                 sd_wmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                   FUN = function (sol_match) {
-                                     if (length(sol_match$wmspe) > 1L) {
+                 avg_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                    FUN = \(sol_match) { mean(sol_match$wmape) }),
+                 sd_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),
+                                   FUN = \(sol_match) {
+                                     if (length(sol_match$wmape) > 1L) {
                                        sd(sol_match$wmspe)
                                      } else {
                                        0
                                      }
-                                   }),
+                                    }),
                  avg_similarity = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                         FUN = function (sol_match) {
-                                           median(sol_match$rankcorr)
-                                         }),
+                                         FUN = \(sol_match) { median(sol_match$rankcorr) }),
                  rankcorr = lapply(lambda_match, `[[`, 'rankcorr')))
   }))
 

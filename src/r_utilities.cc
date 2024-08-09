@@ -176,7 +176,8 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
     List lambda_result(global_wgts.n_cols);
 
     for (int global_sol_ind = 0; global_sol_ind < global_wgts.n_cols; ++global_sol_ind) {
-      arma::vec pred_wmse(cv_repl, arma::fill::zeros);
+      arma::vec pred_wmspe(cv_repl, arma::fill::zeros);
+      arma::vec pred_wmape(cv_repl, arma::fill::zeros);
       arma::vec pred_tau_size(cv_repl, arma::fill::zeros);
       arma::mat similarities(cv_k, cv_repl, arma::fill::none);
 
@@ -203,8 +204,10 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
           ++cv_repl_ind;
         }
         // Divide each chunk by the sum of the weights to get the overall weighted mean in the end
-        pred_wmse(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
-                                            arma::square(*test_residuals)) / nobs;
+        pred_wmspe(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
+                                             arma::square(*test_residuals)) / nobs;
+        pred_wmape(cv_repl_ind) += arma::dot(global_wgts.unsafe_col(global_sol_ind).elem(test_ind),
+                                             arma::abs(*test_residuals)) / nobs;
 
         // Copy the test residuals from each chunk to compute the tau-size afterwards.
         const int upper_index = insert_index + test_residuals->n_elem - 1;
@@ -216,7 +219,8 @@ SEXP MatchSolutionsByWeight (SEXP r_solutions_cv, SEXP r_solutions_global, SEXP 
       pred_tau_size(cv_repl_ind) = pense::TauSize(all_test_resids);
 
       lambda_result[global_sol_ind] = List::create(Named("rankcorr") = similarities,
-                                                   Named("wmspe") = pred_wmse,
+                                                   Named("wmspe") = pred_wmspe,
+                                                   Named("wmape") = pred_wmape,
                                                    Named("tau_size") = pred_tau_size);
     }
 

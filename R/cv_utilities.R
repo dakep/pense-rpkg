@@ -231,7 +231,7 @@
                  sd_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),
                                    FUN = \(sol_match) {
                                      if (length(sol_match$wmape) > 1L) {
-                                       sd(sol_match$wmspe)
+                                       sd(sol_match$wmape)
                                      } else {
                                        0
                                      }

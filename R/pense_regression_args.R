@@ -92,25 +92,26 @@
          algorithm = .pense_algorithm_id(algorithm_opts),
          intercept = !isFALSE(intercept),
          warm_starts = !isFALSE(carry_forward[[1L]]),
-         eps = .as(eps[[1L]], 'numeric'),
-         comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
-         explore_tol = .as(explore_tol[[1L]], 'numeric'),
-         explore_it = .as(explore_it[[1L]], 'integer'),
-         nr_tracks = .as(explore_solutions[[1L]], 'integer'),
-         max_optima = .as(max_solutions[[1L]], 'integer'),
+         eps = max(.Machine$double.eps, .as(eps[[1L]], 'numeric')),
+         comparison_tol = max(.Machine$double.eps, .as(comparison_tol[[1L]], 'numeric')),
+         explore_tol = max(.Machine$double.eps, .as(explore_tol[[1L]], 'numeric')),
+         explore_it = max(0L, .as(explore_it[[1L]], 'integer')),
+         nr_tracks = max(0L, .as(explore_solutions[[1L]], 'integer')),
+         max_optima = max(0L, .as(max_solutions[[1L]], 'integer')),
          num_threads = max(1L, .as(ncores[[1L]], 'integer')),
          sparse = isTRUE(sparse),
          mscale = .full_mscale_algo_options(bdp = bdp, cc = cc,
                                             mscale_opts = mscale_opts)))
+
+  if (args$pense_opts$nr_tracks > 0L) {
+    args$pense_opts$nr_tracks <- max(args$pense_opts$nr_tracks, args$pense_opts$max_optima)
+  }
 
   if (args$pense_opts$explore_tol < args$pense_opts$eps) {
     abort("`explore_tol` must not be less than `eps`")
   }
   if (args$pense_opts$comparison_tol < args$pense_opts$eps) {
     abort("`comparison_tol` must not be less than `eps`")
-  }
-  if (args$pense_opts$explore_it < 0L) {
-    abort("`explore_it` must not be less than 0")
   }
 
   # Check EN algorithm for ENPY

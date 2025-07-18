@@ -38,6 +38,163 @@ double TauSize(const vec& values) noexcept {
   return sigma_0 * kTauSizeConsistencyConstant * sqrt(tau_size);
 }
 
+arma::vec Mscale::Derivative(const arma::vec& values) const {
+  const double scale = ComputeMscale(values, InitialEstimate(values));
+  if (scale < eps_) {
+    return arma::vec();
+  }
+
+  const auto deriv_rho = rho_->Derivative(values, scale);
+  const auto denom = sum(deriv_rho % values) / scale;
+  if (denom < eps_) {
+    return arma::vec(values.n_elem, arma::fill::value(R_PosInf));
+  } else {
+    return deriv_rho / denom;
+  }
+}
+
+double Mscale::ComputeMscale(const arma::vec& values, const double init_scale) const {
+  if (init_scale < kNumericZero) {
+    return 0;
+  }
+
+  int iter = 0;
+  double step;
+  double scale = init_scale;
+  // Start Newton's iterations
+  do {
+    step = rho_.DerivativeFixedPoint(values, scale, delta_);
+    scale += scale * step;
+  } while (++iter < max_it_ && std::abs(step) > eps_ && scale > kNumericZero && std::isfinite(scale));
+
+  if (scale < kNumericZero || !std::isfinite(scale)) {
+    return ComputeMscaleFallback(values, max_it_ - iter, init_scale);
+  }
+
+  return scale;
+}
+
+double Mscale::ComputeMscale(const arma::vec& values, const double init_scale) {
+  if (init_scale < kNumericZero) {
+    return 0;
+  }
+
+  it_ = 0;
+  double step;
+  double scale = init_scale;
+  // Start Newton's iterations
+  do {
+    step = rho_->DerivativeFixedPoint(values, scale, delta_);
+    scale += scale * step;
+  } while (++it_ < max_it_ && std::abs(step) > eps_ && scale > kNumericZero && std::isfinite(scale));
+
+  if (scale < kNumericZero || !std::isfinite(scale)) {
+    return ComputeMscaleFallback(values, max_it_ - it_, init_scale);
+  }
+
+  return scale;
+}
+
+double Mscale::ComputeMscaleFallback(const arma::vec& values, const int max_it, double scale) const {
+  const double rho_denom = 1. / (delta_ * values.n_elem);
+
+  int iter = 0;
+  double err = eps_;
+  // Start iterations
+  do {
+    const double rho_sum = rho_->SumStd(values, scale);
+    const double new_scale = scale * std::sqrt(rho_sum * rho_denom);
+    err = std::abs(new_scale - scale);
+    scale = new_scale;
+  } while (++iter < max_it && err > eps_ * scale && std::isfinite(scale));
+
+  if (scale < kNumericZero || !std::isfinite(scale)) {
+    scale = 0;
+  }
+
+  return scale;
+}
+
+arma::mat Mscale::GradientHessian(const arma::vec& values) const {
+  const double scale = this->operator()(values);
+  if (scale < eps_) {
+    return arma::mat(1, 1, arma::fill::value(scale));
+  }
+  const auto violation = rho_->SumStd(values, scale) / values.n_elem - delta_;
+
+  arma::mat grad_hess(values.n_elem, values.n_elem + 2, arma::fill::zeros);
+
+  // Compute the gradient and its maximum
+  grad_hess.col(0) = rho_->Derivative(values, scale);
+  const auto denom = arma::sum(grad_hess.col(0) % values);
+
+  grad_hess.at(1, 2) = denom;
+  grad_hess.at(2, 2) = scale;
+  grad_hess.at(3, 2) = violation;
+
+  // Compute the Hessian and its maximum
+  const auto rho_2nd = rho_->SecondDerivative(values, scale);
+  const auto sum_2nd = arma::sum(rho_2nd % values % values) / denom;
+  grad_hess.col(1) = rho_2nd;
+  double diag_offset;
+  for (int i = 0; i < values.n_elem; ++i) {
+    diag_offset = denom * rho_2nd[i];
+    for (int k = i; k < values.n_elem; ++k) {
+      grad_hess(i, k + 2) = HessianElementUnscaled(
+        i, k, grad_hess.unsafe_col(0), rho_2nd, values, sum_2nd, diag_offset);
+
+      grad_hess(i, k + 2) *= scale / (denom * denom);
+      diag_offset = 0;
+    }
+  }
+
+  // Final pass to get gradient right
+  grad_hess.col(0) *= scale / denom;
+
+  return grad_hess;
+}
+
+arma::vec::fixed<3> Mscale::MaxGradientHessian(const arma::vec& values) {
+  arma::vec::fixed<3> maxima(arma::fill::zeros);
+  maxima[0] = this->operator()(values, InitialEstimate(values));
+  if (maxima[0] < eps_) {
+    return maxima;
+  }
+  const auto violation = rho_.SumStd(values, maxima[0]) -
+    values.n_elem * delta_;
+
+  if (violation * violation > values.n_elem * values.n_elem * eps_ * eps_) {
+    return maxima;
+  }
+
+  // Compute the gradient and its maximum
+  const auto rho_1st = rho_->Derivative(values, maxima[0]);
+  const auto denom = sum(rho_1st % values);
+  maxima[1] = (denom < eps_) ? R_PosInf :
+    (arma::max(rho_1st) * maxima[0] / denom);
+
+  // Compute the Hessian and its maximum
+  const auto rho_2nd = rho_->SecondDerivative(values, maxima[0]);
+  const auto sum_2nd = sum(rho_2nd % values % values) / denom;
+  double diag_offset;
+
+  for (int i = 0; i < values.n_elem; ++i) {
+    diag_offset = denom * rho_2nd[i];
+    for (int k = i; k < values.n_elem; ++k) {
+      const auto tmp = std::abs(HessianElementUnscaled(
+        i, k, rho_1st, rho_2nd, values, sum_2nd, diag_offset));
+
+      diag_offset = 0;
+      if (tmp > maxima[2]) {
+        maxima[2] = tmp;
+      }
+    }
+  }
+  maxima[2] *= maxima[0] / (denom * denom);
+
+  return maxima;
+}
+
 namespace robust_scale_location {
 double InitialScaleEstimate(const vec& values, const double delta, const double eps) {
   // Try the MAD of the uncentered values.

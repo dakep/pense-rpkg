@@ -25,6 +25,11 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! Alias for the shared pointer to the regression data.
   using ConstDataPtr = std::shared_ptr<const nsoptim::PredictorResponseData>;
 
+  bool include_intercept_;
+  ConstDataPtr data_;
+  Mscale mscale_;
+  double pred_norm_;
+
  public:
   using ConvexSurrogateType = nsoptim::WeightedLsRegressionLoss;
   using ResidualType = arma::vec;
@@ -34,7 +39,7 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
     double scale;
   };
 
-  SLoss(ConstDataPtr data, const Mscale<RhoBisquare>& mscale, const bool include_intercept = true) noexcept
+  SLoss(ConstDataPtr data, const Mscale& mscale, const bool include_intercept = true) noexcept
     : include_intercept_(include_intercept), data_(data), mscale_(mscale),
       pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
 
@@ -234,26 +239,21 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! Get the M-scale function used by this S-loss.
   //!
   //! @return a constant reference to the M-scale function.
-  const Mscale<RhoBisquare>& mscale() const noexcept {
+  const Mscale& mscale() const noexcept {
     return mscale_;
   }
 
   //! Get the M-scale function used by this S-loss.
   //!
-  //! @return a constant reference to the M-scale function.
-  Mscale<RhoBisquare>& mscale() noexcept {
+  //! @return a mutable reference to the M-scale function.
+  Mscale& mscale() noexcept {
     return mscale_;
   }
 
  private:
   SLoss(const SLoss& other, ConstDataPtr data) :
-      include_intercept_(other.include_intercept_), data_(data), mscale_(other.mscale_),
-      pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
-
-  bool include_intercept_;
-  ConstDataPtr data_;
-  Mscale<RhoBisquare> mscale_;
-  double pred_norm_;
+    include_intercept_(other.include_intercept_), data_(data), mscale_(other.mscale_),
+    pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
 };
 }  // namespace pense
 

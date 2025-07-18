@@ -12,6 +12,7 @@
 #include "rcpp_integration.hpp"
 #include "r_interface_utils.hpp"
 #include "alias.hpp"
+#include "rcpp_utils.hpp"
 #include "robust_scale_location.hpp"
 
 using Rcpp::as;
@@ -26,18 +27,18 @@ using pense::kDefaultHuberLocationCc;
 using pense::kDefaultBisquareLocationCc;
 
 namespace {
-template<typename T>
-LocationScaleEstimate GenericMLocationScale(const arma::vec& x, const Mscale<T>& mscale,
-                                             const Rcpp::List& location_opts) {
-  switch (static_cast<RhoFunctionType>(GetFallback(location_opts, "rho",
-                                                   static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-    case RhoFunctionType::kRhoHuber:
-      return MLocationScale(x, mscale, RhoHuber(GetFallback(location_opts, "cc", kDefaultHuberLocationCc)));
-    case RhoFunctionType::kRhoBisquare:
-    default:
-      return MLocationScale(x, mscale, RhoBisquare(GetFallback(location_opts, "cc", kDefaultBisquareLocationCc)));
-  }
-}
+// template<typename T>
+// LocationScaleEstimate GenericMLocationScale(const arma::vec& x, const Mscale<T>& mscale,
+//                                              const Rcpp::List& location_opts) {
+//   switch (static_cast<RhoFunctionType>(GetFallback(location_opts, "rho",
+//                                                    static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
+//     case RhoFunctionType::kRhoHuber:
+//       return MLocationScale(x, mscale, RhoHuber(GetFallback(location_opts, "cc", kDefaultHuberLocationCc)));
+//     case RhoFunctionType::kRhoBisquare:
+//     default:
+//       return MLocationScale(x, mscale, RhoBisquare(GetFallback(location_opts, "cc", kDefaultBisquareLocationCc)));
+//   }
+// }
 
 constexpr int kDefaultMLocationMaxIt = 100;
 }  // namespace
@@ -244,15 +245,7 @@ SEXP MLocation(SEXP r_x, SEXP r_scale, SEXP r_opts) noexcept {
   const int max_it = GetFallback(opts, "max_it", kDefaultMLocationMaxIt);
   const double convergence_tol = GetFallback(opts, "eps", kDefaultConvergenceTolerance);
 
-  switch (static_cast<RhoFunctionType>(GetFallback(opts, "rho", static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-    case RhoFunctionType::kRhoHuber:
-      return Rcpp::wrap(MLocation(*x, RhoHuber(GetFallback(opts, "cc", kDefaultHuberLocationCc)), *scale,
-                                  convergence_tol, max_it));
-    case RhoFunctionType::kRhoBisquare:
-    default:
-      return Rcpp::wrap(MLocation(*x, RhoBisquare(GetFallback(opts, "cc", kDefaultBisquareLocationCc)), *scale,
-                                  convergence_tol, max_it));
-  }
+  return pense::MLocation(*x, *RhoFactory(opts), *scale, convergence_tol, max_it);
   END_RCPP;
 }
 
@@ -267,14 +260,9 @@ SEXP MLocationScale(SEXP r_x, SEXP r_mscale_opts, SEXP r_location_opts) noexcept
   auto x = MakeVectorView(r_x);
   auto mscale_opts = as<Rcpp::List>(r_mscale_opts);
   auto location_opts = as<Rcpp::List>(r_location_opts);
-  LocationScaleEstimate m_loc_scale;
 
-  switch (static_cast<RhoFunctionType>(GetFallback(mscale_opts, "rho",
-                                                   static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-    case RhoFunctionType::kRhoBisquare:
-    default:
-      m_loc_scale = GenericMLocationScale(*x, Mscale<RhoBisquare>(mscale_opts), location_opts);
-  }
+  Mscale mscale(mscale_opts);
+  auto m_loc_scale = MLocationScale(*x, mscale, *RhoFactory(location_opts));
 
   Rcpp::NumericVector ret_vec;
   ret_vec["location"] = m_loc_scale.location;

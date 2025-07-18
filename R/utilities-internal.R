@@ -1,3 +1,128 @@
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the given rho function
+#' @param eff desired efficiency (between 0.1 and 0.99)
+#' @param rho which \eqn{\rho} function to use (see [rho_function()] for available options)
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+.find_efficiency_const <- function (eff, rho) {
+  eps <- sqrt(.Machine$double.eps)
+  if (!isTRUE(eff > 0.1 - eps && eff < 0.99 + eps)) {
+    abort("Desired efficiency is outside valid bounds")
+  }
+  if (identical(rho, .k_rho_function_bisquare)) {
+    .bisquare_efficiency_const(eff)
+  } else if (identical(rho, .k_rho_function_bisquare)) {
+    .mopt_efficiency_const(eff)
+  } else if (identical(rho, .k_rho_function_huber)) {
+    .huber_efficiency_const(eff)
+  } else {
+    abort("Unknown rho function")
+  }
+}
+
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the Huber \eqn{\rho} function
+#' @param eff desired efficiency (between 0 and 1)
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+.huber_efficiency_const <- function (eff) {
+  eps <- sqrt(.Machine$double.eps)
+  warn("not yet implemented!")
+
+  if (abs(eff - 0.95) < eps) {
+    return(0.013)
+  } else if (abs(delta - 0.90) < eps) {
+    return(0.028)
+  } else if (abs(delta - 0.85) < eps) {
+    return(0.044)
+  } else if (abs(delta - 0.80) < eps) {
+    return(0.060)
+  } else if (delta > 0.99 - eps) {
+    return(0.001)
+  } else if (delta < 0.1 + eps) {
+    return(11)
+  } else {
+  }
+}
+
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the bisquare \eqn{\rho} function
+#' @param eff desired efficiency (between 0 and 1)
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+.bisquare_efficiency_const <- function (eff) {
+  eps <- sqrt(.Machine$double.eps)
+  warn("not yet implemented!")
+
+  if (abs(eff - 0.95) < eps) {
+    return(0.013)
+  } else if (abs(delta - 0.90) < eps) {
+    return(0.028)
+  } else if (abs(delta - 0.85) < eps) {
+    return(0.044)
+  } else if (abs(delta - 0.80) < eps) {
+    return(0.060)
+  } else if (delta > 0.99 - eps) {
+    return(0.001)
+  } else if (delta < 0.1 + eps) {
+    return(11)
+  }
+}
+
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the optimal \eqn{\rho} function
+#' @param eff desired efficiency (between 0 and 1)
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+.mopt_efficiency_const <- function (eff) {
+  eps <- sqrt(.Machine$double.eps)
+  warn("not yet implemented!")
+
+  if (abs(eff - 0.95) < eps) {
+    return(0.013)
+  } else if (abs(delta - 0.90) < eps) {
+    return(0.028)
+  } else if (abs(delta - 0.85) < eps) {
+    return(0.044)
+  } else if (abs(delta - 0.80) < eps) {
+    return(0.060)
+  } else if (delta > 0.99 - eps) {
+    return(0.001)
+  } else if (delta < 0.1 + eps) {
+    return(11)
+  }
+}
+
+#' Get the Constant for Consistency for the M-Scale Using the Optimal Rho Function
+#' @param delta desired breakdown point (between 0 and 0.5)
+#'
+#' @return consistency constant
+#' @keywords internal
+#' @importFrom stats pnorm uniroot
+#' @importFrom rlang abort
+.mopt_consistency_const <- function (delta) {
+  warn("not yet implemented!")
+
+  ##
+  ## Pre-computed values for some delta values
+  ##
+  if (abs(delta - 0.5) < eps) {
+    return(0.4047)
+  } else if (abs(delta - 0.25) < eps) {
+    return(0.4047)
+  } else if (abs(delta - 0.1) < eps) {
+    return(0.4047)
+  } else if (delta < 0.005) {
+    return(0.4047) # ~.1% bdp for bisquare
+  }
+
+  return(0.4047)
+}
+
 #' Get the Constant for Consistency for the M-Scale Using the Bisquare Rho Function
 #' @param delta desired breakdown point (between 0 and 0.5)
 #'
@@ -9,11 +134,6 @@
   ##
   ## Pre-computed values for some delta values
   ##
-  eps <- sqrt(.Machine$double.eps)
-  if (!isTRUE(delta < 0.5 + eps && delta > -eps)) {
-    abort("`delta` is outside valid bounds")
-  }
-
   if (abs(delta - 0.5) < eps) {
     return(1.5476450)
   } else if (abs(delta - 0.25) < eps) {
@@ -397,6 +517,8 @@ extract_metric <- function (metrics, attr, node) {
   }
 }
 
+#' @importFrom rlang abort
+#' @importFrom Matrix sparseVector
 .prepare_penalty_loadings <- function (penalty_loadings, x, alpha, sparse,
                                        stop_all_infinite = FALSE) {
   orig_p <- ncol(x)

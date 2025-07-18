@@ -10,3 +10,7 @@
 .k_pense_algo_cd <- 3L
 
 .k_regm_algo_mm <- 1L
+
+.k_rho_function_huber <- 1L
+.k_rho_function_bisquare <- 2L
+.k_rho_function_opt <- 3L

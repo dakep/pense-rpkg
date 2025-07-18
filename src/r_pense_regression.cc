@@ -50,6 +50,7 @@ template<typename Optimizer>
 using PenaltyList = FwdList<typename Optimizer::PenaltyFunction>;
 
 namespace {
+constexpr int kDefaultRho = RhoFunctionType.kRhoBisquare;
 constexpr double kDefaultExploreTol = 0.1;
 constexpr double kDefaultComparisonTol = 1e-3;
 constexpr double kDefaultExploreIt = 20;
@@ -247,7 +248,7 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
 
   ConstRegressionDataPtr data(MakePredictorResponseData(r_x, r_y));
 
-  pense::Mscale<pense::RhoBisquare> mscale(as<RList>(pense_opts["mscale"]));
+  pense::Mscale mscale(as<RList>(pense_opts["mscale"]));
   SLoss loss(data, mscale, as<bool>(pense_opts["intercept"]));
   auto penalties = MakePenalties<SOptimizer>(r_penalties, optional_args);
 
@@ -583,12 +584,15 @@ SEXP PenseMaxLambda(SEXP r_x, SEXP r_y, SEXP r_pense_opts, SEXP r_optional_args)
   auto data = MakePredictorResponseData(r_x, r_y);
   const auto pense_opts = as<Rcpp::List>(r_pense_opts);
   const auto optional_args = as<Rcpp::List>(r_optional_args);
-  pense::Mscale<pense::RhoBisquare> mscale(as<Rcpp::List>(pense_opts["mscale"]));
-  const auto locscale = MLocationScale(data->cy(), mscale, mscale.rho());
+  const auto mscale_opts = as<Rcpp::List>(pense_opts["mscale"])
+
+  Mscale mscale(mscale_opts);
+  auto rho = mscale.rho();
+  auto locscale = MLocationScale(*x, mscale, *rho);
   const arma::vec residuals = data->cy() - locscale.location;
-  arma::vec weights = residuals % mscale.rho().Weight(residuals, locscale.scale);
+  arma::vec weights = residuals % rho->Weight(residuals, locscale.scale);
   const double denom = arma::mean(weights % residuals);
-  weights *= locscale.scale * locscale.scale / denom;
+  weights *= scale * scale / denom;
 
   if (optional_args.containsElementNamed("pen_loadings")) {
     return PenseMaxGradient(data->cx(), weights, MakeVectorView(optional_args["pen_loadings"]));

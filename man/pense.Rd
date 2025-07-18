@@ -23,7 +23,7 @@ pense(
   other_starts,
   carry_forward = TRUE,
   eps = 1e-06,
-  explore_solutions = 10,
+  explore_solutions = 0,
   explore_tol = 0.1,
   explore_it = 5,
   max_solutions = 5,

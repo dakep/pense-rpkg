@@ -17,6 +17,7 @@ pense_cv(
   ris_min_similarity = 0.5,
   fit_all = TRUE,
   fold_starts = c("full", "enpy", "both"),
+  cv_algorithm_opts,
   cl = NULL,
   ...
 )

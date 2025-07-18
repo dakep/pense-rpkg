@@ -37,8 +37,6 @@ is returned instead of a sparse vector.}
 
 \item{standardized}{return the standardized coefficients.}
 
-\item{exact, correction}{defunct.}
-
 \item{...}{currently not used.}
 }
 \value{

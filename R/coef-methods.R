@@ -63,7 +63,6 @@ coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standar
 #'    Can also be set to `sparse = 'matrix'`, in which case a sparse matrix
 #'    is returned instead of a sparse vector.
 #' @param standardized return the standardized coefficients.
-#' @param exact,correction defunct.
 #' @param ... currently not used.
 #' @return either a numeric vector or a sparse vector of type
 #'    [dsparseVector][Matrix::sparseVector-class]

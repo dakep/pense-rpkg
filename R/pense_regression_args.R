@@ -103,6 +103,10 @@
          mscale = .full_mscale_algo_options(bdp = bdp, cc = cc,
                                             mscale_opts = mscale_opts)))
 
+  if (args$pense_opts$nr_tracks > 0L) {
+    args$pense_opts$nr_tracks <- max(args$pense_opts$nr_tracks, args$pense_opts$max_optima)
+  }
+
   if (args$pense_opts$explore_tol < args$pense_opts$eps) {
     abort("`explore_tol` must not be less than `eps`")
   }
@@ -442,4 +446,21 @@
 
   rev(exp(seq(log(lambda_min_ratio * max_lambda), log(max_lambda),
               length.out = nlambda)))
+}
+
+## Recursively update a named options list with new options
+## All items from `updates` are included
+.update_opts_list <- function (opts, updates) {
+  for (n in names(updates)) {
+    if (!is.null(opts[[n]])) {
+      if (is.list(opts[[n]])) {
+        opts[[n]] <- .update_opts_list(opts[[n]], updates[[n]])
+      } else {
+        opts[[n]] <- updates[[n]]
+      }
+    } else {
+      opts[[n]] <- updates[[n]]
+    }
+  }
+  opts
 }

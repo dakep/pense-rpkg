@@ -75,15 +75,7 @@ coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standar
 #' @example examples/pense_fit.R
 #' @export
 coef.pense_cvfit <- function (object, alpha = NULL, lambda = 'min', se_mult = 1, sparse = NULL,
-                              standardized = FALSE,
-                              exact = deprecated(), correction = deprecated(), ...) {
-  if (is_present(exact)) {
-    deprecate_stop('2.0.0', 'coef(exact=)')
-  }
-  if (is_present(correction)) {
-    deprecate_stop('2.0.0', 'coef(correction=)')
-  }
-
+                              standardized = FALSE, ...) {
   cl <- match.call(expand.dots = TRUE)
   concat <- !isFALSE(cl$concat)
   lambda_index <- .lambda_index_cvfit(object, lambda = lambda, alpha = alpha, se_mult = se_mult)

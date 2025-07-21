@@ -207,6 +207,9 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
 #'   If no CV solution satisfies this lower bound, the best CV solution will be used regardless
 #'   of similarity.
 #' @template cv_params
+#' @param cv_algorithm_opts Override algorithm options for the CV iterations.
+#'   This is usually not necessary, unless the user wants to change the number of solutions
+#'   retained for the CV training data.
 #' @inheritDotParams pense -standardize
 #'
 #' @seealso [pense()] for computing regularized S-estimates without

@@ -82,6 +82,10 @@ If \code{"enpy"} compute separate ENPY initial estimates in each fold.
 The option \code{"both"} uses both.
 These starts are in addition to the starts provided in \code{other_starts}.}
 
+\item{cv_algorithm_opts}{Override algorithm options for the CV iterations.
+This is usually not necessary, unless the user wants to change the number of solutions
+retained for the CV training data.}
+
 \item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
 

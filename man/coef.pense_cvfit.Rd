@@ -11,8 +11,6 @@
   se_mult = 1,
   sparse = NULL,
   standardized = FALSE,
-  exact = deprecated(),
-  correction = deprecated(),
   ...
 )
 }

@@ -23,7 +23,7 @@ Description: Robust penalized (adaptive) elastic net S and M estimators for
     The package implements the extensions and algorithms described in
     Kepplinger, D. (2020) <doi:10.14288/1.0392915>.
 Depends:
-    R (>= 3.5.0),
+    R (>= 4.1.0),
     Matrix
 Imports:
     Rcpp,

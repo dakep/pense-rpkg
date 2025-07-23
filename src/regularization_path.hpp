@@ -351,9 +351,9 @@ class RegularizationPath {
   const double comparison_tol_;
   int num_threads_;  //< OpenMP requires it to be an lvalue!
   bool use_warm_start_ = true;
-  int explore_it_ = 0;
-  double explore_tol_ = 0;
-  int explored_keep_ = 1;
+  int explore_it_ = 1;
+  double explore_tol_ = 1e-3;
+  int explored_keep_ = 0;
 
   alias::FwdList<UniqueCoefficients> individual_starts_;
   UniqueCoefficients shared_starts_;
@@ -376,7 +376,7 @@ class RegularizationPath {
 
   ExploredSolutions MTExplore(std::true_type) {
     const double orig_tol = optimizer_template_.convergence_tolerance();
-    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(comparison_tol_));
+    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(explore_tol_));
 
     const auto is_end = individual_starts_it_->Elements().end();
     const auto sh_end = shared_starts_.Elements().end();
@@ -457,7 +457,7 @@ class RegularizationPath {
 
   ExploredSolutions MTExplore(std::false_type) {
     const double orig_tol = optimizer_template_.convergence_tolerance();
-    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(comparison_tol_));
+    ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(explore_tol_));
 
     for (auto& start : individual_starts_it_->Elements()) {
       Optimizer optimizer(optimizer_template_);

@@ -11,8 +11,6 @@
   se_mult = 1,
   sparse = NULL,
   standardized = FALSE,
-  exact = deprecated(),
-  correction = deprecated(),
   ...
 )
 }
@@ -36,8 +34,6 @@ Can also be set to \code{sparse = 'matrix'}, in which case a sparse matrix
 is returned instead of a sparse vector.}
 
 \item{standardized}{return the standardized coefficients.}
-
-\item{exact, correction}{defunct.}
 
 \item{...}{currently not used.}
 }
@@ -89,6 +85,9 @@ set.seed(123)
 cv_results <- pense_cv(x, freeny$y, alpha = 0.5,
                        cv_repl = 2, cv_k = 4)
 plot(cv_results, se_mult = 1)
+
+# Print a summary of the fit and the cross-validation results.
+summary(cv_results)
 
 # Extract the coefficients at the penalization level with
 # smallest prediction error ...

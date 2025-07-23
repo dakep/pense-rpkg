@@ -10,6 +10,7 @@
 
 #include <memory>
 #include <exception>
+#include <algorithm>
 
 #include "rcpp_integration.hpp"
 
@@ -167,13 +168,29 @@ std::forward_list<AdaptiveLassoPenalty> MakeAdaptiveLassoPenaltyList(SEXP r_pena
 
 //! Get an unsafe view to the given R vector without copying any data.
 //!
-//! @param numeric_vector a numeric R vector
+//! @param numeric_vector an R vector of doubles
 std::unique_ptr<const vec> MakeVectorView(SEXP numeric_vector) noexcept {
   if (TYPEOF(numeric_vector) != REALSXP) {
     return std::make_unique<const vec>();
   }
   return std::make_unique<const vec>(REAL(numeric_vector), Rf_length(numeric_vector), false, true);
 }
+
+//! Get a **copy** of the given R unsigned integer vector.
+//! Data needs to be copied to cast to 64bit arma::uword types.
+//!
+//! @param integer_vector an R vector of unsigned integers
+arma::uvec MakeUIntVector(SEXP uinteger_vector) noexcept {
+  if (TYPEOF(uinteger_vector) != INTSXP) {
+    return arma::uvec();
+  }
+
+  arma::uvec uintvec(Rf_length(uinteger_vector), arma::fill::none);
+  std::copy(INTEGER(uinteger_vector), INTEGER(uinteger_vector) + uintvec.n_elem, uintvec.memptr());
+
+  return uintvec;
+}
+
 }  // namespace r_interface
 }  // namespace pense
 

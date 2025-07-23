@@ -4,15 +4,7 @@
 \alias{residuals.pense_cvfit}
 \title{Extract Residuals}
 \usage{
-\method{residuals}{pense_cvfit}(
-  object,
-  alpha = NULL,
-  lambda = "min",
-  se_mult = 1,
-  exact = deprecated(),
-  correction = deprecated(),
-  ...
-)
+\method{residuals}{pense_cvfit}(object, alpha = NULL, lambda = "min", se_mult = 1, ...)
 }
 \arguments{
 \item{object}{PENSE with cross-validated hyper-parameters to extract coefficients from.}
@@ -27,11 +19,6 @@ values and no value is provided, the first value in \code{object$alpha} is used 
 or a single numeric value of the penalty parameter. See details.}
 
 \item{se_mult}{If \code{lambda = "se"}, the multiple of standard errors to tolerate.}
-
-\item{exact}{deprecated. Always gives a warning if \code{lambda} is not part of the fitted sequence and coefficients
-are interpolated.}
-
-\item{correction}{defunct.}
 
 \item{...}{currently not used.}
 }

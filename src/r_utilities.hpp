@@ -23,6 +23,15 @@ namespace r_interface {
 //!         if there is a match, or `NA_integer_` otherwise.
 SEXP ApproximateMatch(SEXP x, SEXP table, SEXP eps) noexcept;
 
+//! @brief Extract the robustness weights from minima of the robust penalized objective function
+//!
+//! @param r_solutions a nested list of solutions (lambda > solution)
+//! @param r_nobs the total number of observations for estimating the global solutions
+//! @param r_cc the cutoff constant used for Tukey's bisquare rho function
+//! @return a list of the same length as r_solutions, with each element being a matrix
+//!   of weights.
+SEXP RobustnessWeight (SEXP r_solutions, SEXP r_nobs, SEXP r_cc) noexcept;
+
 }  // namespace r_interface
 }  // namespace pense
 

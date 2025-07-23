@@ -142,73 +142,6 @@ extract_metric <- function (metrics, attr, node) {
   return(estimates)
 }
 
-#' Run replicated K-fold CV with random splits
-#'
-#' @param std_data standardized full data set
-#'    (standardized by `.standardize_data`)
-#' @param cv_k number of folds per CV split
-#' @param cv_repl number of CV replications.
-#' @param cv_est_fun function taking the standardized training set and
-#'    the indices of the left-out observations and returns a list of estimates.
-#'    The function always needs to return the same number of estimates!
-#' @param metric function taking a vector of prediction errors and
-#'    returning the scale of the prediction error.
-#' @param par_cluster parallel cluster to parallelize computations.
-#' @param handler_args additional arguments to the handler function.
-#' @importFrom Matrix drop
-#' @importFrom rlang abort
-#' @keywords internal
-.run_replicated_cv <- function (std_data, cv_k, cv_repl, cv_est_fun, metric,
-                                par_cluster = NULL,
-                                handler_args = list()) {
-  est_fun <- match.fun(cv_est_fun)
-  call_with_errors <- isTRUE(length(formals(metric)) == 1L)
-
-  if (length(std_data$y) / cv_k < 2) {
-    abort("`cv_k` must be chosen to have at least 2 observations in each fold.")
-  }
-
-  test_segments_list <- lapply(integer(cv_repl), function (repl_id) {
-    split(seq_along(std_data$y),
-          sample(rep_len(seq_len(cv_k), length(std_data$y))))
-  })
-  test_segments <- unlist(test_segments_list, recursive = FALSE,
-                          use.names = FALSE)
-
-  cl_handler <- .make_cluster_handler(par_cluster)
-
-  predictions_all <- cl_handler(
-    test_segments,
-    function (test_ind, est_fun, handler_args) {
-      train_x <- std_data$x[-test_ind, , drop = FALSE]
-      train_y <- std_data$y[-test_ind]
-      test_x <- std_data$x[test_ind, , drop = FALSE]
-
-      train_std <- std_data$cv_standardize(train_x, train_y)
-      cv_ests <- est_fun(train_std, test_ind, handler_args)
-
-      matrix(unlist(lapply(cv_ests, function (est) {
-        unstd_est <- train_std$unstandardize_coef(est)
-        drop(test_x %*% unstd_est$beta) - unstd_est$intercept
-      }), use.names = FALSE, recursive = FALSE), ncol = length(cv_ests))
-    }, est_fun = est_fun, handler_args = handler_args)
-
-  predictions_all <- split(predictions_all, rep(seq_len(cv_repl), each = cv_k))
-  prediction_metrics <- mapply(
-    predictions_all, test_segments_list,
-    FUN = function (predictions, test_inds) {
-      obs_order <- sort.list(unlist(test_inds, recursive = FALSE, use.names = FALSE))
-      ordered_predictions <- do.call(rbind, predictions)[obs_order, ]
-
-      if (call_with_errors) {
-        apply(ordered_predictions - std_data$y, 2, metric)
-      } else {
-        apply(ordered_predictions, 2, metric, std_data$y)
-      }
-    })
-  matrix(unlist(prediction_metrics, recursive = FALSE, use.names = FALSE), ncol = cv_repl)
-}
-
 #' Standardize data
 #'
 #' @param x predictor matrix. Can also be a list with components `x` and `y`,
@@ -245,7 +178,8 @@ extract_metric <- function (metrics, attr, node) {
       ret_list$muy <- mean(y)
     } else {
       ret_list$mux <- apply(x, 2, function (xj) {
-        mloc(xj, rho = location_rho, cc = cc, opts = mscale_opts)
+        mlocscale(xj, location_rho = location_rho, location_cc = cc,
+                  scale_cc = cc, opts = mscale_opts, ...)[['location']]
       })
       # Center the response using the S-estimate of regression for the
       # 0-slope.
@@ -400,40 +334,6 @@ extract_metric <- function (metrics, attr, node) {
   }
 
   return(ret_list)
-}
-
-#' @importFrom stats median
-.cv_mape <- function (r) {
-  median(abs(r))
-}
-
-.cv_rmspe <- function (r) {
-  sqrt(mean(r^2))
-}
-
-## Area under the ROC for "negatives" having value 0 and "positives" having value 1.
-.cv_auroc <- function (pred, truth) {
-  n_neg <- sum(truth <= 0)
-  n_pos <- sum(truth > 0)
-  mww <- sum(rank(pred)[truth <= 0]) - n_neg * (n_neg + 1) / 2
-  return(mww / (n_neg * n_pos))
-}
-
-.cv_se_selection <- function (cvm, cvsd, se_fact) {
-  type <- rep.int(factor('none', levels = c('none', 'min', 'se_fact')), length(cvm))
-  best <- which.min(cvm)
-  candidates <- which(cvm <= cvm[[best]] + se_fact * cvsd[[best]])
-  candidates <- candidates[candidates <= best]  # only consider sparser solutions
-
-  # "ignore" solutions after which the prediction performance comes back down
-  best_1se <- if (any(diff(candidates) > 1)) {
-    min(candidates[-seq_len(max(which(diff(candidates) > 1)))])
-  } else {
-    min(candidates)
-  }
-  type[[best]] <- 'min'
-  type[[best_1se]] <- 'se_fact'
-  return(type)
 }
 
 ## Validate the response type and return a list with elements `values` and `binary`.

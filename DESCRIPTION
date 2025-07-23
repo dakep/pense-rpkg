@@ -1,8 +1,8 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 2.2.2
-Date: 2024-07-26
+Version: 2.5.0-01
+Date: 2025-07-18
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
         role = c("aut", "cre")),
@@ -23,7 +23,7 @@ Description: Robust penalized (adaptive) elastic net S and M estimators for
     The package implements the extensions and algorithms described in
     Kepplinger, D. (2020) <doi:10.14288/1.0392915>.
 Depends:
-    R (>= 3.5.0),
+    R (>= 4.1.0),
     Matrix
 Imports:
     Rcpp,

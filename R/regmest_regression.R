@@ -69,6 +69,8 @@
 #'      \item{`call`}{the original call.}
 #'    }
 #'
+#' @example examples/regmest_fit.R
+#'
 #' @family functions to compute robust estimates
 #' @seealso [regmest_cv()] for selecting hyper-parameters via cross-validation.
 #' @seealso [coef.pense_fit()] for extracting coefficient estimates.
@@ -78,7 +80,7 @@
 regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, starting_points,
                     penalty_loadings, intercept = TRUE, cc = 4.7,
                     eps = 1e-6, explore_solutions = 10, explore_tol = 0.1,
-                    max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,
+                    max_solutions = 1, comparison_tol = sqrt(eps), sparse = FALSE,
                     ncores = 1, standardize = TRUE,
                     algorithm_opts = mm_algorithm_options(), add_zero_based = TRUE,
                     mscale_bdp = 0.25, mscale_opts = mscale_algorithm_options()) {
@@ -96,19 +98,17 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
                              mest_opts = args$mest_opts,
                              optional_args = args$optional_args)
 
-    # Retain only the best solution:
-    fit$estimates <- lapply(fit$estimates, function (ests) {
-      args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
+    fit$estimates <- lapply(fit$estimates, function (lambda_ests) {
+      lapply(lambda_ests, function (est) {
+        args$restore_coef_length(args$std_data$unstandardize_coefs(est))
+      })
     })
     # Handle metrics
     fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-    fit$lambda <- unlist(vapply(fit$estimates, FUN = `[[`, FUN.VALUE = numeric(1),
-                                'lambda'), use.names = FALSE, recursive = FALSE)
     fit$alpha <- alpha
     fit
   }
 
-  # Call internal function
   fits <- mapply(
     args$alpha, args$lambda,
     SIMPLIFY = FALSE, USE.NAMES = FALSE,
@@ -145,7 +145,7 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
 #'      \item{`cvres`}{data frame of average cross-validated performance.}
 #'    }
 #'
-#' @example examples/adapense_fit.R
+#' @example examples/regmest_fit.R
 #'
 #' @family functions to compute robust estimates with CV
 #' @seealso [coef.pense_cvfit()] for extracting coefficient estimates.
@@ -154,10 +154,15 @@ regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, 
 #' @importFrom stats sd
 #' @importFrom rlang abort
 regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
+                       cv_type = 'naive',
                        cv_metric = c('tau_size', 'mape', 'rmspe', 'auroc'),
                        fit_all = TRUE, cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.regmest_args, as.list(call[-1L]), envir = parent.frame())
+
+  if (!identical(cv_type, 'naive')) {
+    stop("`regmest_cv()` supports only `cv_type='naive'`")
+  }
 
   fit_ses <- if (is.character(fit_all)) {
     unique(vapply(fit_all, FUN = .parse_se_string, FUN.VALUE = numeric(1L), only_fact = TRUE,
@@ -230,7 +235,7 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
       mest_opts = handler_args$args$mest_opts,
       optional_args = handler_args$args$optional_args)
 
-    # Return only best local optima
+    # For CV consider only best local optima
     lapply(cv_fit$estimates, `[[`, 1L)
   }
 
@@ -283,15 +288,13 @@ regmest_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
                              mest_opts = args$mest_opts,
                              optional_args = args$optional_args)
 
-    # Retain only the best solution:
-    fit$estimates <- lapply(fit$estimates, function (ests) {
-      args$restore_coef_length(args$std_data$unstandardize_coefs(ests[[1L]]))
+    fit$estimates <- lapply(fit$estimates, function (lambda_ests) {
+      lapply(lambda_ests, function (est) {
+        args$restore_coef_length(args$std_data$unstandardize_coefs(est))
+      })
     })
     # Handle metrics
     fit$estimates <- .metrics_attrib(fit$estimates, fit$metrics)
-    fit$lambda <- unlist(vapply(fit$estimates, FUN.VALUE = numeric(1),
-                                FUN = `[[`, 'lambda'),
-                         use.names = FALSE, recursive = FALSE)
     fit$alpha <- alpha
     fit
   }

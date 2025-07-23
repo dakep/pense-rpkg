@@ -160,9 +160,9 @@ max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
                                    opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
 
   if (missing(cc)) {
@@ -187,9 +187,9 @@ max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
                                   opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
 
   if (missing(cc)) {
@@ -223,9 +223,9 @@ max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
 mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
   if (missing(scale)) {
     scale <- mad(x)
@@ -241,7 +241,7 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
   }
   opts <- .full_mscale_algo_options(.5, cc, opts)
   opts$rho <- rho_function(rho)
-  .Call(C_mloc, .as(x, 'numeric'), scale, opts)
+  .Call(C_mloc, x, scale, opts)
 }
 
 #' Compute the M-estimate of Location and Scale
@@ -270,15 +270,15 @@ mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquar
                        location_cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
-    .as(na.omit(x), 'numeric')
+    .as(na.omit(x), 'double')
   } else {
-    .as(x, 'numeric')
+    .as(x, 'double')
   }
 
   opts <- .full_mscale_algo_options(bdp, scale_cc, opts)
   loc_opts <- list(rho = rho_function(location_rho))
   if (!missing(location_cc)) {
-    loc_opts$cc <- .as(location_cc[[1L]], 'numeric')
+    loc_opts$cc <- .as(location_cc[[1L]], 'double')
   }
   .Call(C_mlocscale, x, opts, loc_opts)
 }
@@ -362,12 +362,12 @@ rho_function <- function (rho) {
 #' @importFrom Matrix sparseVector
 #' @importFrom rlang abort
 starting_point <- function (beta, intercept, lambda, alpha) {
-  sp <- list(intercept = .as(intercept[[1L]], 'numeric'))
+  sp <- list(intercept = .as(intercept[[1L]], 'double'))
   if (missing(lambda) && missing(alpha)) {
     class(sp) <- c('shared_starting_point', 'starting_point')
   } else {
-    sp$lambda <- .as(lambda[[1L]], 'numeric')
-    sp$alpha <- .as(alpha[[1L]], 'numeric')
+    sp$lambda <- .as(lambda[[1L]], 'double')
+    sp$alpha <- .as(alpha[[1L]], 'double')
     class(sp) <- c('specific_starting_point', 'starting_point')
   }
   if (is(beta, 'dgCMatrix') && ncol(beta) == 1L) {
@@ -413,7 +413,7 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
     object$alpha
   } else {
     orig_alpha_length <- length(alpha)
-    object$alpha[na.omit(.approx_match(.as(alpha, 'numeric'), object$alpha))]
+    object$alpha[na.omit(.approx_match(.as(alpha, 'double'), object$alpha))]
   }
   if (length(alpha) == 0L) {
     abort("No requested `alpha` values are not available in `object`.")
@@ -421,8 +421,10 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
     warn("Some requested `alpha` values are not available in `object`.")
   }
 
-  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
-    any((est$alpha - alpha)^2 < .Machine$double.eps)
+  # Look only at the first solution for each lambda.
+  # All solutions for this lambda will be for the same alpha value.
+  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (ests) {
+    any((ests[[1]]$alpha - alpha)^2 < .Machine$double.eps)
   }))
 
   lambda_indices <- if (missing(lambda)) {
@@ -432,7 +434,7 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
       abort("If `lambda` is given `alpha` must be a single number.")
     }
     ai_lambdas <- vapply(object$estimates[alpha_indices], FUN.VALUE = numeric(1L),
-                         FUN = `[[`, 'lambda')
+                         FUN = function (ests) { ests[[1]]$lambda })
     lambda_indices <- .approx_match(lambda, ai_lambdas)
     bad_lambda_indices <- which(is.na(lambda_indices))
     if (length(bad_lambda_indices) == length(lambda)) {
@@ -453,7 +455,8 @@ as_starting_point.pense_fit <- function (object, specific = FALSE, alpha, lambda
     c('shared_starting_point', 'starting_point')
   }
 
-  structure(lapply(object$estimates[lambda_indices], structure, class = class_list),
+  structure(lapply(unlist(object$estimates[lambda_indices], recursive = FALSE),
+                   structure, class = class_list),
             class = 'starting_points')
 }
 
@@ -485,7 +488,7 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     object$alpha
   } else {
     orig_alpha_length <- length(alpha)
-    object$alpha[na.omit(.approx_match(.as(alpha, 'numeric'), object$alpha))]
+    object$alpha[na.omit(.approx_match(.as(alpha, 'double'), object$alpha))]
   }
   if (length(alpha) == 0L) {
     abort("No requested `alpha` values are not available in `object`.")
@@ -493,8 +496,8 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     warn("Some requested `alpha` values are not available in `object`.")
   }
 
-  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
-    any((est$alpha - alpha)^2 < .Machine$double.eps)
+  alpha_indices <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (ests) {
+    any((ests[[1]]$alpha - alpha)^2 < .Machine$double.eps)
   }))
 
   lambda_indices <- if (isFALSE(object$call$fit_all)) {
@@ -512,7 +515,7 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     se_mult <- if (lambda == 'min') {
       0
     } else {
-      .as(se_mult[[1L]], 'numeric')
+      .as(se_mult[[1L]], 'double')
     }
 
     vapply(alpha, FUN.VALUE = integer(1L), FUN = function (al) {
@@ -525,7 +528,7 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
       abort("If `lambda` is numeric, `alpha` must be a single number.")
     }
     ai_lambdas <- vapply(object$estimates[alpha_indices], FUN.VALUE = numeric(1L),
-                         FUN = `[[`, 'lambda')
+                         FUN = function (ests) { ests[[1]]$lambda })
     lambda_indices <- .approx_match(lambda, ai_lambdas)
     bad_lambda_indices <- which(is.na(lambda_indices))
     if (length(bad_lambda_indices) == length(lambda)) {
@@ -548,7 +551,8 @@ as_starting_point.pense_cvfit <- function (object, specific = FALSE,
     c('shared_starting_point', 'starting_point')
   }
 
-  structure(lapply(object$estimates[lambda_indices], structure, class = class_list),
+  structure(lapply(unlist(object$estimates[lambda_indices], recursive = FALSE),
+                   structure, class = class_list),
             class = 'starting_points')
 }
 

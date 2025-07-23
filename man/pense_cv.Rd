@@ -12,9 +12,12 @@ pense_cv(
   lambda,
   cv_k,
   cv_repl = 1,
+  cv_type = c("ris", "naive"),
   cv_metric = c("tau_size", "mape", "rmspe", "auroc"),
+  ris_min_similarity = 0.5,
   fit_all = TRUE,
   fold_starts = c("full", "enpy", "both"),
+  cv_algorithm_opts,
   cl = NULL,
   ...
 )
@@ -44,7 +47,11 @@ the data manually.}
 
 \item{cv_repl}{number of cross-validation replications.}
 
-\item{cv_metric}{either a string specifying the performance metric to use, or a function to
+\item{cv_type}{what kind of cross-validation should be performed:
+robust information sharing (\code{ris}) or standard (\code{naive}) CV.}
+
+\item{cv_metric}{only for \code{cv_type='naive'}.
+Either a string specifying the performance metric to use, or a function to
 evaluate prediction errors in a single CV replication.
 If a function, the number of arguments define the data the function receives.
 If the function takes a single argument, it is called with a single numeric vector of
@@ -54,7 +61,13 @@ first argument and the true values as second argument.
 The function must always return a single numeric value quantifying the prediction performance.
 The order of the given values corresponds to the order in the input data.}
 
-\item{fit_all}{If \code{TRUE}, fit the model for all penalization levels.
+\item{ris_min_similarity}{minimum average similarity of the CV solutions to be considered
+(between 0 and 1).
+If no CV solution satisfies this lower bound, the best CV solution will be used regardless
+of similarity.}
+
+\item{fit_all}{only for \code{cv_type='naive'}.
+If \code{TRUE}, fit the model for all penalization levels.
 Can also be any combination of \code{"min"} and \code{"{x}-se"}, in which case only models at the
 penalization level with smallest average CV accuracy, or within \code{{x}} standard errors,
 respectively.
@@ -68,6 +81,10 @@ the fit to the full data as starting value. This implies
 If \code{"enpy"} compute separate ENPY initial estimates in each fold.
 The option \code{"both"} uses both.
 These starts are in addition to the starts provided in \code{other_starts}.}
+
+\item{cv_algorithm_opts}{Override algorithm options for the CV iterations.
+This is usually not necessary, unless the user wants to change the number of solutions
+retained for the CV training data.}
 
 \item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
@@ -232,11 +249,9 @@ cross-validation.
 regularization path.
 
 Other functions to compute robust estimates with CV: 
-\code{\link{pensem_cv}()},
 \code{\link{regmest_cv}()}
 
 Other functions to compute robust estimates with CV: 
-\code{\link{pensem_cv}()},
 \code{\link{regmest_cv}()}
 }
 \concept{functions to compute robust estimates with CV}

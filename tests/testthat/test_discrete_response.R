@@ -14,7 +14,8 @@ test_that("Response with no variation", {
     pense_cv(x, y, alpha = 0.9, nlambda = 10, cv_k = 3),
     regexp = 'binary')
   expect_is(fit_cont, 'pense_cvfit')
-  expect_equal(fit_cont$cv_measure, 'tau_size')
+  expect_equal(fit_cont$cv_measure, 'ris')
+  expect_equal(fit_cont$cv_type, 'ris')
 
   expect_error(
     pense_cv(x, factor(y), alpha = 0.9, nlambda = 10, cv_k = 3, bdp = 0.5),
@@ -24,4 +25,5 @@ test_that("Response with no variation", {
                       bdp = 0.25)
   expect_is(fit_bin, 'pense_cvfit')
   expect_equal(fit_bin$cv_measure, 'auroc')
+  expect_equal(fit_bin$cv_type, 'naive')
 })

@@ -61,6 +61,7 @@ constexpr bool kDefaultStrategyEnpyShared = true;
 constexpr bool kDefaultStrategyEnpyIndividual = false;
 constexpr bool kDefaultStrategyOtherShared = true;
 constexpr bool kDefaultStrategyOtherIndividual = false;
+constexpr bool kDefaultReturnResiduals = false;
 constexpr int kDefaultNumberOfThreads = 1;
 
 //! Expand a list of PY Results to a list of start coefficients.
@@ -314,6 +315,8 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
       as<StartCoefficientsList<SOptimizer>>(optional_args["individual_starts"]));
   }
 
+  const bool include_residuals = GetFallback(pense_opts, "return_residuals", kDefaultReturnResiduals);
+
   RList combined_reg_path;
   while (!reg_path.End()) {
     RList solutions;
@@ -330,7 +333,13 @@ SEXP PenseRegressionImpl(SOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_penalt
         optimum.metrics->AddDetail("objf_value", optimum.objf_value);
         sub_metrics.AddSubMetrics(*optimum.metrics);
       }
-      solutions.push_back(WrapOptimum(optimum));
+
+      auto wrapped_opt = WrapOptimum(optimum);
+      wrapped_opt["scale"] = std::sqrt(2 * (optimum.objf_value - optimum.penalty(optimum.coefs)));
+      if (include_residuals) {
+        wrapped_opt["residuals"] = optimum.residuals;
+      }
+      solutions.push_back(std::move(wrapped_opt));
     }
     combined_reg_path.push_back(solutions);
     Rcpp::checkUserInterrupt();

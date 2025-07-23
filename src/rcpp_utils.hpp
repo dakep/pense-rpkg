@@ -94,6 +94,7 @@ inline nsoptim::MMConfiguration::TighteningType GetFallback<nsoptim::MMConfigura
 //! Wrap an Optimum for any EN-type penalty function into an R list.
 //!
 //! @param optimium the Optimum object.
+//! @param include_residuals whether to include the residuals in the returned list.
 //! @return the optimum as Rcpp::List.
 template <typename T>
 Rcpp::List WrapOptimum(const T& optimum) {

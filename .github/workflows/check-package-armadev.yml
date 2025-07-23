@@ -2,10 +2,10 @@
 on:
   push:
     branches:
-      - 'research/**'
       - 'feature/**'
+      - 'main'
 
-name: 'R CMD check (fast)'
+name: 'R CMD check (dev version of RcppArmadillo)'
 
 jobs:
   R-CMD-check:
@@ -15,7 +15,7 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
       - uses: r-lib/actions/setup-pandoc@v2
 
@@ -27,8 +27,15 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck, local::.
+          extra-packages: |
+            any::rcmdcheck
+            local::.
+            any::remotes
           needs: check
+
+      - name: Install RcppArmadillo from GitHub
+        run: remotes::install_github("rcppcore/rcpparmadillo")
+        shell: Rscript {0}
 
       - uses: r-lib/actions/check-r-package@v2
         with:

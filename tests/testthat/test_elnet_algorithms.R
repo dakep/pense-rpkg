@@ -92,9 +92,11 @@ check_en_algorithm <- function (en_algorithm_opts, alphas = c(0.1, 0.5, 0.8, 1),
       }
     }
 
-    max(sapply(ests$estimates, function (est) {
-      sum(grad_en(est, x = x, y = y, weights = wgts, penalty_loadings = ldgs,
-                  intercept = intercept)^2)
+    max(sapply(ests$estimates, function (lambda_ests) {
+      sapply(lambda_ests, function (est) {
+        sum(grad_en(est, x = x, y = y, weights = wgts, penalty_loadings = ldgs,
+                    intercept = intercept)^2)
+      })
     }))
   }
 
@@ -134,3 +136,4 @@ test_that("Elastic Net Algorithm `augmented LARS`", {
 test_that("Ridge Algorithm", {
   check_en_algorithm(NULL, alphas = 0, num_tol = 1e-12)
 })
+

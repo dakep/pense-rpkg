@@ -90,7 +90,7 @@
 #' @param handler_args additional arguments to the handler function.
 #' @importFrom Matrix drop
 #' @importFrom rlang abort
-#' @importFrom stats sd
+#' @importFrom stats cor
 #' @keywords internal
 .run_replicated_cv_ris <- function (std_data, cv_k, cv_repl, cv_est_fun,
                                     global_ests,
@@ -164,11 +164,6 @@
   # [element 1 - cv_repl * cv_k]:
   #   [lambda 1 - nlambda]
   #     [solution 1 - Q]
-  # cv_ests <- cl_handler(test_segments,
-  #                       dispatcher,
-  #                       est_fun = est_fun,
-  #                       std_data = std_data,
-  #                       handler_args = handler_args)
 
   cv_ests <- cl_handler(test_segments,
                         dispatcher,
@@ -176,72 +171,118 @@
                         std_data = std_data,
                         handler_args = handler_args)
 
-  matches <- .Call(C_match_solutions_by_weight,
-                   cv_ests,
-                   global_ests,
-                   as.integer(cv_k),
-                   length(std_data$y),
-                   rho_cc)
+  # Match solutions based on robustness weights
+  glbl_wgts <- .Call(C_robustness_weights,
+                     global_ests,
+                     length(std_data$y),
+                     rho_cc)
 
-  best_match_global <- as.data.frame(t(
-    vapply(matches, FUN.VALUE = numeric(4), FUN = \(lambda_match) {
-      avgs <- vapply(lambda_match, FUN.VALUE = numeric(3), FUN = \(sol_match) {
-        c(cvavg = mean(sqrt(sol_match$wmspe)),
-          cvse = if (length(sol_match$wmspe) > 1L) { sd(sqrt(sol_match$wmspe)) } else { 0 },
-          avg_similarity = median(sol_match$rankcorr))
-      })
-      avgs <- rbind(avgs, solution_index = seq_len(ncol(avgs)))
+  matches <- lapply(global_ests, \(x) {
+    lapply(x, \(...) {
+      list(similarity  = matrix(NA_real_, nrow = cv_k, ncol = cv_repl),
+           cv_avg_wgt  = matrix(0,        nrow = length(std_data$y), ncol = cv_repl),
+           predictions = matrix(NA_real_, nrow = length(std_data$y), ncol = cv_repl))
+    })
+  })
 
-      candidates <- which(avgs['avg_similarity', ] >= min_similarity)
-      if (length(candidates) > 0L) {
-        avgs <- avgs[, candidates, drop = FALSE]
+  for (cv_ind in seq_along(cv_ests)) {
+    cvr <- 1L + (cv_ind - 1L) %/% cv_k
+    x <- cv_ests[[cv_ind]]
+    cv_wgts <- .Call(C_robustness_weights,
+                     x$estimates,
+                     length(x$train_ind),
+                     rho_cc)
+
+    for (i in seq_along(glbl_wgts)) {
+      corrs <- cor(cv_wgts[[i]], glbl_wgts[[i]][x$train_ind, ])
+      best_match <- apply(corrs, 2, which.max)
+
+      for (j in seq_along(best_match)) {
+        # Preserve the similarity
+        matches[[i]][[j]]$similarity[[cv_ind]] <- corrs[best_match[[j]], j]
+        # Preserve the prediction error
+        matches[[i]][[j]]$predictions[x$test_ind, cvr] <-
+          x$estimates[[i]][[best_match[[j]]]]$test_residuals
+        # Accumulate the average CV robustness weight
+        matches[[i]][[j]]$cv_avg_wgt[x$train_ind, cvr] <-
+          matches[[i]][[j]]$cv_avg_wgt[x$train_ind, cvr] +
+          cv_wgts[[i]][, best_match[[j]]] / (cv_k - 1L)
       }
+    }
+  }
 
-      avgs[, which.min(avgs['cvavg', ])]
-    })))
-  best_match_global$lambda_index <- seq_len(nrow(best_match_global))
+  # Summarize prediction errors from matched solutions
+  nsol <- sum(lengths(global_ests))
+  full_details <- list2DF(list(
+    lambda_index   = rep.int(seq_along(global_ests), lengths(global_ests)),
+    solution_index = unlist(lapply(lengths(global_ests), seq_len), FALSE, FALSE),
+    avg_wrmspe     = numeric(nsol),
+    sd_wrmspe      = numeric(nsol),
+    avg_wmape      = numeric(nsol),
+    sd_wmape       = numeric(nsol),
+    avg_wrmspe_cv  = numeric(nsol),
+    sd_wrmspe_cv   = numeric(nsol),
+    avg_wmape_cv   = numeric(nsol),
+    sd_wmape_cv    = numeric(nsol),
+    avg_tau_size   = numeric(nsol),
+    sd_tau_size    = numeric(nsol),
+    avg_similarity = numeric(nsol),
+    similarity     = vector('list', nsol)
+  ))
 
-  full_details <- do.call(rbind, lapply(seq_along(matches), \(lambda_ind) {
-    lambda_match <- matches[[lambda_ind]]
+  for (rn in seq_len(nsol)) {
+    i <- full_details$lambda_index[[rn]]
+    j <- full_details$solution_index[[rn]]
+    m <- matches[[i]][[j]]
 
-    list2DF(list(lambda_index = rep.int(lambda_ind, length(lambda_match)),
-                 solution_index = seq_along(lambda_match),
-                 avg_wrmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                     FUN = \(sol_match) { mean(sqrt(sol_match$wmspe)) }),
-                 sd_wrmspe = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                    FUN = \(sol_match) {
-                                      if (length(sol_match$wmspe) > 1L) {
-                                        sd(sqrt(sol_match$wmspe))
-                                      } else {
-                                        0
-                                      }
-                                    }),
-                 avg_tau_size = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                       FUN = \(sol_match) { mean(sol_match$tau_size) }),
-                 sd_tau_size = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                      FUN = \(sol_match) {
-                                        if (length(sol_match$tau_size) > 1L) {
-                                          sd(sol_match$tau_size)
-                                        } else {
-                                          0
-                                        }
-                                      }),
-                 avg_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                    FUN = \(sol_match) { mean(sol_match$wmape) }),
-                 sd_wmape = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                   FUN = \(sol_match) {
-                                     if (length(sol_match$wmape) > 1L) {
-                                       sd(sol_match$wmape)
-                                     } else {
-                                       0
-                                     }
-                                    }),
-                 avg_similarity = vapply(lambda_match, FUN.VALUE = numeric(1),
-                                         FUN = \(sol_match) { median(sol_match$rankcorr) }),
-                 rankcorr = lapply(lambda_match, `[[`, 'rankcorr')))
-  }))
+    sum_wgts <- colSums(m$cv_avg_wgt)
+
+    wmape <- colSums(abs(m$predictions) * glbl_wgts[[i]][, j]) / sum(glbl_wgts[[i]][, j])
+    wrmspe <- sqrt(colSums(m$predictions^2 * glbl_wgts[[i]][, j]) / sum(glbl_wgts[[i]][, j]))
+    wmape_cv <- colSums(abs(m$predictions) * m$cv_avg_wgt) / sum_wgts
+    wrmspe_cv <- sqrt(colSums(m$predictions^2 * m$cv_avg_wgt) / sum_wgts)
+    tau_size <- apply(m$predictions, 2, tau_size)
+
+    full_details$avg_similarity[[rn]] <- mean(m$similarity)
+    full_details$similarity[[rn]]     <- m$similarity
+    full_details$avg_tau_size[[rn]]   <- mean(tau_size)
+    full_details$sd_tau_size[[rn]]    <- .sd0(tau_size)
+    full_details$avg_wrmspe[[rn]]     <- mean(wrmspe)
+    full_details$sd_wrmspe[[rn]]      <- .sd0(wrmspe)
+    full_details$avg_wrmspe_cv[[rn]]  <- mean(wrmspe_cv)
+    full_details$sd_wrmspe_cv[[rn]]   <- .sd0(wrmspe_cv)
+    full_details$avg_wmape[[rn]]      <- mean(wmape)
+    full_details$sd_wmape[[rn]]       <- .sd0(wmape)
+    full_details$avg_wmape_cv[[rn]]   <- mean(wmape_cv)
+    full_details$sd_wmape_cv[[rn]]    <- .sd0(wmape_cv)
+  }
+
+  # Summarize and select only the "best" solution for each penalization value.
+  best_match_global <- list2DF(list(
+    lambda_index   = seq_along(global_ests),
+    solution_index = integer(length(global_ests)),
+    cvavg          = numeric(length(global_ests)),
+    cvse           = numeric(length(global_ests))))
+
+  for (i in seq_along(global_ests)) {
+    rows <- which(full_details$lambda_index == i)
+    best_row <- rows[[which.min(full_details$avg_wrmspe[rows])]]
+
+    best_match_global$solution_index[[i]] <- full_details$solution_index[[best_row]]
+    best_match_global$cvavg[[i]]          <- full_details$avg_wrmspe[[best_row]]
+    best_match_global$cvse[[i]]           <- full_details$sd_wrmspe[[best_row]]
+  }
 
   list(best = best_match_global, all = full_details)
+}
+
+#' @importFrom stats var
+.sd0 <- function (x) {
+  if (length(x) < 2L) {
+    0
+  } else {
+    sqrt(var(x))
+  }
 }
 
 #' @importFrom stats median

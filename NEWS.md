@@ -1,3 +1,6 @@
+# pense 2.2.2
+ * Fix build warnings from GCC 14.1.0 on CRAN
+
 # pense 2.2.1
  * Fix build error on Windows using GCC version < 9.
 

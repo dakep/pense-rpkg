@@ -21,6 +21,7 @@
 ^.*autoconfig\.R$
 ^.*autoconfig\.hpp$
 ^\.travis\.yml$
+^\.renvignore$
 ^doc$
 ^Meta$
 ^notes$

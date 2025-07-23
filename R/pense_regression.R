@@ -210,6 +210,9 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
 #'   If no CV solution satisfies this lower bound, the best CV solution will be used regardless
 #'   of similarity.
 #' @template cv_params
+#' @param cv_algorithm_opts Override algorithm options for the CV iterations.
+#'   This is usually not necessary, unless the user wants to change the number of solutions
+#'   retained for the CV training data.
 #' @inheritDotParams pense -standardize
 #'
 #' @seealso [pense()] for computing regularized S-estimates without
@@ -237,12 +240,19 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
                      ris_min_similarity = 0.5,
                      fit_all = TRUE,
                      fold_starts = c('full', 'enpy', 'both'),
+                     cv_algorithm_opts,
                      cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args_env <- new.env(parent = parent.frame())
   args_env$pense_cv <- .pense_args
   call[[1]] <- quote(pense_cv)
   args <- eval(call, envir = args_env)
+
+  if (missing(cv_algorithm_opts)) {
+    cv_algo_opts <- args$pense_opts$algo_opts
+  } else {
+    cv_algo_opts <- .update_opts_list(args$pense_opts$algo_opts, cv_algorithm_opts)
+  }
 
   ris_min_similarity <- .as(ris_min_similarity, 'double')[[1L]]
 
@@ -349,7 +359,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   }
 
   other_starts <- if (isTRUE(fit_ses)) {
-    make_other_starts <- function (fit_alpha, lambda_seq) {
+    make_other_starts <- \(fit_alpha, lambda_seq) {
       # If there are other individual starts, only use the ones with
       # correct `alpha`
       n_user_ind_starts <- length(args$optional_args$individual_starts)
@@ -360,7 +370,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
         list()
       }
 
-      std_ests <- unlist(lapply(fit_alpha$estimates, function (est) {
+      std_ests <- unlist(lapply(fit_alpha$estimates, \(est) {
         est$beta <- est$std_beta
         est$intercept <- est$std_intercept
         est$std_beta <- NULL
@@ -377,7 +387,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     mapply(fits, args$lambda, SIMPLIFY = FALSE,
            FUN = make_other_starts)
   } else {
-    lapply(args$alpha, function (alpha) {
+    lapply(args$alpha, \(alpha) {
       if (length(args$optional_args$individual_starts) > 0L) {
         .filter_list(args$optional_args$individual_starts, 'alpha', alpha)
       } else {
@@ -389,7 +399,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
   # Get a common seed to be used for every alpha value
   fit_seed <- sample.int(.Machine$integer.max, 1L)
 
-  cv_est_fun <- function (train_data, test_ind, handler_args) {
+  cv_est_fun <- \(train_data, test_ind, handler_args) {
     # Determine stable bdp separately for this fold
     desired_bdp <- handler_args$args$pense_opts$mscale$delta *
       (length(train_data$y) + length(test_ind)) / length(train_data$y)
@@ -418,32 +428,33 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     }
   }
 
-  cv_handler_args <- list(alpha = NA_real_,
-                          lambda = NA_real_,
-                          cv_k = cv_k,
-                          enpy_lambda_inds = NULL,
-                          args = args)
-
-  if (identical(fold_starts, 'full')) {
-    cv_handler_args$enpy_lambda_inds <- integer(0L)
-  }
-
-  if (!identical(fold_starts, 'enpy')) {
-    cv_handler_args$args$pense_opts$strategy_other_individual <- TRUE
-  }
 
   cv_ris <- NULL
+  ris_ests <- NULL
 
   if (identical(cv_type, 'ris')) {
     ris_best <- vector('list', length(args$alpha))
     ris_all <- vector('list', length(args$alpha))
-    cv_handler_args$only_best <- FALSE
+    ris_ests <- vector('list', length(args$alpha))
 
     for (i in seq_along(args$alpha)) {
-      cv_handler_args$alpha <- args$alpha[[i]]
-      cv_handler_args$lambda <- args$lambda[[i]]
-      cv_handler_args$enpy_lambda_inds <- args$enpy_lambda_inds[[i]]
+      cv_handler_args <- list(alpha = args$alpha[[i]],
+                              lambda = args$lambda[[i]],
+                              cv_k = cv_k,
+                              enpy_lambda_inds = integer(0L),
+                              args = args,
+                              only_best = FALSE)
+
+      # if (identical(fold_starts, 'full') || identical(fold_starts, 'both')) {
+      #   cv_handler_args$args$pense_opts$strategy_other_individual <- TRUE
+      # }
+
+      if (identical(fold_starts, 'enpy') || identical(fold_starts, 'both')) {
+        cv_handler_args$enpy_lambda_inds <- args$enpy_lambda_inds[[i]]
+      }
+
       cv_handler_args$args$optional_args$individual_starts <- other_starts[[i]]
+      cv_handler_args$args$pense_opts$algo_opts <- cv_algo_opts
 
       set.seed(fit_seed)
       ris_results <- .run_replicated_cv_ris(
@@ -464,13 +475,15 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
       ris_all[[i]] <- ris_results$all
       ris_all[[i]]$alpha <- args$alpha[[i]]
       ris_all[[i]]$lambda <- args$lambda[[i]][ris_all[[i]]$lambda_index]
+
+      ris_ests[[i]] <- ris_results$ests
     }
 
     # Combine results from individual alpha values
     cv_curves <- do.call(rbind, ris_best)
     cv_ris <- do.call(rbind, ris_all)
   } else {
-    cv_est_dispatch <- function (alpha, lambda, enpy_lambda_inds, other_starts) {
+    cv_est_dispatch <- \(alpha, lambda, enpy_lambda_inds, other_starts) {
       handler_args <- list(alpha = alpha,
                            lambda = lambda,
                            cv_k = cv_k,
@@ -487,6 +500,8 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
       }
 
       handler_args$args$optional_args$individual_starts <- other_starts
+
+      handler_args$args$pense_opts$algo_opts <- cv_algo_opts
 
       set.seed(fit_seed)
       cv_perf <- .run_replicated_cv(
@@ -517,12 +532,12 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
 
   # if fit_all is not TRUE, compute only the fit for the "best" lambda
   if (!isTRUE(fit_ses)) {
-    fit_lambda <- lapply(args$alpha, function (alpha) {
+    fit_lambda <- lapply(args$alpha, \(alpha) {
       rows <- which((cv_curves$alpha - alpha)^2 < .Machine$double.eps)
 
       lambda_inds <- vapply(
         fit_ses, FUN.VALUE = numeric(1L),
-        FUN = function (se_fact) {
+        FUN = \(se_fact) {
           which(.cv_se_selection(cv_curves$cvavg[rows],
                                  cv_curves$cvse[rows], se_fact) == 'se_fact')
         })
@@ -544,9 +559,10 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
     cvres = cv_curves,
     cv_ris = cv_ris,
     cv_type = cv_type,
+    cv_ests = ris_ests,
     cv_measure = cv_measure_str,
     cv_repl = cv_repl,
-    metrics = lapply(fits, function (f) { attr(f$estimates, 'metrics') }),
+    metrics = lapply(fits, \(f) { attr(f$estimates, 'metrics') }),
     estimates = unlist(lapply(fits, `[[`, 'estimates'),
                        recursive = FALSE, use.names = FALSE)),
     class = c('pense', 'pense_cvfit'))

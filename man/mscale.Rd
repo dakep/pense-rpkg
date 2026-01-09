@@ -4,32 +4,18 @@
 \alias{mscale}
 \title{Compute the M-Scale of Centered Values}
 \usage{
-mscale(
-  x,
-  bdp = 0.25,
-  cc = consistency_const(bdp, "bisquare"),
-  opts = mscale_algorithm_options(),
-  delta = deprecated(),
-  rho = deprecated(),
-  eps = deprecated(),
-  maxit = deprecated()
-)
+mscale(x, bdp = 0.25, cc, opts = mscale_algorithm_options())
 }
 \arguments{
 \item{x}{numeric values. Missing values are verbosely ignored.}
 
 \item{bdp}{desired breakdown point (between 0 and 0.5).}
 
-\item{cc}{cutoff value for the bisquare rho function.
+\item{cc}{tuning parameters for the chosen rho function.
 By default, chosen to yield a consistent estimate for the Normal distribution.}
 
 \item{opts}{a list of options for the M-scale estimation algorithm,
 see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
-
-\item{delta}{deprecated. Use \code{bpd} instead.}
-
-\item{rho, eps, maxit}{deprecated. Instead set control options for the algorithm
-with the \code{opts} arguments.}
 }
 \value{
 the M-estimate of scale.

@@ -31,7 +31,7 @@ using arma::uvec;
 //! @param rho the rho function defining the weight
 //! @param nobs the number of observations to expect
 //! @return a weight vector
-arma::vec ExtractWeightsVector (const Rcpp::List& solution, const pense::RhoBisquare& rho) {
+arma::vec ExtractWeightsVector (const Rcpp::List& solution, const pense::RhoFunction& rho) {
   const double scale = Rcpp::as<double>(solution["scale"]);
   auto residuals = MakeVectorView(solution["residuals"]);
   const auto wgts = rho.Weight(*residuals, scale);
@@ -43,7 +43,7 @@ arma::vec ExtractWeightsVector (const Rcpp::List& solution, const pense::RhoBisq
 //! @param rho the rho function defining the weights
 //! @param nobs the number of observations to expect
 //! @return a weight matrix, with `nobs` rows and `solutions.size()` columns
-arma::mat ExtractWeights (const Rcpp::List& solutions, const pense::RhoBisquare& rho, const int nobs) {
+arma::mat ExtractWeights (const Rcpp::List& solutions, const pense::RhoFunction& rho, const int nobs) {
   arma::mat wgts(nobs, solutions.size(), arma::fill::none);
 
   for (int i = 0; i < solutions.size(); ++i) {
@@ -92,10 +92,10 @@ SEXP ApproximateMatch(SEXP r_x, SEXP r_table, SEXP r_eps) noexcept {
 //!
 //! @param r_solutions a nested list of solutions (lambda > solution)
 //! @param r_nobs the total number of observations for estimating the global solutions
-//! @param r_cc the cutoff constant used for Tukey's bisquare rho function
+//! @param r_rho_opts options for the rho function
 //! @return a list of the same length as r_solutions, with each element being a matrix
 //!   of weights.
-SEXP RobustnessWeight (SEXP r_solutions, SEXP r_nobs, SEXP r_cc) noexcept {
+SEXP RobustnessWeight (SEXP r_solutions, SEXP r_nobs, SEXP r_rho_opts) noexcept {
   using namespace pense;
   using Rcpp::List;
   using Rcpp::as;
@@ -105,13 +105,12 @@ SEXP RobustnessWeight (SEXP r_solutions, SEXP r_nobs, SEXP r_cc) noexcept {
 
   const List solutions = as<List>(r_solutions);
   const int nobs = as<int>(r_nobs);
-  const double cc = as<double>(r_cc);
   List all_weights(solutions.size());
-  RhoBisquare rho(cc);
+  auto rho = pense::RhoFactory(as<Rcpp::List>(r_rho_opts));
 
   // Loop over each lambda.
   for (int lambda_ind = 0; lambda_ind < solutions.size(); ++lambda_ind) {
-    all_weights[lambda_ind] = ExtractWeights(solutions[lambda_ind], rho, nobs);
+    all_weights[lambda_ind] = ExtractWeights(solutions[lambda_ind], *rho, nobs);
   }
 
   return Rcpp::wrap(all_weights);

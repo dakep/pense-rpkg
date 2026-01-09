@@ -176,7 +176,7 @@ class SLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
       throw ZeroWeightsException();
     }
 
-    arma::vec weights = mscale_.rho().Weight(residuals, scale);
+    arma::vec weights = mscale_.rho()->Weight(residuals, scale);
     const double denominator = arma::dot(weights, arma::square(residuals));
 
     return weights * residuals.n_elem * scale * scale / denominator;

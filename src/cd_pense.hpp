@@ -370,8 +370,8 @@ class CDPense :
     const double eff_n = data.n_obs() * (1. - ms.delta());
     const double separation = eff_n - std::floor(eff_n);
     const double mult = std::log(separation * (1 - separation)) / std::cbrt(eff_n);
-    const double u1 = std::min(80., -40. * mult) / ms.rho().cc();
-    const double u2 = std::min(50., 100. * mult * mult * mult * mult) / ms.rho().cc();
+    const double u1 = std::min(80., -40. * mult) / ms.rho()->cc();
+    const double u2 = std::min(50., 100. * mult * mult * mult * mult) / ms.rho()->cc();
     lipschitz_bounds_ = u1 * u1 * arma::square(arma::sum(data.cx())).t();
     for (arma::uword j = 0; j < data.n_pred(); ++j) {
       lipschitz_bounds_[j] += u2 * state_.mscale * std::abs(arma::accu(data.cx().col(j) * data.cx().col(j).t()));
@@ -381,7 +381,7 @@ class CDPense :
   }
 
   coorddesc::SurrogateGradient GradientAndSurrogateLipschitz() {
-    const arma::vec wgt = loss_->mscale().rho().Weight(state_.residuals, state_.mscale);
+    const arma::vec wgt = loss_->mscale().rho()->Weight(state_.residuals, state_.mscale);
     const double gradient = -state_.mscale * state_.mscale * arma::dot(wgt, state_.residuals) /
       arma::dot(wgt, arma::square(state_.residuals));
     const double lipschitz = 2 * arma::mean(wgt);
@@ -390,7 +390,7 @@ class CDPense :
 
   coorddesc::SurrogateGradient GradientAndSurrogateLipschitz(const arma::uword j) {
     auto&& xmat = loss_->data().cx();
-    const arma::vec wgt = loss_->mscale().rho().Weight(state_.residuals, state_.mscale);
+    const arma::vec wgt = loss_->mscale().rho()->Weight(state_.residuals, state_.mscale);
     const double gradient = -state_.mscale * state_.mscale * arma::dot(wgt % xmat.col(j), state_.residuals) /
       arma::dot(wgt, arma::square(state_.residuals));
     const double lipschitz = 2 * arma::mean(wgt % arma::square(xmat.col(j)));

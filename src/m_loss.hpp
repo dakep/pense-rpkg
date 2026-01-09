@@ -13,13 +13,11 @@
 #include <algorithm>
 #include "nsoptim.hpp"
 
-#include "constants.hpp"
 #include "rho.hpp"
 
 namespace pense {
 //! A regression loss function implementing the M-loss defined as
 //!   (1/n) sum_{i=1}^n \rho((y_i - \mu - x_i' . \beta) / scale)
-template<class RhoFunction>
 class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! Alias for the shared pointer to the regression data.
   using ConstDataPtr = std::shared_ptr<const nsoptim::PredictorResponseData>;
@@ -28,8 +26,8 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   using ConvexSurrogateType = nsoptim::WeightedLsRegressionLoss;
   using ResidualType = arma::vec;
 
-  MLoss(ConstDataPtr data, const RhoFunction& rho, const double scale, const bool include_intercept = true) noexcept
-    : include_intercept_(include_intercept), data_(data), rho_(rho), scale_(scale),
+  MLoss(ConstDataPtr data, std::shared_ptr<const RhoFunction> rho, const double scale, const bool include_intercept = true) noexcept
+    : data_(data), rho_(rho), include_intercept_(include_intercept), scale_(scale),
       pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
 
   MLoss(const MLoss& other) = default;
@@ -67,7 +65,7 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! @param residuals residuals of the point where to evaluate the loss function.
   //! @return loss evaluated at `where`.
   double Evaluate(const ResidualType& residuals) const {
-    return arma::mean(rho_(residuals, scale_));
+    return arma::mean((*rho_)(residuals, scale_));
   }
 
   //! Evaluate the M loss function.
@@ -85,7 +83,7 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! @return loss evaluated at `where`.
   template<typename T>
   double Evaluate(const nsoptim::RegressionCoefficients<T>& where) const {
-    return arma::mean(rho_(Residuals(where), scale_));
+    return arma::mean((*rho_)(Residuals(where), scale_));
   }
 
   //! Get the residuals for the LS loss function.
@@ -105,7 +103,7 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
   //! @param residuals residuals where the surrogate weights are computed.
   //! @return a vector of weights, the same length as `residuals`.
   arma::vec SurrogateWeights(const ResidualType& residuals) const {
-    return rho_.Weight(residuals, scale_) / (scale_ * scale_);
+    return rho_->Weight(residuals, scale_) / (scale_ * scale_);
   }
 
   //! Get the weights for the surrogate LS-loss at the given location.
@@ -164,12 +162,12 @@ class MLoss : public nsoptim::LossFunction<nsoptim::PredictorResponseData> {
 
  private:
   MLoss(const MLoss& other, ConstDataPtr data) :
-      include_intercept_(other.include_intercept_), data_(data), rho_(other.rho_), scale_(other.scale_),
+      data_(data), rho_(other.rho_), include_intercept_(other.include_intercept_), scale_(other.scale_),
       pred_norm_(std::min(arma::norm(data->cx(), "inf"), arma::norm(data->cx(), 1))) {}
 
-  bool include_intercept_;
   ConstDataPtr data_;
-  RhoFunction rho_;
+  std::shared_ptr<const RhoFunction> rho_;
+  bool include_intercept_;
   double scale_;
   double pred_norm_;
 };

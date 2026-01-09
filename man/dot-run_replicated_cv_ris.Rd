@@ -13,7 +13,7 @@ to the CV estimates by Kendall's tau-b computed on the robustness weights.}
   global_ests,
   min_similarity = 0,
   par_cluster = NULL,
-  rho_cc,
+  rho_opts,
   handler_args = list()
 )
 }
@@ -38,7 +38,7 @@ of similarity.}
 
 \item{par_cluster}{parallel cluster to parallelize computations.}
 
-\item{rho_cc}{consistency constant for Tukey's bisquare rho function.}
+\item{rho_opts}{rho function options.}
 
 \item{handler_args}{additional arguments to the handler function.}
 }

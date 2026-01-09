@@ -92,7 +92,7 @@ inline nsoptim::MMConfiguration::TighteningType GetFallback<nsoptim::MMConfigura
 }
 
 //! Get the Rho function defined in the options list
-std::shared_ptr<const RhoFunction> RhoFactory(const Rcpp::List& rho_opts) {
+inline std::shared_ptr<const RhoFunction> RhoFactory(const Rcpp::List& rho_opts) {
   switch(GetFallback(rho_opts, "rho", RhoFunctionType::kRhoBisquare)) {
   case RhoFunctionType::kRhoOptimal:
     return std::make_shared<const RhoOptimal>(GetFallback(rho_opts, "cc", kDefaultOptimaleCc));

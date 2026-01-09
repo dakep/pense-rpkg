@@ -8,8 +8,6 @@
 
 #include "r_pense_regression.hpp"
 
-#include <unordered_set>
-
 #include "rcpp_integration.hpp"
 #include "r_interface_utils.hpp"
 #include "alias.hpp"
@@ -50,7 +48,6 @@ template<typename Optimizer>
 using PenaltyList = FwdList<typename Optimizer::PenaltyFunction>;
 
 namespace {
-constexpr int kDefaultRho = RhoFunctionType.kRhoBisquare;
 constexpr double kDefaultExploreTol = 0.1;
 constexpr double kDefaultComparisonTol = 1e-3;
 constexpr double kDefaultExploreIt = 20;
@@ -584,15 +581,15 @@ SEXP PenseMaxLambda(SEXP r_x, SEXP r_y, SEXP r_pense_opts, SEXP r_optional_args)
   auto data = MakePredictorResponseData(r_x, r_y);
   const auto pense_opts = as<Rcpp::List>(r_pense_opts);
   const auto optional_args = as<Rcpp::List>(r_optional_args);
-  const auto mscale_opts = as<Rcpp::List>(pense_opts["mscale"])
+  const auto mscale_opts = as<Rcpp::List>(pense_opts["mscale"]);
 
-  Mscale mscale(mscale_opts);
+  const Mscale mscale(mscale_opts);
   auto rho = mscale.rho();
-  auto locscale = MLocationScale(*x, mscale, *rho);
+  auto locscale = MLocationScale(data->cy(), mscale, *rho);
   const arma::vec residuals = data->cy() - locscale.location;
   arma::vec weights = residuals % rho->Weight(residuals, locscale.scale);
   const double denom = arma::mean(weights % residuals);
-  weights *= scale * scale / denom;
+  weights *= locscale.scale * locscale.scale / denom;
 
   if (optional_args.containsElementNamed("pen_loadings")) {
     return PenseMaxGradient(data->cx(), weights, MakeVectorView(optional_args["pen_loadings"]));

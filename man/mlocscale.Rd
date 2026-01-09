@@ -7,7 +7,8 @@
 mlocscale(
   x,
   bdp = 0.25,
-  scale_cc = consistency_const(bdp, "bisquare"),
+  eff = 0.9,
+  scale_cc,
   location_rho,
   location_cc,
   opts = mscale_algorithm_options()
@@ -18,16 +19,22 @@ mlocscale(
 
 \item{bdp}{desired breakdown point (between 0 and 0.5).}
 
-\item{scale_cc}{cutoff value for the bisquare \eqn{\rho} function for computing the
+\item{eff}{desired efficiency of the location estimate (between 0.1 and 0.99).}
+
+\item{scale_cc}{tuning constant for the \eqn{\rho} function for computing the
 scale estimate.
 By default, chosen to yield a consistent estimate for normally distributed values.}
 
-\item{location_rho, location_cc}{\eqn{\rho} function and cutoff value for computing
-the location estimate.
+\item{location_rho}{\eqn{\rho} function for computing the location estimate.
+If missing, use the same function as for the scale estimate (\code{opts$rho}).
 See \code{\link[=rho_function]{rho_function()}} for a list of available \eqn{\rho} functions.}
 
-\item{opts}{a list of options for the M-estimating equation,
-see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+\item{location_cc}{tuning constant for the location \eqn{\rho} function.
+By default chosen to yield the desired efficiency.
+If this is provided, the desired efficiency is ignored.}
+
+\item{opts}{a list of options for the M-scale estimating equations,
+See \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
 }
 \value{
 a vector with 2 elements, the M-estimate of location and the M-scale estimate.

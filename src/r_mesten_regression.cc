@@ -11,6 +11,7 @@
 #include "rcpp_integration.hpp"
 #include "r_interface_utils.hpp"
 #include "alias.hpp"
+#include "rcpp_utils.hpp"
 #include "rho.hpp"
 #include "robust_scale_location.hpp"
 #include "regularization_path.hpp"
@@ -20,7 +21,6 @@
 using Rcpp::as;
 
 namespace {
-constexpr double kDefaultRhoCc = 4.5;
 constexpr bool kDefaultIncludeIntercept = true;
 constexpr double kDefaultExploreTol = 1e-3;
 constexpr double kDefaultExploreIt = 20;
@@ -87,7 +87,7 @@ SEXP MMAlgorithmDispatch(SEXP x, SEXP y, SEXP scale, SEXP penalties, SEXP r_mest
   using SparseCoefs = nsoptim::RegressionCoefficients<arma::sp_vec>;
   using DenseCoefs = nsoptim::RegressionCoefficients<arma::vec>;
   using pense::r_interface::MakeOptimizer;
-  using MLoss = pense::MLoss<pense::RhoBisquare>;
+  using pense::MLoss;
   using SurrogateLoss = typename MLoss::ConvexSurrogateType;
 
   const auto mest_opts = as<List>(r_mest_opts);
@@ -155,12 +155,12 @@ SEXP MestEnRegressionImpl(MMOptimizer optimizer, SEXP r_x, SEXP r_y, SEXP r_scal
   using pense::r_interface::MakeOptimizer;
   using pense::GetFallback;
   using pense::alias::ConstRegressionDataPtr;
-  using MLoss = pense::MLoss<pense::RhoBisquare>;
+  using pense::MLoss;
   using CoefficientsList = pense::alias::FwdList<typename MMOptimizer::Coefficients>;
   using StartCoefficientsList = pense::alias::FwdList<CoefficientsList>;
 
   ConstRegressionDataPtr data(MakePredictorResponseData(r_x, r_y));
-  const pense::RhoBisquare rho(GetFallback(mest_opts, "cc", kDefaultRhoCc));
+  auto rho = pense::RhoFactory(mest_opts);
   const double scale = as<double>(r_scale);
 
   MLoss loss(data, rho, scale, GetFallback(mest_opts, "intercept", kDefaultIncludeIntercept));
@@ -263,11 +263,11 @@ SEXP MestEnMaxLambda(SEXP r_x, SEXP r_y, SEXP r_scale, SEXP r_mest_opts, SEXP r_
   const auto mest_opts = as<Rcpp::List>(r_mest_opts);
   const auto optional_args = as<Rcpp::List>(r_optional_args);
   const double scale = as<double>(r_scale);
-  RhoBisquare rhofun(as<double>(mest_opts["cc"]));
-  const double location = MLocation(data->cy(), rhofun, scale, as<double>(mest_opts["eps"]),
+  auto rhofun = RhoFactory(mest_opts);
+  const double location = MLocation(data->cy(), *rhofun, scale, as<double>(mest_opts["eps"]),
                                     as<int>(mest_opts["max_it"]));
   const arma::vec residuals = data->cy() - location;
-  arma::vec weights = residuals % rhofun.Weight(residuals, scale);  // dividing by the square scale can be done after!
+  arma::vec weights = residuals % rhofun->Weight(residuals, scale);  // dividing by the square scale can be done after!
 
   if (optional_args.containsElementNamed("pen_loadings")) {
     return Rcpp::wrap(MestEnMaxGradient(data->cx(), weights, MakeVectorView(optional_args["pen_loadings"])) /

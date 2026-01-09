@@ -4,7 +4,7 @@
 \alias{mloc}
 \title{Compute the M-estimate of Location}
 \usage{
-mloc(x, scale, rho, cc, opts = mscale_algorithm_options())
+mloc(x, scale, rho = "bisquare", eff = 0.9, cc, max_it = 200, eps = 1e-08)
 }
 \arguments{
 \item{x}{numeric values. Missing values are verbosely ignored.}
@@ -13,11 +13,14 @@ mloc(x, scale, rho, cc, opts = mscale_algorithm_options())
 
 \item{rho}{the \eqn{\rho} function to use. See \code{\link[=rho_function]{rho_function()}} for available functions.}
 
-\item{cc}{value of the tuning constant for the chosen \eqn{\rho} function.
-By default, chosen to achieve 95\% efficiency under the Normal distribution.}
+\item{eff}{desired efficiency under the Normal model.}
 
-\item{opts}{a list of options for the M-estimating algorithm, see
-\code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
+\item{cc}{value of the tuning constant for the chosen \eqn{\rho} function.
+If specified, overrides the desired efficiency.}
+
+\item{max_it}{maximum number of iterations.}
+
+\item{eps}{numerical tolerance to check for convergence.}
 }
 \value{
 a single numeric value, the M-estimate of location.

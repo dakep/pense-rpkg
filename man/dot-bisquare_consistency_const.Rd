@@ -4,10 +4,12 @@
 \alias{.bisquare_consistency_const}
 \title{Get the Constant for Consistency for the M-Scale Using the Bisquare Rho Function}
 \usage{
-.bisquare_consistency_const(delta)
+.bisquare_consistency_const(delta, eps = sqrt(.Machine$double.eps))
 }
 \arguments{
 \item{delta}{desired breakdown point (between 0 and 0.5)}
+
+\item{eps}{numerical tolerance for equality comparisons}
 }
 \value{
 consistency constant

@@ -464,7 +464,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
         cv_est_fun = cv_est_fun,
         global_ests = fits[[i]]$estimates,
         min_similarity = ris_min_similarity,
-        rho_cc = cv_handler_args$args$pense_opts$mscale$cc,
+        rho_opts = cv_handler_args$args$pense_opts$mscale,
         par_cluster = cl,
         handler_args = cv_handler_args)
 

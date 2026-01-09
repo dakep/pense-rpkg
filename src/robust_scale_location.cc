@@ -6,9 +6,7 @@
 //  Copyright © 2019 David Kepplinger. All rights reserved.
 //
 
-#include <string>
 #include "nsoptim.hpp"
-#include "rcpp_utils.hpp"
 #include "robust_scale_location.hpp"
 #include "constants.hpp"
 
@@ -38,6 +36,74 @@ double TauSize(const vec& values) noexcept {
   return sigma_0 * kTauSizeConsistencyConstant * sqrt(tau_size);
 }
 
+double MLocation(const arma::vec& values, const RhoFunction& rho, const double scale,
+                 const double convergence_tol, const int max_it) {
+  const double scaled_conv_tol = convergence_tol * scale;
+  int it = 0;
+  double location = arma::median(values);
+
+  arma::vec residuals(values.n_elem);
+  arma::vec w_loc(values.n_elem);
+  while (it++ < max_it) {
+    residuals = values - location;
+    rho.Weight(residuals, scale, &w_loc);
+    const double prev_location = location;
+    const double w_loc_sum = arma::accu(w_loc);
+
+    if (w_loc_sum < convergence_tol) {
+      throw ZeroWeightsException();
+    }
+
+    location = arma::accu(w_loc % values) / w_loc_sum;
+
+    if (std::abs(prev_location - location) < scaled_conv_tol) {
+      break;
+    }
+  }
+
+  return location;
+}
+
+LocationScaleEstimate MLocationScale(const arma::vec& values, const Mscale& mscale,
+                                     const RhoFunction& location_rho) {
+  int it = 0;
+  LocationScaleEstimate est {arma::median(values)};
+  est.scale = robust_scale_location::InitialScaleEstimate(values - est.location, mscale.delta(), mscale.eps());
+
+  if (est.scale < mscale.eps()) {
+    est.scale = 0;
+    return est;
+  }
+
+  const double convergence_tol = est.scale * mscale.eps();
+  const double recip_sqrt_delta = 1. / sqrt(mscale.delta());
+
+  arma::vec residuals(values.n_elem);
+  arma::vec w_loc(values.n_elem);
+  while (it++ < mscale.max_it()) {
+    residuals = values - est.location;
+    location_rho.Weight(residuals, est.scale, &w_loc);
+    const double w_scale_mean = mscale.rho()->SumStd(residuals, est.scale) / residuals.n_elem;
+    const double w_loc_sum = arma::accu(w_loc);
+
+    if (w_loc_sum < convergence_tol) {
+      throw ZeroWeightsException();
+    }
+
+    const LocationScaleEstimate prev_est = est;
+    est.location = arma::accu(w_loc % values) / w_loc_sum;
+    est.scale = prev_est.scale * std::sqrt(w_scale_mean) * recip_sqrt_delta;
+
+    if (std::abs(prev_est.location - est.location) < convergence_tol &&
+        std::abs(prev_est.scale - est.scale) < convergence_tol) {
+      break;
+    }
+  }
+
+  return est;
+}
+
+// == Mscale class implementations ====================================================
 arma::vec Mscale::Derivative(const arma::vec& values) const {
   const double scale = ComputeMscale(values, InitialEstimate(values));
   if (scale < eps_) {
@@ -63,7 +129,7 @@ double Mscale::ComputeMscale(const arma::vec& values, const double init_scale) c
   double scale = init_scale;
   // Start Newton's iterations
   do {
-    step = rho_.DerivativeFixedPoint(values, scale, delta_);
+    step = rho_->DerivativeFixedPoint(values, scale, delta_);
     scale += scale * step;
   } while (++iter < max_it_ && std::abs(step) > eps_ && scale > kNumericZero && std::isfinite(scale));
 
@@ -154,13 +220,13 @@ arma::mat Mscale::GradientHessian(const arma::vec& values) const {
   return grad_hess;
 }
 
-arma::vec::fixed<3> Mscale::MaxGradientHessian(const arma::vec& values) {
+arma::vec::fixed<3> Mscale::MaxGradientHessian(const arma::vec& values) const {
   arma::vec::fixed<3> maxima(arma::fill::zeros);
   maxima[0] = this->operator()(values, InitialEstimate(values));
   if (maxima[0] < eps_) {
     return maxima;
   }
-  const auto violation = rho_.SumStd(values, maxima[0]) -
+  const auto violation = rho_->SumStd(values, maxima[0]) -
     values.n_elem * delta_;
 
   if (violation * violation > values.n_elem * values.n_elem * eps_ * eps_) {

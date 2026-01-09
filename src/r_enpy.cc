@@ -21,7 +21,6 @@ using nsoptim::LsRegressionLoss;
 using nsoptim::EnPenalty;
 using nsoptim::AdaptiveEnPenalty;
 using nsoptim::RidgePenalty;
-using nsoptim::MMOptimizer;
 using nsoptim::RegressionCoefficients;
 using nsoptim::AugmentedLarsOptimizer;
 using nsoptim::DalEnOptimizer;
@@ -37,7 +36,6 @@ using pense::r_interface::MakePenalties;
 using pense::r_interface::MakeOptimizer;
 using pense::PenaYohaiInitialEstimators;
 using pense::Mscale;
-using pense::RhoBisquare;
 using pense::SLoss;
 
 using SparseCoefs = nsoptim::RegressionCoefficients<arma::sp_vec>;
@@ -54,7 +52,7 @@ SEXP PenPyInitialEstimatorImpl(SEXP r_x, SEXP r_y, SEXP r_penalties, SEXP r_slos
   const auto sloss_params = as<Rcpp::List>(r_sloss_params);
   const auto penalties = MakePenalties<Optimizer>(r_penalties, optional_args);
 
-  Mscale<RhoBisquare> mscale(as<Rcpp::List>(sloss_params["mscale"]));
+  Mscale mscale(as<Rcpp::List>(sloss_params["mscale"]));
   SLoss loss(data, mscale, as<bool>(sloss_params["intercept"]));
 
   Optimizer optimizer = MakeOptimizer<Optimizer>(en_options);

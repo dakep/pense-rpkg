@@ -10,7 +10,6 @@
 #define ROBUST_SCALE_LOCATION_HPP_
 
 #include <memory>
-#include <cmath>
 
 #include "nsoptim.hpp"
 #include "rho.hpp"
@@ -105,7 +104,7 @@ class Mscale {
   }
 
   //! Compute the M-scale of the given values. The initial guess is either the given scale (if positive),
-  //! the previous scale estimate (if availalbe), or the median of the absolute values (MAD).
+  //! the previous scale estimate (if available), or the median of the absolute values (MAD).
   //!
   //! @param values a vector of values.
   //! @return the M-scale of the given values.

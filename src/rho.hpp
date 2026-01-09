@@ -21,7 +21,7 @@ class RhoFunction {
   RhoFunction& operator=(const RhoFunction&) = default;
   RhoFunction(RhoFunction&&) = default;
   RhoFunction& operator=(RhoFunction&&) = default;
-  ~RhoFunction() {}
+  virtual ~RhoFunction() = default;
 
   //! Get the value of the rho function evaluated at x/scale.
   //! This is equivalent to `robustbase::Mpsi(x / scale, cc, psifun, deriv = -1)`.
@@ -39,7 +39,7 @@ class RhoFunction {
   double    SumStd(const arma::vec& x, const double scale) const noexcept;
 
   //! Get the derivative of the rho function evaluated at x/scale.
-  //! Note that Derivative(x/scale, 1) == Derivative(x, scale) * scale
+  //! Note that Derivative(x/scale, 1) == Derivative(x, scale) / scale
   //! This is equivalent to `robustbase::Mpsi(x / scale, cc, psifun, deriv = 0)`.
   double    Derivative(const double x, const double scale) const noexcept;
   void      Derivative(const arma::vec& x, const double scale, arma::vec* out) const noexcept;
@@ -90,7 +90,12 @@ class RhoFunction {
   //! Get the upper bound of the rho function, i.e., the limiting value of `operator()(x)` for x to infinity.
   virtual double UpperBound() const noexcept = 0;
 
- protected:
+  //! Get the value of the threshold paramter.
+  //!
+  //! @return threshold paramter value.
+  virtual double cc() const noexcept = 0;
+
+protected:
   using ValueFun = std::function<double(double)>;
 
   virtual ValueFun StdFn(const double scale) const noexcept = 0;
@@ -102,7 +107,7 @@ class RhoFunction {
 //! Implementation of Huber's unbounded rho function defined by
 //! rho(x) = 0.5 x^2 * [x < cc] + cc * (abs(x) - cc / 2) [x >= cc]
 class RhoHuber : public RhoFunction {
- public:
+public:
   //! Create the Huber rho-function with cutoff `cc`
   //!
   //! @param cc cutoff value (outside the rho-function is linear)
@@ -118,19 +123,22 @@ class RhoHuber : public RhoFunction {
   //! Get the value of the threshold paramter.
   //!
   //! @return threshold paramter value.
-  double cc() const noexcept {
+  double cc() const noexcept override {
     return cc_;
   }
 
+  //! The Huber Rho function is convex and unbounded.
+  //!
+  //! @return constant 1 to make the standardized and unstandardized functions equivalent.
   double UpperBound() const noexcept override { return std::numeric_limits<double>::infinity(); }
 
- protected:
-  ValueFun StdFn(const double scale) const noexcept override;
-  ValueFun DerivativeFn(const double scale) const noexcept override;
-  ValueFun SecondDerivativeFn(const double scale) const noexcept override;
-  ValueFun WeightFn(const double scale) const noexcept override;
+protected:
+  RhoFunction::ValueFun StdFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun DerivativeFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun SecondDerivativeFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun WeightFn(const double scale) const noexcept override;
 
- private:
+private:
   double cc_;
 };
 
@@ -138,7 +146,7 @@ class RhoHuber : public RhoFunction {
 //! rho(x) = min(1, 1 - (1 - x^2/cc^2)^3)
 //! All of the virtual functions are declared final and can not be overwritten again!
 class RhoBisquare : public RhoFunction {
- public:
+public:
   //! Create the bisquare-rho function with threshold `cc`
   //!
   //! @param cc threshold paramter value.
@@ -151,28 +159,30 @@ class RhoBisquare : public RhoFunction {
 
   ~RhoBisquare() {}
 
+  double UpperBound() const noexcept override { return cc_ * cc_ / 6.; }
+
   //! Get the value of the threshold paramter.
   //!
   //! @return threshold paramter value.
-  double cc() const noexcept {
+  double cc() const noexcept override {
     return cc_;
   }
 
- protected:
-  ValueFun StdFn(const double scale) const noexcept override;
-  ValueFun DerivativeFn(const double scale) const noexcept override;
-  ValueFun SecondDerivativeFn(const double scale) const noexcept override;
-  ValueFun WeightFn(const double scale) const noexcept override;
+protected:
+  RhoFunction::ValueFun StdFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun DerivativeFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun SecondDerivativeFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun WeightFn(const double scale) const noexcept override;
 
- private:
+private:
   double cc_;
 };
 
-//! Implementation of the "Optimal" rho function given by Maronna et al. (2006, Section 5.9.1) defined by
+//! Implementation of the "Optimal" rho function given by Maronna et al. (2018, Section 5.8.1) defined by
 //! rho(x) = min(1, 1 - (1 - x^2/cc^2)^3)
 //! All of the virtual functions are declared final and can not be overwritten again!
 class RhoOptimal : public RhoFunction {
- public:
+public:
   //! Create the optimal-rho function with threshold `cc`
   //!
   //! @param cc threshold paramter value.
@@ -185,20 +195,22 @@ class RhoOptimal : public RhoFunction {
 
   ~RhoOptimal() {}
 
+  double UpperBound() const noexcept override { return 3.25 * cc_ * cc_; }
+
   //! Get the value of the threshold paramter.
   //!
   //! @return threshold paramter value.
-  double cc() const noexcept {
+  double cc() const noexcept override {
     return cc_;
   }
 
- protected:
-  ValueFun StdFn(const double scale) const noexcept override;
-  ValueFun DerivativeFn(const double scale) const noexcept override;
-  ValueFun SecondDerivativeFn(const double scale) const noexcept override;
-  ValueFun WeightFn(const double scale) const noexcept override;
+protected:
+  RhoFunction::ValueFun StdFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun DerivativeFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun SecondDerivativeFn(const double scale) const noexcept override;
+  RhoFunction::ValueFun WeightFn(const double scale) const noexcept override;
 
- private:
+private:
   double cc_;
 };
 }  // namespace pense

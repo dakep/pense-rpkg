@@ -74,7 +74,7 @@ mscale_algorithm_options <- function (rho = 'bisquare', max_it = 200, eps = 1e-8
   }
 
   mscale_opts$cc <- if (is_missing(cc) || is.null(cc)) {
-    consistency_const(mscale_opts$delta, mscale_opts$rho)
+    consistency_const(mscale_opts$delta, mscale_opts$rho, eps = mscale_opts$eps)
   } else {
     .as(cc, 'numeric')
   }

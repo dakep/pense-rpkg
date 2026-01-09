@@ -21,7 +21,8 @@ compare_estimates <- function (ests, ref_file, tol = 1e-6) {
           testthat::expect_equal(
             drop(ests [[!!lai]] [[!!lsi]] [[!!name]]),
             unlist(ref [[!!lai]] [[!!lsi]] [[!!name]]),
-            tolerance = tol))
+            tolerance = tol)
+        )
       }
     }
   }

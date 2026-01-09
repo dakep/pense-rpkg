@@ -40,8 +40,8 @@ vec RhoFunction::operator()(const arma::vec& x, const double scale) const noexce
 double RhoFunction::Sum(const vec& x, const double scale) const noexcept {
   double tmp = 0.;
   auto rho = this->StdFn(scale);
-  for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    tmp += rho(*read_it);
+  for (double xv : x) {
+    tmp += rho(xv);
   }
   return UpperBound() * tmp;
 }
@@ -69,8 +69,8 @@ vec RhoFunction::EvaluateStd(const arma::vec& x, const double scale) const noexc
 double RhoFunction::SumStd(const vec& x, const double scale) const noexcept {
   double tmp = 0.;
   auto rho = this->StdFn(scale);
-  for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    tmp += rho(*read_it);
+  for (double xv : x) {
+    tmp += rho(xv);
   }
   return tmp;
 }
@@ -119,17 +119,16 @@ vec RhoFunction::DerivativeStd(const arma::vec& x, const double scale) const noe
 double RhoFunction::DerivativeFixedPoint(const arma::vec& x, const double scale, const double delta) const noexcept {
   auto rho = this->StdFn(scale);
   auto deriv = this->DerivativeFn(scale);
-  double numerator = -x.n_elem * delta;
+  double numerator = -delta * x.n_elem;
   double denominator = 0;
-  for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    numerator += rho(*read_it);
-    denominator += deriv(*read_it) * (*read_it);
+  for (const double xv : x) {
+    numerator += rho(xv);
+    denominator += deriv(xv) * xv;
   }
 
   if (numerator < kNumericZero) {
     return 0;
   }
-
   return UpperBound() * scale * scale * numerator / denominator;
 }
 
@@ -216,7 +215,7 @@ vec RhoFunction::WeightStd(const arma::vec& x, const double scale) const noexcep
 }
 
 // == Huber's Rho Function ========================================================================================== //
-ValueFun RhoHuber::StdFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoHuber::StdFn(const double scale) const noexcept {
   return [scale, cc = cc_](double x) noexcept {
     x = std::abs(x) / scale;
     if (x > cc) {
@@ -226,37 +225,33 @@ ValueFun RhoHuber::StdFn(const double scale) const noexcept {
   };
 }
 
-ValueFun RhoHuber::DerivativeFn(const double scale) const noexcept {
-  const double scale_sq = scale * scale;
-  return [scale_sq, cc = cc_](double x) noexcept {
-    x = x / scale_sq
-    if (x > cc) {
-      return cc * (x - 0.5 * cc);
-    }
-    return 0.5 * x * x;
+RhoFunction::ValueFun RhoHuber::DerivativeFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    return (x <= -cc_scaled) ? -cc_scaled : ((x < cc_scaled) ? x : cc_scaled);
   };
 }
 
-ValueFun RhoHuber::SecondDerivativeFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoHuber::SecondDerivativeFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     return std::abs(x) < cc_scaled ? 1. : 0.;
   };
 }
 
-ValueFun RhoHuber::WeightFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoHuber::WeightFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
-    const double x = std::abs(x);
+    x = std::abs(x);
     if (x > cc_scaled) {
       return cc_scaled / x;
     }
-    return 1;
+    return 1.;
   };
 }
 
 // == Tukey's Bisquare Function ========================================================== //
-ValueFun RhoBisquare::StdFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoBisquare::StdFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     if (std::abs(x) > cc_scaled) {
@@ -268,7 +263,7 @@ ValueFun RhoBisquare::StdFn(const double scale) const noexcept {
   };
 }
 
-ValueFun RhoBisquare::DerivativeFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoBisquare::DerivativeFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     if (std::abs(x) > cc_scaled) {
@@ -280,7 +275,7 @@ ValueFun RhoBisquare::DerivativeFn(const double scale) const noexcept {
   };
 }
 
-ValueFun RhoBisquare::SecondDerivativeFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoBisquare::SecondDerivativeFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     if (std::abs(x) > cc_scaled) {
@@ -292,20 +287,20 @@ ValueFun RhoBisquare::SecondDerivativeFn(const double scale) const noexcept {
   };
 }
 
-ValueFun RhoBisquare::WeightFn(const double scale) const noexcept {
+RhoFunction::ValueFun RhoBisquare::WeightFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
-    if (std::abs(xx) > cc_scaled) {
+    if (std::abs(x) > cc_scaled) {
       return 0.;
     }
-    double x = xx / cc_scaled;
+    x /= cc_scaled;
     x = (1 - x) * (1 + x);
     return x * x;
   };
 }
 
 // == Optimal Rho Function ========================================================== //
-ValueFun RhoOptimal::StdFn(const double x) const noexcept {
+RhoFunction::ValueFun RhoOptimal::StdFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     double ax = std::abs(x) / cc_scaled;
@@ -324,7 +319,7 @@ ValueFun RhoOptimal::StdFn(const double x) const noexcept {
   };
 }
 
-ValueFun RhoOptimal::DerivativeFn(const double x) const noexcept {
+RhoFunction::ValueFun RhoOptimal::DerivativeFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     constexpr double R1 = -1.944, R2 = 1.728, R3 = -0.312, R4 = 0.016;
@@ -345,7 +340,7 @@ ValueFun RhoOptimal::DerivativeFn(const double x) const noexcept {
   };
 }
 
-ValueFun RhoOptimal::SecondDerivativeFn(const double x) const noexcept {
+RhoFunction::ValueFun RhoOptimal::SecondDerivativeFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     constexpr double R1 = -1.944, R2 = 1.728, R3 = -0.312, R4 = 0.016;
@@ -361,16 +356,16 @@ ValueFun RhoOptimal::SecondDerivativeFn(const double x) const noexcept {
   };
 }
 
-ValueFun RhoOptimal::WeightFn(const double x) const noexcept {
+RhoFunction::ValueFun RhoOptimal::WeightFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
   return [cc_scaled](double x) noexcept {
     constexpr double R1 = -1.944, R2 = 1.728, R3 = -0.312, R4 = 0.016;
-    double ax = std::abs(x) / cc_scaled_;
-    if (ax > 3) {
+    x = std::abs(x) / cc_scaled;
+    if (x > 3) {
       return 0.;
-    } else if (ax > 2) {
-      ax *= ax;
-      return std::max(0., R1 + ax * (R2 + ax * (R3 + ax * R4)));
+    } else if (x > 2) {
+      x *= x;
+      return std::max(0., R1 + x * (R2 + x * (R3 + x * R4)));
     } else {
       return 1.;
     }

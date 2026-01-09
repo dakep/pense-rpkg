@@ -11,40 +11,57 @@
 #include "constants.hpp"
 #include "rcpp_integration.hpp"
 #include "r_interface_utils.hpp"
-#include "alias.hpp"
 #include "rcpp_utils.hpp"
 #include "robust_scale_location.hpp"
 
 using Rcpp::as;
 using pense::Mscale;
-using pense::RhoBisquare;
-using pense::RhoHuber;
-using pense::LocationScaleEstimate;
-using pense::GetFallback;
-using pense::MLocationScale;
-using pense::RhoFunctionType;
-using pense::kDefaultHuberLocationCc;
-using pense::kDefaultBisquareLocationCc;
 
 namespace {
-// template<typename T>
-// LocationScaleEstimate GenericMLocationScale(const arma::vec& x, const Mscale<T>& mscale,
-//                                              const Rcpp::List& location_opts) {
-//   switch (static_cast<RhoFunctionType>(GetFallback(location_opts, "rho",
-//                                                    static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-//     case RhoFunctionType::kRhoHuber:
-//       return MLocationScale(x, mscale, RhoHuber(GetFallback(location_opts, "cc", kDefaultHuberLocationCc)));
-//     case RhoFunctionType::kRhoBisquare:
-//     default:
-//       return MLocationScale(x, mscale, RhoBisquare(GetFallback(location_opts, "cc", kDefaultBisquareLocationCc)));
-//   }
-// }
-
 constexpr int kDefaultMLocationMaxIt = 100;
 }  // namespace
 
 namespace pense {
 namespace r_interface {
+//! Evaluate the Rho Function
+//!
+//! @param x numeric values
+//! @param deriv whether to evaluate the rho function (deriv=0), the psi function (deriv=1),
+//               or the 2nd deriative rho'' (deriv=2)
+//! @param std whether to evaluate the standardized rho function (sup rho(x) = 1) or not
+//! @param scale the scale of the values in x
+//! @param rho_opts a list of options for the rho function
+SEXP RhoFun(SEXP r_x, SEXP r_deriv, SEXP r_std, SEXP r_scale, SEXP r_rho_opts) noexcept {
+  BEGIN_RCPP
+  auto x = MakeVectorView(r_x);
+  int deriv = as<int>(r_deriv);
+  double scale = as<double>(r_scale);
+  bool std = as<bool>(r_std);
+  auto rho_opts = as<Rcpp::List>(r_rho_opts);
+  auto rho = RhoFactory(r_rho_opts);
+
+  switch(deriv) {
+  case 2:
+    if (std) {
+      return Rcpp::wrap(rho->SecondDerivativeStd(*x, scale));
+    }
+    return Rcpp::wrap(rho->SecondDerivative(*x, scale));
+  case 1:
+    if (std) {
+      return Rcpp::wrap(rho->DerivativeStd(*x, scale));
+    }
+    return Rcpp::wrap(rho->Derivative(*x, scale));
+  case 0:
+  default:
+    if (std) {
+      return Rcpp::wrap(rho->EvaluateStd(*x, scale));
+    }
+    return Rcpp::wrap(rho->operator()(*x, scale));
+  }
+
+  END_RCPP;
+}
+
 //! Compute the tau-Scale of Centered Values
 //!
 //! @param x numeric values.
@@ -65,12 +82,7 @@ SEXP MScale(SEXP r_x, SEXP r_mscale_opts) noexcept {
   BEGIN_RCPP
   auto x = MakeVectorView(r_x);
   auto mscale_opts = as<Rcpp::List>(r_mscale_opts);
-  switch (static_cast<RhoFunctionType>(GetFallback(mscale_opts, "rho",
-                                                   static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-    case RhoFunctionType::kRhoBisquare:
-    default:
-      return Rcpp::wrap(Mscale<RhoBisquare>(mscale_opts)(*x));
-  }
+  return Rcpp::wrap(Mscale(mscale_opts)(*x));
   END_RCPP;
 }
 
@@ -85,17 +97,12 @@ SEXP MScaleDerivative(SEXP r_x, SEXP r_mscale_opts, SEXP r_order) noexcept {
   auto x = MakeVectorView(r_x);
   auto mscale_opts = as<Rcpp::List>(r_mscale_opts);
   auto order = as<int>(r_order);
-  switch (static_cast<RhoFunctionType>(GetFallback(mscale_opts, "rho",
-                                                   static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-    case RhoFunctionType::kRhoBisquare:
-    default:
-      switch (order) {
-      case 2:
-        return Rcpp::wrap(Mscale<RhoBisquare>(mscale_opts).GradientHessian(*x));
-      case 1:
-      default:
-        return Rcpp::wrap(Mscale<RhoBisquare>(mscale_opts).Derivative(*x));
-      }
+  switch (order) {
+  case 2:
+    return Rcpp::wrap(Mscale(mscale_opts).GradientHessian(*x));
+  case 1:
+  default:
+    return Rcpp::wrap(Mscale(mscale_opts).Derivative(*x));
   }
   END_RCPP;
 }
@@ -113,45 +120,40 @@ SEXP MaxMScaleDerivative(SEXP r_x, SEXP r_grid, SEXP r_change, SEXP r_mscale_opt
   auto grid = MakeVectorView(r_grid);
   auto change = as<int>(r_change);
   auto mscale_opts = as<Rcpp::List>(r_mscale_opts);
-  switch (static_cast<RhoFunctionType>(GetFallback(mscale_opts, "rho",
-                                                   static_cast<int>(RhoFunctionType::kRhoBisquare)))) {
-    case RhoFunctionType::kRhoBisquare:
-    default:
-      auto mscale = Mscale<RhoBisquare>(mscale_opts);
-      const auto derivatives = mscale.Derivative(x);
-      double max_md = 0;
-      if (derivatives.n_elem > 0) {
-        max_md = arma::max(arma::abs(derivatives));
-      }
-
-      arma::uvec counters(change, arma::fill::zeros);
-      int p = 0;
-      do {
-        for (int i = 0; i < change; ++i) {
-          x[i] = grid->at(counters[i]);
-        }
-        const auto derivatives = mscale.Derivative(x);
-        if (derivatives.n_elem > 0) {
-          const double md = arma::max(arma::abs(derivatives));
-          if (md > max_md) {
-            max_md = md;
-          }
-        }
-
-        p = change - 1;
-        while (p >= 0) {
-          ++counters[p];
-          if (counters[p] >= grid->n_elem) {
-            counters[p] = 0;
-            --p;
-          } else {
-            p = -2;
-          }
-        }
-      } while (p == -2);
-
-      return Rcpp::wrap(max_md);
+  auto mscale = Mscale(mscale_opts);
+  const auto derivatives = mscale.Derivative(x);
+  double max_md = 0;
+  if (derivatives.n_elem > 0) {
+    max_md = arma::max(arma::abs(derivatives));
   }
+
+  arma::uvec counters(change, arma::fill::zeros);
+  int p = 0;
+  do {
+    for (int i = 0; i < change; ++i) {
+      x[i] = grid->at(counters[i]);
+    }
+    const auto derivatives = mscale.Derivative(x);
+    if (derivatives.n_elem > 0) {
+      const double md = arma::max(arma::abs(derivatives));
+      if (md > max_md) {
+        max_md = md;
+      }
+    }
+
+    p = change - 1;
+    while (p >= 0) {
+      ++counters[p];
+      if (counters[p] >= grid->n_elem) {
+        counters[p] = 0;
+        --p;
+      } else {
+        p = -2;
+      }
+    }
+  } while (p == -2);
+
+  return Rcpp::wrap(max_md);
   END_RCPP;
 }
 
@@ -174,59 +176,51 @@ SEXP MaxMScaleGradientHessian(SEXP r_x, SEXP r_grid, SEXP r_change,
   auto grid = MakeVectorView(r_grid);
   auto change = as<int>(r_change);
   auto mscale_opts = as<Rcpp::List>(r_mscale_opts);
-  const auto rho_fun = static_cast<RhoFunctionType>(
-    GetFallback(mscale_opts, "rho",
-                static_cast<int>(RhoFunctionType::kRhoBisquare)));
+  auto mscale = Mscale(mscale_opts);
+  const auto tmp_maxima = mscale.MaxGradientHessian(x);
 
-  switch (rho_fun) {
-  case RhoFunctionType::kRhoBisquare:
-  default:
-    auto mscale = Mscale<RhoBisquare>(mscale_opts);
-    const auto tmp_maxima = mscale.MaxGradientHessian(x);
+  if (tmp_maxima.n_elem < 1) {
+    return Rcpp::wrap(tmp_maxima);
+  }
 
-    if (tmp_maxima.n_elem < 1) {
-      return Rcpp::wrap(tmp_maxima);
-    }
+  arma::vec::fixed<4> maxima = { tmp_maxima[1], tmp_maxima[2],
+                                  tmp_maxima[0], tmp_maxima[0] };
 
-    arma::vec::fixed<4> maxima = { tmp_maxima[1], tmp_maxima[2],
-                                   tmp_maxima[0], tmp_maxima[0] };
-
-    if (change < 1) {
-      return Rcpp::wrap(maxima);
-    }
-
-    arma::uvec counters(change, arma::fill::zeros);
-    int p = 0;
-    do {
-      for (int i = 0; i < change; ++i) {
-        x[i] = grid->at(counters[i]);
-      }
-      const auto tmp_maxima = mscale.MaxGradientHessian(x);
-      if (tmp_maxima.n_elem == 3) {
-        if (tmp_maxima[1] > maxima[0]) {
-          maxima[0] = tmp_maxima[1];
-          maxima[2] = tmp_maxima[0];
-        }
-        if (tmp_maxima[2] > maxima[1]) {
-          maxima[1] = tmp_maxima[2];
-          maxima[3] = tmp_maxima[0];
-        }
-      }
-
-      p = change - 1;
-      while (p >= 0) {
-        ++counters[p];
-        if (counters[p] >= grid->n_elem) {
-          counters[p] = 0;
-          --p;
-        } else {
-          p = -2;
-        }
-      }
-    } while (p == -2);
-
+  if (change < 1) {
     return Rcpp::wrap(maxima);
   }
+
+  arma::uvec counters(change, arma::fill::zeros);
+  int p = 0;
+  do {
+    for (int i = 0; i < change; ++i) {
+      x[i] = grid->at(counters[i]);
+    }
+    const auto tmp_maxima = mscale.MaxGradientHessian(x);
+    if (tmp_maxima.n_elem == 3) {
+      if (tmp_maxima[1] > maxima[0]) {
+        maxima[0] = tmp_maxima[1];
+        maxima[2] = tmp_maxima[0];
+      }
+      if (tmp_maxima[2] > maxima[1]) {
+        maxima[1] = tmp_maxima[2];
+        maxima[3] = tmp_maxima[0];
+      }
+    }
+
+    p = change - 1;
+    while (p >= 0) {
+      ++counters[p];
+      if (counters[p] >= grid->n_elem) {
+        counters[p] = 0;
+        --p;
+      } else {
+        p = -2;
+      }
+    }
+  } while (p == -2);
+
+  return Rcpp::wrap(maxima);
   END_RCPP;
 }
 
@@ -245,7 +239,7 @@ SEXP MLocation(SEXP r_x, SEXP r_scale, SEXP r_opts) noexcept {
   const int max_it = GetFallback(opts, "max_it", kDefaultMLocationMaxIt);
   const double convergence_tol = GetFallback(opts, "eps", kDefaultConvergenceTolerance);
 
-  return pense::MLocation(*x, *RhoFactory(opts), *scale, convergence_tol, max_it);
+  return Rcpp::wrap(pense::MLocation(*x, *RhoFactory(opts), *scale, convergence_tol, max_it));
   END_RCPP;
 }
 

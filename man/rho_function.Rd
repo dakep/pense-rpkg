@@ -4,10 +4,12 @@
 \alias{rho_function}
 \title{List Available Rho Functions}
 \usage{
-rho_function(rho)
+rho_function(rho, convex_ok = TRUE)
 }
 \arguments{
 \item{rho}{the name of the \eqn{\rho} function to check for existence.}
+
+\item{convex_ok}{if convex \eqn{\rho} function is acceptable or not.}
 }
 \value{
 if \code{rho} is missing returns a vector of supported \eqn{\rho} function names, otherwise

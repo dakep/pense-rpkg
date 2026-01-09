@@ -59,8 +59,16 @@ class PredictorResponseData {
   //! @param index the index of the observation to remove.
   //! @return the subset of the data with the observation removed.
   PredictorResponseData RemoveObservation(const arma::uword index) const {
-    return PredictorResponseData(arma::join_vert(x_.head_rows(index), x_.tail_rows(n_obs_ - index - 1)),
-                                 arma::join_vert(y_.head(index), y_.tail(n_obs_ - index - 1)));
+    if (n_obs_ > 0 && index < n_obs_) {
+      if (index == 0) {
+        return PredictorResponseData(x_.tail_rows(n_obs_ - 1), y_.tail(n_obs_ - 1));
+      } else if (index == n_obs_ - 1) {
+        return PredictorResponseData(x_.head_rows(n_obs_ - 1), y_.head(n_obs_ - 1));
+      }
+      return PredictorResponseData(arma::join_vert(x_.head_rows(index), x_.tail_rows(n_obs_ - index - 1)),
+                                   arma::join_vert(y_.head(index), y_.tail(n_obs_ - index - 1)));
+    }
+    return *this;
   }
 
   //! Get a data set with the first `n_obs` observations of the data.
@@ -68,7 +76,10 @@ class PredictorResponseData {
   //! @param n_obs number of observations to extract.
   //! @return the subset of the data with the requested observations.
   PredictorResponseData HeadRows(const arma::uword n_obs) const {
-    return PredictorResponseData(x_.head_rows(n_obs), y_.head_rows(n_obs));
+    if (n_obs <= n_obs_) {
+      return PredictorResponseData(x_.head_rows(n_obs), y_.head_rows(n_obs));
+    }
+    return *this;
   }
 
   //! Get a data set with the last `n_obs` observations of the data.
@@ -76,7 +87,10 @@ class PredictorResponseData {
   //! @param n_obs number of observations to extract.
   //! @return the subset of the data with the requested rows.
   PredictorResponseData TailRows(const arma::uword n_obs) const {
-    return PredictorResponseData(x_.tail_rows(n_obs), y_.tail_rows(n_obs));
+    if (n_obs <= n_obs_) {
+      return PredictorResponseData(x_.tail_rows(n_obs), y_.tail_rows(n_obs));
+    }
+    return *this;
   }
 
   //! Compare two data containers based on their object ID.

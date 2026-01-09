@@ -28,6 +28,7 @@ namespace {
 //! Exported methods
 const R_CallMethodDef kExportedCallMethods[] = {
   // {"C_run_testthat_tests", (DL_FUNC) &run_testthat_tests, 0},
+  {"C_rho_fun", (DL_FUNC) &RhoFun, 5},
   {"C_tau_size", (DL_FUNC) &TauSize, 1},
   {"C_approx_match", (DL_FUNC) &ApproximateMatch, 3},
   {"C_mscale", (DL_FUNC) &MScale, 2},

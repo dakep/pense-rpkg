@@ -141,7 +141,7 @@ mscale_derivative <- function (x, bdp = 0.25, order = 1, cc,
 #' @importFrom stats mad
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
-mloc <- function (x, scale, rho, eff = 0.90, cc, max_it = 200, eps = 1e-8) {
+mloc <- function (x, scale, rho = 'bisquare', eff = 0.90, cc, max_it = 200, eps = 1e-8) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
     .as(na.omit(x), 'double')
@@ -163,7 +163,7 @@ mloc <- function (x, scale, rho, eff = 0.90, cc, max_it = 200, eps = 1e-8) {
                cc = 1.0)
 
   if (missing(cc)) {
-    opts$cc <- .find_efficiency_const(eff, opts$rho)
+    opts$cc <- efficiency_const(eff, opts$rho, eps = eps)
   } else {
     opts$cc <- .as(cc[[1]], "numeric")
   }
@@ -181,14 +181,14 @@ mloc <- function (x, scale, rho, eff = 0.90, cc, max_it = 200, eps = 1e-8) {
 #' @param scale_cc tuning constant for the \eqn{\rho} function for computing the
 #'  scale estimate.
 #'  By default, chosen to yield a consistent estimate for normally distributed values.
-#' @param location_rho \eqn{\rho} function and cutoff value for computing
-#'  the location estimate.
+#' @param location_rho \eqn{\rho} function for computing the location estimate.
+#'  If missing, use the same function as for the scale estimate (`opts$rho`).
 #'  See [rho_function()] for a list of available \eqn{\rho} functions.
 #' @param location_cc tuning constant for the location \eqn{\rho} function.
 #'   By default chosen to yield the desired efficiency.
 #'   If this is provided, the desired efficiency is ignored.
-#' @param opts a list of options for the M-estimating equation,
-#'    see [mscale_algorithm_options()] for details.
+#' @param opts a list of options for the M-scale estimating equations,
+#'   See [mscale_algorithm_options()] for details.
 #' @return a vector with 2 elements, the M-estimate of location and the M-scale estimate.
 #'
 #' @family functions to compute robust estimates of location and scale
@@ -199,7 +199,7 @@ mloc <- function (x, scale, rho, eff = 0.90, cc, max_it = 200, eps = 1e-8) {
 #' @importFrom stats na.omit
 mlocscale <- function (x, bdp = 0.25, eff = 0.90,
                        scale_cc, location_rho, location_cc,
-                       opts = mscale_algorithm_options())
+                       opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
     .as(na.omit(x), 'double')
@@ -209,17 +209,21 @@ mlocscale <- function (x, bdp = 0.25, eff = 0.90,
 
   opts <- .full_mscale_algo_options(bdp, scale_cc, opts)
 
+  if (missing(location_rho)) {
+    location_rho <- opts$rho
+  }
+
   loc_opts <- list(rho = rho_function(location_rho, convex_ok = TRUE),
                    cc = 1.0)
 
   loc_opts$cc <- if (missing(location_cc)) {
-    .find_efficiency_const(eff, opts$rho)
+    efficiency_const(eff, opts$rho, eps = opts$eps)
   } else {
     .as(location_cc[[1]], "numeric")
   }
 
   .Call(C_mlocscale, x, opts, loc_opts)
-
+}
 
 #' Get the Constant for Consistency for the M-Scale and for Efficiency
 #' for the M-estimate of Location
@@ -230,6 +234,7 @@ mlocscale <- function (x, bdp = 0.25, eff = 0.90,
 #' @param delta desired breakdown point (between 0 and 0.5)
 #' @param rho the name of the chosen \eqn{\rho} function.
 #'   See [rho_function()] for a list of supported functions.
+#' @param eps numerical tolerance level for equality comparisons
 #'
 #' @return consistency constant
 #'
@@ -238,8 +243,7 @@ mlocscale <- function (x, bdp = 0.25, eff = 0.90,
 #' @export
 #'
 #' @importFrom rlang abort
-consistency_const <- function (delta, rho) {
-  eps <- sqrt(.Machine$double.eps)
+consistency_const <- function (delta, rho, eps = sqrt(.Machine$double.eps)) {
   if (!isTRUE(delta < 0.5 + eps && delta > -eps)) {
     abort("Desired breakdown point is outside valid bounds")
   }
@@ -247,9 +251,9 @@ consistency_const <- function (delta, rho) {
   rho <- rho_function(rho, convex_ok = FALSE)
 
   if (identical(rho, .k_rho_function_bisquare)) {
-    .bisquare_consistency_const(delta)
-  } else if (identical(rho, .k_rho_function_bisquare)) {
-    .mopt_consistency_const(delta)
+    .bisquare_consistency_const(delta, eps = eps)
+  } else if (identical(rho, .k_rho_function_opt)) {
+    .mopt_consistency_const(delta, eps = eps)
   } else {
     abort("Unknown rho function")
   }
@@ -262,20 +266,15 @@ consistency_const <- function (delta, rho) {
 #' @export
 #'
 #' @importFrom rlang abort
-efficiency_const <- function (eff, rho) {
-  eps <- sqrt(.Machine$double.eps)
-  if (!isTRUE(eff + eps < 0.1 && eff - eps > 0.99)) {
-    abort("Desired efficiency is outside valid bounds")
-  }
-
+efficiency_const <- function (eff, rho, eps = sqrt(.Machine$double.eps)) {
   rho <- rho_function(rho, convex_ok = TRUE)
 
   if (identical(rho, .k_rho_function_bisquare)) {
-    .bisquare_efficiency_const(eff)
-  } else if (identical(rho, .k_rho_function_bisquare)) {
-    .mopt_efficiency_const(eff)
+    .bisquare_efficiency_const(eff, eps)
+  } else if (identical(rho, .k_rho_function_opt)) {
+    .mopt_efficiency_const(eff, eps)
   } else if (identical(rho, .k_rho_function_huber)) {
-    .huber_efficiency_const(eff)
+    .huber_efficiency_const(eff, eps)
   } else {
     abort("Unknown rho function")
   }
@@ -289,6 +288,7 @@ efficiency_const <- function (eff, rho) {
 #'    the internal integer representation of the \eqn{\rho} function.
 #'
 #' @family miscellaneous functions
+#' @importFrom rlang abort
 #'
 #' @export
 rho_function <- function (rho, convex_ok = TRUE) {

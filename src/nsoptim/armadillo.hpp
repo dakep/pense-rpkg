@@ -9,10 +9,6 @@
 #ifndef NSOPTIM_ARMADILLO_HPP_
 #define NSOPTIM_ARMADILLO_HPP_
 
-#ifndef ARMA_USE_CXX11
-#  define ARMA_USE_CXX11 1
-#endif
-
 #ifndef ARMA_DONT_USE_OPENMP
 #  define ARMA_DONT_USE_OPENMP 1
 #endif

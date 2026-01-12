@@ -85,7 +85,7 @@
 #'   (between 0 and 1).
 #'   If no CV solution satisfies this lower bound, the best CV solution will be used regardless
 #'   of similarity.
-#' @param rho_cc consistency constant for Tukey's bisquare rho function.
+#' @param rho_opts rho function options.
 #' @param par_cluster parallel cluster to parallelize computations.
 #' @param handler_args additional arguments to the handler function.
 #' @importFrom Matrix drop
@@ -96,7 +96,7 @@
                                     global_ests,
                                     min_similarity = 0,
                                     par_cluster = NULL,
-                                    rho_cc,
+                                    rho_opts,
                                     handler_args = list()) {
   est_fun <- match.fun(cv_est_fun)
   if (!isTRUE(min_similarity >= 0) || !isTRUE(min_similarity <= 1)) {
@@ -175,7 +175,7 @@
   glbl_wgts <- .Call(C_robustness_weights,
                      global_ests,
                      length(std_data$y),
-                     rho_cc)
+                     rho_opts)
 
   matches <- lapply(global_ests, \(x) {
     lapply(x, \(...) {
@@ -191,7 +191,7 @@
     cv_wgts <- .Call(C_robustness_weights,
                      x$estimates,
                      length(x$train_ind),
-                     rho_cc)
+                     rho_opts)
 
     for (i in seq_along(glbl_wgts)) {
       corrs <- cor(cv_wgts[[i]], glbl_wgts[[i]][x$train_ind, ])

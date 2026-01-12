@@ -19,8 +19,9 @@ constexpr double kNumericZero = 1e-12;
 
 //! Integer IDs for the supported rho-functions
 enum class RhoFunctionType {
-  kRhoBisquare = 1,
-  kRhoHuber = 2
+  kRhoHuber = 1,
+  kRhoBisquare = 2,
+  kRhoOptimal = 3
 };
 
 //! Integer IDs for supported EN algorithms
@@ -45,12 +46,10 @@ enum class MestEnAlgorithm {
   kMm = 1
 };
 
-//! Default tuning constant for the Huber rho function for location estimates.
-constexpr double kDefaultHuberLocationCc = 1.345;
-//! Default tuning constant for the Bisquare rho function for location estimates.
-constexpr double kDefaultBisquareLocationCc = 4.685061;
-//! Default tuning constant for the Bisquare rho function for M-scale estimates.
-constexpr double kDefaultBisquareMscaleCc = 2.937015;
+//! Default tuning constant for the rho function for M-scale estimates.
+constexpr double kDefaultHuberCc = 1.345;
+constexpr double kDefaultBisquareCc = 2.937015;
+constexpr double kDefaultOptimaleCc = 0.405;
 //! Default breakdown point for the M-scale equation.
 constexpr double kDefaultMscaleDelta = 0.25;
 

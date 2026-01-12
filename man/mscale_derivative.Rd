@@ -2,33 +2,13 @@
 % Please edit documentation in R/utilities.R
 \name{mscale_derivative}
 \alias{mscale_derivative}
-\alias{max_mscale_derivative}
-\alias{max_mscale_grad_hess}
 \title{Compute the Gradient and Hessian of the M-Scale Function}
 \usage{
 mscale_derivative(
   x,
   bdp = 0.25,
   order = 1,
-  cc = consistency_const(bdp, "bisquare"),
-  opts = mscale_algorithm_options()
-)
-
-max_mscale_derivative(
-  x,
-  grid,
-  n_change,
-  bdp = 0.25,
-  cc = consistency_const(bdp, "bisquare"),
-  opts = mscale_algorithm_options()
-)
-
-max_mscale_grad_hess(
-  x,
-  grid,
-  n_change,
-  bdp = 0.25,
-  cc = consistency_const(bdp, "bisquare"),
+  cc,
   opts = mscale_algorithm_options()
 )
 }
@@ -46,39 +26,12 @@ Normal distribution.}
 
 \item{opts}{a list of options for the M-scale estimation algorithm,
 see \code{\link[=mscale_algorithm_options]{mscale_algorithm_options()}} for details.}
-
-\item{grid}{a grid of values to replace the first 1 - \code{n_change} elements in\code{ x}.}
-
-\item{n_change}{the number of elements in \code{x} to replace with each value in \code{grid}.}
 }
 \value{
 a vector of derivatives of the M-scale function, one per element in \code{x}.
-
-a vector with 4 elements:
-\enumerate{
-\item the maximum absolute value of the gradient,
-\item the maximum absolute value of the Hessian elements,
-\item the M-scale associated with 1., and
-\item the M-scale associated with 2.
-}
-
-the maximum absolute derivative over the entire grid.
 }
 \description{
 Compute the derivative (gradient) or the Hessian of the M-scale function
 evaluated at the point \code{x}.
-
-Compute the maximum derivative of the M-scale function with respect to each element over
-a grid of values.
-
-Compute the maximum element in the gradient and Hessian of the M-scale
-function with respect to each element over a grid of values.
 }
-\section{Functions}{
-\itemize{
-\item \code{max_mscale_derivative()}: maximum of the gradient
-
-\item \code{max_mscale_grad_hess()}: maximum of the gradient and hessian
-
-}}
 \keyword{internal}

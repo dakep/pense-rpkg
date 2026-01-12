@@ -29,7 +29,11 @@
 #' @param intercept include an intercept in the model.
 #' @param add_zero_based also consider the 0-based regularization path in addition to the given
 #'     starting points.
-#' @param cc cutoff constant for Tukey's bisquare \eqn{\rho} function.
+#' @param rho which \eqn{\rho} function to use (see [rho_function()] for the list of supported
+#'     options).
+#' @param eff the desired asymptotic efficiency of the M-estimator under the Normal model.
+#' @param cc manually specified cutoff constant for the chosen \eqn{\rho} function.
+#'     If specified, overrides the `eff` argument.
 #' @param eps numerical tolerance.
 #' @param explore_solutions number of solutions to compute up to the desired precision `eps`.
 #' @param explore_tol numerical tolerance for exploring possible solutions.
@@ -78,7 +82,8 @@
 #'
 #' @export
 regmest <- function(x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale, starting_points,
-                    penalty_loadings, intercept = TRUE, cc = 4.7,
+                    penalty_loadings, intercept = TRUE,
+                    eff = 0.9, rho = 'mopt', cc,
                     eps = 1e-6, explore_solutions = 10, explore_tol = 0.1,
                     max_solutions = 1, comparison_tol = sqrt(eps), sparse = FALSE,
                     ncores = 1, standardize = TRUE,
@@ -411,163 +416,182 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
   .Call(C_mesten_regression, x, y, scale, penalties, mest_opts, optional_args)
 }
 
-#' @importFrom rlang warn abort
+#' @importFrom rlang warn abort is_missing
 #' @importFrom methods is
 #' @importFrom Matrix sparseVector
 #' @importFrom stats runif
-.regmest_args <- function (x, y, alpha, nlambda = 50, lambda, lambda_min_ratio, scale,
-                           starting_points, penalty_loadings, intercept = TRUE, cc = 4.7,
-                           eps = 1e-6, explore_solutions = 10, explore_tol = 0.1,
-                           max_solutions = 10, comparison_tol = sqrt(eps), sparse = FALSE,
-                           ncores = 1, standardize = TRUE, algorithm_opts = mm_algorithm_options(),
-                           add_zero_based = TRUE, mscale_bdp = 0.25,
-                           mscale_opts = mscale_algorithm_options(), ...) {
-  args_call <- match.call(expand.dots = FALSE)
-  optional_args <- list()
+.regmest_args <- function (...) {
+  ## Pull in default values for the arguments from the pense() function
+  ## definition.
+  defaults <- formals(regmest)
+  args <- list2env(list(...))
+  for (argname in names(defaults)) {
+    if (!(exists(argname, args, inherits = FALSE))) {
+      # evaluate the default values in this environment
+      args[[argname]] <- if (!is_missing(defaults[[argname]])) {
+        eval(defaults[[argname]], envir = args)
+      } else {
+        defaults[[argname]]
+      }
+    }
+  }
 
   ## Process input arguments
-  response <- .validate_response(y)
-  y <- response$values
-  x_dim <- dim(x)
+  response <- .validate_response(args$y)
+  args$y <- response$values
+  args$binary_response <- response$binary
+  x_dim <- dim(args$x)
 
-  if (length(y) != x_dim[[1L]]) {
+  if (length(args$y) != x_dim[[1L]]) {
     abort("Number of observations in `x` and `y` does not match.")
   } else if (x_dim[[2L]] <= 1L) {
     abort("`x` must be a matrix with at least 2 columns.")
   }
 
-  alpha <- .as(alpha, 'numeric')
-  if (any(alpha < 0 | alpha > 1)) {
+  args$alpha <- .as(args$alpha, 'numeric')
+  if (any(args$alpha < 0 | args$alpha > 1)) {
     abort("`alpha` is outside 0 and 1.")
-  } else if (any(alpha < sqrt(.Machine$double.eps))) {
-    alpha[which(alpha < sqrt(.Machine$double.eps))] <- 0
-    if (any(alpha > 0)) {
+  } else if (any(args$alpha < sqrt(.Machine$double.eps))) {
+    alpha[which(args$alpha < sqrt(.Machine$double.eps))] <- 0
+    if (any(args$alpha > 0)) {
       abort("`alpha=0` cannot be mixed with other `alpha` values.")
     }
   }
 
-  scale <- .as(scale[[1L]], 'numeric')
-  if (!isTRUE(scale > .Machine$double.eps)) {
+  args$scale <- .as(args$scale[[1L]], 'numeric')
+  if (!isTRUE(args$scale > .Machine$double.eps)) {
     abort("`scale` must be positive.")
   }
 
-  mscale_opts <- .full_mscale_algo_options(bdp = mscale_bdp, mscale_opts = mscale_opts)
+  args$mscale_opts <- .full_mscale_algo_options(bdp = args$mscale_bdp, mscale_opts = args$mscale_opts)
 
-  mest_opts <- list(algo_opts = algorithm_opts,
-                    cc = .as(cc[[1L]], 'numeric'),
-                    strategy_0 = isTRUE(add_zero_based),
-                    algorithm = .regmest_algorithm_id(algorithm_opts),
-                    intercept = !isFALSE(intercept),
-                    sparse = isTRUE(sparse),
-                    eps = .as(eps[[1L]], 'numeric'),
-                    max_it = mscale_opts$max_it,  # max. iterations for finding the largest lambda
-                    comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
-                    explore_tol = .as(explore_tol[[1L]], 'numeric'),
-                    nr_tracks = .as(explore_solutions[[1L]], 'integer'),
-                    max_optima = .as(max_solutions[[1L]], 'integer'),
-                    num_threads = max(1L, .as(ncores[[1L]], 'integer')))
+  args$rho <- rho_function(args$rho, convex_ok = TRUE)
 
-  if (mest_opts$cc < .Machine$double.eps) {
+  if (is_missing(args$cc)) {
+    args$cc <- efficiency_const(args$eff, rho = args$rho, eps = args$eps)
+  } else {
+    args$eff <- NULL
+  }
+
+  args$mest_opts <- list(algo_opts = args$algorithm_opts,
+                         cc = args$cc,
+                         rho = args$rho,
+                         strategy_0 = isTRUE(args$add_zero_based),
+                         algorithm = .regmest_algorithm_id(args$algorithm_opts),
+                         intercept = !isFALSE(args$intercept),
+                         sparse = isTRUE(args$sparse),
+                         eps = .as(args$eps[[1L]], 'numeric'),
+                         max_it = args$mscale_opts$max_it,  # max. iterations for finding the largest lambda
+                         comparison_tol = .as(args$comparison_tol[[1L]], 'numeric'),
+                         explore_tol = .as(args$explore_tol[[1L]], 'numeric'),
+                         nr_tracks = .as(args$explore_solutions[[1L]], 'integer'),
+                         max_optima = .as(args$max_solutions[[1L]], 'integer'),
+                         num_threads = max(1L, .as(args$ncores[[1L]], 'integer')))
+
+  if (args$mest_opts$cc < .Machine$double.eps) {
     abort("`cc` must be positive.")
   }
 
-  if (mest_opts$explore_tol < mest_opts$eps) {
+  if (args$mest_opts$explore_tol < args$mest_opts$eps) {
     abort("`explore_tol` must not be less than `eps`")
   }
-  if (mest_opts$comparison_tol < mest_opts$eps) {
+  if (args$mest_opts$comparison_tol < args$mest_opts$eps) {
     abort("`comparison_tol` must not be less than `eps`")
   }
 
   # If using the MM algorithm, ensure that the EN options are set.
-  if (mest_opts$algorithm == 1L) {
-    mest_opts$algo_opts$en_options <- .select_en_algorithm(mest_opts$algo_opts$en_options,
-                                                           alpha,
-                                                           mest_opts$sparse, eps)
-    mest_opts$sparse <- mest_opts$algo_opts$en_options$sparse
+  if (args$mest_opts$algorithm == 1L) {
+    args$mest_opts$algo_opts$en_options <- .select_en_algorithm(
+      args$mest_opts$algo_opts$en_options, args$alpha, args$mest_opts$sparse, args$eps)
+    args$mest_opts$sparse <- args$mest_opts$algo_opts$en_options$sparse
   }
 
   # Set the number of cores for the ENPY options
-  if (mest_opts$num_threads > 1L && !isTRUE(.k_multithreading_support)) {
+  if (args$mest_opts$num_threads > 1L && !isTRUE(.k_multithreading_support)) {
     warn("Multithreading not supported. Using only 1 core.")
-    mest_opts$num_threads <- 1L
+    args$mest_opts$num_threads <- 1L
   }
 
   # Standardizing the data
-  standardize <- if (is.character(standardize)) {
-    if (pmatch(standardize[[1L]], 'cv_only', nomatch = 0L) == 1L) {
-      standardize <- 'cv_only'
+  if (is.character(args$standardize)) {
+    if (pmatch(args$standardize[[1L]], 'cv_only', nomatch = 0L) == 1L) {
+      args$standardize <- 'cv_only'
     } else {
       abort("`standardize` must be either TRUE/FALSE or \"cv_only\".")
     }
   } else {
-    isTRUE(standardize)
+    args$standardize <- isTRUE(args$standardize)
   }
 
   # Check penalty loadings
-  if (!missing(penalty_loadings) && !is.null(penalty_loadings)) {
-    checked_pls <- .prepare_penalty_loadings(penalty_loadings, x, alpha, sparse = mest_opts$sparse)
-    penalty_loadings <- checked_pls$loadings
-    restore_coef_length <- checked_pls$restore_fun
-    x <- checked_pls$trimmed_x
+  if (!is_missing(args$penalty_loadings) && !is.null(args$penalty_loadings)) {
+    checked_pls <- .prepare_penalty_loadings(args$penalty_loadings,
+                                             x = args$x,
+                                             alpha = args$alpha,
+                                             sparse = args$mest_opts$sparse)
+    args$penalty_loadings <- checked_pls$loadings
+    args$restore_coef_length <- checked_pls$restore_fun
+    args$x <- checked_pls$trimmed_x
   } else {
-    restore_coef_length <- function (coef) coef
-    penalty_loadings <- NULL
+    args$restore_coef_length <- function (coef) coef
+    args$penalty_loadings <- NULL
   }
 
-  if (ncol(x) == 0L) {
+  if (ncol(args$x) == 0L) {
     warn("All values in `penalty_loadings` are infinite. Only computing the intercept.")
-    mest_opts$intercept <- TRUE
-    std_data <- .standardize_data(matrix(runif(x_dim[[1L]]), ncol = 1L), y, intercept = TRUE,
-                                  sparse = mest_opts$sparse,
-                                  standardize = standardize, robust = TRUE,
-                                  mscale_opts = mscale_opts,
-                                  bdp = mscale_opts$delta, cc = mscale_opts$cc)
+    args$mest_opts$intercept <- TRUE
+    args$std_data <- .standardize_data(matrix(runif(x_dim[[1L]]), ncol = 1L), args$y,
+                                       intercept = TRUE,
+                                       sparse = args$mest_opts$sparse,
+                                       standardize = args$standardize,
+                                       robust = TRUE,
+                                       mscale_opts = args$mscale_opts,
+                                       bdp = args$mscale_opts$delta,
+                                       cc = args$mscale_opts$cc)
     # Compute only the 0-based solution.
-    mest_opts$strategy_0 <- TRUE
+    args$mest_opts$strategy_0 <- TRUE
     lambda <- lapply(args$alpha, FUN = .regmest_lambda_grid,
-                     x = std_data$x, y = std_data$y, scale = scale,
+                     x = args$std_data$x, y = args$std_data$y, scale = args$scale,
                      nlambda = 1, lambda_min_ratio = 1,
-                     mest_options = mest_opts, penalty_loadings1 = NULL)
+                     mest_options = args$mest_opts, penalty_loadings = NULL)
 
-    return(list(std_data = std_data,
-                alpha = args$alpha,
-                lambda = lambda,
-                scale = scale,
-                penalty_loadings = NULL,
-                mest_opts = mest_opts,
-                optional_args = optional_args,
-                restore_coef_length = restore_coef_length))
+    return(args)
   }
 
-  std_data <- .standardize_data(x, y, intercept = mest_opts$intercept,
-                                standardize = standardize,
-                                robust = TRUE,
-                                sparse = mest_opts$sparse,
-                                mscale_opts = mscale_opts,
-                                bdp = mscale_opts$delta,
-                                cc = mscale_opts$cc)
+  args$std_data <- .standardize_data(args$x,
+                                     args$y,
+                                     intercept = args$mest_opts$intercept,
+                                     standardize = args$standardize,
+                                     robust = TRUE,
+                                     sparse = args$mest_opts$sparse,
+                                     mscale_opts = args$mscale_opts,
+                                     bdp = args$mscale_opts$delta,
+                                     cc = args$mscale_opts$cc)
 
   # Scale penalty loadings appropriately
-  penalty_loadings <- penalty_loadings / std_data$scale_x
-  if (length(penalty_loadings) == 0L) {
-    penalty_loadings <- NULL
+  args$penalty_loadings <- args$penalty_loadings / args$std_data$scale_x
+  if (length(args$penalty_loadings) == 0L) {
+    args$penalty_loadings <- NULL
   }
 
   # Determine lambda grid
-  lambda <- if (missing(lambda) || is.null(lambda)) {
-    if (missing(lambda_min_ratio)) {
-      lambda_min_ratio <- NULL
+  args$lambda <- if (is_missing(args$lambda) || is.null(args$lambda)) {
+    if (is_missing(args$lambda_min_ratio)) {
+      args$lambda_min_ratio <- NULL
     }
-    lapply(alpha, FUN = .regmest_lambda_grid,
-           x = std_data$x, y = std_data$y, scale = scale,
-           nlambda = nlambda,
-           lambda_min_ratio = lambda_min_ratio,
-           mest_options = mest_opts,
-           penalty_loadings = penalty_loadings)
-  } else if (!is.list(lambda)) {
-    rep.int(list(sort(.as(lambda, 'numeric'), decreasing = TRUE)), length(alpha))
-  } else if (identical(length(lambda), length(alpha))) {
-    lapply(lambda, function (l) {
+    lapply(args$alpha,
+           FUN = .regmest_lambda_grid,
+           x = args$std_data$x,
+           y = args$std_data$y,
+           scale = args$scale,
+           nlambda = args$nlambda,
+           lambda_min_ratio = args$lambda_min_ratio,
+           mest_options = args$mest_opts,
+           penalty_loadings = args$penalty_loadings)
+  } else if (!is.list(args$lambda)) {
+    rep.int(list(sort(.as(args$lambda, 'numeric'), decreasing = TRUE)), length(args$alpha))
+  } else if (identical(length(args$lambda), length(args$alpha))) {
+    lapply(args$lambda, \(l) {
       if (any(l < .Machine$double.eps)) {
         abort("All values in `lambda` must be positive.")
       }
@@ -577,29 +601,22 @@ adamest_cv <- function (x, y, alpha, alpha_preliminary = 0, exponent = 1, ...) {
     abort("`lambda` must either be a numeric vector or a list the same length as `alpha`.")
   }
 
-  if (!missing(starting_points)) {
-    if (is(starting_points, 'pense_fit') || is(starting_points, 'pense_cvfit')) {
-      starting_points <- as_starting_point(starting_points)
-    } else if (is(starting_points, 'starting_point')) {
-      starting_points <- structure(list(starting_points), class = 'starting_points')
-    } else if (!is(starting_points, 'starting_points')) {
+  if (!is_missing(args$starting_points)) {
+    if (is(args$starting_points, 'pense_fit') || is(args$starting_points, 'pense_cvfit')) {
+      args$starting_points <- as_starting_point(args$starting_points)
+    } else if (is(args$starting_points, 'starting_point')) {
+      args$starting_points <- structure(list(args$starting_points), class = 'starting_points')
+    } else if (!is(args$starting_points, 'starting_points')) {
       abort(paste("`starting_points` must be a list of starting points created by",
                   "`starting_point()`, `enpy_initial_estimates()`, or a combination thereof."))
     }
 
     # Ensure the `beta` coefficients in `other_starts` agree with the desired vector class
     # (sparse vs. dense) and standardize them.
-    optional_args$shared_starts <- lapply(.sparsify_other_starts(starting_points, mest_opts$sparse),
-                                          std_data$standardize_coefs)
+    args$optional_args$shared_starts <- .sparsify_other_starts(args$starting_points,
+                                                               args$mest_opts$sparse) |>
+      lapply(args$std_data$standardize_coefs)
   }
 
-  return(list(std_data = std_data,
-              binary_response = response$binary,
-              alpha = alpha,
-              scale = scale,
-              lambda = lambda,
-              penalty_loadings = penalty_loadings,
-              mest_opts = mest_opts,
-              optional_args = optional_args,
-              restore_coef_length = restore_coef_length))
+  return(args)
 }

@@ -46,11 +46,14 @@ enpy_options <- function (max_it = 10, keep_psc_proportion = 0.5,
 #'
 #' @param max_it maximum number of iterations.
 #' @param eps numerical tolerance to check for convergence.
+#' @param rho the \eqn{\rho} function to use. See [rho_function()] for
+#'   possible values.
 #'
 #' @return options for the M-scale estimation algorithm.
 #' @export
-mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
+mscale_algorithm_options <- function (rho = 'bisquare', max_it = 200, eps = 1e-8) {
   list(max_it = .as(max_it[[1L]], 'integer'),
+       rho = rho_function(rho, FALSE),
        eps = .as(eps[[1L]], 'numeric'))
 }
 
@@ -59,7 +62,7 @@ mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
 ##
 ## @param mscale_opts public control options created by [mscale_algorithm_options].
 ## @param bdp the breakdown point, i.e., `delta` in the M-estimation equation.
-## @param cc the cutoff threshold for the bisquare rho function.
+## @param cc the tuning constant for the chosen rho function.
 ##
 ## @return full options for the M-scale estimation algorithm.
 #' @importFrom rlang is_missing
@@ -71,7 +74,7 @@ mscale_algorithm_options <- function (max_it = 200, eps = 1e-8) {
   }
 
   mscale_opts$cc <- if (is_missing(cc) || is.null(cc)) {
-    .bisquare_consistency_const(mscale_opts$delta)
+    consistency_const(mscale_opts$delta, mscale_opts$rho, eps = mscale_opts$eps)
   } else {
     .as(cc, 'numeric')
   }

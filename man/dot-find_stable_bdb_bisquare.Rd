@@ -10,7 +10,8 @@ with Tukey's bisquare rho function.}
   desired_bdp,
   tolerance = 0.01,
   precision = 1e-04,
-  interval = c(0.05, 0.5)
+  interval = c(0.05, 0.5),
+  eps = sqrt(.Machine$double.eps)
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ The chosen bdp is guaranteed to be in the range given by \code{interval}.}
 \item{precision}{granularity of the grid of considered bdp's.}
 
 \item{interval}{restrict the chosen bdp to this interval.}
+
+\item{eps}{numerical tolerance for equality comparisons}
 }
 \description{
 The M-scale objective (and hence the S-loss) can have unbounded or very high

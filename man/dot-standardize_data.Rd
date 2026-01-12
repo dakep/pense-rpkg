@@ -12,7 +12,6 @@
   robust,
   sparse,
   mscale_opts,
-  location_rho = "bisquare",
   cc,
   target_scale_x = NULL,
   ...
@@ -29,8 +28,6 @@ in which case \code{y} is ignored.}
 \item{standardize}{standardize or not.}
 
 \item{robust}{use robust standardization.}
-
-\item{location_rho}{rho function for location estimate}
 
 \item{cc}{cutoff value for the rho functions used in scale and location
 estimates.}

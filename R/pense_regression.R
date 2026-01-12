@@ -70,15 +70,18 @@
 #'   `standardize=TRUE`. Otherwise only the estimated scale of the residuals
 #'   would be affected.
 #' @param eps numerical tolerance.
-#' @param explore_solutions number of solutions to compute up to the desired precision `eps`.
+#' @param explore_solutions number of solutions to keep after the exploration step.
+#'    The best `explore_solutions` are then iterated to full numerical tolerance `eps`.
+#'    If 0, all non-duplicated solutions are kept.
 #' @param explore_tol,explore_it numerical tolerance and maximum number of iterations for
 #'    exploring possible solutions. The tolerance should be (much) looser than `eps` to be useful,
 #'    and the number of iterations should also be much smaller than the maximum number of
 #'    iterations given via `algorithm_opts`.
-#' @param max_solutions only retain up to `max_solutions` unique solutions per penalization level.
+#'    `explore_tol` is also used to determine if two solutions are equal in the exploration stage.
+#' @param max_solutions retain only up to `max_solutions` unique solutions per penalization level.
 #' @param comparison_tol numeric tolerance to determine if two solutions are equal.
 #'    The comparison is first done on the absolute difference in the value of the objective
-#'    function at the solution If this is less than `comparison_tol`, two solutions are deemed
+#'    function at the solution. If this is less than `comparison_tol`, two solutions are deemed
 #'    equal if the squared difference of the intercepts is less than `comparison_tol` and the
 #'    squared \eqn{L_2} norm of the difference vector is less than `comparison_tol`.
 #' @param add_zero_based also consider the 0-based regularization path. See details for a
@@ -461,7 +464,7 @@ pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,
         cv_est_fun = cv_est_fun,
         global_ests = fits[[i]]$estimates,
         min_similarity = ris_min_similarity,
-        rho_cc = cv_handler_args$args$pense_opts$mscale$cc,
+        rho_opts = cv_handler_args$args$pense_opts$mscale,
         par_cluster = cl,
         handler_args = cv_handler_args)
 

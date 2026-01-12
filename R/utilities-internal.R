@@ -1,20 +1,177 @@
-#' Get the Constant for Consistency for the M-Scale Using the Bisquare Rho Function
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the Huber \eqn{\rho} function
+#' @param eff desired efficiency (between 0 and 1)
+#' @param eps numerical tolerance for equality comparisons
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+#' @importFrom stats integrate uniroot pnorm
+.huber_efficiency_const <- function (eff, eps = sqrt(.Machine$double.eps)) {
+  if (eff > 0.99) {
+    return(2.1)
+  } else if (abs(eff - 0.95) < eps) {
+    return(1.345)
+  } else if (abs(eff - 0.90) < eps) {
+    return(0.982)
+  } else if (abs(eff - 0.85) < eps) {
+    return(0.732)
+  } else if (abs(eff - 0.80) < eps) {
+    return(0.529)
+  }  else if (eff < 0.64) {
+    return(0.00999)
+  }
+
+  integral_interval <- c(0.009, 2.1)
+
+  uniroot(interval = integral_interval, tol = eps * 0.1, f = \(cc) {
+    rho_opts$cc[[1]] <- cc[[1]]
+    int_2nd <- 2 * pnorm(cc) - 1
+    int_sq_inner <- integrate(lower = 0, upper = cc, rel.tol = eps, f = \(x) {
+      x^2 * dnorm(x)
+    })
+    int_sq_outer <- 2 * cc^2 * pnorm(cc, lower.tail = FALSE)
+    int_2nd^2 / (2 * int_sq_inner$value + int_sq_outer) - eff
+  })$root
+}
+
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the bisquare \eqn{\rho} function
+#' @param eff desired efficiency (between 0 and 1)
+#' @param eps numerical tolerance for equality comparisons
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+#' @importFrom stats integrate uniroot dnorm
+.bisquare_efficiency_const <- function (eff, eps = sqrt(.Machine$double.eps)) {
+  if (eff > 0.99 - eps) {
+    return(7.0414)
+  } else if (abs(eff - 0.95) < eps) {
+    return(4.685)
+  } else if (abs(eff - 0.90) < eps) {
+    return(3.883)
+  } else if (abs(eff - 0.85) < eps) {
+    return(3.444)
+  } else if (abs(eff - 0.80) < eps) {
+    return(3.137)
+  } else if (eff < 0.1) {
+    return(0.994) # ~ 10% efficiency
+  }
+
+  rho_opts <- list(cc = 0, rho = .k_rho_function_bisquare)
+
+  integral_interval <- if (eff > 0.5) {
+    c(2, 7.05)
+  } else {
+    c(0.5, 3)
+  }
+  uniroot(interval = integral_interval, tol = eps * 0.1, f = \(cc) {
+    rho_opts$cc[[1]] <- cc[[1]]
+    int_2nd <- integrate(lower = 0, upper = cc, rel.tol = eps, f = \(x) {
+      r <- .Call(C_rho_fun, x, 2L, TRUE, 1., rho_opts)
+      r * dnorm(x)
+    })
+    int_sq <- integrate(lower = 0, upper = cc, rel.tol = eps, f = \(x) {
+      r <- .Call(C_rho_fun, x, 1L, TRUE, 1., rho_opts)
+      r^2 * dnorm(x)
+    })
+    2 * int_2nd$value^2 / int_sq$value - eff
+  })$root
+}
+
+#' Get the constant for the desired efficiency of the M-estimate of location
+#' using the optimal \eqn{\rho} function
+#' @param eff desired efficiency (between 0 and 1)
+#' @param eps numerical tolerance for equality comparisons
+#'
+#' @return tuning constant for desired efficiency
+#' @keywords internal
+#' @importFrom stats integrate uniroot dnorm
+.mopt_efficiency_const <- function (eff, eps = sqrt(.Machine$double.eps)) {
+  if (eff > 0.99 - eps) {
+    return(1.304) # 99.1% efficiency
+  } else if (abs(eff - 0.95) < eps) {
+    return(1.0602)
+  } else if (abs(eff - 0.90) < eps) {
+    return(0.9441)
+  } else if (abs(eff - 0.85) < eps) {
+    return(0.8684)
+  } else if (abs(eff - 0.80) < eps) {
+    return(0.8098)
+  } else if (eff < 0.1) {
+    return(0.2838) # ~ 10% efficiency
+  }
+
+  rho_opts <- list(cc = 0, rho = .k_rho_function_opt)
+  integral_interval <- c(0.25, 1.5)
+
+  uniroot(interval = integral_interval, tol = eps * 0.1, f = \(cc) {
+    rho_opts$cc[[1]] <- cc[[1]]
+    int_2nd <- integrate(lower = 0, upper = 3 * cc, rel.tol = eps, f = \(x) {
+      r <- .Call(C_rho_fun, x, 2L, TRUE, 1., rho_opts)
+      r * dnorm(x)
+    })
+    int_sq <- integrate(lower = 0, upper = 3 * cc, rel.tol = eps, f = \(x) {
+      r <- .Call(C_rho_fun, x, 1L, TRUE, 1., rho_opts)
+      r^2 * dnorm(x)
+    })
+    2 * int_2nd$value^2 / (int_sq$value) - eff
+  })$root
+}
+
+#' Get the Constant for Consistency for the M-Scale Using the Optimal Rho Function
 #' @param delta desired breakdown point (between 0 and 0.5)
+#' @param eps numerical tolerance for equality comparisons
 #'
 #' @return consistency constant
 #' @keywords internal
-#' @importFrom stats pnorm uniroot
+#' @importFrom stats integrate uniroot pnorm dnorm
 #' @importFrom rlang abort
-.bisquare_consistency_const <- function (delta) {
+.mopt_consistency_const <- function (delta, eps = sqrt(.Machine$double.eps)) {
   ##
   ## Pre-computed values for some delta values
   ##
-  eps <- sqrt(.Machine$double.eps)
-  if (!isTRUE(delta < 0.5 + eps && delta > -eps)) {
-    abort("`delta` is outside valid bounds")
+  if (delta > 0.5 - eps) {
+    return(0.40463)
+  } else if (abs(delta - 0.25) < eps) {
+    return(0.74047)
+  } else if (abs(delta - 0.1) < eps) {
+    return(1.2376)
+  } else if (delta < 0.001) {
+    return(12.4035) # ~.1% bdp for mopt
   }
 
-  if (abs(delta - 0.5) < eps) {
+  rho_opts <- list(cc = 0, rho = .k_rho_function_opt)
+
+  integral_interval <- if (delta > 0.1) {
+    c(0.3, 1.5)
+  } else {
+    c(1, 15)
+  }
+  # Note: the mopt function is constant outside the region [-3 cc, 3 cc]
+  uniroot(interval = integral_interval, f = \(cc) {
+    p_outside <- pnorm(-3 * cc)
+    rho_opts$cc[[1]] <- cc[[1]]
+    int <- integrate(lower = 0, upper = 3 * cc, f = \(x) {
+      r <- .Call(C_rho_fun, x, 0L, TRUE, 1., rho_opts)
+      r * dnorm(x)
+    })
+    int$value + p_outside - 0.5 * delta
+  })$root
+}
+
+#' Get the Constant for Consistency for the M-Scale Using the Bisquare Rho Function
+#' @param delta desired breakdown point (between 0 and 0.5)
+#' @param eps numerical tolerance for equality comparisons
+#'
+#' @return consistency constant
+#' @keywords internal
+#' @importFrom stats integrate uniroot pnorm
+#' @importFrom rlang abort
+.bisquare_consistency_const <- function (delta, eps = sqrt(.Machine$double.eps)) {
+  ##
+  ## Pre-computed values for some delta values
+  ##
+  if (delta > 0.5 - eps) {
     return(1.5476450)
   } else if (abs(delta - 0.25) < eps) {
     return(2.937015)
@@ -30,7 +187,7 @@
   }
 
   # For bisquare we have the closed form solution to the expectation
-  expectation <- function(cc, delta) {
+  expectation <- \(cc, delta) {
     pnorm.mcc <- 2 * pnorm(-cc)
     1/cc^6 * exp(-(cc^2/2)) * (
       -cc * (15 - 4 * cc^2 + cc^4) * sqrt(2 / pi) +
@@ -56,15 +213,17 @@
 #'                  The chosen bdp is guaranteed to be in the range given by `interval`.
 #' @param interval restrict the chosen bdp to this interval.
 #' @param precision granularity of the grid of considered bdp's.
+#' @param eps numerical tolerance for equality comparisons
+#'
 #' @importFrom rlang warn
+#' @importFrom stats uniroot
 #' @keywords internal
 .find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
-                                       interval = c(0.05, 0.5)) {
+                                       interval = c(0.05, 0.5),
+                                       eps = sqrt(.Machine$double.eps)) {
   if (isTRUE(attr(desired_bdp, 'fixed', TRUE))) {
     return(desired_bdp)
   }
-
-  numeric_tol <- sqrt(.Machine$double.eps)
 
   from <- min(max(desired_bdp - tolerance, interval[[1L]]),
               interval[[2L]])
@@ -73,15 +232,15 @@
   bdp_range <- seq(from, to, by = precision)
 
   # Filter bdp's where the 1st derivative is unbounded
-  bdp_range <- bdp_range[abs(bdp_range * n - floor(bdp_range * n)) > numeric_tol]
+  bdp_range <- bdp_range[abs(bdp_range * n - floor(bdp_range * n)) > eps]
 
   # Determine an upper bound for the 1st derivative of the M-scale objective function
-  first_deriv_bound <- vapply(bdp_range, FUN.VALUE = numeric(1L), FUN = function (bdp) {
-    thresh <- tryCatch(uniroot(f = function (t) {
+  first_deriv_bound <- vapply(bdp_range, FUN.VALUE = numeric(1L), FUN = \(bdp) {
+    thresh <- tryCatch(uniroot(f = \(t) {
       up <- n * (1 - bdp) / (1 - t)
       up - floor(up) - n * t / (1 - t)
-    }, interval = c(0, 0.5),  extendInt = 'downX', tol = numeric_tol)$root,
-    error = function (e) {
+    }, interval = c(0, 0.5),  extendInt = 'downX', tol = eps)$root,
+    error = \(e) {
       return(NA_real_)
     })
 
@@ -150,7 +309,6 @@ extract_metric <- function (metrics, attr, node) {
 #' @param intercept is an intercept included (i.e., should `y` be centered?)
 #' @param standardize standardize or not.
 #' @param robust use robust standardization.
-#' @param location_rho rho function for location estimate
 #' @param cc cutoff value for the rho functions used in scale and location
 #'  estimates.
 #' @param ... passed on to `mlocscale()`.
@@ -161,8 +319,7 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom stats sd
 #' @keywords internal
 .standardize_data <- function (x, y, intercept, standardize, robust, sparse,
-                               mscale_opts, location_rho = 'bisquare', cc,
-                               target_scale_x = NULL, ...) {
+                               mscale_opts, cc, target_scale_x = NULL, ...) {
   if (is.list(x) && !is.null(x$x) && !is.null(x$y)) {
     y <- x$y
     x <- x$x
@@ -177,14 +334,12 @@ extract_metric <- function (metrics, attr, node) {
       ret_list$mux <- colMeans(x)
       ret_list$muy <- mean(y)
     } else {
-      ret_list$mux <- apply(x, 2, function (xj) {
-        mlocscale(xj, location_rho = location_rho, location_cc = cc,
-                  scale_cc = cc, opts = mscale_opts, ...)[['location']]
+      ret_list$mux <- apply(x, 2, \ (xj) {
+        mlocscale(xj, location_cc = cc, scale_cc = cc, opts = mscale_opts, ...)[['location']]
       })
       # Center the response using the S-estimate of regression for the
       # 0-slope.
-      y_locscale <- mlocscale(y, location_rho = location_rho, location_cc = cc,
-                              scale_cc = cc, opts = mscale_opts, ...)
+      y_locscale <- mlocscale(y, location_cc = cc, scale_cc = cc, opts = mscale_opts, ...)
       if (!isTRUE(y_locscale[['scale']] > .Machine$double.eps)) {
         abort("M-scale of response is 0.")
       }
@@ -204,9 +359,8 @@ extract_metric <- function (metrics, attr, node) {
     ret_list$scale_x <- if (!isTRUE(robust)) {
       apply(ret_list$x, 2, sd)
     } else {
-      locscale <- apply(ret_list$x, 2, function (xj) {
-        mlocscale(xj, location_rho = location_rho, location_cc = cc,
-                  scale_cc = cc, opts = mscale_opts, ...)
+      locscale <- apply(ret_list$x, 2, \ (xj) {
+        mlocscale(xj, location_cc = cc, scale_cc = cc, opts = mscale_opts, ...)
       })
       if (isTRUE(intercept)) {
         # Re-center the predictors with the updated centers
@@ -237,7 +391,7 @@ extract_metric <- function (metrics, attr, node) {
     target_scale_x <- 1
   }
 
-  ret_list$cv_standardize <- function(x, y) {
+  ret_list$cv_standardize <- function (x, y) {
     if (is.list(x) && !is.null(x$x) && !is.null(x$y)) {
       y <- x$y
       x <- x$x
@@ -250,7 +404,6 @@ extract_metric <- function (metrics, attr, node) {
                         standardize = TRUE,
                         robust = robust,
                         sparse = sparse,
-                        location_rho = location_rho,
                         cc = cc,
                         mscale_opts = mscale_opts,
                         target_scale_x = ret_list$scale_x,
@@ -261,14 +414,13 @@ extract_metric <- function (metrics, attr, node) {
                         standardize = standardize,
                         robust = robust,
                         sparse = sparse,
-                        location_rho = location_rho,
                         cc = cc,
                         mscale_opts = mscale_opts,
                         ... = ...)
     }
   }
 
-  ret_list$standardize_coefs <- function(coef_obj) {
+  ret_list$standardize_coefs <- function (coef_obj) {
     if (is.null(coef_obj)) {
       return(NULL)
     }
@@ -287,7 +439,7 @@ extract_metric <- function (metrics, attr, node) {
   }
 
   ret_list$unstandardize_coefs <- if (isTRUE(sparse)) {
-    function(coef_obj) {
+    function (coef_obj) {
       if (is.null(coef_obj)) {
         return(coef_obj)
       }
@@ -310,7 +462,7 @@ extract_metric <- function (metrics, attr, node) {
       return(coef_obj)
     }
   } else {
-    function(coef_obj) {
+    function (coef_obj) {
       if (is.null(coef_obj)) {
         return(coef_obj)
       }
@@ -367,7 +519,7 @@ extract_metric <- function (metrics, attr, node) {
 #' @importFrom rlang abort
 .as <- function (object, class, ...) {
   object_var <- deparse(substitute(object))
-  tryCatch(methods::as(object, class, ...), warning = function (w) {
+  tryCatch(methods::as(object, class, ...), warning = \(w) {
     abort(sprintf('`%s` is not of type `%s`', object_var, class))
   })
 }
@@ -397,6 +549,8 @@ extract_metric <- function (metrics, attr, node) {
   }
 }
 
+#' @importFrom rlang abort
+#' @importFrom Matrix sparseVector
 .prepare_penalty_loadings <- function (penalty_loadings, x, alpha, sparse,
                                        stop_all_infinite = FALSE) {
   orig_p <- ncol(x)
@@ -470,7 +624,7 @@ extract_metric <- function (metrics, attr, node) {
 
 #' @importFrom methods is
 .sparsify_other_starts <- function (other_starts, sparse) {
-  lapply(other_starts, function (est) {
+  lapply(other_starts, \(est) {
     if (isTRUE(sparse) && !is(est$beta, 'dsparseVector')) {
       est$beta <- sparseVector(as.numeric(est$beta), seq_along(est$beta), length(est$beta))
     } else if (!isTRUE(sparse) && !is.numeric(est$beta)) {
@@ -494,12 +648,12 @@ extract_metric <- function (metrics, attr, node) {
       clusterEvalQ(par_cluster, {
         library(pense)
       })
-    }, error = function (e) {
+    }, error = \(e) {
       abort(paste("`parallel` cluster cannot be used:", e))
     })
 
     return(function (X, FUN, ..., x, fun) {
-      clusterApplyLB(par_cluster, x = X, fun = function (X, FUN, ...) {
+      clusterApplyLB(par_cluster, x = X, fun = \(X, FUN, ...) {
         FUN(X, ...)
       }, FUN = FUN, ... = ...)
     })
@@ -540,8 +694,6 @@ extract_metric <- function (metrics, attr, node) {
   } else {
     match.fun(comp_fun)
   }
-  matches <- vapply(x, FUN.VALUE = logical(1L), FUN = function (el) {
-    comp_fun(el[[what]], ...)
-  })
+  matches <- vapply(x, FUN.VALUE = logical(1L), FUN = \(el) comp_fun(el[[what]], ...))
   x[matches]
 }

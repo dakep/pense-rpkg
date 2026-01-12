@@ -2,41 +2,7 @@
 #' @importFrom rlang warn abort is_missing
 #' @importFrom methods is
 #' @importFrom stats runif
-.pense_args <- function (...,
-                         options = deprecated(),
-                         init_options = deprecated(),
-                         en_options = deprecated(),
-                         initial = deprecated(),
-                         warm_reset = deprecated()) {
-  ## Check presence of deprecated arguments
-  # Translate options for initial estimates
-  if (is_present(warm_reset)) {
-    deprecate_stop('2.0.0', 'pense(warm_reset=)', 'pense(nlambda_enpy=)')
-  }
-  if (is_present(initial)) {
-    deprecate_stop('2.0.0', 'pense(initial=)',
-                   details = paste("Use arguments `nlambda_enpy`,",
-                                   "`enpy_specific`, `add_zero_based`",
-                                   "and `other_starts` instead."))
-  }
-
-  # Translate algorithm options
-  if (is_present(en_options)) {
-    deprecate_stop('2.0.0', 'pense(en_options=)',
-                   details = paste("The LS-EN algorithm is specified",
-                                   "with arguments `algorithm_opts`",
-                                   "and `enpy_opts`."))
-  }
-  if (is_present(init_options)) {
-    deprecate_stop('2.0.0', 'pense(init_options=)', 'pense(enpy_opts=)')
-  }
-  if (is_present(options)) {
-    deprecate_stop('2.0.0', 'pense(options=)',
-                   details = paste("Use arguments `bdp`, `eps`,",
-                                   "`mscale_opts` and `algorithm_opts`",
-                                   "to `pense()` instead."))
-  }
-
+.pense_args <- function (...) {
   ## Pull in default values for the arguments from the pense() function
   ## definition.
   defaults <- formals(pense)
@@ -92,16 +58,19 @@
          algorithm = .pense_algorithm_id(algorithm_opts),
          intercept = !isFALSE(intercept),
          warm_starts = !isFALSE(carry_forward[[1L]]),
-         eps = .as(eps[[1L]], 'numeric'),
-         comparison_tol = .as(comparison_tol[[1L]], 'numeric'),
-         explore_tol = .as(explore_tol[[1L]], 'numeric'),
-         explore_it = .as(explore_it[[1L]], 'integer'),
-         nr_tracks = .as(explore_solutions[[1L]], 'integer'),
-         max_optima = .as(max_solutions[[1L]], 'integer'),
+         eps = max(.Machine$double.eps, .as(eps[[1L]], 'numeric')),
+         comparison_tol = max(.Machine$double.eps, .as(comparison_tol[[1L]], 'numeric')),
+         explore_tol = max(.Machine$double.eps, .as(explore_tol[[1L]], 'numeric')),
+         explore_it = max(0L, .as(explore_it[[1L]], 'integer')),
+         nr_tracks = max(0L, .as(explore_solutions[[1L]], 'integer')),
+         max_optima = max(0L, .as(max_solutions[[1L]], 'integer')),
          num_threads = max(1L, .as(ncores[[1L]], 'integer')),
          sparse = isTRUE(sparse),
-         mscale = .full_mscale_algo_options(bdp = bdp, cc = cc,
-                                            mscale_opts = mscale_opts)))
+         mscale = .full_mscale_algo_options(bdp = bdp, cc = cc, mscale_opts = mscale_opts)))
+
+  if (args$pense_opts$nr_tracks > 0L) {
+    args$pense_opts$nr_tracks <- max(args$pense_opts$nr_tracks, args$pense_opts$max_optima)
+  }
 
   if (args$pense_opts$nr_tracks > 0L) {
     args$pense_opts$nr_tracks <- max(args$pense_opts$nr_tracks, args$pense_opts$max_optima)
@@ -112,9 +81,6 @@
   }
   if (args$pense_opts$comparison_tol < args$pense_opts$eps) {
     abort("`comparison_tol` must not be less than `eps`")
-  }
-  if (args$pense_opts$explore_it < 0L) {
-    abort("`explore_it` must not be less than 0")
   }
 
   # Check EN algorithm for ENPY

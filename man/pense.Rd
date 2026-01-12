@@ -96,18 +96,21 @@ level.}
 
 \item{eps}{numerical tolerance.}
 
-\item{explore_solutions}{number of solutions to compute up to the desired precision \code{eps}.}
+\item{explore_solutions}{number of solutions to keep after the exploration step.
+The best \code{explore_solutions} are then iterated to full numerical tolerance \code{eps}.
+If 0, all non-duplicated solutions are kept.}
 
 \item{explore_tol, explore_it}{numerical tolerance and maximum number of iterations for
 exploring possible solutions. The tolerance should be (much) looser than \code{eps} to be useful,
 and the number of iterations should also be much smaller than the maximum number of
-iterations given via \code{algorithm_opts}.}
+iterations given via \code{algorithm_opts}.
+\code{explore_tol} is also used to determine if two solutions are equal in the exploration stage.}
 
-\item{max_solutions}{only retain up to \code{max_solutions} unique solutions per penalization level.}
+\item{max_solutions}{retain only up to \code{max_solutions} unique solutions per penalization level.}
 
 \item{comparison_tol}{numeric tolerance to determine if two solutions are equal.
 The comparison is first done on the absolute difference in the value of the objective
-function at the solution If this is less than \code{comparison_tol}, two solutions are deemed
+function at the solution. If this is less than \code{comparison_tol}, two solutions are deemed
 equal if the squared difference of the intercepts is less than \code{comparison_tol} and the
 squared \eqn{L_2} norm of the difference vector is less than \code{comparison_tol}.}
 

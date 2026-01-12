@@ -14,370 +14,362 @@
 
 using arma::vec;
 
-namespace {
-//! Actual implementations of the bisquare function.
-//! Note that the derivatives are for the *unstandardized* bisquare function, while BisquareFunctionValueStd
-//! gives the *standardized* value, i.e., BisquareFunctionValueStd(t, cc_scaled) == 1 for all |t| > cc_scaled!
-double BisquareFunctionValueStd(double x, const double cc_scaled) noexcept;
-double BisquareDerivativeValue(double x, const double cc_scaled) noexcept;
-double BisquareSecondDerivativeValue(double x, const double cc_scaled) noexcept;
-double BisquareWeightValue(double x, const double cc_scaled) noexcept;
-
-//! Actual implementations of the Huber function.
-double HuberFunctionValue(double x, const double scale, const double cc) noexcept;
-double HuberDerivativeValue(double x, const double scale_sq, const double cc_inv_scaled) noexcept;
-double HuberSecondDerivativeValue(double x, const double cc_scaled) noexcept;
-double HuberWeightValue(double x, const double cc_scaled) noexcept;
-}  // namespace
-
 namespace pense {
-// ================================== Huber's Rho Function ========================================================== //
-double RhoHuber::operator()(double x, const double scale) const noexcept {
-  return HuberFunctionValue(x, scale, cc_);
+// == Abstract Rho Function ========================================================================================= //
+double RhoFunction::operator()(double x, const double scale) const noexcept {
+  auto rho = this->StdFn(scale);
+  return UpperBound() * rho(x);
 }
 
-vec RhoHuber::operator()(const vec& x, const double scale) const noexcept {
-  vec out;
-  this->operator()(x, scale, &out);
-  return out;
-}
-
-void RhoHuber::operator()(const vec& x, const double scale, vec* out) const noexcept {
+void RhoFunction::operator()(const vec& x, const double scale, vec* out) const noexcept {
+  auto rho = this->StdFn(scale);
   out->copy_size(x);
-  auto read_it = x.cbegin();
-  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = HuberFunctionValue(*read_it, scale, cc_);
-  }
-}
-
-double RhoHuber::Sum(const vec& x, const double scale) const noexcept {
-  double tmp = 0.;
-  for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    tmp += HuberFunctionValue(*read_it, scale, cc_);
-  }
-  return tmp;
-}
-
-double RhoHuber::Derivative(double x, const double scale) const noexcept {
-  return HuberDerivativeValue(x, scale * scale, cc_ / scale);
-}
-
-vec RhoHuber::Derivative(const vec& x, const double scale) const noexcept {
-  vec out;
-  this->Derivative(x, scale, &out);
-  return out;
-}
-
-void RhoHuber::Derivative(const vec& x, const double scale, vec* out) const
-    noexcept {
-  auto read_it = x.cbegin();
-  const double scale_sq = scale * scale;
-  const double cc_inv_scale = cc_ / scale;
-  out->copy_size(x);
-  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = HuberDerivativeValue(*read_it, scale_sq, cc_inv_scale);
-  }
-}
-
-double RhoHuber::Weight(double x, const double scale) const noexcept {
-  return HuberWeightValue(x, scale * cc_);
-}
-
-vec RhoHuber::Weight(const vec& x, const double scale) const noexcept {
-  vec out;
-  this->Weight(x, scale, &out);
-  return out;
-}
-
-void RhoHuber::Weight(const vec& x, const double scale, vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
-  auto read_it = x.cbegin();
-  out->copy_size(x);
-  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = HuberWeightValue(*read_it, cc_scaled);
-  }
-}
-
-double RhoHuber::SecondDerivative(double x, const double scale) const noexcept {
-  return HuberSecondDerivativeValue(x, cc_ * scale);
-}
-
-vec RhoHuber::SecondDerivative(const vec& x, const double scale) const noexcept {
-  vec out;
-  this->SecondDerivative(x, scale, &out);
-  return out;
-}
-
-void RhoHuber::SecondDerivative(const vec& x, const double scale, vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
-  auto read_it = x.cbegin();
-  out->copy_size(x);
-  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = HuberSecondDerivativeValue(*read_it, cc_scaled);
-  }
-}
-
-// ============================= Tukey's Bisquare Function ========================================================== //
-
-double RhoBisquare::UpperBound() const noexcept {
-  return cc_ * cc_ / 6.;
-}
-
-double RhoBisquare::operator()(double x, const double scale) const noexcept {
-  return UpperBound() * BisquareFunctionValueStd(x, cc_ * scale);
-}
-
-vec RhoBisquare::operator()(const vec& x, const double scale) const noexcept {
-  vec out;
-  this->operator()(x, scale, &out);
-  return out;
-}
-
-void RhoBisquare::operator()(const vec& x, const double scale, vec* out) const noexcept {
-  out->copy_size(x);
-  const double cc_scaled = cc_ * scale;
   const double rho_inf = UpperBound();
   auto read_it = x.cbegin();
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = rho_inf * BisquareFunctionValueStd(*read_it, cc_scaled);
+    *write_it = rho_inf * rho(*read_it);
   }
 }
 
-double RhoBisquare::Sum(const vec& x, const double scale) const noexcept {
+vec RhoFunction::operator()(const arma::vec& x, const double scale) const noexcept {
+  vec out;
+  this->operator()(x, scale, &out);
+  return out;
+}
+
+double RhoFunction::Sum(const vec& x, const double scale) const noexcept {
   double tmp = 0.;
-  const double cc_scaled = cc_ * scale;
-  for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    tmp += BisquareFunctionValueStd(*read_it, cc_scaled);
+  auto rho = this->StdFn(scale);
+  for (double xv : x) {
+    tmp += rho(xv);
   }
   return UpperBound() * tmp;
 }
 
-double RhoBisquare::EvaluateStd(double x, const double scale) const noexcept {
-  return BisquareFunctionValueStd(x, cc_ * scale);
+double RhoFunction::EvaluateStd(double x, const double scale) const noexcept {
+  auto rho = this->StdFn(scale);
+  return rho(x);
 }
 
-vec RhoBisquare::EvaluateStd(const vec& x, const double scale) const noexcept {
-  vec out;
-  this->operator()(x, scale, &out);
-  return out;
-}
-
-void RhoBisquare::EvaluateStd(const vec& x, const double scale, vec* out) const noexcept {
+void RhoFunction::EvaluateStd(const vec& x, const double scale, vec* out) const noexcept {
   out->copy_size(x);
-  const double cc_scaled = cc_ * scale;
+  auto rho = this->StdFn(scale);
   auto read_it = x.cbegin();
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareFunctionValueStd(*read_it, cc_scaled);
+    *write_it = rho(*read_it);
   }
 }
 
-double RhoBisquare::SumStd(const vec& x, const double scale) const noexcept {
+vec RhoFunction::EvaluateStd(const arma::vec& x, const double scale) const noexcept{
+  vec out;
+  this->EvaluateStd(x, scale, &out);
+  return out;
+}
+
+double RhoFunction::SumStd(const vec& x, const double scale) const noexcept {
   double tmp = 0.;
-  const double cc_scaled = cc_ * scale;
-  for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    tmp += BisquareFunctionValueStd(*read_it, cc_scaled);
+  auto rho = this->StdFn(scale);
+  for (double xv : x) {
+    tmp += rho(xv);
   }
   return tmp;
 }
 
-double RhoBisquare::Derivative(double x, const double scale) const noexcept {
-  return BisquareDerivativeValue(x, scale * cc_);
+double RhoFunction::Derivative(double x, const double scale) const noexcept {
+  auto deriv = this->DerivativeFn(scale);
+  return deriv(x);
 }
 
-vec RhoBisquare::Derivative(const vec& x, const double scale) const noexcept {
+void RhoFunction::Derivative(const vec& x, const double scale, vec* out) const noexcept {
+  auto read_it = x.cbegin();
+  auto deriv = this->DerivativeFn(scale);
+  out->copy_size(x);
+  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
+    *write_it = deriv(*read_it);
+  }
+}
+
+vec RhoFunction::Derivative(const arma::vec& x, const double scale) const noexcept{
   vec out;
   this->Derivative(x, scale, &out);
   return out;
 }
 
-void RhoBisquare::Derivative(const vec& x, const double scale, vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
+double RhoFunction::DerivativeStd(const double x, const double scale) const noexcept {
+  auto deriv = this->DerivativeFn(scale);
+  return deriv(x) / UpperBound();
+}
+
+void RhoFunction::DerivativeStd(const arma::vec& x, const double scale, arma::vec* out) const noexcept {
+  auto deriv = this->DerivativeFn(scale);
+  const double rho_inf = UpperBound();
   auto read_it = x.cbegin();
   out->copy_size(x);
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareDerivativeValue(*read_it, cc_scaled);
+    *write_it = deriv(*read_it) / rho_inf;
   }
 }
 
-double RhoBisquare::DerivativeStd(double x, const double scale) const noexcept {
-  return BisquareDerivativeValue(x, scale * cc_) / UpperBound();
-}
-
-arma::vec RhoBisquare::DerivativeStd(const arma::vec& x, const double scale) const noexcept {
+vec RhoFunction::DerivativeStd(const arma::vec& x, const double scale) const noexcept{
   vec out;
   this->DerivativeStd(x, scale, &out);
   return out;
 }
 
-void RhoBisquare::DerivativeStd(const arma::vec& x, const double scale, arma::vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
-  const double rho_inf = UpperBound();
-  auto read_it = x.cbegin();
-  out->copy_size(x);
-  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareDerivativeValue(*read_it, cc_scaled) / rho_inf;
-  }
-}
-
-double RhoBisquare::DerivativeFixedPoint(const arma::vec& x, const double scale, const double delta) const noexcept {
-  const double cc_scaled = cc_ * scale;
-  double numerator = -x.n_elem * delta;
+double RhoFunction::DerivativeFixedPoint(const arma::vec& x, const double scale, const double delta) const noexcept {
+  auto rho = this->StdFn(scale);
+  auto deriv = this->DerivativeFn(scale);
+  double numerator = -delta * x.n_elem;
   double denominator = 0;
-   for (auto read_it = x.cbegin(); read_it != x.cend(); ++read_it) {
-    numerator += BisquareFunctionValueStd(*read_it, cc_scaled);
-    denominator += BisquareDerivativeValue(*read_it, cc_scaled) * (*read_it);
+  for (const double xv : x) {
+    numerator += rho(xv);
+    denominator += deriv(xv) * xv;
   }
 
   if (numerator < kNumericZero) {
     return 0;
   }
-
   return UpperBound() * scale * scale * numerator / denominator;
 }
 
-double RhoBisquare::SecondDerivative(double x, const double scale) const noexcept {
-  return BisquareSecondDerivativeValue(x, cc_ * scale);
+double RhoFunction::SecondDerivative(double x, const double scale) const noexcept {
+  auto deriv2nd = this->SecondDerivativeFn(scale);
+  return deriv2nd(x);
 }
 
-vec RhoBisquare::SecondDerivative(const vec& x, const double scale) const noexcept {
+void RhoFunction::SecondDerivative(const vec& x, const double scale, vec* out) const noexcept {
+  auto deriv2nd = this->SecondDerivativeFn(scale);
+  auto read_it = x.cbegin();
+  out->copy_size(x);
+  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
+    *write_it = deriv2nd(*read_it);
+  }
+}
+
+vec RhoFunction::SecondDerivative(const arma::vec& x, const double scale) const noexcept{
   vec out;
   this->SecondDerivative(x, scale, &out);
   return out;
 }
 
-void RhoBisquare::SecondDerivative(const vec& x, const double scale, vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
+double RhoFunction::SecondDerivativeStd(double x, const double scale) const noexcept {
+  auto deriv2nd = this->SecondDerivativeFn(scale);
+  return deriv2nd(x) / UpperBound();
+}
+
+void RhoFunction::SecondDerivativeStd(const vec& x, const double scale, vec* out) const noexcept {
+  auto deriv2nd = this->SecondDerivativeFn(scale);
+  const double rho_inf = UpperBound();
   auto read_it = x.cbegin();
   out->copy_size(x);
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareSecondDerivativeValue(*read_it, cc_scaled);
+    *write_it = deriv2nd(*read_it) / rho_inf;
   }
 }
 
-double RhoBisquare::SecondDerivativeStd(double x, const double scale) const noexcept {
-  return BisquareSecondDerivativeValue(x, cc_ * scale) / UpperBound();
-}
-
-vec RhoBisquare::SecondDerivativeStd(const vec& x, const double scale) const noexcept {
+vec RhoFunction::SecondDerivativeStd(const arma::vec& x, const double scale) const noexcept{
   vec out;
   this->SecondDerivativeStd(x, scale, &out);
   return out;
 }
 
-void RhoBisquare::SecondDerivativeStd(const vec& x, const double scale, vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
-  const double rho_inf = UpperBound();
+double RhoFunction::Weight(double x, const double scale) const noexcept {
+  auto wgt = this->WeightFn(scale);
+  return wgt(x);
+}
+
+void RhoFunction::Weight(const vec& x, const double scale, vec* out) const noexcept {
+  auto wgt = this->WeightFn(scale);
   auto read_it = x.cbegin();
   out->copy_size(x);
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareSecondDerivativeValue(*read_it, cc_scaled) / rho_inf;
+    *write_it = wgt(*read_it);
   }
 }
 
-double RhoBisquare::Weight(double x, const double scale) const noexcept {
-  return BisquareWeightValue(x, scale * cc_);
-}
-
-vec RhoBisquare::Weight(const vec& x, const double scale) const noexcept {
+vec RhoFunction::Weight(const arma::vec& x, const double scale) const noexcept{
   vec out;
   this->Weight(x, scale, &out);
   return out;
 }
 
-void RhoBisquare::Weight(const vec& x, const double scale, vec* out) const noexcept {
-  const double cc_scaled = cc_ * scale;
+double RhoFunction::WeightStd(const double x, const double scale) const noexcept {
+  auto wgt = this->WeightFn(scale);
+  return wgt(x) / UpperBound();
+}
+
+void RhoFunction::WeightStd(const vec& x, const double scale, vec* out) const noexcept {
+  auto wgt = this->WeightFn(scale);
+  const double rho_inf = UpperBound();
   auto read_it = x.cbegin();
   out->copy_size(x);
   for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareWeightValue(*read_it, cc_scaled);
+    *write_it = wgt(*read_it) / rho_inf;
   }
 }
 
-double RhoBisquare::WeightStd(double x, const double scale) const noexcept {
-  return BisquareWeightValue(x, scale * cc_) / UpperBound();
-}
-
-vec RhoBisquare::WeightStd(const vec& x, const double scale) const noexcept {
+vec RhoFunction::WeightStd(const arma::vec& x, const double scale) const noexcept{
   vec out;
   this->WeightStd(x, scale, &out);
   return out;
 }
 
-void RhoBisquare::WeightStd(const vec& x, const double scale, vec* out) const noexcept {
+// == Huber's Rho Function ========================================================================================== //
+RhoFunction::ValueFun RhoHuber::StdFn(const double scale) const noexcept {
+  return [scale, cc = cc_](double x) noexcept {
+    x = std::abs(x) / scale;
+    if (x > cc) {
+      return cc * (x - 0.5 * cc);
+    }
+    return 0.5 * x * x;
+  };
+}
+
+RhoFunction::ValueFun RhoHuber::DerivativeFn(const double scale) const noexcept {
   const double cc_scaled = cc_ * scale;
-  const double rho_inf = UpperBound();
-  auto read_it = x.cbegin();
-  out->copy_size(x);
-  for (auto write_it = out->begin(), end = out->end(); write_it != end; ++write_it, ++read_it) {
-    *write_it = BisquareWeightValue(*read_it, cc_scaled) / rho_inf;
-  }
+  return [cc_scaled](double x) noexcept {
+    return (x <= -cc_scaled) ? -cc_scaled : ((x < cc_scaled) ? x : cc_scaled);
+  };
 }
-}  // namespace pense
 
-namespace {
-inline double BisquareFunctionValueStd(double x, const double cc_scaled) noexcept {
-  if (std::abs(x) > cc_scaled) {
+RhoFunction::ValueFun RhoHuber::SecondDerivativeFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    return std::abs(x) < cc_scaled ? 1. : 0.;
+  };
+}
+
+RhoFunction::ValueFun RhoHuber::WeightFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    x = std::abs(x);
+    if (x > cc_scaled) {
+      return cc_scaled / x;
+    }
     return 1.;
-  }
-  x /= cc_scaled;
-  x *= x;
-  return x * (3. + x * (-3. + x));
+  };
 }
 
-inline double BisquareDerivativeValue(double x, const double cc_scaled) noexcept {
-  if (std::abs(x) > cc_scaled) {
-    return 0.;
-  }
-  const double a = x / cc_scaled;
-  const double u = 1. - a * a;
-  return x * u * u;
+// == Tukey's Bisquare Function ========================================================== //
+RhoFunction::ValueFun RhoBisquare::StdFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    if (std::abs(x) > cc_scaled) {
+      return 1.;
+    }
+    x /= cc_scaled;
+    x *= x;
+    return x * (3. + x * (-3. + x));
+  };
 }
 
-inline double BisquareSecondDerivativeValue(double x, const double cc_scaled) noexcept {
-  if (std::abs(x) > cc_scaled) {
-    return 0.;
-  }
-  x /= cc_scaled;
-  x *= x;
-  return (1. - x) * (1. - 5. * x);
+RhoFunction::ValueFun RhoBisquare::DerivativeFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    if (std::abs(x) > cc_scaled) {
+      return 0.;
+    }
+    const double a = x / cc_scaled;
+    const double u = 1. - a * a;
+    return x * u * u;
+  };
 }
 
-inline double BisquareWeightValue(double x, const double cc_scaled) noexcept {
-  if (std::abs(x) > cc_scaled) {
-    return 0.;
-  }
-  x /= cc_scaled;
-  x = (1 - x) * (1 + x);
-  return x * x;
+RhoFunction::ValueFun RhoBisquare::SecondDerivativeFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    if (std::abs(x) > cc_scaled) {
+      return 0.;
+    }
+    x /= cc_scaled;
+    x *= x;
+    return (1. - x) * (1. - 5. * x);
+  };
 }
 
-inline double HuberFunctionValue(double x, const double scale, const double cc) noexcept {
-  x = std::abs(x) / scale;
-  if (x > cc) {
-    return cc * (x - 0.5 * cc);
-  }
-  return 0.5 * x * x;
+RhoFunction::ValueFun RhoBisquare::WeightFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    if (std::abs(x) > cc_scaled) {
+      return 0.;
+    }
+    x /= cc_scaled;
+    x = (1 - x) * (1 + x);
+    return x * x;
+  };
 }
 
-inline double HuberDerivativeValue(double x, const double scale_sq, const double cc_inv_scaled) noexcept {
-  x /= scale_sq;
-  if (x > cc_inv_scaled) {
-    return cc_inv_scaled;
-  } else if (-x > cc_inv_scaled) {
-    return -cc_inv_scaled;
-  }
-  return x;
+// == Optimal Rho Function ========================================================== //
+RhoFunction::ValueFun RhoOptimal::StdFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    double ax = std::abs(x) / cc_scaled;
+    ax *= ax;
+    if (ax > 9) {
+      return 1.0;
+    } else if (ax > 4) {
+      constexpr double R1 = -0.972, // = -1.944/2.,
+                       R2 =  0.432, // = 1.728/4.,
+                       R3 = -0.052, // = -0.312/6.,
+                       R4 =  0.002; // = 0.016/8.;
+      return (ax * (R1 + ax * (R2 + ax * (R3 + ax * R4))) + 1.792) / 3.25;
+    } else {
+      return ax / 6.5;
+    }
+  };
 }
 
-inline double HuberSecondDerivativeValue(double x, const double cc_scaled) noexcept {
-  return std::abs(x) < cc_scaled ? 1 : 0;
+RhoFunction::ValueFun RhoOptimal::DerivativeFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    constexpr double R1 = -1.944, R2 = 1.728, R3 = -0.312, R4 = 0.016;
+    const double ax = std::abs(x) / cc_scaled;
+    if (ax > 3) {
+      return 0.;
+    } else if (ax > 2) {
+      const double a2 = ax * ax;
+      const double d = cc_scaled * ((((R4 * a2 + R3) * a2 + R2) * a2 + R1) * ax);
+      if (x > 0) {
+        return std::max(0., d);
+      } else {
+        return -std::abs(d);
+      }
+    } else {
+      return x;
+    }
+  };
 }
 
-inline double HuberWeightValue(double x, const double cc_scaled) noexcept {
-  x = std::abs(x);
-  if (x > cc_scaled) {
-    return cc_scaled / x;
-  }
-  return 1;
+RhoFunction::ValueFun RhoOptimal::SecondDerivativeFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    constexpr double R1 = -1.944, R2 = 1.728, R3 = -0.312, R4 = 0.016;
+    double ax = std::abs(x) / cc_scaled;
+    if (ax > 3) {
+      return 0.;
+    } else if (ax > 2) {
+      ax *= ax;
+      return R1 + ax * (3 * R2 + ax * (5 * R3 + ax * 7 * R4));
+    } else {
+      return 1.;
+    }
+  };
 }
-}  // namespace
+
+RhoFunction::ValueFun RhoOptimal::WeightFn(const double scale) const noexcept {
+  const double cc_scaled = cc_ * scale;
+  return [cc_scaled](double x) noexcept {
+    constexpr double R1 = -1.944, R2 = 1.728, R3 = -0.312, R4 = 0.016;
+    x = std::abs(x) / cc_scaled;
+    if (x > 3) {
+      return 0.;
+    } else if (x > 2) {
+      x *= x;
+      return std::max(0., R1 + x * (R2 + x * (R3 + x * R4)));
+    } else {
+      return 1.;
+    }
+  };
+}
+
+}  // namespace pense

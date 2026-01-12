@@ -133,9 +133,9 @@ test_that("regmest() with multiple alpha", {
   expect_error(plot(pr, alpha = 0.3), regexp = "available")
 
   expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = 0.1), 'double')
-  expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = 0.8), 'double')
+  expect_type(coef(pr, lambda = pr$lambda[[2]][[5]], alpha = 0.8), 'double')
   expect_warning(expect_type(coef(pr, lambda = pr$lambda[[1]][[5]], alpha = c(0.1, 0.8)), 'double'))
-  expect_warning(coef(pr, lambda = pr$lambda[[1]][[5]]), regexp = 'Using first value')
+  expect_warning(coef(pr, lambda = pr$lambda[[2]][[5]]), regexp = 'Using first value')
 })
 
 test_that("regmest_cv() with multiple alpha", {

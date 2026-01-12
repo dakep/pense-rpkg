@@ -1,7 +1,14 @@
 #' Compare estimates to a reference.
-compare_estimates <- function (ests, ref_file, tol = 1e-6) {
+compare_estimates <- function (ests, ref_file, tol = 1e-6, expect_success = TRUE,
+                               only_coefs = FALSE) {
   requireNamespace('testthat')
   testthat::skip_if_not_installed('jsonlite')
+
+  expect <- if (isTRUE(expect_success)) {
+    testthat::expect_success
+  } else {
+    testthat::expect_failure
+  }
 
   requireNamespace('jsonlite')
 
@@ -16,12 +23,17 @@ compare_estimates <- function (ests, ref_file, tol = 1e-6) {
 
   for (lai in seq_along(ref)) {
     for (lsi in seq_along(ref[[lai]])) {
-      for (name in names(ref[[lai]][[lsi]])) {
-        testthat::expect_success(
-          testthat::expect_equal(
+      names <- if (isTRUE(only_coefs)) {
+        c("beta", "intercept")
+      } else {
+        names(ref[[lai]][[lsi]])
+      }
+      for (name in names) {
+        testthat::expect_equal(
             drop(ests [[!!lai]] [[!!lsi]] [[!!name]]),
             unlist(ref [[!!lai]] [[!!lsi]] [[!!name]]),
-            tolerance = tol))
+            tolerance = tol) |>
+          expect()
       }
     }
   }

@@ -13,6 +13,16 @@
 
 namespace pense {
 namespace r_interface {
+//! Evaluate the Rho Function
+//!
+//! @param x numeric values
+//! @param deriv whether to evaluate the rho function (deriv=0), the psi function (deriv=1),
+//               or the 2nd deriative rho'' (deriv=2)
+//! @param std whether to evaluate the standardized rho function (sup rho(x) = 1) or not
+//! @param scale the scale of the values in x
+//! @param rho_opts a list of options for the rho function
+SEXP RhoFun(SEXP x, SEXP deriv, SEXP std, SEXP scale, SEXP rho_opts) noexcept;
+
 //! Compute the tau-Scale of Centered Values
 //!
 //! @param x numeric values.

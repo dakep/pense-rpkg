@@ -84,7 +84,11 @@ The starting points are shared among all penalization levels.}
     \item{\code{intercept}}{include an intercept in the model.}
     \item{\code{add_zero_based}}{also consider the 0-based regularization path in addition to the given
 starting points.}
-    \item{\code{cc}}{cutoff constant for Tukey's bisquare \eqn{\rho} function.}
+    \item{\code{rho}}{which \eqn{\rho} function to use (see \code{\link[=rho_function]{rho_function()}} for the list of supported
+options).}
+    \item{\code{eff}}{the desired asymptotic efficiency of the M-estimator under the Normal model.}
+    \item{\code{cc}}{manually specified cutoff constant for the chosen \eqn{\rho} function.
+If specified, overrides the \code{eff} argument.}
     \item{\code{eps}}{numerical tolerance.}
     \item{\code{explore_solutions}}{number of solutions to compute up to the desired precision \code{eps}.}
     \item{\code{explore_tol}}{numerical tolerance for exploring possible solutions.

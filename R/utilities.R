@@ -26,13 +26,10 @@ tau_size <- function (x) {
 #'
 #' @param x numeric values. Missing values are verbosely ignored.
 #' @param bdp desired breakdown point (between 0 and 0.5).
-#' @param cc cutoff value for the bisquare rho function.
+#' @param cc tuning parameters for the chosen rho function.
 #'    By default, chosen to yield a consistent estimate for the Normal distribution.
 #' @param opts a list of options for the M-scale estimation algorithm,
 #'    see [mscale_algorithm_options()] for details.
-#' @param delta deprecated. Use `bpd` instead.
-#' @param rho,eps,maxit deprecated. Instead set control options for the algorithm
-#'    with the `opts` arguments.
 #' @return the M-estimate of scale.
 #'
 #' @family functions to compute robust estimates of location and scale
@@ -42,25 +39,7 @@ tau_size <- function (x) {
 #' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
-mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
-                    opts = mscale_algorithm_options(), delta = deprecated(),
-                    rho = deprecated(), eps = deprecated(), maxit = deprecated()) {
-  if (is_present(delta)) {
-    deprecate_stop('2.0.0', 'mscale(delta=)', 'mscale(bdp=)')
-    bdp <- delta
-  }
-  if (is_present(rho)) {
-    deprecate_stop('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
-  }
-  if (is_present(eps)) {
-    deprecate_stop('2.0.0', 'mscale(rho=)', 'mscale(opts=)')
-    opts$eps <- .as(eps[[1L]], 'numeric')
-  }
-  if (is_present(maxit)) {
-    deprecate_stop('2.0.0', 'mscale(maxit=)', 'mscale(opts=)')
-    opts$max_it <- .as(maxit[[1L]], 'integer')
-  }
-
+mscale <- function (x, bdp = 0.25, cc, opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
     .as(na.omit(x), 'numeric')
@@ -69,7 +48,7 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
   }
 
   if (missing(cc)) {
-    cc <- NULL
+    cc <- consistency_const(bdp, opts$rho)
   }
   opts <- .full_mscale_algo_options(bdp, cc, opts)
   .Call(C_mscale, x, opts)
@@ -94,8 +73,7 @@ mscale <- function (x, bdp = 0.25, cc = consistency_const(bdp, 'bisquare'),
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
 #' @keywords internal
-mscale_derivative <- function (x, bdp = 0.25, order = 1,
-                               cc = consistency_const(bdp, 'bisquare'),
+mscale_derivative <- function (x, bdp = 0.25, order = 1, cc,
                                opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
@@ -112,7 +90,7 @@ mscale_derivative <- function (x, bdp = 0.25, order = 1,
   }
 
   if (missing(cc)) {
-    cc <- NULL
+    cc <- consistency_const(bdp, opts$rho)
   }
   opts <- .full_mscale_algo_options(bdp, cc, opts)
   grad_hess <- .Call(C_mscale_derivative, x, opts, order)
@@ -142,64 +120,6 @@ mscale_derivative <- function (x, bdp = 0.25, order = 1,
   }
 }
 
-#' @description
-#' Compute the maximum derivative of the M-scale function with respect to each element over
-#' a grid of values.
-#'
-#' @param n_change the number of elements in `x` to replace with each value in `grid`.
-#' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
-#' @return a vector with 4 elements:
-#'    1. the maximum absolute value of the gradient,
-#'    2. the maximum absolute value of the Hessian elements,
-#'    3. the M-scale associated with 1., and
-#'    4. the M-scale associated with 2.
-#' @describeIn mscale_derivative maximum of the gradient
-#' @keywords internal
-max_mscale_derivative <- function (x, grid, n_change, bdp = 0.25,
-                                   cc = consistency_const(bdp, 'bisquare'),
-                                   opts = mscale_algorithm_options()) {
-  x <- if (anyNA(x)) {
-    warn("Missing values are ignored.")
-    .as(na.omit(x), 'double')
-  } else {
-    .as(x, 'double')
-  }
-
-  if (missing(cc)) {
-    cc <- NULL
-  }
-  opts <- .full_mscale_algo_options(bdp, cc, opts)
-
-  .Call(C_max_mscale_derivative, x, grid, n_change, opts)
-}
-
-#' @description
-#' Compute the maximum element in the gradient and Hessian of the M-scale
-#' function with respect to each element over a grid of values.
-#'
-#' @param n_change the number of elements in `x` to replace with each value in `grid`.
-#' @param grid a grid of values to replace the first 1 - `n_change` elements in` x`.
-#' @return the maximum absolute derivative over the entire grid.
-#' @describeIn mscale_derivative maximum of the gradient and hessian
-#' @keywords internal
-max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
-                                  cc = consistency_const(bdp, 'bisquare'),
-                                  opts = mscale_algorithm_options()) {
-  x <- if (anyNA(x)) {
-    warn("Missing values are ignored.")
-    .as(na.omit(x), 'double')
-  } else {
-    .as(x, 'double')
-  }
-
-  if (missing(cc)) {
-    cc <- NULL
-  }
-  opts <- .full_mscale_algo_options(bdp, cc, opts)
-
-  .Call(C_max_mscale_grad_hess, x, grid, n_change, opts)
-}
-
 #' Compute the M-estimate of Location
 #'
 #' Compute the M-estimate of location using an auxiliary estimate of the scale.
@@ -207,10 +127,11 @@ max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
 #' @param x numeric values. Missing values are verbosely ignored.
 #' @param scale scale of the `x` values. If omitted, uses the [mad()][stats::mad()].
 #' @param rho the \eqn{\rho} function to use. See [rho_function()] for available functions.
+#' @param eff desired efficiency under the Normal model.
 #' @param cc value of the tuning constant for the chosen \eqn{\rho} function.
-#'    By default, chosen to achieve 95% efficiency under the Normal distribution.
-#' @param opts a list of options for the M-estimating algorithm, see
-#'    [mscale_algorithm_options()] for details.
+#'   If specified, overrides the desired efficiency.
+#' @param max_it maximum number of iterations.
+#' @param eps numerical tolerance to check for convergence.
 #' @return a single numeric value, the M-estimate of location.
 #'
 #' @family functions to compute robust estimates of location and scale
@@ -220,7 +141,7 @@ max_mscale_grad_hess <- function (x, grid, n_change, bdp = 0.25,
 #' @importFrom stats mad
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
-mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
+mloc <- function (x, scale, rho = 'bisquare', eff = 0.90, cc, max_it = 200, eps = 1e-8) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
     .as(na.omit(x), 'double')
@@ -236,11 +157,17 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
     return(NA_real_)
   }
 
+  opts <- list(max_it = .as(max_it[[1L]], 'integer'),
+               rho = rho_function(rho, convex_ok = TRUE),
+               eps = .as(eps[[1L]], 'numeric'),
+               cc = 1.0)
+
   if (missing(cc)) {
-    cc <- NULL
+    opts$cc <- efficiency_const(eff, opts$rho, eps = eps)
+  } else {
+    opts$cc <- .as(cc[[1]], "numeric")
   }
-  opts <- .full_mscale_algo_options(.5, cc, opts)
-  opts$rho <- rho_function(rho)
+
   .Call(C_mloc, x, scale, opts)
 }
 
@@ -250,14 +177,18 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
 #'
 #' @param x numeric values. Missing values are verbosely ignored.
 #' @param bdp desired breakdown point (between 0 and 0.5).
-#' @param scale_cc cutoff value for the bisquare \eqn{\rho} function for computing the
-#'    scale estimate.
-#'    By default, chosen to yield a consistent estimate for normally distributed values.
-#' @param location_rho,location_cc \eqn{\rho} function and cutoff value for computing
-#'    the location estimate.
-#'    See [rho_function()] for a list of available \eqn{\rho} functions.
-#' @param opts a list of options for the M-estimating equation,
-#'    see [mscale_algorithm_options()] for details.
+#' @param eff desired efficiency of the location estimate (between 0.1 and 0.99).
+#' @param scale_cc tuning constant for the \eqn{\rho} function for computing the
+#'  scale estimate.
+#'  By default, chosen to yield a consistent estimate for normally distributed values.
+#' @param location_rho \eqn{\rho} function for computing the location estimate.
+#'  If missing, use the same function as for the scale estimate (`opts$rho`).
+#'  See [rho_function()] for a list of available \eqn{\rho} functions.
+#' @param location_cc tuning constant for the location \eqn{\rho} function.
+#'   By default chosen to yield the desired efficiency.
+#'   If this is provided, the desired efficiency is ignored.
+#' @param opts a list of options for the M-scale estimating equations,
+#'   See [mscale_algorithm_options()] for details.
 #' @return a vector with 2 elements, the M-estimate of location and the M-scale estimate.
 #'
 #' @family functions to compute robust estimates of location and scale
@@ -266,8 +197,9 @@ mloc <- function (x, scale, rho, cc, opts = mscale_algorithm_options()) {
 #'
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
-mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquare'), location_rho,
-                       location_cc, opts = mscale_algorithm_options()) {
+mlocscale <- function (x, bdp = 0.25, eff = 0.90,
+                       scale_cc, location_rho, location_cc,
+                       opts = mscale_algorithm_options()) {
   x <- if (anyNA(x)) {
     warn("Missing values are ignored.")
     .as(na.omit(x), 'double')
@@ -276,46 +208,112 @@ mlocscale <- function (x, bdp = 0.25, scale_cc = consistency_const(bdp, 'bisquar
   }
 
   opts <- .full_mscale_algo_options(bdp, scale_cc, opts)
-  loc_opts <- list(rho = rho_function(location_rho))
-  if (!missing(location_cc)) {
-    loc_opts$cc <- .as(location_cc[[1L]], 'double')
+
+  if (missing(location_rho)) {
+    location_rho <- opts$rho
   }
+
+  loc_opts <- list(rho = rho_function(location_rho, convex_ok = TRUE),
+                   cc = 1.0)
+
+  loc_opts$cc <- if (missing(location_cc)) {
+    efficiency_const(eff, opts$rho, eps = opts$eps)
+  } else {
+    .as(location_cc[[1]], "numeric")
+  }
+
   .Call(C_mlocscale, x, opts, loc_opts)
 }
 
-#' Get the Constant for Consistency for the M-Scale
+#' Get the Constant for Consistency for the M-Scale and for Efficiency
+#' for the M-estimate of Location
+#'
+#' Returns the tuning constants required to achieve the desired
+#' breakdown point or efficiency under the Normal model.
 #'
 #' @param delta desired breakdown point (between 0 and 0.5)
 #' @param rho the name of the chosen \eqn{\rho} function.
+#'   See [rho_function()] for a list of supported functions.
+#' @param eps numerical tolerance level for equality comparisons
 #'
 #' @return consistency constant
 #'
 #' @family miscellaneous functions
-#'
+#' @rdname rho-tuning-constants
 #' @export
 #'
 #' @importFrom rlang abort
-consistency_const <- function (delta, rho) {
-  return(switch(rho_function(rho),
-                bisquare = .bisquare_consistency_const(delta),
-                huber = abort("Huber's rho function not supported for scale estimation!")))
+consistency_const <- function (delta, rho, eps = sqrt(.Machine$double.eps)) {
+  if (!isTRUE(delta < 0.5 + eps && delta > -eps)) {
+    abort("Desired breakdown point is outside valid bounds")
+  }
+
+  rho <- rho_function(rho, convex_ok = FALSE)
+
+  if (identical(rho, .k_rho_function_bisquare)) {
+    .bisquare_consistency_const(delta, eps = eps)
+  } else if (identical(rho, .k_rho_function_opt)) {
+    .mopt_consistency_const(delta, eps = eps)
+  } else {
+    abort("Unknown rho function")
+  }
+}
+
+#' @param eff desired asymptotic efficiency (between 0.1 and 0.99).
+#'
+#' @family miscellaneous functions
+#' @rdname rho-tuning-constants
+#' @export
+#'
+#' @importFrom rlang abort
+efficiency_const <- function (eff, rho, eps = sqrt(.Machine$double.eps)) {
+  rho <- rho_function(rho, convex_ok = TRUE)
+
+  if (identical(rho, .k_rho_function_bisquare)) {
+    .bisquare_efficiency_const(eff, eps)
+  } else if (identical(rho, .k_rho_function_opt)) {
+    .mopt_efficiency_const(eff, eps)
+  } else if (identical(rho, .k_rho_function_huber)) {
+    .huber_efficiency_const(eff, eps)
+  } else {
+    abort("Unknown rho function")
+  }
 }
 
 #' List Available Rho Functions
 #'
 #' @param rho the name of the \eqn{\rho} function to check for existence.
+#' @param convex_ok if convex \eqn{\rho} function is acceptable or not.
 #' @return if `rho` is missing returns a vector of supported \eqn{\rho} function names, otherwise
 #'    the internal integer representation of the \eqn{\rho} function.
 #'
 #' @family miscellaneous functions
+#' @importFrom rlang abort
 #'
 #' @export
-rho_function <- function (rho) {
-  available <- c('bisquare', 'huber')
+rho_function <- function (rho, convex_ok = TRUE) {
+  available <- c('bisquare', 'mopt')
+  available_int <- c(.k_rho_function_bisquare, .k_rho_function_opt)
+  if (isTRUE(convex_ok)) {
+    available <- c(available, 'huber')
+    available_int <- c(available_int, .k_rho_function_huber)
+  }
   if (missing(rho)) {
     return(available)
   }
-  return(match(match.arg(rho, available), available))
+
+  if (is.integer(rho)) {
+    if (rho[[1L]] %in% available_int) {
+      return(rho[[1]])
+    } else {
+      abort("Unknown rho function selected.")
+    }
+  }
+
+  switch (match.arg(rho, available),
+          huber = .k_rho_function_huber,
+          bisquare = .k_rho_function_bisquare,
+          mopt = .k_rho_function_opt)
 }
 
 #' Create Starting Points for the PENSE Algorithm

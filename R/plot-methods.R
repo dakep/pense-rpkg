@@ -15,11 +15,13 @@
 plot.pense_fit <- function (x, alpha, ...) {
   if (missing(alpha) || is.null(alpha)) {
     alpha <- x$alpha[[1L]]
-  }
-  alpha <- .as(alpha[[1L]], 'numeric')
-  ai <- which((x$alpha - alpha)^2 < .Machine$double.eps)
-  if (length(ai) != 1L) {
-    abort("Requested `alpha` is not available in the fit.")
+    ai <- 1L
+  } else {
+    alpha <- .as(alpha[[1L]], 'numeric')
+    ai <- which((x$alpha - alpha)^2 < .Machine$double.eps)
+    if (length(ai) != 1L) {
+      abort("Requested `alpha` is not available in the fit.")
+    }
   }
   .plot_coef_path(x, lambda_seq = x$lambda[[ai]], alpha = alpha, envir = parent.frame())
   invisible(x)
@@ -174,19 +176,19 @@ plot.pense_cvfit <- function(x, what = c('cv', 'coef.path'), alpha = NULL, se_mu
   }
   alpha <- .as(alpha[[1L]], 'numeric')
 
-  var_names <- tryCatch(colnames(eval(object$call$x, envir = envir)), error = function (e) NULL)
+  var_names <- tryCatch(colnames(eval(object$call$x, envir = envir)), error = \(e) NULL)
   if (is.null(var_names)) {
-    var_names <- paste('X', seq_len(length(object$estimates[[1]]$beta)), sep = '')
+    var_names <- paste('X', seq_len(length(object$estimates[[1]][[1]]$beta)), sep = '')
   }
 
-  match_ests <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = function (est) {
+  match_ests <- which(vapply(object$estimates, FUN.VALUE = logical(1L), FUN = \(est) {
     (est[[1L]]$alpha - alpha)^2 < .Machine$double.eps
   }))
   if (length(match_ests) == 0L) {
     abort("Requested `alpha` not available in the fit.")
   }
 
-  active_vars <- do.call(rbind, lapply(object$estimates[match_ests], function (est) {
+  active_vars <- do.call(rbind, lapply(object$estimates[match_ests], \(est) {
     actives <- .active_indices_and_values(est[[1L]])
     if (length(actives$var_index) > 0L) {
       return(data.frame(actives, lambda = est[[1L]]$lambda, alpha = est[[1L]]$alpha))

@@ -4,94 +4,68 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>Estimating predictive models • pense</title>
-<!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script><!-- Bootstrap --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha256-bZLfwXAP04zRMK2BjiO8iu9pf4FbLqX6zitd+tIvLhE=" crossorigin="anonymous">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.4.1/js/bootstrap.min.js" integrity="sha256-nuL8/2cJ5NDSSwnKD8VqreErSWHtnEP9E7AySL+1ev4=" crossorigin="anonymous"></script><!-- bootstrap-toc --><link rel="stylesheet" href="../bootstrap-toc.css">
-<script src="../bootstrap-toc.js"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/all.min.css" integrity="sha256-mmgLkCYLUQbXn0B1SRqzHar6dCnv9oZFPEC1g1cwlkk=" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.1/css/v4-shims.min.css" integrity="sha256-wZjR52fzng1pJHwx4aV2AO3yyTOXrcDW7jBpJtTwVxw=" crossorigin="anonymous">
-<!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js" integrity="sha256-inc5kl9MA1hkeYUt+EC3BhlIgyp/2jDIyBLS6k3UxPI=" crossorigin="anonymous"></script><!-- headroom.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/headroom.min.js" integrity="sha256-AsUX4SJE1+yuDu5+mAVzJbuYNPHj/WroHuZ8Ir/CkE0=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/headroom/0.11.0/jQuery.headroom.min.js" integrity="sha256-ZX/yNShbjqsohH1k95liqY9Gd8uOiE1S4vZc+9KQ1K4=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="Estimating predictive models">
-<!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
-<script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-<script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-<![endif]-->
+<!-- katex math --><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" integrity="sha384-nB0miv6/jRmo5UMMR1wu3Gz6NLsoTkbqJghGIsx//Rlm+ZU03BU6SQNC66uf4l5+" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" integrity="sha384-7zkQWkzuo3B5mTepMUcHkMB5jZaolc2xDwL6VFqjFALcbeS9Ggm/Yr2r3Dy4lfFg" crossorigin="anonymous"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" integrity="sha384-43gviWU0YVjaDtb/GhzOouOXtZMP/7XUzwPTstBeZFe/+rCMvRwr4yROQP43s0Xk" crossorigin="anonymous" onload="renderMathInElement(document.body);"></script><script src="../katex-auto.js"></script><script src="../deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<link href="../deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
+<script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
+<script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Estimating predictive models">
 </head>
-<body data-spy="scroll" data-target="#toc">
+<body>
+    <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
-    <div class="container template-article">
-      <header><div class="navbar navbar-default navbar-fixed-top" role="navigation">
-  <div class="container">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <span class="navbar-brand">
-        <a class="navbar-link" href="../index.html">pense</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="">2.2.2</span>
-      </span>
-    </div>
+    <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
-    <div id="navbar" class="navbar-collapse collapse">
-      <ul class="nav navbar-nav">
-<li>
-  <a href="../reference/index.html">Reference</a>
-</li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-    Articles
+    <a class="navbar-brand me-2" href="../index.html">pense</a>
 
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-<li>
-      <a href="../articles/computing_adapense.html">Estimating predictive models</a>
-    </li>
-    <li>
-      <a href="../articles/lambda_grids.html">Controlling the grid of penalization levels</a>
-    </li>
-    <li>
-      <a href="../articles/migration_guide.html">Migrating from pense version 1.x to 2.x</a>
-    </li>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar" class="collapse navbar-collapse ms-3">
+      <ul class="navbar-nav me-auto">
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+<li class="active nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
+<li><a class="dropdown-item" href="../articles/computing_adapense.html">Estimating predictive models</a></li>
+    <li><a class="dropdown-item" href="../articles/lambda_grids.html">Controlling the grid of penalization levels</a></li>
   </ul>
 </li>
-<li>
-  <a href="../news/index.html">Changelog</a>
-</li>
+<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul>
-<ul class="nav navbar-nav navbar-right">
-<li>
-  <a href="https://github.com/dakep/pense-rpkg/" class="external-link">
-    <span class="fab fa-github fa-lg"></span>
-
-  </a>
-</li>
+<ul class="navbar-nav">
+<li class="nav-item"><form class="form-inline" role="search">
+ <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json">
+</form></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/dakep/pense-rpkg/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
-<!--/.nav-collapse -->
+
+
   </div>
-<!--/.container -->
-</div>
-<!--/.navbar -->
+</nav><div class="container template-article">
 
 
 
-      </header><div class="row">
-  <div class="col-md-9 contents">
-    <div class="page-header toc-ignore">
-      <h1 data-toc-skip>Estimating predictive models</h1>
+
+<div class="row">
+  <main id="main" class="col-md-9"><div class="page-header">
+
+      <h1>Estimating predictive models</h1>
                         <h4 data-toc-skip class="author">David
 Kepplinger</h4>
             
-            <h4 data-toc-skip class="date">2024-07-26</h4>
+            <h4 data-toc-skip class="date">2026-01-12</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/main/vignettes/computing_adapense.Rmd" class="external-link"><code>vignettes/computing_adapense.Rmd</code></a></small>
-      <div class="hidden name"><code>computing_adapense.Rmd</code></div>
-
+      <div class="d-none name"><code>computing_adapense.Rmd</code></div>
     </div>
 
     
@@ -100,19 +74,20 @@ Kepplinger</h4>
 adaptive PENSE estimates for high-dimensional linear regression. These
 estimates can tolerate up to 50% of contamination, i.e., the adaptive
 PENSE estimates are reliable even if up to half the observations in the
-data set contain anomalous values. Compute adaptive PENSE estimates is
-implemented in the function <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> in the pense
-package.</p>
-<p>While the following guide computes adaptive PENSE estimates,
-everything also applies to other estimates implemented in the pense
+data set contain anomalous values. Computing adaptive PENSE estimates
+with data-drive hyperparameter selection is implemented in the function
+<code><a href="../reference/pense_cv.html">adapense_cv()</a></code> in the pense package.</p>
+<p>While the following guide computes adaptive PENSE estimates, the
+steps are analogous for other estimates implemented in the pense
 package: non-adaptive PENSE estimates and regularized M-estimates.
 Non-adaptive PENSE estimates (computed by <code><a href="../reference/pense_cv.html">pense_cv()</a></code>) are
 typically better at identifying all relevant predictors than adaptive
 PENSE. However, this comes at the price of often including a large
 number of irrelevant predictors as well. Regularized M-estimates
-(computed by <code><a href="../reference/pensem_cv.html">pensem_cv()</a></code>) can be more accurate than either
+(computed by <code>pensem_cv()</code>) can be more accurate than either
 PENSE or adaptive PENSE estimates, but may be unreliable in presence of
-highly detrimental contamination.</p>
+highly detrimental contamination, and require a pre-determined estimate
+of the residual scale.</p>
 <div class="section level2">
 <h2 id="computing-adaptive-pense-estimates">Computing adaptive PENSE estimates<a class="anchor" aria-label="anchor" href="#computing-adaptive-pense-estimates"></a>
 </h2>
@@ -154,11 +129,12 @@ the number of different penalization levels to be used (default 50). We
 are going to choose the penalization level which leads to a good balance
 between prediction accuracy and model size. The pense package can
 automatically evaluate prediction accuracy of the adaptive PENSE
-estimates via cross-validation.</p>
+estimates via robust information-sharing cross-validation (RIS-CV;
+Kepplinger &amp; Wei 2025).</p>
 <p>In its simplest form, computing adaptive PENSE estimates and
 estimating their prediction accuracy is done with the code below. Here,
-prediction accuracy is estimated via 5-fold cross-validation, replicated
-3 times:</p>
+prediction accuracy is estimated via 5-fold RIS-CV, replicated 3
+times:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">fit_075</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">3</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span></code></pre></div>
@@ -166,22 +142,30 @@ prediction accuracy is estimated via 5-fold cross-validation, replicated
 PENSE estimates to ensure reproducibility of the internal
 cross-validation.</p>
 <p>By default, adaptive PENSE estimates are computed with a breakdown
-point of ~25%. This means, the estimates are reliable if up to 25% of
+point of ~25% and Tukey’s bisquare <span class="math inline">\rho</span>
+function. This means, the estimates are reliable if up to 25% of
 observations contain arbitrary contamination. If you suspect that a
 larger proportion of observations may be affected by contamination, you
 can increase the breakdown point of the estimates with argument
 <code>bdp=</code> to up to 50%. Note, however, that a higher breakdown
-point also leads to less accurate estimates.</p>
+point also leads to less accurate estimates. The package also supports
+the “optimal” <span class="math inline">\rho</span> function (Maronna et
+al., 2018, Section 5.8.1). To choose a different <span class="math inline">\rho</span> function, alter the
+<code>mscale_opts</code> argument:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
+<span><span class="va">fit_075_mopt</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">3</span>, cl <span class="op">=</span> <span class="va">cluster</span>,</span>
+<span>                            mscale_opts <span class="op">=</span> <span class="fu"><a href="../reference/mscale_algorithm_options.html">mscale_algorithm_options</a></span><span class="op">(</span>rho <span class="op">=</span> <span class="st">"mopt"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-2-assessing-prediction-performance">Step 2: Assessing prediction performance<a class="anchor" aria-label="anchor" href="#step-2-assessing-prediction-performance"></a>
 </h3>
 <p>The <code><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot()</a></code> function for the object <code>fit_075</code>
 shows the estimated prediction accuracy for all fitted models.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_075</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="computing_adapense_files/figure-html/unnamed-chunk-7-1.png" alt="Estimated prediction accuracy using 3 replications of 5-fold CV." width="672"><p class="caption">
+<img src="computing_adapense_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="Estimated prediction accuracy using 3 replications of 5-fold CV." width="672"><p class="caption">
 Estimated prediction accuracy using 3 replications of 5-fold CV.
 </p>
 </div>
@@ -194,30 +178,21 @@ the most parsimonious model with prediction performance
 “one-standard-error” rule using the minimum average scale of the
 prediction error plus 1 standard error of this estimated scale. You can
 adjust this rule to the “<em>m</em>-standard-error” with
-<code>plot(fit_075, lambda = "m-se")</code>, where <code>m</code> is any
-positive number (e.g., <code>lambda = "1.5-se"</code>).</p>
-<p>In our case, the estimated prediction performance is a bit unstable
-and has large variability. With such unstable estimates of prediction
-performance it is difficult to reliably select the penalization level.
-This is not unusual for robust estimators and can be improved by
-increasing the number of CV replications.</p>
-<p>The more CV replications, the more accurate the estimates of
-prediction accuracy, but the longer the computing time. If we repeat
-step #1, but with 10 CV replications instead of 3, we get a more stable
-evaluation of prediction performance:</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code>plot(fit_075, se_mult = m)</code>, where <code>m</code> is any
+positive number (e.g., <code>m=2</code>).</p>
+<p>The accuracy of the estimate can be improved by increasing the number
+of CV replications. The more CV replications, the more accurate the
+estimates of prediction accuracy, but the longer the computing time. If
+we repeat step #1, but with 10 CV replications instead of 3, we get a
+more stable evaluation of prediction performance:</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_075</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_075</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_075</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="computing_adapense_files/figure-html/unnamed-chunk-10-1.png" alt="Estimated prediction accuracy using 10 replications of 5-fold CV." width="672"><p class="caption">
+<img src="computing_adapense_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="Estimated prediction accuracy using 10 replications of 5-fold CV." width="672"><p class="caption">
 Estimated prediction accuracy using 10 replications of 5-fold CV.
 </p>
 </div>
-<p>With 10 replications, the error bars are still large, a testament to
-the contamination in the sample, but the general trend of the prediction
-performance is much clearer. Of course, you could increase the number of
-CV replications further to get an even smoother plot.</p>
 </div>
 <div class="section level3">
 <h3 id="step-3-extracting-coefficients">Step 3: Extracting coefficients<a class="anchor" aria-label="anchor" href="#step-3-extracting-coefficients"></a>
@@ -225,59 +200,47 @@ CV replications further to get an even smoother plot.</p>
 <p>Once we are happy with the stability of the estimated prediction
 performance, we can extract summary information from the predictive
 model with</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_075</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by replications of </span></span>
-<span><span class="co">#&gt; 5-fold cross-validation.</span></span>
+<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by 10 replications of </span></span>
+<span><span class="co">#&gt; 5-fold ris cross-validation.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 15 out of 40 predictors have non-zero coefficients:</span></span>
+<span><span class="co">#&gt; 6 out of 40 predictors have non-zero coefficients:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                Estimate</span></span>
-<span><span class="co">#&gt; (Intercept)  1.72628025</span></span>
-<span><span class="co">#&gt; X1           0.72014823</span></span>
-<span><span class="co">#&gt; X2          -0.85532734</span></span>
-<span><span class="co">#&gt; X3           0.76292814</span></span>
-<span><span class="co">#&gt; X5           0.06732408</span></span>
-<span><span class="co">#&gt; X12          0.11434099</span></span>
-<span><span class="co">#&gt; X19         -0.23328622</span></span>
-<span><span class="co">#&gt; X21          0.32518029</span></span>
-<span><span class="co">#&gt; X22          0.06293208</span></span>
-<span><span class="co">#&gt; X26         -0.42844671</span></span>
-<span><span class="co">#&gt; X29          0.22662846</span></span>
-<span><span class="co">#&gt; X30          0.01786396</span></span>
-<span><span class="co">#&gt; X32         -0.02880954</span></span>
-<span><span class="co">#&gt; X36         -0.30372631</span></span>
-<span><span class="co">#&gt; X38         -0.04016458</span></span>
-<span><span class="co">#&gt; X39         -0.14515861</span></span>
+<span><span class="co">#&gt; (Intercept)  0.89610051</span></span>
+<span><span class="co">#&gt; X1           0.66483511</span></span>
+<span><span class="co">#&gt; X2          -0.73465818</span></span>
+<span><span class="co">#&gt; X3           0.55847642</span></span>
+<span><span class="co">#&gt; X5           0.03486861</span></span>
+<span><span class="co">#&gt; X29          0.03892034</span></span>
+<span><span class="co">#&gt; X39         -0.01298290</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Hyper-parameters: lambda=0.03528578, alpha=0.75, exponent=1</span></span></code></pre></div>
+<span><span class="co">#&gt; Hyper-parameters: lambda=0.1566381, alpha=0.75, exponent=1</span></span></code></pre></div>
 <p>This model corresponds to the model with smallest scale of the
 prediction error (the blue dot in the plot above). There are a total of
-15 predictors in the model. If you think a sparser model may be more
+6 predictors in the model. If you think a sparser model may be more
 appropriate for your application, you can also apply the
-<em>q</em>-standard-error rule as in the plots. The default, the
+<em>m</em>-standard-error rule as in the plots. The default, the
 one-standard-error rule leads to the following predictive model:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_075</span>, lambda <span class="op">=</span> <span class="st">"2-se"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by replications of </span></span>
-<span><span class="co">#&gt; 5-fold cross-validation.</span></span>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_075</span>, lambda <span class="op">=</span> <span class="st">"se"</span>, se_mult <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by 10 replications of </span></span>
+<span><span class="co">#&gt; 5-fold ris cross-validation.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 7 out of 40 predictors have non-zero coefficients:</span></span>
+<span><span class="co">#&gt; 4 out of 40 predictors have non-zero coefficients:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                Estimate</span></span>
-<span><span class="co">#&gt; (Intercept)  0.31983318</span></span>
-<span><span class="co">#&gt; X1           0.72274606</span></span>
-<span><span class="co">#&gt; X2          -0.77400097</span></span>
-<span><span class="co">#&gt; X3           0.79400018</span></span>
-<span><span class="co">#&gt; X5           0.03650988</span></span>
-<span><span class="co">#&gt; X22          0.02970441</span></span>
-<span><span class="co">#&gt; X29          0.15663196</span></span>
-<span><span class="co">#&gt; X39         -0.13004937</span></span>
+<span><span class="co">#&gt; (Intercept)  1.28199718</span></span>
+<span><span class="co">#&gt; X1           0.56993574</span></span>
+<span><span class="co">#&gt; X2          -0.68590414</span></span>
+<span><span class="co">#&gt; X3           0.46982332</span></span>
+<span><span class="co">#&gt; X5           0.02356945</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Hyper-parameters: lambda=0.1142336, alpha=0.75, exponent=1</span></span></code></pre></div>
-<p>In this fit, only 7 out of the 40 predictors are relevant, including
+<span><span class="co">#&gt; Hyper-parameters: lambda=0.1814144, alpha=0.75, exponent=1</span></span></code></pre></div>
+<p>In this fit, only 4 out of the 40 predictors are relevant, including
 the 3 truly relevant predictors. But maybe different values for
 hyper-parameters <code>alpha</code> and <code>exponent</code> lead to
 even better prediction?</p>
@@ -306,100 +269,89 @@ risks missing some of the truly relevant predictors.</p>
 <p>Let us compute adaptive PENSE estimates for different values of
 hyper-parameters <code>alpha</code> and <code>exponent</code>. In the
 code below, this is done for two values: <code>alpha=0.75</code> and
-<code>alpha=1</code> as well as <code>exponent=1</code>,
-<code>exponent=2</code>, and <code>exponent=3</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code>alpha=1</code> as well as <code>exponent=1</code> and
+<code>exponent=2</code>.</p>
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">fit_exp_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>, exponent <span class="op">=</span> <span class="fl">1</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_exp_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>, exponent <span class="op">=</span> <span class="fl">2</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_exp_3</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>, exponent <span class="op">=</span> <span class="fl">3</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_exp_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.75</span>, <span class="fl">1</span><span class="op">)</span>, exponent <span class="op">=</span> <span class="fl">2</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span></code></pre></div>
 <p>Note that we set the seed before each call to
 <code><a href="../reference/pense_cv.html">adapense_cv()</a></code>. This is again to ensure reproducibility of
 the CV, but also to make the estimated prediction performance more
 comparable across different values of the <code>exponent</code>
 hyper-parameter.</p>
-<p>After checking that the cross-validated prediction performance of the
-fitted models is smooth enough to reliably select the penalization
-level, we can compare all the estimates. For this, the package includes
-the function <code><a href="../reference/prediction_performance.html">prediction_performance()</a></code>, which extracts and
+<p>After checking that the RIS-CV prediction performance of the fitted
+models is smooth enough to reliably select the penalization level, we
+can compare all the estimates. For this, the package includes the
+function <code><a href="../reference/prediction_performance.html">prediction_performance()</a></code>, which extracts and
 prints the prediction performance of all given objects:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span><span class="op">(</span><span class="va">fit_exp_1</span>, <span class="va">fit_exp_2</span>, <span class="va">fit_exp_3</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
-<span><span class="co">#&gt; 1 fit_exp_3 1.640570 0.09775037         13  1.00    3</span></span>
-<span><span class="co">#&gt; 2 fit_exp_3 1.659848 0.09212068         13  0.75    3</span></span>
-<span><span class="co">#&gt; 3 fit_exp_2 1.694853 0.09388246         14  0.75    2</span></span>
-<span><span class="co">#&gt; 4 fit_exp_2 1.705181 0.10346154         13  1.00    2</span></span>
-<span><span class="co">#&gt; 5 fit_exp_1 1.884292 0.11975320         12  1.00    1</span></span>
-<span><span class="co">#&gt; 6 fit_exp_1 1.886142 0.09226434         15  0.75    1</span></span></code></pre></div>
-<p>Here we see the combination of hyper-parameters
-<code>alpha=0.75</code> and <code>exponent=3</code> (in object
-<code>fit_exp_3</code>) leads to the best prediction accuracy, but all
-models are based on 12 or more predictors. Instead, we can also compare
-sparser models with almost the same prediction performance:</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span><span class="op">(</span><span class="va">fit_exp_1</span>, <span class="va">fit_exp_2</span>, <span class="va">fit_exp_3</span>, lambda <span class="op">=</span> <span class="st">'1-se'</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span><span class="op">(</span><span class="va">fit_exp_1</span>, <span class="va">fit_exp_2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
-<span><span class="co">#&gt; 1 fit_exp_3 1.719353 0.06727231         13  0.75    3</span></span>
-<span><span class="co">#&gt; 2 fit_exp_3 1.726839 0.08486051         13  1.00    3</span></span>
-<span><span class="co">#&gt; 3 fit_exp_2 1.752905 0.06393139         12  0.75    2</span></span>
-<span><span class="co">#&gt; 4 fit_exp_2 1.803677 0.09448569         12  1.00    2</span></span>
-<span><span class="co">#&gt; 5 fit_exp_1 1.977632 0.11355306         12  0.75    1</span></span>
-<span><span class="co">#&gt; 6 fit_exp_1 1.996706 0.14173465         10  1.00    1</span></span></code></pre></div>
-<p>These models are still quite large. If we are interested in even
-sparser models, we can increase the tolerance level to, for instance, 3
-standard errors:</p>
+<span><span class="co">#&gt; 1 fit_exp_2 1.440873 0.09734518          4  1.00    2</span></span>
+<span><span class="co">#&gt; 2 fit_exp_2 1.451103 0.09829709          7  0.75    2</span></span>
+<span><span class="co">#&gt; 3 fit_exp_1 1.553635 0.13786022          4  1.00    1</span></span>
+<span><span class="co">#&gt; 4 fit_exp_1 1.562786 0.13463294          6  0.75    1</span></span></code></pre></div>
+<p>Here we see the combination of hyper-parameters <code>alpha=1</code>
+and <code>exponent=2</code> (in object <code>fit_exp_2</code>) leads to
+the best prediction accuracy. We can also compare sparser models with
+similar prediction performance:</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span><span class="op">(</span><span class="va">fit_exp_1</span>, <span class="va">fit_exp_2</span>, <span class="va">fit_exp_3</span>, lambda <span class="op">=</span> <span class="st">'3-se'</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span><span class="op">(</span><span class="va">fit_exp_1</span>, <span class="va">fit_exp_2</span>, lambda <span class="op">=</span> <span class="st">'se'</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
-<span><span class="co">#&gt; 1 fit_exp_3 1.915506 0.05804233          7  0.75    3</span></span>
-<span><span class="co">#&gt; 2 fit_exp_3 1.916650 0.08945694          3  1.00    3</span></span>
-<span><span class="co">#&gt; 3 fit_exp_2 1.963516 0.08579261          8  0.75    2</span></span>
-<span><span class="co">#&gt; 4 fit_exp_2 2.010430 0.08138076          3  1.00    2</span></span>
-<span><span class="co">#&gt; 5 fit_exp_1 2.130027 0.07301721          6  0.75    1</span></span>
-<span><span class="co">#&gt; 6 fit_exp_1 2.153167 0.05492182          3  1.00    1</span></span></code></pre></div>
-<p>This relaxation still leads to the combination of hyper-parameters
-<code>alpha=0.75</code> and <code>exponent=3</code>, but now with only 7
-relevant predictors; including all truly relevant predictors. We can see
-that the estimated coefficients and estimated relevant predictors are
-close to the truth:</p>
+<span><span class="co">#&gt; 1 fit_exp_2 1.498405 0.08330122          3  0.75    2</span></span>
+<span><span class="co">#&gt; 2 fit_exp_2 1.517282 0.11277732          3  1.00    2</span></span>
+<span><span class="co">#&gt; 3 fit_exp_1 1.603343 0.13706756          4  0.75    1</span></span>
+<span><span class="co">#&gt; 4 fit_exp_1 1.628196 0.14851228          3  1.00    1</span></span></code></pre></div>
+<p>If we are interested in even sparser models, we can increase the
+tolerance level to, for instance, 2 standard errors:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_exp_3</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda <span class="op">=</span> <span class="st">'3-se'</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by replications of </span></span>
-<span><span class="co">#&gt; 5-fold cross-validation.</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/prediction_performance.html">prediction_performance</a></span><span class="op">(</span><span class="va">fit_exp_1</span>, <span class="va">fit_exp_2</span>, lambda <span class="op">=</span> <span class="st">'se'</span>, se_mult <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Prediction performance estimated by cross-validation:</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 7 out of 40 predictors have non-zero coefficients:</span></span>
+<span><span class="co">#&gt;       Model Estimate Std. Error Predictors alpha exp.</span></span>
+<span><span class="co">#&gt; 1 fit_exp_2 1.561675  0.1044480          3  0.75    2</span></span>
+<span><span class="co">#&gt; 2 fit_exp_2 1.607036  0.1202396          3  1.00    2</span></span>
+<span><span class="co">#&gt; 3 fit_exp_1 1.754913  0.1452938          3  1.00    1</span></span>
+<span><span class="co">#&gt; 4 fit_exp_1 1.823087  0.1272765          4  0.75    1</span></span></code></pre></div>
+<p>This relaxation now leads to the combination of hyper-parameters
+<code>alpha=0.75</code> and <code>exponent=2</code> and only 3 relevant
+predictors. We can see that the estimated coefficients and estimated
+relevant predictors are close to the truth:</p>
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_exp_2</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda <span class="op">=</span> <span class="st">'se'</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Adaptive PENSE fit with prediction performance estimated by 10 replications of </span></span>
+<span><span class="co">#&gt; 5-fold ris cross-validation.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;                 Estimate</span></span>
-<span><span class="co">#&gt; (Intercept)  0.220783581</span></span>
-<span><span class="co">#&gt; X1           0.882998504</span></span>
-<span><span class="co">#&gt; X2          -0.927853798</span></span>
-<span><span class="co">#&gt; X3           0.859502737</span></span>
-<span><span class="co">#&gt; X21          0.036693330</span></span>
-<span><span class="co">#&gt; X22          0.009785297</span></span>
-<span><span class="co">#&gt; X29          0.082190552</span></span>
-<span><span class="co">#&gt; X39         -0.052051650</span></span>
+<span><span class="co">#&gt; 3 out of 40 predictors have non-zero coefficients:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;               Estimate</span></span>
+<span><span class="co">#&gt; (Intercept)  1.1507826</span></span>
+<span><span class="co">#&gt; X1           0.7821125</span></span>
+<span><span class="co">#&gt; X2          -0.8275043</span></span>
+<span><span class="co">#&gt; X3           0.4945724</span></span>
 <span><span class="co">#&gt; ---</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Hyper-parameters: lambda=0.002003298, alpha=0.75, exponent=3</span></span></code></pre></div>
+<span><span class="co">#&gt; Hyper-parameters: lambda=0.02282, alpha=0.75, exponent=2</span></span></code></pre></div>
 </div>
-<div class="section level3">
-<h3 id="using-different-measures-of-prediction-performance">Using different measures of prediction performance<a class="anchor" aria-label="anchor" href="#using-different-measures-of-prediction-performance"></a>
-</h3>
-<p>By default, <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> uses the τ-scale of the
-prediction errors to assess prediction accuracy. This can be changed by
-specifying a different metric via <code>adapense_cv(cv_metric=)</code>.
-The package supports also the median absolute prediction error
+</div>
+<div class="section level2">
+<h2 id="using-different-measures-of-prediction-performance">Using different measures of prediction performance<a class="anchor" aria-label="anchor" href="#using-different-measures-of-prediction-performance"></a>
+</h2>
+<p>By default, <code><a href="../reference/pense_cv.html">adapense_cv()</a></code> uses the robust information
+sharing (RIS) cross-validation procedure and the corresponding weighted
+mean squared prediction error to estimate prediction accuracy. The user
+can choose to use standard CV via
+<code>adapense_cv(cv_type = "naive")</code>, which also enables the user
+to then choose different metrics of prediction performance. The package
+supports the tau-scale estimate of the prediction error (default for
+naïve CV), the mean absolute prediction error
 (<code>cv_metric = "mape"</code>) or the classical root mean squared
 prediction error (<code>cv_metric = "rmspe"</code>). You should,
 however, not use the RMSPE to evaluate prediction performance in the
@@ -410,43 +362,47 @@ can also specify your own function which takes as input the vector of
 prediction errors and returns a single number, measuring the prediction
 performance. For example, to use the <em>mean</em> absolute prediction
 error, you would write</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mae</span> <span class="op">&lt;-</span> <span class="kw">function</span> <span class="op">(</span><span class="va">prediction_errors</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">prediction_errors</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_075_mae</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">5</span>, cl <span class="op">=</span> <span class="va">cluster</span>, cv_metric <span class="op">=</span> <span class="va">mae</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_075_mae</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">5</span>, </span>
+<span>                           cl <span class="op">=</span> <span class="va">cluster</span>, cv_type <span class="op">=</span> <span class="st">"naive"</span>, cv_metric <span class="op">=</span> <span class="va">mae</span><span class="op">)</span></span></code></pre></div>
 <p>A matrix with estimates of the prediction performance are accessible
-as slot <code>$cv_replications</code> in the object returned by
+as slot <code>$cvres</code> in the object returned by
 <code><a href="../reference/pense_cv.html">adapense_cv()</a></code>. The rows correspond to the different
-penalization levels, and columns correspond to the individual CV
-replications.</p>
+penalization levels.</p>
 </div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<ul>
+<li>D. Kepplinger and S. Wei, “Information sharing for robust and stable
+cross-validation,” <em>Technometrics,</em> 2025, doi: <a href="https://www.doi.org/10.1080/00401706.2025.2540970" class="external-link">10.1080/00401706.2025.2540970</a>.</li>
+<li>R. A. Maronna, D. R. Martin, V. J. Yohai, and M. Salibián-Barrera,
+<em>Robust Statistics: Theory and Methods (with R).</em> in Wiley Series
+in Probability and Statistics. Hoboken, NJ: John Wiley &amp; Sons, Inc.,
+2019.</li>
+</ul>
 </div>
-  </div>
-
-  <div class="col-md-3 hidden-xs hidden-sm" id="pkgdown-sidebar">
-
-      </div>
-
-</div>
-
-
-
-      <footer><div class="copyright">
-  <p></p>
-<p>Developed by David Kepplinger, Matías Salibián-Barrera, Gabriela Cohen Freue.</p>
-</div>
-
-<div class="pkgdown">
-  <p></p>
-<p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.0.</p>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside>
 </div>
 
-      </footer>
+
+
+    <footer><div class="pkgdown-footer-left">
+  <p>Developed by David Kepplinger, Matías Salibián-Barrera, Gabriela Cohen Freue.</p>
 </div>
 
+<div class="pkgdown-footer-right">
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+</div>
+
+    </footer>
+</div>
 
 
 

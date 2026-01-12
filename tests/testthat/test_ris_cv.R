@@ -4,6 +4,13 @@ library(testthat)
 test_that("RIS-CV", {
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
+
+  ncores <- if(isTRUE(pense:::.k_multithreading_support)) {
+    2L
+  } else {
+    1L
+  }
+
   n <- 50L
   p <- 10L
   nlambda <- 25L
@@ -23,7 +30,7 @@ test_that("RIS-CV", {
                    nlambda = nlambda,
                    nlambda_enpy = 5,
                    max_solutions = max_solutions,
-                   ncores = 2L,
+                   ncores = ncores,
                    bdp = 0.25,
                    sparse = FALSE,
                    eps = 1e-8,
@@ -39,6 +46,13 @@ test_that("RIS-CV", {
 test_that("RIS-CV (optimal rho)", {
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
+
+  ncores <- if(isTRUE(pense:::.k_multithreading_support)) {
+    2L
+  } else {
+    1L
+  }
+
   n <- 50L
   p <- 10L
   nlambda <- 25L
@@ -58,7 +72,7 @@ test_that("RIS-CV (optimal rho)", {
                    nlambda = nlambda,
                    nlambda_enpy = 5,
                    max_solutions = max_solutions,
-                   ncores = 2L,
+                   ncores = ncores,
                    bdp = 0.25,
                    sparse = FALSE,
                    eps = 1e-8,

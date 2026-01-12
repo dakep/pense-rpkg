@@ -1,3 +1,10 @@
+# pense 2.5.0
+
+* Use Robust Information Sharing Cross-Validation (RIS-CV) by default for `pense_cv()` and `adapense_cv()`.
+  Details about RIS-CV can be found in [Kepplinger & Wei (2025)](https://doi.org/10.1080/00401706.2025.2540970).
+* Add support for the optimal rho function (Maronna et al. 2018, Section 5.8.1), using the polynomial approximation from the robustbase package.
+* Fix undefined behavior identified by the extended CRAN checks.
+
 # pense 2.2.2
  * Fix build warnings from GCC 14.1.0 on CRAN
 

@@ -5,6 +5,12 @@ test_that("pense() with multiple alpha", {
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
 
+  ncores <- if(isTRUE(pense:::.k_multithreading_support)) {
+    2L
+  } else {
+    1L
+  }
+
   n <- 50L
   p <- 10L
 
@@ -18,7 +24,7 @@ test_that("pense() with multiple alpha", {
               alpha = c(0.1, 0.8),
               nlambda = nlambda,
               nlambda_enpy = 5,
-              ncores = 2L,
+              ncores = ncores,
               bdp = 0.25,
               sparse = FALSE, eps = 1e-8,
               enpy_opts = enpy_options(retain_max = 5, en_algorithm_opts = en_lars_options()),
@@ -47,6 +53,12 @@ test_that("pense_cv() with multiple alpha", {
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
 
+  ncores <- if(isTRUE(pense:::.k_multithreading_support)) {
+    2L
+  } else {
+    1L
+  }
+
   n <- 50L
   p <- 10L
 
@@ -65,7 +77,7 @@ test_that("pense_cv() with multiple alpha", {
                  nlambda = nlambda,
                  nlambda_enpy = 5,
                  max_solutions = max_solutions,
-                 ncores = 2L,
+                 ncores = ncores,
                  bdp = 0.25,
                  sparse = FALSE, eps = 1e-8,
                  enpy_opts = enpy_options(retain_max = 5, en_algorithm_opts = en_lars_options()),
@@ -102,6 +114,12 @@ test_that("regmest() with multiple alpha", {
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
 
+  ncores <- if(isTRUE(pense:::.k_multithreading_support)) {
+    2L
+  } else {
+    1L
+  }
+
   n <- 50L
   p <- 10L
 
@@ -115,7 +133,7 @@ test_that("regmest() with multiple alpha", {
                 scale = 1.11,
                 alpha = c(0.1, 0.8),
                 nlambda = nlambda,
-                ncores = 2L,
+                ncores = ncores,
                 sparse = FALSE, eps = 1e-8,
                 algorithm_opts = mm_algorithm_options(en_algorithm_opts = en_lars_options()))
 
@@ -142,6 +160,12 @@ test_that("regmest_cv() with multiple alpha", {
   skip_if_not(nzchar(Sys.getenv('PENSE_TEST_FULL')),
               message = 'Environment variable `PENSE_TEST_FULL` not defined.')
 
+  ncores <- if(isTRUE(pense:::.k_multithreading_support)) {
+    2L
+  } else {
+    1L
+  }
+
   n <- 50L
   p <- 10L
 
@@ -157,7 +181,7 @@ test_that("regmest_cv() with multiple alpha", {
                    scale = 1.11,
                    alpha = c(0.1, 0.8),
                    nlambda = nlambda,
-                   ncores = 2L,
+                   ncores = ncores,
                    bdp = 0.25,
                    sparse = FALSE, eps = 1e-8,
                    algorithm_opts = mm_algorithm_options(en_algorithm_opts = en_lars_options()))

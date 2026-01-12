@@ -1,4 +1,4 @@
-Fixes the CRAN build warning reported by GCC 14.1.0.
+Fixes the CRAN build errors reported by GCC-UBSAN and adds two major new features: implement RIS-CV for better hyper-parameter selection and add the option to choose the "optimal" rho function instead of Tukey's bisquare. Further removes the deprecated __STDC_LIMIT_MACROS macro as per Prof. Ripley's email.
 
 ## Test environments
 * local x86_64-apple-darwin20, R version 4.4.0 Patched (2024-04-30 r86503)

@@ -15,7 +15,9 @@ regmest(
   starting_points,
   penalty_loadings,
   intercept = TRUE,
-  cc = 4.7,
+  eff = 0.9,
+  rho = "mopt",
+  cc,
   eps = 1e-06,
   explore_solutions = 10,
   explore_tol = 0.1,
@@ -60,7 +62,13 @@ for different penalization of each coefficient. Only allowed for \code{alpha} > 
 
 \item{intercept}{include an intercept in the model.}
 
-\item{cc}{cutoff constant for Tukey's bisquare \eqn{\rho} function.}
+\item{eff}{the desired asymptotic efficiency of the M-estimator under the Normal model.}
+
+\item{rho}{which \eqn{\rho} function to use (see \code{\link[=rho_function]{rho_function()}} for the list of supported
+options).}
+
+\item{cc}{manually specified cutoff constant for the chosen \eqn{\rho} function.
+If specified, overrides the \code{eff} argument.}
 
 \item{eps}{numerical tolerance.}
 

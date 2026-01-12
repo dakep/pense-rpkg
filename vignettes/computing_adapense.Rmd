@@ -16,14 +16,14 @@ load("computing_adapense_fits.RData")
 
 In this guide we will estimate predictive models by means of robust adaptive PENSE estimates for high-dimensional linear regression.
 These estimates can tolerate up to 50\% of contamination, i.e., the adaptive PENSE estimates are reliable even if up to half the observations in the data set contain anomalous values.
-Compute adaptive PENSE estimates is implemented in the function `adapense_cv()` in the pense package.
+Computing adaptive PENSE estimates with data-drive hyperparameter selection is implemented in the function `adapense_cv()` in the pense package.
 
-While the following guide computes adaptive PENSE estimates, everything also applies to other estimates implemented in the pense package: non-adaptive PENSE estimates and regularized M-estimates.
+While the following guide computes adaptive PENSE estimates, the steps are analogous for other estimates implemented in the pense package: non-adaptive PENSE estimates and regularized M-estimates.
 Non-adaptive PENSE estimates (computed by `pense_cv()`) are typically better at identifying all relevant predictors than adaptive PENSE.
 However, this comes at the price of often including a large number of irrelevant predictors as well.
-Regularized M-estimates (computed by `pensem_cv()`) can be more accurate than either PENSE or adaptive PENSE estimates, but may be unreliable in presence of highly detrimental contamination.
+Regularized M-estimates (computed by `pensem_cv()`) can be more accurate than either PENSE or adaptive PENSE estimates, but may be unreliable in presence of highly detrimental contamination, and require a pre-determined estimate of the residual scale.
 
-# Computing adaptive PENSE estimates
+## Computing adaptive PENSE estimates
 
 First we need to load the pense package:
 ```{r}
@@ -54,15 +54,15 @@ y[1:3] <- 5 * apply(x[1:3, ], 1, max)
 x[3:6, 4:6] <- 1.5 * max(x) + abs(rcauchy(4 * 3))
 ```
 
-## Step 1: Computing the estimates
+### Step 1: Computing the estimates
 
 The first step is to compute adaptive PENSE estimates for a fixed value for hyper-parameter `alpha` and many different penalization levels (hyper-parameter `lambda`).
 The `adapense_cv()` function automatically determines a grid of penalization levels, with parameter `nlambda=` controlling the number of different penalization levels to be used (default 50).
 We are going to choose the penalization level which leads to a good balance between prediction accuracy and model size.
-The pense package can automatically evaluate prediction accuracy of the adaptive PENSE estimates via cross-validation.
+The pense package can automatically evaluate prediction accuracy of the adaptive PENSE estimates via robust information-sharing cross-validation (RIS-CV; Kepplinger & Wei 2025).
 
 In its simplest form, computing adaptive PENSE estimates and estimating their prediction accuracy is done with the code below.
-Here, prediction accuracy is estimated via 5-fold cross-validation, replicated 3 times:
+Here, prediction accuracy is estimated via 5-fold RIS-CV, replicated 3 times:
 ```{r fit_075, eval=FALSE}
 set.seed(1234)
 fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 3, cl = cluster)
@@ -73,12 +73,23 @@ fit_075_3repl <- fit_075
 
 You should always set a seed prior to computing adaptive PENSE or PENSE estimates to ensure reproducibility of the internal cross-validation.
 
-By default, adaptive PENSE estimates are computed with a breakdown point of ~25\%.
+By default, adaptive PENSE estimates are computed with a breakdown point of ~25\% and Tukey's bisquare $\rho$ function.
 This means, the estimates are reliable if up to 25\% of observations contain arbitrary contamination.
 If you suspect that a larger proportion of observations may be affected by contamination, you can increase the breakdown point of the estimates with argument `bdp=` to up to 50\%.
 Note, however, that a higher breakdown point also leads to less accurate estimates.
+The package also supports the "optimal" $\rho$ function (Maronna et al., 2018, Section 5.8.1).
+To choose a different $\rho$ function, alter the `mscale_opts` argument:
 
-## Step 2: Assessing prediction performance
+```{r fit_075_mopt, eval=FALSE}
+set.seed(1234)
+fit_075_mopt <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 3, cl = cluster,
+                            mscale_opts = mscale_algorithm_options(rho = "mopt"))
+```
+```{r, eval=FALSE, include=FALSE}
+fit_075_3repl_mopt <- fit_075_mopt
+```
+
+### Step 2: Assessing prediction performance
 
 The `plot()` function for the object `fit_075` shows the estimated prediction accuracy for all fitted models.
 
@@ -93,12 +104,9 @@ The plot shows the estimated scale of the prediction error for all 50 models.
 The penalization level leading to the best prediction performance is highlighted by a dark blue dot.
 If more than one CV replication was performed, the plot also shows a light blue dot, marking the most parsimonious model with prediction performance "indistinguishable" from the best model.
 The plot uses the "one-standard-error" rule using the minimum average scale of the prediction error plus 1 standard error of this estimated scale.
-You can adjust this rule to the "*m*-standard-error" with `plot(fit_075, lambda = "m-se")`, where `m` is any positive number (e.g., `lambda = "1.5-se"`).
+You can adjust this rule to the "*m*-standard-error" with `plot(fit_075, se_mult = m)`, where `m` is any positive number (e.g., `m=2`).
 
-In our case, the estimated prediction performance is a bit unstable and has large variability.
-With such unstable estimates of prediction performance it is difficult to reliably select the penalization level.
-This is not unusual for robust estimators and can be improved by increasing the number of CV replications.
-
+The accuracy of the estimate can be improved by increasing the number of CV replications.
 The more CV replications, the more accurate the estimates of prediction accuracy, but the longer the computing time.
 If we repeat step #1, but with 10 CV replications instead of 3, we get a more stable evaluation of prediction performance:
 
@@ -114,10 +122,7 @@ fit_075 <- fit_075_10repl
 plot(fit_075)
 ```
 
-With 10 replications, the error bars are still large, a testament to the contamination in the sample, but the general trend of the prediction performance is much clearer.
-Of course, you could increase the number of CV replications further to get an even smoother plot.
-
-## Step 3: Extracting coefficients
+### Step 3: Extracting coefficients
 
 Once we are happy with the stability of the estimated prediction performance, we can extract summary information from the predictive model with
 ```{r}
@@ -126,16 +131,16 @@ summary(fit_075)
 
 This model corresponds to the model with smallest scale of the prediction error (the blue dot in the plot above).
 There are a total of `r sum(abs(coef(fit_075)) > 0) - 1` predictors in the model.
-If you think a sparser model may be more appropriate for your application, you can also apply the *q*-standard-error rule as in the plots.
+If you think a sparser model may be more appropriate for your application, you can also apply the *m*-standard-error rule as in the plots.
 The default, the one-standard-error rule leads to the following predictive model:
 ```{r}
-summary(fit_075, lambda = "2-se")
+summary(fit_075, lambda = "se", se_mult = 1)
 ```
 
-In this fit, only `r sum(abs(coef(fit_075, lambda = "2-se")) > 0) - 1` out of the 40 predictors are relevant, including the 3 truly relevant predictors.
+In this fit, only `r sum(abs(coef(fit_075, lambda = "se", se_mult = 1)) > 0) - 1` out of the 40 predictors are relevant, including the 3 truly relevant predictors.
 But maybe different values for hyper-parameters `alpha` and `exponent` lead to even better prediction?
 
-## Step 4: Exploring different hyper-parameters
+### Step 4: Exploring different hyper-parameters
 
 The choice for hyper-parameters `alpha` and `exponent` (which was kept at its default value of 1) are rather arbitrary.
 The effects of these two hyper-parameters on the estimates are in general less pronounced than of the penalization level.
@@ -149,7 +154,7 @@ With higher values for `exponent`, typically only predictors with the largest (i
 While this helps to screen out many or most of the truly irrelevant, it also risks missing some of the truly relevant predictors.
 
 Let us compute adaptive PENSE estimates for different values of hyper-parameters `alpha` and `exponent`.
-In the code below, this is done for two values: `alpha=0.75` and `alpha=1` as well as `exponent=1`, `exponent=2`, and `exponent=3`.
+In the code below, this is done for two values: `alpha=0.75` and `alpha=1` as well as `exponent=1` and `exponent=2`.
 
 ```{r fit_all, eval=FALSE}
 set.seed(1234)
@@ -157,46 +162,43 @@ fit_exp_1 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 1, cv_k = 5, cv_re
 
 set.seed(1234)
 fit_exp_2 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 2, cv_k = 5, cv_repl = 10, cl = cluster)
-
-set.seed(1234)
-fit_exp_3 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 3, cv_k = 5, cv_repl = 10, cl = cluster)
 ```
 
 Note that we set the seed before each call to `adapense_cv()`.
 This is again to ensure reproducibility of the CV, but also to make the estimated prediction performance more comparable across different values of the `exponent` hyper-parameter.
 
-After checking that the cross-validated prediction performance of the fitted models is smooth enough to reliably select the penalization level, we can compare all the estimates.
+After checking that the RIS-CV prediction performance of the fitted models is smooth enough to reliably select the penalization level, we can compare all the estimates.
 For this, the package includes the function `prediction_performance()`, which extracts and prints the prediction performance of all given objects:
 
 ```{r}
-prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3)
+prediction_performance(fit_exp_1, fit_exp_2)
 ```
 
-Here we see the combination of hyper-parameters `alpha=1` and `exponent=3` (in object `fit_exp_3`) leads to the best prediction accuracy, but all models are based on 8 or more predictors.
-Instead, we can also compare sparser models with almost the same prediction performance:
+Here we see the combination of hyper-parameters `alpha=1` and `exponent=2` (in object `fit_exp_2`) leads to the best prediction accuracy.
+We can also compare sparser models with similar prediction performance:
 
 ```{r}
-prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3, lambda = '1-se')
+prediction_performance(fit_exp_1, fit_exp_2, lambda = 'se')
 ```
 
-If we are interested in even sparser models, we can increase the tolerance level to, for instance, 3 standard errors:
+If we are interested in even sparser models, we can increase the tolerance level to, for instance, 2 standard errors:
 
 ```{r}
-prediction_performance(fit_exp_1, fit_exp_2, fit_exp_3, lambda = '3-se')
+prediction_performance(fit_exp_1, fit_exp_2, lambda = 'se', se_mult = 2)
 ```
 
-This relaxation still leads to the combination of hyper-parameters `alpha=1` and `exponent=2`, but now with only 6 relevant predictors; including all truly relevant predictors.
+This relaxation now leads to the combination of hyper-parameters `alpha=0.75` and `exponent=2` and only 3 relevant predictors.
 We can see that the estimated coefficients and estimated relevant predictors are close to the truth:
 
 ```{r}
-summary(fit_exp_3, alpha = 0.75, lambda = '3-se')
+summary(fit_exp_2, alpha = 0.75, lambda = 'se')
 ```
 
 ## Using different measures of prediction performance
 
 By default, `adapense_cv()` uses the robust information sharing (RIS) cross-validation procedure and the corresponding weighted mean squared prediction error to estimate prediction accuracy.
 The user can choose to use standard CV via `adapense_cv(cv_type = "naive")`, which also enables the user to then choose different metrics of prediction performance.
-The package supports the tau-scale estimate of the prediction error (default), the median absolute prediction error (`cv_metric = "mape"`) or the classical root mean squared prediction error (`cv_metric = "rmspe"`).
+The package supports the tau-scale estimate of the prediction error (default for naïve CV), the mean absolute prediction error (`cv_metric = "mape"`) or the classical root mean squared prediction error (`cv_metric = "rmspe"`).
 You should, however, not use the RMSPE to evaluate prediction performance in the potential presence of contamination.
 Robust methods are not designed to predict contaminated observations well and the RMSPE may be artificially inflated by poor prediction of a few contaminated response values.
 You can also specify your own function which takes as input the vector of prediction errors and returns a single number, measuring the prediction performance.
@@ -216,6 +218,11 @@ A matrix with estimates of the prediction performance are accessible as slot `$c
 The rows correspond to the different penalization levels.
 
 ```{r, eval=FALSE, include=FALSE}
-save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2, fit_exp_3,
+save(fit_075_10repl, fit_075_3repl, fit_075_mae, fit_exp_1, fit_exp_2, fit_075_3repl_mopt,
      file = 'computing_adapense_fits.RData')
 ```
+
+## References
+
+- D. Kepplinger and S. Wei, "Information sharing for robust and stable cross-validation," *Technometrics,* 2025, doi: [10.1080/00401706.2025.2540970](https://www.doi.org/10.1080/00401706.2025.2540970).
+- R. A. Maronna, D. R. Martin, V. J. Yohai, and M. Salibián-Barrera, *Robust Statistics: Theory and Methods (with R).* in Wiley Series in Probability and Statistics. Hoboken, NJ: John Wiley & Sons, Inc., 2019.

@@ -20,6 +20,7 @@ test_that("Regularized M-estimation Algorithm (1 thread)", {
     pr <- regmest(x, y, alpha = 0.8,
                   nlambda = nlambda,
                   scale = scale,
+                  rho = 'bisquare',
                   starting_points = c(
                     starting_point(intercept = 2,
                                    beta = c(rep.int(1, 5), numeric(p - 5L))),
@@ -56,6 +57,7 @@ test_that("Regularized M-estimation Algorithm (optimal rho)", {
     pr <- regmest(x, y, alpha = 0.8,
                   nlambda = nlambda,
                   scale = scale,
+                  rho = 'mopt',
                   starting_points = c(
                     starting_point(intercept = 2,
                                    beta = c(rep.int(1, 5), numeric(p - 5L))),
@@ -65,16 +67,15 @@ test_that("Regularized M-estimation Algorithm (optimal rho)", {
                   mscale_bdp = 0.25,
                   sparse = sparse,
                   eps = 1e-8,
-                  mscale_opts = mscale_algorithm_options("mopt"),
                   algorithm_opts = mm_algorithm_options(
                     en_algorithm_opts = en_lars_options()))
   )
 
   expect_equal(pr$alpha, 0.8)
   expect_length(pr$estimates, nlambda)
-
   compare_estimates(pr$estimates, 'snap/regmest_algo_st-mopt.json', tol = 1e-6)
-  compare_estimates(pr$estimates, 'snap/regmest_algo_st.json', tol = 1e-6)
+  compare_estimates(pr$estimates, 'snap/regmest_algo_st.json', tol = 1e-6,
+                    expect_success = FALSE, only_coefs = TRUE)
 })
 
 test_that("Regularized M-estimation Algorithm (2 threads)", {
@@ -111,6 +112,5 @@ test_that("Regularized M-estimation Algorithm (2 threads)", {
 
   expect_equal(pr$alpha, 0.8)
   expect_length(pr$estimates, nlambda)
-  # compare_estimates(pr$estimates, 'snap/regmest_algo_mt.json', tol = 1e-6)
 })
 

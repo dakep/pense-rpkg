@@ -5,6 +5,7 @@
 #'
 #' @return tuning constant for desired efficiency
 #' @keywords internal
+#' @importFrom stats integrate uniroot pnorm
 .huber_efficiency_const <- function (eff, eps = sqrt(.Machine$double.eps)) {
   if (eff > 0.99) {
     return(2.1)
@@ -40,6 +41,7 @@
 #'
 #' @return tuning constant for desired efficiency
 #' @keywords internal
+#' @importFrom stats integrate uniroot dnorm
 .bisquare_efficiency_const <- function (eff, eps = sqrt(.Machine$double.eps)) {
   if (eff > 0.99 - eps) {
     return(7.0414)
@@ -83,6 +85,7 @@
 #'
 #' @return tuning constant for desired efficiency
 #' @keywords internal
+#' @importFrom stats integrate uniroot dnorm
 .mopt_efficiency_const <- function (eff, eps = sqrt(.Machine$double.eps)) {
   if (eff > 0.99 - eps) {
     return(1.304) # 99.1% efficiency
@@ -121,7 +124,7 @@
 #'
 #' @return consistency constant
 #' @keywords internal
-#' @importFrom stats pnorm uniroot
+#' @importFrom stats integrate uniroot pnorm dnorm
 #' @importFrom rlang abort
 .mopt_consistency_const <- function (delta, eps = sqrt(.Machine$double.eps)) {
   ##
@@ -162,7 +165,7 @@
 #'
 #' @return consistency constant
 #' @keywords internal
-#' @importFrom stats pnorm uniroot
+#' @importFrom stats integrate uniroot pnorm
 #' @importFrom rlang abort
 .bisquare_consistency_const <- function (delta, eps = sqrt(.Machine$double.eps)) {
   ##
@@ -213,6 +216,7 @@
 #' @param eps numerical tolerance for equality comparisons
 #'
 #' @importFrom rlang warn
+#' @importFrom stats uniroot
 #' @keywords internal
 .find_stable_bdb_bisquare <- function (n, desired_bdp, tolerance = 0.01, precision = 1e-4,
                                        interval = c(0.05, 0.5),

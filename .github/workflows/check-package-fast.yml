@@ -7,6 +7,8 @@ on:
 
 name: 'R CMD check (fast)'
 
+permissions: read-all
+
 jobs:
   R-CMD-check:
     runs-on: ubuntu-latest

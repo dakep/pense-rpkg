@@ -17,9 +17,10 @@ updates.}
 Use Coordinate Descent to Solve Elastic Net Problems
 }
 \seealso{
-Other EN algorithms: 
+Other LS-EN algorithm options: 
 \code{\link{en_admm_options}()},
+\code{\link{en_algorithm_options}},
 \code{\link{en_dal_options}()},
 \code{\link{en_lars_options}()}
 }
-\concept{EN algorithms}
+\concept{LS-EN algorithm options}

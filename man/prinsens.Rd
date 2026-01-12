@@ -66,6 +66,7 @@ A Fast Procedure for Outlier Diagnostics in Large Regression Problems.
 \seealso{
 Other functions for initial estimates: 
 \code{\link{enpy_initial_estimates}()},
+\code{\link{enpy_options}()},
 \code{\link{starting_point}()}
 }
 \concept{functions for initial estimates}

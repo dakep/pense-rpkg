@@ -36,9 +36,10 @@ options for the DAL EN algorithm.
 Use the DAL Elastic Net Algorithm
 }
 \seealso{
-Other EN algorithms: 
+Other LS-EN algorithm options: 
 \code{\link{en_admm_options}()},
+\code{\link{en_algorithm_options}},
 \code{\link{en_cd_options}()},
 \code{\link{en_lars_options}()}
 }
-\concept{EN algorithms}
+\concept{LS-EN algorithm options}

@@ -48,3 +48,10 @@ subsets. At each iteration, the Principal Sensitivity Components are computed to
 high leverage. Among all the LS-EN estimates, the estimate with smallest M-scale of the residuals is selected.
 Observations with largest residual for the selected estimate are removed and the next iteration is started.
 }
+\seealso{
+Other functions for initial estimates: 
+\code{\link{enpy_initial_estimates}()},
+\code{\link{prinsens}()},
+\code{\link{starting_point}()}
+}
+\concept{functions for initial estimates}

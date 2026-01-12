@@ -7,25 +7,12 @@
 
 <!-- end badges -->
 
-This R package implements the penalized elastic net S-estimator (PENSE)
-and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et al.
-(2019)](https://projecteuclid.org/euclid.aoas/1574910036) as well as the
-adaptive extensions developed in [Kepplinger
-(2020)](https://hdl.handle.net/2429/75637).
-
-## Migrating from pense versions 1.x to 2.x
-
-Version 2.x, release September 2020, introduces many new features and
-improved computational speed. The changes, however, make the package
-incompatible with previous versions. The [migration
-guide](https://dakep.github.io/pense-rpkg/articles/migration_guide.html)
-helps migrating existing code to new versions of the package.
+This R package implements the penalized adaptive elastic net S-estimator (adaptive PENSE), the non-adaptive version (PENSE) and the penalized M-step (PENSEM) as proposed in [Cohen Freue, et al. (2019)](https://doi.org/10.1214/19-AOAS1269) and [Kepplinger (2023)](https://doi.org/10.1016/j.csda.2023.107730).
+Hyper-parameter selection is done by robust information sharing cross-validation (RIS-CV; [Kepplinger & Wei 2025](https://doi.org/10.1080/00401706.2025.2540970)).
 
 ## Usage
 
-The main function for most users is `adapense_cv()`, which computes an
-adaptive PENSE fit and estimates prediction performance for many values
-of the penalization level.
+The main function for most users is `adapense_cv()`, which computes an adaptive PENSE fit and estimates prediction performance for many values of the penalization level.
 
 ``` r
 library(pense)
@@ -58,28 +45,21 @@ summary(fit)
 summary(fit, lambda = "se")
 ```
 
-The user can also compute a non-adaptive PENSE fit by using `pense_cv()`
-in place of `adapense_cv()` or a PENSEM fit by using `pensem_cv()`.
+The user can also compute a non-adaptive PENSE fit by using `pense_cv()` in place of `adapense_cv()` or a PENSEM fit by using `pensem_cv()`.
 
 ## Detailed examples
 
-The package vignette [Estimating predictive
-models](https://dakep.github.io/pense-rpkg/articles/computing_adapense.html)
-demonstrate in more detail how to compute adaptive and non-adaptive
-PENSE estimates.
+The package vignette [Estimating predictive models](https://dakep.github.io/pense-rpkg/articles/computing_adapense.html) demonstrate in more detail how to compute adaptive and non-adaptive PENSE estimates.
 
 ## Installation
 
-To install the latest release from CRAN, run the following R code in the
-R console:
+To install the latest release from CRAN, run the following R code in the R console:
 
 ``` r
 install.packages("pense")
 ```
 
-The most recent development version can be installed directly from
-github using the [devtools](https://cran.r-project.org/package=devtools)
-package:
+The most recent development version can be installed directly from github using the [devtools](https://cran.r-project.org/package=devtools) package:
 
 ``` r
 # Install the most recent development version:
@@ -88,8 +68,6 @@ devtools::install_github("dakep/pense-rpkg")
 
 ## References
 
-  - Kepplinger, D. (2021). Robust Variable Selection and Estimation Via Adaptive Elastic Net S-Estimators for Linear Regression (arXiv:2107.03325; Version 2). *arXiv preprint*. [doi:10.48550/arXiv.2107.03325](https://doi.org/10.48550/arXiv.2107.03325).
-  - Cohen Freue, GV. Kepplinger D, Salibián-Barrera M, Smucler E.
-    (2019). Robust elastic net estimators for variable selection and
-    identification of proteomic biomarkers. *Annals of Applied
-    Statistics*. 13(4). [doi:10.1214/19-AOAS1269](https://doi.org/10.1214/19-AOAS1269).
+- D. Kepplinger and S. Wei, "Information sharing for robust and stable cross-validation," *Technometrics*, 2025, [doi: 10.1080/00401706.2025.2540970](https://doi.org/10.1080/00401706.2025.2540970). 
+- D. Kepplinger, "Robust variable selection and estimation via adaptive elastic net S-estimators for linear regression," *Computational Statistics & Data Analysis,* vol. 183, 2023, [doi: 10.1016/j.csda.2023.107730](https://doi.org/10.1016/j.csda.2023.107730). 
+- G. V. Cohen Freue, D. Kepplinger, M. Salibián-Barrera, and E. Smucler, "Robust elastic net estimators for variable selection and identification of proteomic biomarkers," *Annals of Applied Statistics,* vol. 13, no. 4, pp. 2065–2090, 2019, [doi: 10.1214/19-AOAS1269](https://doi.org/10.1214/19-AOAS1269).

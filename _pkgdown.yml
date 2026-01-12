@@ -1,3 +1,6 @@
+template:
+ bootstrap: 5
+ math-rendering: katex
 reference:
 - title: Robust fitting of linear regression models
 - subtitle: Fitting and estimating prediction performance
@@ -24,9 +27,18 @@ reference:
   contents:
   - has_concept("functions for computing non-robust estimates")
 - title: Advanced functionality
-- subtitle: Control options
+- subtitle: Controlling the Robust EN algorithm
+  desc: Options to choose and control the algorithm to optimize robust EN objective functions
   contents:
-  - ends_with("_options")
+  - has_concept("Robust EN algorithms")
+- subtitle: Controlling the EN algorithm
+  desc: Options to choose and control the algorithm to optimize least-squares EN problems.
+  contents:
+  - has_concept("LS-EN algorithm options")
+- subtitle: Rho/Psi functions
+  contents:
+  - has_concept("Robustness control options")
+  - has_concept("other options")
 - subtitle: Initial estimates
   desc: Manually compute and alter initial estimates.
   contents:
@@ -34,6 +46,3 @@ reference:
 - subtitle: Miscellaneous
   contents:
   - has_concept("miscellaneous functions")
-- title: Deprecated functions
-  contents:
-  - has_concept("deprecated functions")

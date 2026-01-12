@@ -29,3 +29,11 @@ DAL needs \eqn{O(n^3 p^2)} operations per iteration, but converges
 exponentially.
 }
 }
+\seealso{
+Other LS-EN algorithm options: 
+\code{\link{en_admm_options}()},
+\code{\link{en_cd_options}()},
+\code{\link{en_dal_options}()},
+\code{\link{en_lars_options}()}
+}
+\concept{LS-EN algorithm options}

@@ -11,7 +11,7 @@
 #' @inheritParams pense
 #' @param enpy_opts options for the EN-PY algorithm, created with the [enpy_options()] function.
 #' @param lambda a vector of positive values of penalization levels.
-#' @param cc cutoff value for the bisquare rho function. By default, chosen to yield a consistent
+#' @param cc cutoff value for the rho function. By default, chosen to yield a consistent
 #'    estimate for the Normal distribution.
 #'
 #' @family functions for initial estimates

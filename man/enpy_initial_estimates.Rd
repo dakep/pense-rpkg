@@ -71,6 +71,7 @@ proteomic biomarkers.
 }
 \seealso{
 Other functions for initial estimates: 
+\code{\link{enpy_options}()},
 \code{\link{prinsens}()},
 \code{\link{starting_point}()}
 }

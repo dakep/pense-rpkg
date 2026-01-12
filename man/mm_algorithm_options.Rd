@@ -32,4 +32,8 @@ Additional options for the MM algorithm to compute EN S- and M-estimates.
 \seealso{
 cd_algorithm_options for a direct optimization of the non-convex
 PENSE loss.
+
+Other Robust EN algorithms: 
+\code{\link{cd_algorithm_options}()}
 }
+\concept{Robust EN algorithms}

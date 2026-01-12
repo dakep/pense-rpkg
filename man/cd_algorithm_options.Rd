@@ -33,4 +33,8 @@ Set options for the CD algorithm to compute adaptive EN S-estimates.
 \seealso{
 mm_algorithm_options to optimize the non-convex PENSE objective
 function via a sequence of convex problems.
+
+Other Robust EN algorithms: 
+\code{\link{mm_algorithm_options}()}
 }
+\concept{Robust EN algorithms}

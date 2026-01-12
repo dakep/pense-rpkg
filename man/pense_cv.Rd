@@ -252,9 +252,11 @@ cross-validation.
 regularization path.
 
 Other functions to compute robust estimates with CV: 
+\code{\link{change_cv_measure}()},
 \code{\link{regmest_cv}()}
 
 Other functions to compute robust estimates with CV: 
+\code{\link{change_cv_measure}()},
 \code{\link{regmest_cv}()}
 }
 \concept{functions to compute robust estimates with CV}

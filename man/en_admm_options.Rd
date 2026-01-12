@@ -20,9 +20,10 @@ options for the ADMM EN algorithm.
 Use the ADMM Elastic Net Algorithm
 }
 \seealso{
-Other EN algorithms: 
+Other LS-EN algorithm options: 
+\code{\link{en_algorithm_options}},
 \code{\link{en_cd_options}()},
 \code{\link{en_dal_options}()},
 \code{\link{en_lars_options}()}
 }
-\concept{EN algorithms}
+\concept{LS-EN algorithm options}

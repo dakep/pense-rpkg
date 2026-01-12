@@ -84,6 +84,7 @@ This is determined to be the estimate with prediction performance within
 \seealso{
 Other functions for initial estimates: 
 \code{\link{enpy_initial_estimates}()},
+\code{\link{enpy_options}()},
 \code{\link{prinsens}()}
 }
 \concept{functions for initial estimates}

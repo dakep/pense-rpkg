@@ -19,7 +19,8 @@ the internal integer representation of the \eqn{\rho} function.
 List Available Rho Functions
 }
 \seealso{
-Other miscellaneous functions: 
-\code{\link{consistency_const}()}
+Other Robustness control options: 
+\code{\link{consistency_const}()},
+\code{\link{mscale_algorithm_options}()}
 }
-\concept{miscellaneous functions}
+\concept{Robustness control options}

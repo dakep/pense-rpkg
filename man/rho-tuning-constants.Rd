@@ -28,10 +28,12 @@ Returns the tuning constants required to achieve the desired
 breakdown point or efficiency under the Normal model.
 }
 \seealso{
-Other miscellaneous functions: 
+Other Robustness control options: 
+\code{\link{mscale_algorithm_options}()},
 \code{\link{rho_function}()}
 
-Other miscellaneous functions: 
+Other Robustness control options: 
+\code{\link{mscale_algorithm_options}()},
 \code{\link{rho_function}()}
 }
-\concept{miscellaneous functions}
+\concept{Robustness control options}

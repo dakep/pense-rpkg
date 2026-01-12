@@ -3,6 +3,7 @@
 #' For cross-validated fits using the RIS-CV strategy, the measure of prediction
 #' accuracy can be adjusted post-hoc.
 #'
+#' @family functions to compute robust estimates with CV
 #' @param x fitted (adaptive) PENSE or M-estimator
 #' @param measure the measure to use for prediction accuracy
 #' @param max_solutions consider only this many of the best solutions.

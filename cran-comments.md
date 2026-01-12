@@ -13,4 +13,6 @@ Fixes the CRAN build warning reported by GCC 14.1.0.
 
 ## R CMD check results
 
-0 ERRORs | 0 WARNINGs | 0 NOTEs.
+0 ERRORs | 0 WARNINGs | 1 NOTEs
+
+- Some systems report a 403 status for the DOI link https://www.doi.org/10.1080/00401706.2025.2540970

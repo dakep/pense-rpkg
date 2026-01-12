@@ -238,7 +238,7 @@ mlocscale <- function (x, bdp = 0.25, eff = 0.90,
 #'
 #' @return consistency constant
 #'
-#' @family miscellaneous functions
+#' @family Robustness control options
 #' @rdname rho-tuning-constants
 #' @export
 #'
@@ -261,7 +261,7 @@ consistency_const <- function (delta, rho, eps = sqrt(.Machine$double.eps)) {
 
 #' @param eff desired asymptotic efficiency (between 0.1 and 0.99).
 #'
-#' @family miscellaneous functions
+#' @family Robustness control options
 #' @rdname rho-tuning-constants
 #' @export
 #'
@@ -287,7 +287,7 @@ efficiency_const <- function (eff, rho, eps = sqrt(.Machine$double.eps)) {
 #' @return if `rho` is missing returns a vector of supported \eqn{\rho} function names, otherwise
 #'    the internal integer representation of the \eqn{\rho} function.
 #'
-#' @family miscellaneous functions
+#' @family Robustness control options
 #' @importFrom rlang abort
 #'
 #' @export

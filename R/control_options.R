@@ -20,6 +20,7 @@
 #'    keep candidates from the last iteration.
 #' @param retain_max maximum number of candidates, i.e., only the best `retain_max` candidates are retained.
 #'
+#' @family functions for initial estimates
 #' @return options for the ENPY algorithm.
 #' @export
 enpy_options <- function (max_it = 10, keep_psc_proportion = 0.5,
@@ -49,6 +50,7 @@ enpy_options <- function (max_it = 10, keep_psc_proportion = 0.5,
 #' @param rho the \eqn{\rho} function to use. See [rho_function()] for
 #'   possible values.
 #'
+#' @family Robustness control options
 #' @return options for the M-scale estimation algorithm.
 #' @export
 mscale_algorithm_options <- function (rho = 'bisquare', max_it = 200, eps = 1e-8) {
@@ -93,6 +95,7 @@ mscale_algorithm_options <- function (rho = 'bisquare', max_it = 200, eps = 1e-8
 #' @param en_algorithm_opts options for the inner LS-EN algorithm.
 #'   See [en_algorithm_options] for details.
 #'
+#' @family Robust EN algorithms
 #' @return options for the MM algorithm.
 #' @seealso cd_algorithm_options for a direct optimization of the non-convex
 #'   PENSE loss.
@@ -125,6 +128,7 @@ mm_algorithm_options <- function (max_it = 500,
 #' @param linesearch_mult multiplier to adjust the step size in the line
 #'   search.
 #'
+#' @family Robust EN algorithms
 #' @return options for the CD algorithm to compute (adaptive) PENSE estimates.
 #' @seealso mm_algorithm_options to optimize the non-convex PENSE objective
 #'   function via a sequence of convex problems.
@@ -178,13 +182,13 @@ cd_algorithm_options <- function (max_it = 1000, reset_it = 8,
 #'    method.
 #'    DAL needs \eqn{O(n^3 p^2)} operations per iteration, but converges
 #'    exponentially.
-#'
+#' @family LS-EN algorithm options
 #' @name en_algorithm_options
 NULL
 
 #' Use the LARS Elastic Net Algorithm
 #'
-#' @family EN algorithms
+#' @family LS-EN algorithm options
 #' @export
 en_lars_options <- function () {
   list(algorithm = 'lars')
@@ -196,7 +200,7 @@ en_lars_options <- function () {
 #' @param reset_it number of iterations after which the residuals are
 #'   re-computed from scratch, to prevent numerical drifts from incremental
 #'   updates.
-#' @family EN algorithms
+#' @family LS-EN algorithm options
 #' @export
 en_cd_options <- function (max_it = 1000, reset_it = 8) {
   list(algorithm = 'cdls',
@@ -212,7 +216,7 @@ en_cd_options <- function (max_it = 1000, reset_it = 8) {
 #' @param acceleration acceleration factor for linearized ADMM.
 #'
 #' @return options for the ADMM EN algorithm.
-#' @family EN algorithms
+#' @family LS-EN algorithm options
 #' @export
 en_admm_options <- function (max_it = 1000, step_size, acceleration = 1) {
   tau <- if (missing(step_size) || is.null(step_size)) {
@@ -240,7 +244,7 @@ en_admm_options <- function (max_it = 1000, step_size, acceleration = 1) {
 #'    an aggressive initial barrier parameter (i.e., what constitutes "too far").
 #'
 #' @return options for the DAL EN algorithm.
-#' @family EN algorithms
+#' @family LS-EN algorithm options
 #' @export
 en_dal_options <- function (max_it = 100, max_inner_it = 100, eta_multiplier = 2,
                             eta_start_conservative = 0.01, eta_start_aggressive = 1,

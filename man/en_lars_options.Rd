@@ -10,9 +10,10 @@ en_lars_options()
 Use the LARS Elastic Net Algorithm
 }
 \seealso{
-Other EN algorithms: 
+Other LS-EN algorithm options: 
 \code{\link{en_admm_options}()},
+\code{\link{en_algorithm_options}},
 \code{\link{en_cd_options}()},
 \code{\link{en_dal_options}()}
 }
-\concept{EN algorithms}
+\concept{LS-EN algorithm options}

@@ -20,3 +20,9 @@ options for the M-scale estimation algorithm.
 \description{
 Options for the M-scale Estimation Algorithm
 }
+\seealso{
+Other Robustness control options: 
+\code{\link{consistency_const}()},
+\code{\link{rho_function}()}
+}
+\concept{Robustness control options}

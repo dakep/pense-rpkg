@@ -192,9 +192,11 @@ coef(cv_results, lambda = '1-se')
 \code{\link[=plot.pense_cvfit]{plot.pense_cvfit()}} for plotting the CV performance or the regularization path.
 
 Other functions to compute robust estimates with CV: 
+\code{\link{change_cv_measure}()},
 \code{\link{pense_cv}()}
 
 Other functions to compute robust estimates with CV: 
+\code{\link{change_cv_measure}()},
 \code{\link{pense_cv}()}
 }
 \concept{functions to compute robust estimates with CV}

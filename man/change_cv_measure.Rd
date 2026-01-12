@@ -25,3 +25,9 @@ a \code{pense.cvfit} object using the updated measure of prediction accuracy
 For cross-validated fits using the RIS-CV strategy, the measure of prediction
 accuracy can be adjusted post-hoc.
 }
+\seealso{
+Other functions to compute robust estimates with CV: 
+\code{\link{pense_cv}()},
+\code{\link{regmest_cv}()}
+}
+\concept{functions to compute robust estimates with CV}

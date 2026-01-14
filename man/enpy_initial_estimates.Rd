@@ -34,7 +34,7 @@ Can be a vector of several values, but \code{alpha = 0} cannot be mixed with oth
 \item{bdp}{desired breakdown point of the estimator, between 0.05 and 0.5. The actual
 breakdown point may be slightly larger/smaller to avoid instabilities of the S-loss.}
 
-\item{cc}{cutoff value for the bisquare rho function. By default, chosen to yield a consistent
+\item{cc}{cutoff value for the rho function. By default, chosen to yield a consistent
 estimate for the Normal distribution.}
 
 \item{intercept}{include an intercept in the model.}

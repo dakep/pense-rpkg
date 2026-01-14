@@ -34,10 +34,21 @@ Computing robust, regularized estimates for high-dimensional linear regression m
 To save time, many steps can be done in parallel.
 If your computer has more than 1 CPU core, you can harness more computing power by creating a cluster of R processes:
 
-```{r}
+```{r, eval=FALSE}
 library(parallel)
 # If you don't know how many CPU cores are available, first run `detectCores(logical = FALSE)`
-cluster <- makeCluster(3)
+cluster <- makeCluster(2)
+```
+
+```{r, include=FALSE}
+library(parallel)
+USE_CPUS <- Sys.getenv("PENSE_VIGNETTES_MAX_CPUS", unset = "2") |> 
+  as.integer()
+cluster <- if (isTRUE(USE_CPUS > 1)) {
+  makeCluster(USE_CPUS)
+} else {
+  NULL
+}
 ```
 
 This guide uses the following simulated data with 50 observations and 40 available predictors.

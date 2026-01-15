@@ -19,10 +19,7 @@ elnet(
   en_algorithm_opts,
   sparse = FALSE,
   eps = 1e-06,
-  standardize = TRUE,
-  correction = deprecated(),
-  xtest = deprecated(),
-  options = deprecated()
+  standardize = TRUE
 )
 }
 \arguments{
@@ -62,12 +59,6 @@ for details.}
 
 \item{standardize}{standardize variables to have unit variance.
 Coefficients are always returned in original scale.}
-
-\item{correction}{defunct. Correction for EN estimates is not supported anymore.}
-
-\item{xtest}{defunct.}
-
-\item{options}{deprecated. Use \code{en_algorithm_opts} instead.}
 }
 \value{
 a list-like object with the following items

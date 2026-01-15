@@ -36,9 +36,6 @@
 #' @param en_algorithm_opts options for the EN algorithm. See [en_algorithm_options]
 #'    for details.
 #' @param eps numerical tolerance.
-#' @param xtest defunct.
-#' @param options deprecated. Use `en_algorithm_opts` instead.
-#' @param correction defunct. Correction for EN estimates is not supported anymore.
 #'
 #' @return a list-like object with the following items
 #'    \describe{
@@ -67,19 +64,10 @@
 #' @seealso [plot.pense_fit()] for plotting the regularization path.
 #'
 #' @export
-#' @importFrom lifecycle deprecated is_present
 #' @importFrom rlang exec
 elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights,
                   intercept = TRUE, en_algorithm_opts, sparse = FALSE, eps = 1e-6,
-                  standardize = TRUE,
-                  correction = deprecated(), xtest = deprecated(), options = deprecated()) {
-  if (is_present(xtest)) {
-    deprecate_stop('2.0.0', 'elnet(xtest=)')
-  }
-  if (is_present(correction)) {
-    deprecate_stop('2.0.0', 'elnet(correction=)')
-  }
-
+                  standardize = TRUE) {
   call <- match.call(expand.dots = FALSE)
   args <- as.list(call[-1L])
   args$standardize <- isTRUE(standardize)  # Ignore standardize = 'cv_only'!
@@ -125,7 +113,6 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @inheritParams elnet
 #' @template cv_params
 #' @inheritDotParams elnet
-#' @param ncores deprecated and not used anymore.
 #'
 #' @seealso [elnet()] for computing the LS-EN regularization path without cross-validation.
 #' @seealso [pense_cv()] for cross-validation of S-estimates of regression with elastic net penalty.
@@ -141,13 +128,12 @@ elnet <- function(x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_
 #' @seealso [plot.pense_cvfit()] for plotting the CV performance or the regularization path.
 #' @example examples/ls_elnet.R
 #'
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom stats sd
 #' @export
 elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
                       cv_type = 'naive',
                       cv_metric = c('rmspe', 'tau_size', 'mape', 'auroc'), fit_all = TRUE,
-                      cl = NULL, ncores = deprecated(), ...) {
+                      cl = NULL, ...) {
   call <- match.call(expand.dots = TRUE)
   args <- do.call(.elnet_args, as.list(call[-1L]), envir = parent.frame())
 
@@ -180,10 +166,6 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
     fit_ses <- 0
   }
 
-  if (is_present(ncores)) {
-    deprecate_stop('2.0.0', 'elnet_cv(ncores=)',
-                   details = "Please specify the `parallel` cluster with argument `cl`.")
-  }
   if (!is.null(cl) && !is(cl, 'cluster')) {
     abort("`cl` must be a valid `parallel` cluster.")
   }
@@ -311,25 +293,12 @@ elnet_cv <- function (x, y, lambda, cv_k, cv_repl = 1,
 }
 
 ## Check and parse user-supplied arguments
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn abort
 #' @importFrom stats runif
 .elnet_args <- function (x, y, alpha, nlambda = 100, lambda_min_ratio, lambda, penalty_loadings, weights,
                          intercept = TRUE, en_algorithm_opts, sparse = FALSE, eps = 1e-6, standardize = TRUE,
-                         correction = deprecated(), xtest = deprecated(), options = deprecated(), ...) {
+                         ...) {
   optional_args <- list()
-
-  if (is_present(options)) {
-    deprecate_stop('2.0.0', 'elnet(options=)', 'elnet(en_algorithm_opts=)')
-  }
-
-  if (is_present(correction)) {
-    deprecate_stop('2.0.0', 'elnet(correction=)', 'coef()')
-  }
-
-  if (is_present(xtest)) {
-    deprecate_stop('2.0.0', 'elnet(xtest=)')
-  }
 
   # Normalize input
   response <- .validate_response(y)

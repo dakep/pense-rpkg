@@ -491,8 +491,8 @@ extract_metric <- function (metrics, attr, node) {
 ## Validate the response type and return a list with elements `values` and `binary`.
 #' @importFrom rlang warn abort
 .validate_response <- function (y) {
-  nlevels <- length(unique(y))
   if (is.factor(y)) {
+    nlevels <- nlevels(y)
     if (nlevels == 2L) {
       return(list(values = as.numeric(y) - 1, binary = TRUE))
     } else if (nlevels > 2L) {
@@ -501,6 +501,7 @@ extract_metric <- function (metrics, attr, node) {
     }
   } else {
     y <- .as(y, 'numeric')
+    nlevels <- length(unique(y))
     if (nlevels == 2L) {
       warn(paste("`y` is interpreted as continuous response but has only 2 distinct values.",
                  "If binary classification is desired, coerce `y` to factor with `as.factor()`."))

@@ -23,7 +23,6 @@
 #'    hyper-parameters chosen by cross-validation
 #' @example examples/pense_fit.R
 #' @export
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 coef.pense_fit <- function (object, lambda, alpha = NULL, sparse = NULL, standardized = FALSE,
                             ...) {

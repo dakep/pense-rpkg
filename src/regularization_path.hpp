@@ -12,6 +12,7 @@
 #include <memory>
 #include <tuple>
 #include <type_traits>
+#include <cstdint>
 
 #include "nsoptim.hpp"
 
@@ -44,6 +45,16 @@ bool CoefficientsEquivalent(const Coefficients& a, const Coefficients& b,
   }
   return false;
 }
+
+enum class InsertResult { kGood, kBad, kDuplicate };
+
+enum class TupleComparison : std::int8_t {
+  kHigherObjf = -2,
+  kSlightlyHigherObjf = -1,
+  kEqualObjf = 0,
+  kSlightlyLowerObjf = 1,
+  kLowerObjf = 2
+};
 
 //! A list of starting points with associated optimizer.
 template<class Ordering, typename... Ts>
@@ -103,32 +114,62 @@ class OrderedTuples {
   // template<typename... Args>
   InsertResult Emplace(Ts&&... args) {
     // Check if the optimum's objective function value is good enough.
-    if (max_size_ > 0 && size_ >= max_size_ &&
-          order_.after(elements_.front(), std::forward<Ts>(args)...)) {
-      return InsertResult::kBad;
+    if (max_size_ > 0 && size_ >= max_size_) {
+      auto first_compared_to_new = order_.CompareObjf(elements_.front(), std::forward<Ts>(args)...);
+      if (first_compared_to_new < TupleComparison::kEqualObjf) {
+        Rcpp::Rcout << "    Container is at max size and element has worse objf value than first element in container. Ignore." << std::endl;
+        return InsertResult::kBad;
+      }
     }
 
     // Determine insert position.
     const auto elements_end = elements_.end();
     auto current_it = elements_.begin();
     auto insert_it = elements_.before_begin();
+    // auto before_insert_it = elements_.before_begin();
 
     while (current_it != elements_end) {
-      const bool better = order_.before(*current_it, std::forward<Ts>(args)...);
+      auto objf_comparison = order_.CompareObjf(*current_it, std::forward<Ts>(args)...);
+      // const bool better = order_.before(*current_it, std::forward<Ts>(args)...);
 
-      // Check if the coefficients are equal to the element at question.
-      if (!better && !order_.after(*current_it, std::forward<Ts>(args)...) &&
-          order_.equivalent(*current_it, std::forward<Ts>(args)...)) {
-        return InsertResult::kDuplicate;
-      } else if (!better) {
+      if (objf_comparison < TupleComparison::kSlightlyLowerObjf) {
+        // current element has much better objective function value. Insert here.
+        Rcpp::Rcout << "    Current element has much better objf value. Insert here." << std::endl;
         break;
+      } else if (objf_comparison <= TupleComparison::kSlightlyHigherObjf) {
+        // current element has similar objective function as the new element
+        const bool equivalent = order_.equivalent(*current_it, std::forward<Ts>(args)...);
+        if (equivalent) {
+          if (objf_comparison > TupleComparison::kEqualObjf) {
+            // current element is equivalent, but the the new element is slightly better.
+            // Replace.
+            Rcpp::Rcout << "    Current element is equivalent, but has slightly worse objf value. Replace." << std::endl;
+            // *current_it = Element(std::forward<Ts>(args)...);
+            auto updated_it = elements_.emplace_after(insert_it, std::forward<Ts>(args)...);
+            elements_.erase_after(updated_it);
+            return InsertResult::kGood;
+          } else {
+            Rcpp::Rcout << "    Current element is equivalent and has slightly better objf value. Ignore." << std::endl;
+            return InsertResult::kDuplicate;
+          }
+        } else if (objf_comparison < TupleComparison::kEqualObjf) {
+          // current element is not equivalent and has slightly better objective function.
+          // Insert here.
+          Rcpp::Rcout << "    Current element is different and has slightly better objf value. Insert here." << std::endl;
+          break;
+        } else {
+          Rcpp::Rcout << "    Current element is different and has slightly worse objf value. Continue search." << std::endl;
+        }
+        // else current element is not equivalent and slightly worse than the new one.
+      } else {
+        Rcpp::Rcout << "    Current element is worse than new element. Continue search." << std::endl;
       }
+      // else current element is worse. Continue search.
 
       ++current_it;
       ++insert_it;
     }
 
-    // No duplicate has been detected. Add after the insert position.
     elements_.emplace_after(insert_it, std::forward<Ts>(args)...);
     // Ensure that the size stays within the limits.
     if (++size_ > max_size_ && max_size_ > 0) {
@@ -158,6 +199,12 @@ class DuplicateCoefficients {
  public:
   explicit DuplicateCoefficients(const double eps) noexcept : eps_(eps) {}
 
+  //! Always returns `kLowerObjf` since coefficients do not have an associated objective function value
+  template<typename Element, typename... Args>
+  TupleComparison CompareObjf(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
+    return TupleComparison::kEqualObjf;
+  }
+
   //! Does the existing element come before the new element?
   template<typename Element, typename... Args>
   bool before(const Element&, const Coefficients&, Args&&...) const noexcept {
@@ -186,6 +233,50 @@ class OptimaOrder {
   using Optimum = typename Optimizer::Optimum;
  public:
   explicit OptimaOrder(const double eps) noexcept : eps_(eps) {}
+
+  //! Compare the value of the objective function of `el` against `opt.objf_value` in the form
+  //! `el.objf_value < opt.objf_value`.
+  //! Returns `kLowerObjf` if `el` has a lower value of the objective function than
+  //! `opt.objf_value` and `kHigherObjf` if `el` has a higher value of the objective function
+  //! than `opt.objf_value`.
+  template<typename Element, typename... Args>
+  TupleComparison CompareObjf(const Element& el, const Optimum& opt, Args&&...) const noexcept {
+    const double objf_value = std::get<0>(el).objf_value;
+    Rcpp::Rcout << "  " << objf_value << "<?>" << opt.objf_value << " + " << eps_ << std::endl;
+    if (objf_value < opt.objf_value - eps_) {
+      return TupleComparison::kLowerObjf;
+    } else if (objf_value < opt.objf_value) {
+      return TupleComparison::kSlightlyLowerObjf;
+    } else if (objf_value > opt.objf_value) {
+      return TupleComparison::kSlightlyHigherObjf;
+    } else if (objf_value > opt.objf_value + eps_) {
+      return TupleComparison::kHigherObjf;
+    }
+    return TupleComparison::kEqualObjf;
+  }
+
+  //! Compare the value of the objective function of `el` against `objf_value` in the form
+  //! `el.objf_value < objf_value`.
+  //! Returns `kLowerObjf` if `el` has a lower value of the objective function than `objf_value` and
+  //! `kHigherObjf` if `el` has a higher value of the objective function than `objf_value`.
+  template<typename Element, typename... Args>
+  TupleComparison CompareObjf(const Element& el,
+                              const Coefficients& coefs,
+                              const double objf_value,
+                              Args&&...) const noexcept {
+    const double el_objf_value = std::get<1>(el);
+    Rcpp::Rcout << "  " << el_objf_value << "<?>" << objf_value << " + " << eps_ << std::endl;
+    if (el_objf_value < objf_value - eps_) {
+      return TupleComparison::kLowerObjf;
+    } else if (el_objf_value < objf_value) {
+      return TupleComparison::kSlightlyLowerObjf;
+    } else if (el_objf_value > objf_value) {
+      return TupleComparison::kSlightlyHigherObjf;
+    } else if (el_objf_value > objf_value + eps_) {
+      return TupleComparison::kHigherObjf;
+    }
+    return TupleComparison::kEqualObjf;
+  }
 
   //! Does the existing element come before the new element?
   template<typename Element, typename... Args>
@@ -456,6 +547,7 @@ class RegularizationPath {
   }
 
   ExploredSolutions MTExplore(std::false_type) {
+    Rcpp::Rcout << "===============================================================" << std::endl;
     const double orig_tol = optimizer_template_.convergence_tolerance();
     ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(explore_tol_));
 
@@ -464,6 +556,7 @@ class RegularizationPath {
       optimizer.convergence_tolerance(explore_tol_);
       auto optimum = optimizer.Optimize(std::get<0>(start), explore_it_);
       optimizer.convergence_tolerance(orig_tol);
+      Rcpp::Rcout << "Explored individual start with objf_value=" << optimum.objf_value << std::endl;
       explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                  std::move(optimizer), std::move(optimum.metrics));
 
@@ -475,6 +568,7 @@ class RegularizationPath {
       optimizer.convergence_tolerance(explore_tol_);
       auto optimum = optimizer.Optimize(std::get<0>(start), explore_it_);
       optimizer.convergence_tolerance(orig_tol);
+      Rcpp::Rcout << "Explored shared start with objf_value=" << optimum.objf_value << std::endl;
       explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                  std::move(optimizer), std::move(optimum.metrics));
 
@@ -488,6 +582,7 @@ class RegularizationPath {
         optimizer.penalty(optimizer_template_.penalty());
         auto optimum = optimizer.Optimize(explore_it_);
         optimizer.convergence_tolerance(orig_tol);
+        Rcpp::Rcout << "Explored warm start with objf_value=" << optimum.objf_value << std::endl;
         explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                   std::move(optimizer), std::move(optimum.metrics));
 
@@ -552,6 +647,7 @@ class RegularizationPath {
         exploration_metrics.AddSubMetrics(std::move(*std::get<3>(start)));
         std::get<3>(start).reset();
       }
+      Rcpp::Rcout << "Concentrated explored optimum to objf_value=" << optim.objf_value << std::endl;
       best_starts_.Emplace(std::move(optim), std::move(optimizer));
 
       Rcpp::checkUserInterrupt();

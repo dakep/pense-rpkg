@@ -67,11 +67,10 @@
          sparse = isTRUE(sparse),
          mscale = .full_mscale_algo_options(bdp = bdp, cc = cc, mscale_opts = mscale_opts)))
 
-  if (args$pense_opts$nr_tracks > 0L) {
-    args$pense_opts$nr_tracks <- max(args$pense_opts$nr_tracks, args$pense_opts$max_optima)
-  }
-
-  if (args$pense_opts$nr_tracks > 0L) {
+  if (args$pense_opts$nr_tracks > 0L && args$pense_opts$nr_tracks < args$pense_opts$max_optima) {
+    warn(paste("Requested more fully iterated solutions than explored.",
+               sprintf("Setting `explore_solutions` to %d to match `max_solutions`.",
+                       args$pense_opts$max_optima)))
     args$pense_opts$nr_tracks <- max(args$pense_opts$nr_tracks, args$pense_opts$max_optima)
   }
 

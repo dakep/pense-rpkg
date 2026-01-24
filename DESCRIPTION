@@ -46,5 +46,4 @@ License: MIT + file LICENSE
 NeedsCompilation: yes
 RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE, load = "source")
-RdMacros: lifecycle
 VignetteBuilder: knitr

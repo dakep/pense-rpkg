@@ -501,11 +501,21 @@ extract_metric <- function (metrics, attr, node) {
     }
   } else {
     y <- .as(y, 'numeric')
-    nlevels <- length(unique(y))
+
+    # Check if the response is binary
+    nlevels <- if (all(abs(y - round(y)) < .Machine$double.eps)) {
+      length(unique(round(y)))
+    } else if (all(abs(y - y[[1]]) < .Machine$double.eps)) {
+      1L
+    } else {
+      3L
+    }
+
     if (nlevels == 2L) {
       warn(paste("`y` is interpreted as continuous response but has only 2 distinct values.",
                  "If binary classification is desired, coerce `y` to factor with `as.factor()`."))
     }
+
     if (nlevels > 1L) {
       return(list(values = y, binary = FALSE))
     }

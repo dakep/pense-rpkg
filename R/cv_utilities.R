@@ -195,7 +195,14 @@
 
     for (i in seq_along(glbl_wgts)) {
       corrs <- cor(cv_wgts[[i]], glbl_wgts[[i]][x$train_ind, ])
-      best_match <- apply(corrs, 2, which.max)
+      best_match <- apply(corrs, 2, \(c) {
+        m <- which.max(c)
+        if (length(m) == 0L) {
+          1L
+        } else {
+          m
+        }
+      })
 
       for (j in seq_along(best_match)) {
         # Preserve the similarity

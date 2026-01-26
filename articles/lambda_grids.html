@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pense</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
                         <h4 data-toc-skip class="author">David
 Kepplinger</h4>
             
-            <h4 data-toc-skip class="date">2026-01-12</h4>
+            <h4 data-toc-skip class="date">2026-01-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/main/vignettes/lambda_grids.Rmd" class="external-link"><code>vignettes/lambda_grids.Rmd</code></a></small>
       <div class="d-none name"><code>lambda_grids.Rmd</code></div>
@@ -118,16 +118,16 @@ lower endpoint of the automatic grid by changing the multiplier with
 argument <code>lambda_min_ratio=</code>. The ratio must be less than 1,
 and the closer to 1 the narrower the grid. If you need to re-focus the
 grid on larger values of the penalization level, you can increase the
-ratio, for example, to 10<sup>-1</sup>:</p>
+ratio, for example, to 0.5:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_grid_narrow</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-1</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_grid_narrow</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">5e-1</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <p>If the model at the lowest penalization level is still fairly sparse
 and the best model seems to be in this range, you may need to decrease
-the ratio, e.g., to 10<sup>-4</sup> or even to 10<sup>-6</sup>:</p>
+the ratio, e.g., to 0.05:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_grid_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-6</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_grid_wide</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">5e-2</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
 <img src="lambda_grids_files/figure-html/unnamed-chunk-6-1.png" class="r-plt" alt="Prediction performance of models estimated on different grids of the penalization level: (a) narrow grid with `lambda_min_ratio=1e-1`, (b) wide grid with `lambda_min_ratio=1e-6`." width="624"><p class="caption">
 Prediction performance of models estimated on different grids of the
@@ -139,14 +139,12 @@ penalization level: (a) narrow grid with
 <p>From these plots we can see that the grid in the left plot is too
 narrow, as a smaller penalization level than 0.02 would likely lead to a
 better predictive model. On the right, however, the grid is too wide.
-Penalization levels less than 10<sup>-3</sup> lead to very similar
-estimates with similar prediction accuracy, while the range with
-meaningful change seems to be covered too coarsely.</p>
-<p>From this, we can compute adaptive PENSE estimates on a better
-focused grid with:</p>
+Penalization levels less than 0.01 seam to have substantially worse
+prediction accuracy. Therefore, we can compute adaptive PENSE estimates
+on a better focused grid with:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
-<span><span class="va">fit_grid_focused</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-2</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_grid_focused</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, lambda_min_ratio <span class="op">=</span> <span class="fl">1e-1</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span></code></pre></div>
 <p>Indeed, the plot shows that the range of interest (around the
 minimum) is covered by several penalization levels:</p>
 <div class="figure">
@@ -171,14 +169,32 @@ levels for the adaptive estimate.</p>
 grids for the preliminary and the adaptive PENSE estimates, you need to
 compute them manually via</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_preliminary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1e-5</span>, <span class="fl">1e-4</span>, <span class="fl">1e-3</span>, <span class="fl">1e-2</span>, <span class="fl">1e-1</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">fit_preliminary</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, </span>
+<span>                            lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">0.5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">20</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">exponent</span> <span class="op">&lt;-</span> <span class="fl">1</span></span>
 <span><span class="va">penalty_loadings</span> <span class="op">&lt;-</span> <span class="fl">1</span> <span class="op">/</span> <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit_preliminary</span><span class="op">)</span><span class="op">[</span><span class="op">-</span><span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">^</span><span class="va">exponent</span></span>
-<span><span class="va">fit_adaptive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5e-5</span>, <span class="fl">5e-4</span>, <span class="fl">5e-3</span>, <span class="fl">5e-2</span>, <span class="fl">5e-1</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">fit_adaptive</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">pense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, </span>
+<span>                         lambda <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">0.1</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span>, length.out <span class="op">=</span> <span class="fl">5</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_adaptive</span><span class="op">)</span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;"> in `x[[1L]][["alpha"]]`:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> subscript out of bounds</span></span></code></pre></div>
+<span><span class="co">#&gt; PENSE fit with prediction performance estimated by 10 replications of 5-fold </span></span>
+<span><span class="co">#&gt; ris cross-validation.</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; 8 out of 40 predictors have non-zero coefficients:</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;                Estimate</span></span>
+<span><span class="co">#&gt; (Intercept)  1.56453280</span></span>
+<span><span class="co">#&gt; X1           0.41947742</span></span>
+<span><span class="co">#&gt; X2          -0.49314705</span></span>
+<span><span class="co">#&gt; X3           0.41263669</span></span>
+<span><span class="co">#&gt; X5           0.05041418</span></span>
+<span><span class="co">#&gt; X26         -0.08230093</span></span>
+<span><span class="co">#&gt; X29          0.03015557</span></span>
+<span><span class="co">#&gt; X36         -0.07564768</span></span>
+<span><span class="co">#&gt; X39         -0.03997095</span></span>
+<span><span class="co">#&gt; ---</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Hyper-parameters: lambda=0.9457416, alpha=0.75</span></span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -15,7 +15,6 @@ elnet_cv(
   cv_metric = c("rmspe", "tau_size", "mape", "auroc"),
   fit_all = TRUE,
   cl = NULL,
-  ncores = deprecated(),
   ...
 )
 ```
@@ -76,10 +75,6 @@ elnet_cv(
   a [parallel](https://rdrr.io/r/parallel/makeCluster.html) cluster. Can
   only be used in combination with `ncores = 1`.
 
-- ncores:
-
-  deprecated and not used anymore.
-
 - ...:
 
   Arguments passed on to [`elnet`](elnet.md)
@@ -134,18 +129,6 @@ elnet_cv(
   `eps`
 
   :   numerical tolerance.
-
-  `xtest`
-
-  :   defunct.
-
-  `options`
-
-  :   deprecated. Use `en_algorithm_opts` instead.
-
-  `correction`
-
-  :   defunct. Correction for EN estimates is not supported anymore.
 
 ## Value
 

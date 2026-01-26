@@ -1,6 +1,13 @@
 # Changelog
 
+## pense 2.5.1
+
+- Fix division by a value close to 0 on certain LAPACK implementations,
+  leading to residuals without variation and a failure in RIS-CV.
+
 ## pense 2.5.0
+
+CRAN release: 2026-01-13
 
 - Use Robust Information Sharing Cross-Validation (RIS-CV) by default
   for [`pense_cv()`](../reference/pense_cv.md) and

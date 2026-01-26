@@ -255,11 +255,6 @@ adapense_cv(x, y, alpha, alpha_preliminary = 0, exponent = 1, ...)
       [`enpy_initial_estimates()`](enpy_initial_estimates.md) for
       details.
 
-  `cv_k,cv_objective`
-
-  :   deprecated and ignored. See `pense_cv()` for estimating prediction
-      performance via cross-validation.
-
 - alpha:
 
   elastic net penalty mixing parameter with \\0 \le \alpha \le 1\\.

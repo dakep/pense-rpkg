@@ -9,7 +9,7 @@ optional penalty loadings for adaptive elastic net."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pense</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -76,8 +76,6 @@ optional penalty loadings for adaptive elastic net.</p>
 <span>  algorithm_opts <span class="op">=</span> <span class="fu"><a href="mm_algorithm_options.html">mm_algorithm_options</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  mscale_opts <span class="op">=</span> <span class="fu"><a href="mscale_algorithm_options.html">mscale_algorithm_options</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  enpy_opts <span class="op">=</span> <span class="fu"><a href="enpy_options.html">enpy_options</a></span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  cv_k <span class="op">=</span> <span class="fu">deprecated</span><span class="op">(</span><span class="op">)</span>,</span>
-<span>  cv_objective <span class="op">=</span> <span class="fu">deprecated</span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -233,13 +231,8 @@ for details.</p></dd>
 <code><a href="enpy_options.html">enpy_options()</a></code> function. See <code><a href="enpy_initial_estimates.html">enpy_initial_estimates()</a></code> for details.</p></dd>
 
 
-<dt id="arg-cv-k-cv-objective">cv_k, cv_objective<a class="anchor" aria-label="anchor" href="#arg-cv-k-cv-objective"></a></dt>
-<dd><p>deprecated and ignored. See <code><a href="pense_cv.html">pense_cv()</a></code> for estimating
-prediction performance via cross-validation.</p></dd>
-
-
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>ignored. See the section on deprecated parameters below.</p></dd>
+<dd><p>ignored.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -311,16 +304,6 @@ Finally, only the best <code>max_solutions</code> are retained and carried forwa
 the subsequent penalization level.</p>
     </div>
     <div class="section level2">
-    <h2 id="deprecated-arguments">Deprecated Arguments<a class="anchor" aria-label="anchor" href="#deprecated-arguments"></a></h2>
-
-
-<p>Starting with version 2.0.0, cross-validation is performed by separate function <code><a href="pense_cv.html">pense_cv()</a></code>.
-Arguments related cross-validation cause an error when supplied to <code>pense()</code>.
-Furthermore, the following arguments are deprecated as of version 2.0.0:
-<code>initial</code>, <code>warm_reset</code>, <code>cl</code>, <code>options</code>, <code>init_options</code>, <code>en_options</code>.
-If <code>pense()</code> is called with any of these arguments, warnings detail how to replace them.</p>
-    </div>
-    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="pense_cv.html">pense_cv()</a></code> for selecting hyper-parameters via cross-validation.</p>
 <p><code><a href="coef.pense_fit.html">coef.pense_fit()</a></code> for extracting coefficient estimates.</p>
@@ -343,9 +326,9 @@ If <code>pense()</code> is called with any of these arguments, warnings detail h
 <span class="r-in"><span><span class="co"># Extract the coefficients at a certain penalization level</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">regpath</span>, lambda <span class="op">=</span> <span class="va">regpath</span><span class="op">$</span><span class="va">lambda</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span><span class="op">[[</span><span class="fl">40</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           -23.9028248             0.1198500            -0.4955058 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            -6.5082299             0.2510560            -0.6879670 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.4144162             2.4357470 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             0.7090986             0.9409940 </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># What penalization level leads to good prediction performance?</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span></span>
@@ -361,30 +344,30 @@ If <code>pense()</code> is called with any of these arguments, warnings detail h
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4 out of 4 predictors have non-zero coefficients:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                Estimate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept) -16.3437416</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X1            0.1769018</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X2           -0.5800804</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X3            0.5152704</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> X4            1.7991073</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>               Estimate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> (Intercept) -4.7921541</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> X1           0.3338834</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> X2          -0.6140406</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> X3           0.6954769</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> X4           0.7316339</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ---</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Hyper-parameters: lambda=0.004700238, alpha=0.5</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Hyper-parameters: lambda=0.0003364066, alpha=0.5</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Extract the coefficients at the penalization level with</span></span></span>
 <span class="r-in"><span><span class="co"># smallest prediction error ...</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cv_results</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>           -16.3437416             0.1769018            -0.5800804 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            -4.7921541             0.3338834            -0.6140406 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.5152704             1.7991073 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             0.6954769             0.7316339 </span>
 <span class="r-in"><span><span class="co"># ... or at the penalization level with prediction error</span></span></span>
 <span class="r-in"><span><span class="co"># statistically indistinguishable from the minimum.</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">cv_results</span>, lambda <span class="op">=</span> <span class="st">'1-se'</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>           (Intercept) lag.quarterly.revenue           price.index </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            -5.0900585             0.1807610            -0.3989357 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>           -11.4754472             0.2265866            -0.5739724 </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          income.level      market.potential </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>             0.4192179             0.9172138 </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>             0.5417608             1.3768215 </span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

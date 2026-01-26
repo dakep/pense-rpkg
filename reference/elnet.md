@@ -19,10 +19,7 @@ elnet(
   en_algorithm_opts,
   sparse = FALSE,
   eps = 1e-06,
-  standardize = TRUE,
-  correction = deprecated(),
-  xtest = deprecated(),
-  options = deprecated()
+  standardize = TRUE
 )
 ```
 
@@ -91,18 +88,6 @@ elnet(
 
   standardize variables to have unit variance. Coefficients are always
   returned in original scale.
-
-- correction:
-
-  defunct. Correction for EN estimates is not supported anymore.
-
-- xtest:
-
-  defunct.
-
-- options:
-
-  deprecated. Use `en_algorithm_opts` instead.
 
 ## Value
 

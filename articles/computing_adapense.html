@@ -21,7 +21,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pense</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2.5.1</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,7 +62,7 @@
                         <h4 data-toc-skip class="author">David
 Kepplinger</h4>
             
-            <h4 data-toc-skip class="date">2026-01-12</h4>
+            <h4 data-toc-skip class="date">2026-01-26</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/dakep/pense-rpkg/blob/main/vignettes/computing_adapense.Rmd" class="external-link"><code>vignettes/computing_adapense.Rmd</code></a></small>
       <div class="d-none name"><code>computing_adapense.Rmd</code></div>
@@ -102,7 +102,7 @@ harness more computing power by creating a cluster of R processes:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">parallel</span><span class="op">)</span></span>
 <span><span class="co"># If you don't know how many CPU cores are available, first run `detectCores(logical = FALSE)`</span></span>
-<span><span class="va">cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">makeCluster</a></span><span class="op">(</span><span class="fl">3</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">cluster</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">makeCluster</a></span><span class="op">(</span><span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 <p>This guide uses the following simulated data with 50 observations and
 40 available predictors. The error distribution is a heavy-tailed
 <em>t</em>-distribution and only the first 3 predictors are truly
@@ -165,7 +165,7 @@ shows the estimated prediction accuracy for all fitted models.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_075</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="computing_adapense_files/figure-html/unnamed-chunk-8-1.png" class="r-plt" alt="Estimated prediction accuracy using 3 replications of 5-fold CV." width="672"><p class="caption">
+<img src="computing_adapense_files/figure-html/unnamed-chunk-9-1.png" class="r-plt" alt="Estimated prediction accuracy using 3 replications of 5-fold CV." width="672"><p class="caption">
 Estimated prediction accuracy using 3 replications of 5-fold CV.
 </p>
 </div>
@@ -189,7 +189,7 @@ more stable evaluation of prediction performance:</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1234</span><span class="op">)</span></span>
 <span><span class="va">fit_075</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pense_cv.html">adapense_cv</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, alpha <span class="op">=</span> <span class="fl">0.75</span>, cv_k <span class="op">=</span> <span class="fl">5</span>, cv_repl <span class="op">=</span> <span class="fl">10</span>, cl <span class="op">=</span> <span class="va">cluster</span><span class="op">)</span></span></code></pre></div>
 <div class="figure">
-<img src="computing_adapense_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="Estimated prediction accuracy using 10 replications of 5-fold CV." width="672"><p class="caption">
+<img src="computing_adapense_files/figure-html/unnamed-chunk-12-1.png" class="r-plt" alt="Estimated prediction accuracy using 10 replications of 5-fold CV." width="672"><p class="caption">
 Estimated prediction accuracy using 10 replications of 5-fold CV.
 </p>
 </div>

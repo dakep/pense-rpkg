@@ -37,7 +37,7 @@ harness more computing power by creating a cluster of R processes:
 ``` r
 library(parallel)
 # If you don't know how many CPU cores are available, first run `detectCores(logical = FALSE)`
-cluster <- makeCluster(3)
+cluster <- makeCluster(2)
 ```
 
 This guide uses the following simulated data with 50 observations and 40
@@ -113,7 +113,7 @@ plot(fit_075)
 ```
 
 ![Estimated prediction accuracy using 3 replications of 5-fold
-CV.](computing_adapense_files/figure-html/unnamed-chunk-8-1.png)
+CV.](computing_adapense_files/figure-html/unnamed-chunk-9-1.png)
 
 Estimated prediction accuracy using 3 replications of 5-fold CV.
 
@@ -141,7 +141,7 @@ fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, cl = cluster)
 ```
 
 ![Estimated prediction accuracy using 10 replications of 5-fold
-CV.](computing_adapense_files/figure-html/unnamed-chunk-11-1.png)
+CV.](computing_adapense_files/figure-html/unnamed-chunk-12-1.png)
 
 Estimated prediction accuracy using 10 replications of 5-fold CV.
 

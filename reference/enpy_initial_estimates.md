@@ -52,8 +52,8 @@ enpy_initial_estimates(
 
 - cc:
 
-  cutoff value for the bisquare rho function. By default, chosen to
-  yield a consistent estimate for the Normal distribution.
+  cutoff value for the rho function. By default, chosen to yield a
+  consistent estimate for the Normal distribution.
 
 - intercept:
 

@@ -58,20 +58,20 @@ lower endpoint of the automatic grid by changing the multiplier with
 argument `lambda_min_ratio=`. The ratio must be less than 1, and the
 closer to 1 the narrower the grid. If you need to re-focus the grid on
 larger values of the penalization level, you can increase the ratio, for
-example, to 10⁻¹:
+example, to 0.5:
 
 ``` r
 set.seed(1234)
-fit_grid_narrow <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 1e-1, cv_k = 5, cv_repl = 10)
+fit_grid_narrow <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 5e-1, cv_k = 5, cv_repl = 10)
 ```
 
 If the model at the lowest penalization level is still fairly sparse and
 the best model seems to be in this range, you may need to decrease the
-ratio, e.g., to 10⁻⁴ or even to 10⁻⁶:
+ratio, e.g., to 0.05:
 
 ``` r
 set.seed(1234)
-fit_grid_wide <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 1e-6, cv_k = 5, cv_repl = 10)
+fit_grid_wide <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 5e-2, cv_k = 5, cv_repl = 10)
 ```
 
 ![Prediction performance of models estimated on different grids of the
@@ -86,16 +86,13 @@ wide grid with `lambda_min_ratio=1e-6`.
 From these plots we can see that the grid in the left plot is too
 narrow, as a smaller penalization level than 0.02 would likely lead to a
 better predictive model. On the right, however, the grid is too wide.
-Penalization levels less than 10⁻³ lead to very similar estimates with
-similar prediction accuracy, while the range with meaningful change
-seems to be covered too coarsely.
-
-From this, we can compute adaptive PENSE estimates on a better focused
-grid with:
+Penalization levels less than 0.01 seam to have substantially worse
+prediction accuracy. Therefore, we can compute adaptive PENSE estimates
+on a better focused grid with:
 
 ``` r
 set.seed(1234)
-fit_grid_focused <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 1e-2, cv_k = 5, cv_repl = 10)
+fit_grid_focused <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 1e-1, cv_k = 5, cv_repl = 10)
 ```
 
 Indeed, the plot shows that the range of interest (around the minimum)
@@ -126,14 +123,32 @@ grids for the preliminary and the adaptive PENSE estimates, you need to
 compute them manually via
 
 ``` r
-fit_preliminary <- pense_cv(x, y, alpha = 0, cv_k = 5, cv_repl = 10, lambda = c(1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1))
+fit_preliminary <- pense_cv(x, y, alpha = 0, cv_k = 5, cv_repl = 10, 
+                            lambda = exp(seq(log(0.5), log(20), length.out = 5)))
 exponent <- 1
 penalty_loadings <- 1 / abs(coef(fit_preliminary)[-1])^exponent
-fit_adaptive <- pense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, lambda = c(5e-5, 5e-4, 5e-3, 5e-2, 5e-1, 5))
+fit_adaptive <- pense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, 
+                         lambda = exp(seq(log(0.1), log(2), length.out = 5)))
 ```
 
 ``` r
 summary(fit_adaptive)
-#> Error in `x[[1L]][["alpha"]]`:
-#> ! subscript out of bounds
+#> PENSE fit with prediction performance estimated by 10 replications of 5-fold 
+#> ris cross-validation.
+#> 
+#> 8 out of 40 predictors have non-zero coefficients:
+#> 
+#>                Estimate
+#> (Intercept)  1.56453280
+#> X1           0.41947742
+#> X2          -0.49314705
+#> X3           0.41263669
+#> X5           0.05041418
+#> X26         -0.08230093
+#> X29          0.03015557
+#> X36         -0.07564768
+#> X39         -0.03997095
+#> ---
+#> 
+#> Hyper-parameters: lambda=0.9457416, alpha=0.75
 ```

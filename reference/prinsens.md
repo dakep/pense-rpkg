@@ -15,8 +15,7 @@ prinsens(
   en_algorithm_opts,
   eps = 1e-06,
   sparse = FALSE,
-  ncores = 1L,
-  method = deprecated()
+  ncores = 1L
 )
 ```
 
@@ -69,12 +68,6 @@ prinsens(
   number of CPU cores to use in parallel. By default, only one CPU core
   is used. Not supported on all platforms, in which case a warning is
   given.
-
-- method:
-
-  defunct. PSCs are always computed for EN estimates. For the PY
-  procedure for unpenalized estimation use package
-  [pyinit](https://cran.r-project.org/package=pyinit).
 
 ## Value
 

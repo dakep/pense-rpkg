@@ -36,8 +36,6 @@ pense(
   algorithm_opts = mm_algorithm_options(),
   mscale_opts = mscale_algorithm_options(),
   enpy_opts = enpy_options(),
-  cv_k = deprecated(),
-  cv_objective = deprecated(),
   ...
 )
 ```
@@ -205,14 +203,9 @@ pense(
   [`enpy_options()`](enpy_options.md) function. See
   [`enpy_initial_estimates()`](enpy_initial_estimates.md) for details.
 
-- cv_k, cv_objective:
-
-  deprecated and ignored. See [`pense_cv()`](pense_cv.md) for estimating
-  prediction performance via cross-validation.
-
 - ...:
 
-  ignored. See the section on deprecated parameters below.
+  ignored.
 
 ## Value
 
@@ -299,15 +292,6 @@ loose numerical tolerance `explore_tol`. Only the best
 `eps`. Finally, only the best `max_solutions` are retained and carried
 forward as starting points for the subsequent penalization level.
 
-## Deprecated Arguments
-
-Starting with version 2.0.0, cross-validation is performed by separate
-function [`pense_cv()`](pense_cv.md). Arguments related cross-validation
-cause an error when supplied to `pense()`. Furthermore, the following
-arguments are deprecated as of version 2.0.0: `initial`, `warm_reset`,
-`cl`, `options`, `init_options`, `en_options`. If `pense()` is called
-with any of these arguments, warnings detail how to replace them.
-
 ## See also
 
 [`pense_cv()`](pense_cv.md) for selecting hyper-parameters via
@@ -336,9 +320,9 @@ plot(regpath)
 # Extract the coefficients at a certain penalization level
 coef(regpath, lambda = regpath$lambda[[1]][[40]])
 #>           (Intercept) lag.quarterly.revenue           price.index 
-#>           -23.9028248             0.1198500            -0.4955058 
+#>            -6.5082299             0.2510560            -0.6879670 
 #>          income.level      market.potential 
-#>             0.4144162             2.4357470 
+#>             0.7090986             0.9409940 
 
 # What penalization level leads to good prediction performance?
 set.seed(123)
@@ -354,28 +338,28 @@ summary(cv_results)
 #> 
 #> 4 out of 4 predictors have non-zero coefficients:
 #> 
-#>                Estimate
-#> (Intercept) -16.3437416
-#> X1            0.1769018
-#> X2           -0.5800804
-#> X3            0.5152704
-#> X4            1.7991073
+#>               Estimate
+#> (Intercept) -4.7921541
+#> X1           0.3338834
+#> X2          -0.6140406
+#> X3           0.6954769
+#> X4           0.7316339
 #> ---
 #> 
-#> Hyper-parameters: lambda=0.004700238, alpha=0.5
+#> Hyper-parameters: lambda=0.0003364066, alpha=0.5
 
 # Extract the coefficients at the penalization level with
 # smallest prediction error ...
 coef(cv_results)
 #>           (Intercept) lag.quarterly.revenue           price.index 
-#>           -16.3437416             0.1769018            -0.5800804 
+#>            -4.7921541             0.3338834            -0.6140406 
 #>          income.level      market.potential 
-#>             0.5152704             1.7991073 
+#>             0.6954769             0.7316339 
 # ... or at the penalization level with prediction error
 # statistically indistinguishable from the minimum.
 coef(cv_results, lambda = '1-se')
 #>           (Intercept) lag.quarterly.revenue           price.index 
-#>            -5.0900585             0.1807610            -0.3989357 
+#>           -11.4754472             0.2265866            -0.5739724 
 #>          income.level      market.potential 
-#>             0.4192179             0.9172138 
+#>             0.5417608             1.3768215 
 ```

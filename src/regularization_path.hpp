@@ -3,11 +3,11 @@
 //  pense
 //
 //  Created by David Kepplinger on 2019-01-30.
-//  Copyright © 2019 David Kepplinger. All rights reserved.
+//  Copyright © 2016 David Kepplinger. All rights reserved.
 //
 
-#ifndef REGULARIZATION_PATH_NEW_HPP_
-#define REGULARIZATION_PATH_NEW_HPP_
+#ifndef REGULARIZATION_PATH_HPP_
+#define REGULARIZATION_PATH_HPP_
 
 #include <memory>
 #include <tuple>
@@ -49,17 +49,17 @@ bool CoefficientsEquivalent(const Coefficients& a, const Coefficients& b,
 enum class InsertResult { kGood, kBad, kDuplicate };
 
 enum class TupleComparison : std::int8_t {
-  kHigherObjf = -2,
-  kSlightlyHigherObjf = -1,
-  kEqualObjf = 0,
-  kSlightlyLowerObjf = 1,
-  kLowerObjf = 2
+  kLowerObjf = -2,
+    kSlightlyLowerObjf = -1,
+    kEqualObjf = 0,
+    kSlightlyHigherObjf = 1,
+    kHigherObjf = 2
 };
 
 //! A list of starting points with associated optimizer.
 template<class Ordering, typename... Ts>
 class OrderedTuples {
- public:
+public:
   using Element = std::tuple<Ts...>;
 
   enum class InsertResult { kGood, kBad, kDuplicate };
@@ -93,8 +93,8 @@ class OrderedTuples {
 
   //! Move constructor.
   OrderedTuples(OrderedTuples&& other) noexcept :
-      max_size_(other.max_size_), order_(std::move(other.order_)),
-      size_(other.size_), elements_(std::move(other.elements_)) {
+    max_size_(other.max_size_), order_(std::move(other.order_)),
+    size_(other.size_), elements_(std::move(other.elements_)) {
     other.size_ = 0;
   }
   OrderedTuples& operator=(OrderedTuples&&) = delete;
@@ -117,7 +117,6 @@ class OrderedTuples {
     if (max_size_ > 0 && size_ >= max_size_) {
       auto first_compared_to_new = order_.CompareObjf(elements_.front(), std::forward<Ts>(args)...);
       if (first_compared_to_new < TupleComparison::kEqualObjf) {
-        Rcpp::Rcout << "    Container is at max size and element has worse objf value than first element in container. Ignore." << std::endl;
         return InsertResult::kBad;
       }
     }
@@ -134,35 +133,27 @@ class OrderedTuples {
 
       if (objf_comparison < TupleComparison::kSlightlyLowerObjf) {
         // current element has much better objective function value. Insert here.
-        Rcpp::Rcout << "    Current element has much better objf value. Insert here." << std::endl;
         break;
       } else if (objf_comparison <= TupleComparison::kSlightlyHigherObjf) {
         // current element has similar objective function as the new element
-        const bool equivalent = order_.equivalent(*current_it, std::forward<Ts>(args)...);
+        const bool equivalent = order_.Equivalent(*current_it, std::forward<Ts>(args)...);
         if (equivalent) {
           if (objf_comparison > TupleComparison::kEqualObjf) {
             // current element is equivalent, but the the new element is slightly better.
             // Replace.
-            Rcpp::Rcout << "    Current element is equivalent, but has slightly worse objf value. Replace." << std::endl;
             // *current_it = Element(std::forward<Ts>(args)...);
             auto updated_it = elements_.emplace_after(insert_it, std::forward<Ts>(args)...);
             elements_.erase_after(updated_it);
             return InsertResult::kGood;
           } else {
-            Rcpp::Rcout << "    Current element is equivalent and has slightly better objf value. Ignore." << std::endl;
             return InsertResult::kDuplicate;
           }
         } else if (objf_comparison < TupleComparison::kEqualObjf) {
           // current element is not equivalent and has slightly better objective function.
           // Insert here.
-          Rcpp::Rcout << "    Current element is different and has slightly better objf value. Insert here." << std::endl;
           break;
-        } else {
-          Rcpp::Rcout << "    Current element is different and has slightly worse objf value. Continue search." << std::endl;
         }
         // else current element is not equivalent and slightly worse than the new one.
-      } else {
-        Rcpp::Rcout << "    Current element is worse than new element. Continue search." << std::endl;
       }
       // else current element is worse. Continue search.
 
@@ -187,7 +178,7 @@ class OrderedTuples {
     return elements_;
   }
 
- private:
+private:
   const size_t max_size_;
   Ordering order_;
   size_t size_;
@@ -196,34 +187,22 @@ class OrderedTuples {
 
 template<class Coefficients>
 class DuplicateCoefficients {
- public:
+public:
   explicit DuplicateCoefficients(const double eps) noexcept : eps_(eps) {}
 
   //! Always returns `kLowerObjf` since coefficients do not have an associated objective function value
   template<typename Element, typename... Args>
   TupleComparison CompareObjf(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
-    return TupleComparison::kEqualObjf;
-  }
-
-  //! Does the existing element come before the new element?
-  template<typename Element, typename... Args>
-  bool before(const Element&, const Coefficients&, Args&&...) const noexcept {
-    return false;
-  }
-
-  //! Does the existing element come before the new element?
-  template<typename Element, typename... Args>
-  bool after(const Element&, const Coefficients&, Args&&...) const noexcept {
-    return false;
+    return TupleComparison::kSlightlyLowerObjf;
   }
 
   //! Is the existing element equivalent to new element?
   template<typename Element, typename... Args>
-  bool equivalent(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
+  bool Equivalent(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
     return CoefficientsEquivalent(std::get<0>(el), coefs, eps_);
   }
 
- private:
+private:
   const double eps_;
 };
 
@@ -231,7 +210,7 @@ template<class Optimizer>
 class OptimaOrder {
   using Coefficients = typename Optimizer::Coefficients;
   using Optimum = typename Optimizer::Optimum;
- public:
+public:
   explicit OptimaOrder(const double eps) noexcept : eps_(eps) {}
 
   //! Compare the value of the objective function of `el` against `opt.objf_value` in the form
@@ -242,15 +221,14 @@ class OptimaOrder {
   template<typename Element, typename... Args>
   TupleComparison CompareObjf(const Element& el, const Optimum& opt, Args&&...) const noexcept {
     const double objf_value = std::get<0>(el).objf_value;
-    Rcpp::Rcout << "  " << objf_value << "<?>" << opt.objf_value << " + " << eps_ << std::endl;
-    if (objf_value < opt.objf_value - eps_) {
+    if (objf_value < opt.objf_value * (1 - eps_)) {
       return TupleComparison::kLowerObjf;
     } else if (objf_value < opt.objf_value) {
       return TupleComparison::kSlightlyLowerObjf;
+    } else if (objf_value > opt.objf_value * (1 + eps_)) {
+      return TupleComparison::kHigherObjf;
     } else if (objf_value > opt.objf_value) {
       return TupleComparison::kSlightlyHigherObjf;
-    } else if (objf_value > opt.objf_value + eps_) {
-      return TupleComparison::kHigherObjf;
     }
     return TupleComparison::kEqualObjf;
   }
@@ -265,58 +243,31 @@ class OptimaOrder {
                               const double objf_value,
                               Args&&...) const noexcept {
     const double el_objf_value = std::get<1>(el);
-    Rcpp::Rcout << "  " << el_objf_value << "<?>" << objf_value << " + " << eps_ << std::endl;
-    if (el_objf_value < objf_value - eps_) {
+    if (el_objf_value < objf_value * (1 - eps_)) {
       return TupleComparison::kLowerObjf;
     } else if (el_objf_value < objf_value) {
       return TupleComparison::kSlightlyLowerObjf;
+    } else if (el_objf_value > objf_value * (1 + eps_)) {
+      return TupleComparison::kHigherObjf;
     } else if (el_objf_value > objf_value) {
       return TupleComparison::kSlightlyHigherObjf;
-    } else if (el_objf_value > objf_value + eps_) {
-      return TupleComparison::kHigherObjf;
     }
     return TupleComparison::kEqualObjf;
   }
 
-  //! Does the existing element come before the new element?
-  template<typename Element, typename... Args>
-  bool before(const Element& el, const Coefficients& coefs, const double objf_value,
-              Args&&...) const noexcept {
-    return std::get<1>(el) > objf_value + eps_;
-  }
-
-  //! Does the existing element come before the new element?
-  template<typename Element, typename... Args>
-  bool before(const Element& el, const Optimum& opt, Args&&...) const noexcept {
-    return std::get<0>(el).objf_value > opt.objf_value + eps_;
-  }
-
-  //! Does the existing element come before the new element?
-  template<typename Element, typename... Args>
-  bool after(const Element& el, const Coefficients& coefs, const double objf_value,
-             Args&&...) const noexcept {
-    return std::get<1>(el) < objf_value - eps_;
-  }
-
-  //! Does the existing element come before the new element?
-  template<typename Element, typename... Args>
-  bool after(const Element& el, const Optimum& opt, Args&&...) const noexcept {
-    return std::get<0>(el).objf_value < opt.objf_value - eps_;
-  }
-
   //! Is the existing element equivalent to new element?
   template<typename Element, typename... Args>
-  bool equivalent(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
+  bool Equivalent(const Element& el, const Coefficients& coefs, Args&&...) const noexcept {
     return CoefficientsEquivalent(std::get<0>(el), coefs, eps_);
   }
 
   //! Is the existing element equivalent to new element?
   template<typename Element, typename... Args>
-  bool equivalent(const Element& el, const Optimum& opt, Args&&...) const noexcept {
+  bool Equivalent(const Element& el, const Optimum& opt, Args&&...) const noexcept {
     return CoefficientsEquivalent(std::get<0>(el).coefs, opt.coefs, eps_);
   }
 
- private:
+private:
   const double eps_;
 };
 
@@ -350,7 +301,7 @@ class RegularizationPath {
   using BestOptima = regpath::UniqueOptima<Optimizer>;
   using BestOptimaOrder = regpath::OptimaOrder<Optimizer>;
 
- public:
+public:
   struct Solutions {
     const PenaltyFunction& penalty;
     alias::Optima<Optimizer> optima;
@@ -366,20 +317,20 @@ class RegularizationPath {
   RegularizationPath(const Optimizer& optimizer,
                      const PenaltyList& penalties, const int max_optima,
                      const double comparison_tol, const int num_threads) :
-      optimizer_template_(optimizer), penalties_(penalties),
-      max_optima_(max_optima), comparison_tol_(comparison_tol), num_threads_(num_threads),
-      shared_starts_(UniqueCoefficientsOrder(comparison_tol_)),
-      best_starts_(max_optima, BestOptimaOrder(comparison_tol)),
-      penalties_it_(penalties_.begin()) {
-        auto penalties_it = penalties_.before_begin();
-        const auto penalties_end = penalties_.end();
+    optimizer_template_(optimizer), penalties_(penalties),
+    max_optima_(max_optima), comparison_tol_(comparison_tol), num_threads_(num_threads),
+    shared_starts_(UniqueCoefficientsOrder(comparison_tol_)),
+    best_starts_(max_optima, BestOptimaOrder(comparison_tol)),
+    penalties_it_(penalties_.begin()) {
+    auto penalties_it = penalties_.before_begin();
+    const auto penalties_end = penalties_.end();
 
-        while (++penalties_it != penalties_end) {
-          individual_starts_.emplace_front(
-            UniqueCoefficients(UniqueCoefficientsOrder(comparison_tol_)));
-        }
-        individual_starts_it_ = individual_starts_.before_begin();
-      }
+    while (++penalties_it != penalties_end) {
+      individual_starts_.emplace_front(
+        UniqueCoefficients(UniqueCoefficientsOrder(comparison_tol_)));
+    }
+    individual_starts_it_ = individual_starts_.before_begin();
+  }
 
   //! Set the exploration options.
   //!
@@ -435,7 +386,7 @@ class RegularizationPath {
     return penalties_it_ == penalties_.end();
   }
 
- private:
+private:
   Optimizer optimizer_template_;
   const PenaltyList& penalties_;
   const int max_optima_;
@@ -472,82 +423,81 @@ class RegularizationPath {
     const auto is_end = individual_starts_it_->Elements().end();
     const auto sh_end = shared_starts_.Elements().end();
 
-    #pragma omp parallel \
-                num_threads(num_threads_) \
-                default(shared)
-    {
-      #pragma omp single nowait
-      for (auto is_it = individual_starts_it_->Elements().begin(); is_it != is_end; ++is_it) {
-        #pragma omp task \
-                    default(none) \
-                    firstprivate(is_it) \
-                    shared(explore_tol_, explore_it_) \
-                    shared(explored_solutions, optimizer_template_) const_local_shared(orig_tol)
-        {
-          Optimizer optimizer(optimizer_template_);
-          optimizer.convergence_tolerance(explore_tol_);
-          auto optimum = optimizer.Optimize(std::get<0>(*is_it), explore_it_);
-          optimizer.convergence_tolerance(orig_tol);
-
-          #pragma omp critical(insert_explored)
-          explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
-                                     std::move(optimizer), std::move(optimum.metrics));
-
-        }
-      }
-
-      #pragma omp single nowait
-      for (auto sh_it = shared_starts_.Elements().begin(); sh_it != sh_end; ++sh_it) {
-        #pragma omp task \
-                    firstprivate(sh_it) \
-                    default(none) \
-                    shared(explore_tol_, explore_it_) \
-                    shared(explored_solutions, optimizer_template_) const_local_shared(orig_tol)
-        {
-          Optimizer optimizer(optimizer_template_);
-          optimizer.convergence_tolerance(explore_tol_);
-          auto optimum = optimizer.Optimize(std::get<0>(*sh_it), explore_it_);
-          optimizer.convergence_tolerance(orig_tol);
-
-          #pragma omp critical(insert_explored)
-          explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
-                                     std::move(optimizer), std::move(optimum.metrics));
-
-        }
-      }
-
-      #pragma omp single nowait
-      if (use_warm_start_ || explored_solutions.Size() == 0) {
-      const auto bs_end = best_starts_.Elements().end();
-
-        for (auto bs_it = best_starts_.Elements().begin(); bs_it != bs_end; ++bs_it) {
-          #pragma omp task \
-                      firstprivate(bs_it) \
-                      default(none) \
-                      shared(explore_tol_, explore_it_, explored_solutions) \
-                      shared(optimizer_template_) const_local_shared(orig_tol, bs_end)
+#pragma omp parallel          \
+    num_threads(num_threads_) \
+      default(shared)
+      {
+#pragma omp single nowait
+        for (auto is_it = individual_starts_it_->Elements().begin(); is_it != is_end; ++is_it) {
+#pragma omp task                            \
+          default(none)                     \
+          firstprivate(is_it)               \
+          shared(explore_tol_, explore_it_) \
+          shared(explored_solutions, optimizer_template_) const_local_shared(orig_tol)
           {
-            auto&& optimizer = std::get<1>(*bs_it);
+            Optimizer optimizer(optimizer_template_);
             optimizer.convergence_tolerance(explore_tol_);
-            optimizer.penalty(optimizer_template_.penalty());
-            auto optimum = optimizer.Optimize(explore_it_);
+            auto optimum = optimizer.Optimize(std::get<0>(*is_it), explore_it_);
             optimizer.convergence_tolerance(orig_tol);
 
-            #pragma omp critical(insert_explored)
+#pragma omp critical(insert_explored)
             explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                        std::move(optimizer), std::move(optimum.metrics));
 
           }
         }
+
+#pragma omp single nowait
+        for (auto sh_it = shared_starts_.Elements().begin(); sh_it != sh_end; ++sh_it) {
+#pragma omp task                            \
+          firstprivate(sh_it)               \
+          default(none)                     \
+          shared(explore_tol_, explore_it_) \
+          shared(explored_solutions, optimizer_template_) const_local_shared(orig_tol)
+          {
+            Optimizer optimizer(optimizer_template_);
+            optimizer.convergence_tolerance(explore_tol_);
+            auto optimum = optimizer.Optimize(std::get<0>(*sh_it), explore_it_);
+            optimizer.convergence_tolerance(orig_tol);
+
+#pragma omp critical(insert_explored)
+            explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                       std::move(optimizer), std::move(optimum.metrics));
+
+          }
+        }
+
+#pragma omp single nowait
+        if (use_warm_start_ || explored_solutions.Size() == 0) {
+          const auto bs_end = best_starts_.Elements().end();
+
+          for (auto bs_it = best_starts_.Elements().begin(); bs_it != bs_end; ++bs_it) {
+#pragma omp task                                                  \
+            firstprivate(bs_it)                                   \
+            default(none)                                         \
+            shared(explore_tol_, explore_it_, explored_solutions) \
+            shared(optimizer_template_) const_local_shared(orig_tol, bs_end)
+            {
+              auto&& optimizer = std::get<1>(*bs_it);
+              optimizer.convergence_tolerance(explore_tol_);
+              optimizer.penalty(optimizer_template_.penalty());
+              auto optimum = optimizer.Optimize(explore_it_);
+              optimizer.convergence_tolerance(orig_tol);
+
+#pragma omp critical(insert_explored)
+              explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
+                                         std::move(optimizer), std::move(optimum.metrics));
+
+            }
+          }
+        }
       }
-    }
 
     Rcpp::checkUserInterrupt();
     return explored_solutions;
   }
 
   ExploredSolutions MTExplore(std::false_type) {
-    Rcpp::Rcout << "===============================================================" << std::endl;
     const double orig_tol = optimizer_template_.convergence_tolerance();
     ExploredSolutions explored_solutions(explored_keep_, ExploredSolutionsOrder(explore_tol_));
 
@@ -556,7 +506,6 @@ class RegularizationPath {
       optimizer.convergence_tolerance(explore_tol_);
       auto optimum = optimizer.Optimize(std::get<0>(start), explore_it_);
       optimizer.convergence_tolerance(orig_tol);
-      Rcpp::Rcout << "Explored individual start with objf_value=" << optimum.objf_value << std::endl;
       explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                  std::move(optimizer), std::move(optimum.metrics));
 
@@ -568,7 +517,6 @@ class RegularizationPath {
       optimizer.convergence_tolerance(explore_tol_);
       auto optimum = optimizer.Optimize(std::get<0>(start), explore_it_);
       optimizer.convergence_tolerance(orig_tol);
-      Rcpp::Rcout << "Explored shared start with objf_value=" << optimum.objf_value << std::endl;
       explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
                                  std::move(optimizer), std::move(optimum.metrics));
 
@@ -582,9 +530,8 @@ class RegularizationPath {
         optimizer.penalty(optimizer_template_.penalty());
         auto optimum = optimizer.Optimize(explore_it_);
         optimizer.convergence_tolerance(orig_tol);
-        Rcpp::Rcout << "Explored warm start with objf_value=" << optimum.objf_value << std::endl;
         explored_solutions.Emplace(std::move(optimum.coefs), std::move(optimum.objf_value),
-                                  std::move(optimizer), std::move(optimum.metrics));
+                                   std::move(optimizer), std::move(optimum.metrics));
 
         Rcpp::checkUserInterrupt();
       }
@@ -613,7 +560,7 @@ class RegularizationPath {
         auto&& optimizer = std::get<1>(start);
         optimizer.penalty(optimizer_template_.penalty());
         explored_solutions.Emplace(std::move(std::get<0>(start).coefs), -1, std::move(optimizer),
-                                  MetricsPtr());
+                                   MetricsPtr());
       }
     }
     return explored_solutions;
@@ -639,7 +586,7 @@ class RegularizationPath {
     for (auto&& start : explored.Elements()) {
       auto&& optimizer = std::get<2>(start);
       auto optim = (std::get<1>(start) > 0) ?
-        optimizer.Optimize() :
+      optimizer.Optimize() :
         optimizer.Optimize(std::get<0>(start));
 
       if (optim.metrics && std::get<3>(start)) {
@@ -647,7 +594,6 @@ class RegularizationPath {
         exploration_metrics.AddSubMetrics(std::move(*std::get<3>(start)));
         std::get<3>(start).reset();
       }
-      Rcpp::Rcout << "Concentrated explored optimum to objf_value=" << optim.objf_value << std::endl;
       best_starts_.Emplace(std::move(optim), std::move(optimizer));
 
       Rcpp::checkUserInterrupt();
@@ -657,35 +603,35 @@ class RegularizationPath {
   void Concentrate(ExploredSolutions&& explored, std::true_type) {
     const auto ex_end = explored.Elements().end();
 
-    #pragma omp parallel \
-                num_threads(num_threads_) \
-                default(shared)
-    {
-      #pragma omp single nowait
-      for (auto ex_it = explored.Elements().begin(); ex_it != ex_end; ++ex_it) {
-        #pragma omp task \
-                    default(none) \
-                    firstprivate(ex_it) \
-                    shared(best_starts_)
-        {
-          auto&& optimizer = std::get<2>(*ex_it);
-          auto optim = (std::get<1>(*ex_it) > 0) ?
+#pragma omp parallel          \
+    num_threads(num_threads_) \
+      default(shared)
+      {
+#pragma omp single nowait
+        for (auto ex_it = explored.Elements().begin(); ex_it != ex_end; ++ex_it) {
+#pragma omp task              \
+          default(none)       \
+          firstprivate(ex_it) \
+          shared(best_starts_)
+          {
+            auto&& optimizer = std::get<2>(*ex_it);
+            auto optim = (std::get<1>(*ex_it) > 0) ?
             optimizer.Optimize() :
-            optimizer.Optimize(std::get<0>(*ex_it));
+              optimizer.Optimize(std::get<0>(*ex_it));
 
-          if (optim.metrics && std::get<3>(*ex_it)) {
-            auto&& exploration_metrics = optim.metrics->CreateSubMetrics("exploration");
-            exploration_metrics.AddSubMetrics(std::move(*std::get<3>(*ex_it)));
-            std::get<3>(*ex_it).reset();
+            if (optim.metrics && std::get<3>(*ex_it)) {
+              auto&& exploration_metrics = optim.metrics->CreateSubMetrics("exploration");
+              exploration_metrics.AddSubMetrics(std::move(*std::get<3>(*ex_it)));
+              std::get<3>(*ex_it).reset();
+            }
+#pragma omp critical(insert_concentrated)
+            best_starts_.Emplace(std::move(optim), std::move(optimizer));
           }
-          #pragma omp critical(insert_concentrated)
-          best_starts_.Emplace(std::move(optim), std::move(optimizer));
         }
       }
-    }
     Rcpp::checkUserInterrupt();
   }
 };
 } // namespace pense
 
-#endif // REGULARIZATION_PATH_NEW_HPP_
+#endif // REGULARIZATION_PATH_HPP_

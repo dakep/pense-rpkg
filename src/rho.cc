@@ -128,6 +128,8 @@ double RhoFunction::DerivativeFixedPoint(const arma::vec& x, const double scale,
 
   if (numerator < kNumericZero) {
     return 0;
+  } else if (denominator < kNumericZero) {
+    return std::numeric_limits<double>::infinity();
   }
   return UpperBound() * scale * scale * numerator / denominator;
 }

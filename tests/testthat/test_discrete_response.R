@@ -11,7 +11,7 @@ test_that("Response with no variation", {
   y <- c(rep.int(0, n / 2 - 1), rep.int(1, n / 2 + 1)) # has a MAD of 0
 
   fit_cont <- expect_warning(
-    pense_cv(x, y, alpha = 0.9, nlambda = 10, cv_k = 3),
+    pense_cv(x, y, alpha = 0.9, nlambda = 10, cv_k = 3, cv_repl = 1),
     regexp = 'binary')
   expect_is(fit_cont, 'pense_cvfit')
   expect_equal(fit_cont$cv_measure, 'ris')

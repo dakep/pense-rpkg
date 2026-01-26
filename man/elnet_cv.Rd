@@ -14,7 +14,6 @@ elnet_cv(
   cv_metric = c("rmspe", "tau_size", "mape", "auroc"),
   fit_all = TRUE,
   cl = NULL,
-  ncores = deprecated(),
   ...
 )
 }
@@ -56,8 +55,6 @@ Applies to all \code{alpha} value.}
 \item{cl}{a \link[parallel:makeCluster]{parallel} cluster. Can only be used in combination with
 \code{ncores = 1}.}
 
-\item{ncores}{deprecated and not used anymore.}
-
 \item{...}{
   Arguments passed on to \code{\link[=elnet]{elnet}}
   \describe{
@@ -80,9 +77,6 @@ Coefficients are always returned in original scale.}
     \item{\code{en_algorithm_opts}}{options for the EN algorithm. See \link{en_algorithm_options}
 for details.}
     \item{\code{eps}}{numerical tolerance.}
-    \item{\code{xtest}}{defunct.}
-    \item{\code{options}}{deprecated. Use \code{en_algorithm_opts} instead.}
-    \item{\code{correction}}{defunct. Correction for EN estimates is not supported anymore.}
   }}
 }
 \value{

@@ -14,8 +14,7 @@ prinsens(
   en_algorithm_opts,
   eps = 1e-06,
   sparse = FALSE,
-  ncores = 1L,
-  method = deprecated()
+  ncores = 1L
 )
 }
 \arguments{

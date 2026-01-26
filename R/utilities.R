@@ -36,7 +36,6 @@ tau_size <- function (x) {
 #'
 #' @export
 #'
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 #' @importFrom stats na.omit
 mscale <- function (x, bdp = 0.25, cc, opts = mscale_algorithm_options()) {

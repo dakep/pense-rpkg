@@ -34,8 +34,6 @@ pense(
   algorithm_opts = mm_algorithm_options(),
   mscale_opts = mscale_algorithm_options(),
   enpy_opts = enpy_options(),
-  cv_k = deprecated(),
-  cv_objective = deprecated(),
   ...
 )
 }
@@ -133,10 +131,7 @@ for details.}
 \item{enpy_opts}{options for the ENPY initial estimates, created with the
 \code{\link[=enpy_options]{enpy_options()}} function. See \code{\link[=enpy_initial_estimates]{enpy_initial_estimates()}} for details.}
 
-\item{cv_k, cv_objective}{deprecated and ignored. See \code{\link[=pense_cv]{pense_cv()}} for estimating
-prediction performance via cross-validation.}
-
-\item{...}{ignored. See the section on deprecated parameters below.}
+\item{...}{ignored.}
 }
 \value{
 a list-like object with the following items
@@ -187,15 +182,6 @@ tolerance \code{explore_tol}. Only the best \code{explore_solutions} are compute
 numerical tolerance \code{eps}.
 Finally, only the best \code{max_solutions} are retained and carried forward as starting points for
 the subsequent penalization level.
-}
-
-\section{Deprecated Arguments}{
-
-Starting with version 2.0.0, cross-validation is performed by separate function \code{\link[=pense_cv]{pense_cv()}}.
-Arguments related cross-validation cause an error when supplied to \code{pense()}.
-Furthermore, the following arguments are deprecated as of version 2.0.0:
-\code{initial}, \code{warm_reset}, \code{cl}, \code{options}, \code{init_options}, \code{en_options}.
-If \code{pense()} is called with any of these arguments, warnings detail how to replace them.
 }
 
 \examples{

@@ -16,7 +16,6 @@
 #' @export
 #'
 #' @importFrom Matrix drop
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang abort
 #' @importFrom stats coef
 #'
@@ -56,7 +55,6 @@ predict.pense_fit <- function(object, newdata, alpha = NULL, lambda, ...) {
 #' @export
 #'
 #' @importFrom Matrix drop
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom rlang warn
 #' @importFrom stats coef
 predict.pense_cvfit <- function(object, newdata, alpha = NULL, lambda = 'min', se_mult = 1, ...) {

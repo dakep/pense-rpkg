@@ -26,12 +26,6 @@
 #' Finally, only the best `max_solutions` are retained and carried forward as starting points for
 #' the subsequent penalization level.
 #'
-#' @section Deprecated Arguments:
-#' Starting with version 2.0.0, cross-validation is performed by separate function [pense_cv()].
-#' Arguments related cross-validation cause an error when supplied to `pense()`.
-#' Furthermore, the following arguments are deprecated as of version 2.0.0:
-#' `initial`, `warm_reset`, `cl`, `options`, `init_options`, `en_options`.
-#' If `pense()` is called with any of these arguments, warnings detail how to replace them.
 #'
 #' @param x `n` by `p` matrix of numeric predictors.
 #' @param y vector of response values of length `n`.
@@ -99,9 +93,7 @@
 #'    for details.
 #' @param enpy_opts options for the ENPY initial estimates, created with the
 #'    [enpy_options()] function. See [enpy_initial_estimates()] for details.
-#' @param cv_k,cv_objective deprecated and ignored. See [pense_cv()] for estimating
-#'    prediction performance via cross-validation.
-#' @param ... ignored. See the section on deprecated parameters below.
+#' @param ... ignored.
 #'
 #' @return a list-like object with the following items
 #'    \describe{
@@ -132,7 +124,6 @@
 #' @example examples/pense_fit.R
 #' @export
 #' @aliases adapense
-#' @importFrom lifecycle deprecated is_present deprecate_stop
 pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
                   lambda_min_ratio, enpy_lambda, penalty_loadings,
                   intercept = TRUE, bdp = 0.25, cc,
@@ -144,17 +135,7 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
                   ncores = 1, standardize = TRUE,
                   algorithm_opts = mm_algorithm_options(),
                   mscale_opts = mscale_algorithm_options(),
-                  enpy_opts = enpy_options(), cv_k = deprecated(),
-                  cv_objective = deprecated(), ...) {
-
-  # Stop for CV-related options. Must migrate to `pense_cv`
-  if (is_present(cv_k)) {
-    deprecate_stop('2.0.0', 'pense(cv_k=)', 'pense_cv()')
-  }
-  if (is_present(cv_objective)) {
-    deprecate_stop('2.0.0', 'pense(cv_objective=)', 'pense_cv()')
-  }
-
+                  enpy_opts = enpy_options(), ...) {
   call <- match.call(expand.dots = TRUE)
   call$standardize <- isTRUE(standardize)
 
@@ -231,7 +212,6 @@ pense <- function(x, y, alpha, nlambda = 50, nlambda_enpy = 10, lambda,
 #'    regularization path.
 #' @aliases adapense_cv
 #' @export
-#' @importFrom lifecycle deprecate_stop deprecated is_present
 #' @importFrom stats sd
 #' @importFrom rlang abort
 pense_cv <- function(x, y, standardize = TRUE, lambda, cv_k, cv_repl = 1,

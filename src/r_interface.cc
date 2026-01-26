@@ -17,7 +17,9 @@
 #include "r_enpy.hpp"
 #include "r_utilities.hpp"
 
+#ifndef TESTTHAT_DISABLED
 extern "C" SEXP run_testthat_tests() noexcept;
+#endif // TESTTHAT_DISABLED
 
 //! R initialzing function (must be in the global namespace).
 extern "C" void R_init_pense(DllInfo *dll) noexcept;
@@ -45,6 +47,9 @@ const R_CallMethodDef kExportedCallMethods[] = {
   {"C_penpy", (DL_FUNC) &PenPyInitialEstimator, 6},
   {"C_pscs", (DL_FUNC) &PrincipalSensitivityComponents, 5},
   {"C_robustness_weights", (DL_FUNC) &RobustnessWeight, 3},
+#ifndef TESTTHAT_DISABLED
+  {"C_run_testthat_tests", (DL_FUNC) &run_testthat_tests, 0},
+#endif // TESTTHAT_DISABLED
   {NULL, NULL, 0}
 };
 }  // namespace

@@ -1,7 +1,7 @@
 Package: pense
 Type: Package
 Title: Penalized Elastic Net S/MM-Estimator of Regression
-Version: 2.5.1
+Version: 2.5.2
 Date: 2026-01-26
 Authors@R: c(
     person("David", "Kepplinger", , "david.kepplinger@gmail.com",
@@ -21,10 +21,10 @@ Description: Robust penalized (adaptive) elastic net S and M estimators for
     Kepplinger, D. (2023) <doi:10.1016/j.csda.2023.107730> and the
     non-adaptive methods in
     Cohen Freue, G. V., Kepplinger, D., Salibián-Barrera, M., and Smucler, E.
-    (2019) <https://projecteuclid.org/euclid.aoas/1574910036>.
+    (2019) <doi:10.1214/19-AOAS1269>.
     The package implements robust hyper-parameter selection with robust
     information sharing cross-validation according to Kepplinger & Wei (2025)
-    <doi:https://doi.org/10.1080/00401706.2025.2540970>.
+    <doi:10.1080/00401706.2025.2540970>.
 Depends:
     R (>= 4.1.0),
     Matrix
@@ -35,13 +35,15 @@ Imports:
     rlang (>= 0.4.0)
 LinkingTo:
     Rcpp,
-    RcppArmadillo (>= 0.9.600)
+    RcppArmadillo (>= 0.9.600),
+    testthat
 Suggests:
     testthat (>= 2.1.0),
     robustbase,
     knitr,
     rmarkdown,
-    jsonlite
+    jsonlite,
+    xml2
 License: MIT + file LICENSE
 NeedsCompilation: yes
 RoxygenNote: 7.3.3

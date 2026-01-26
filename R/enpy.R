@@ -94,8 +94,6 @@ enpy_initial_estimates <- function (x, y, alpha, lambda, bdp = 0.25, cc, interce
 #' @param y vector of response values of length `n`.
 #' @inheritParams pense
 #' @param en_algorithm_opts options for the LS-EN algorithm. See [en_algorithm_options] for details.
-#' @param method defunct. PSCs are always computed for EN estimates. For the PY procedure for unpenalized estimation
-#'    use package [pyinit](https://cran.r-project.org/package=pyinit).
 #'
 #' @return a list of principal sensitivity components, one per element in `lambda`. Each PSC is itself a list
 #'    with items `lambda`, `alpha`, and `pscs`.

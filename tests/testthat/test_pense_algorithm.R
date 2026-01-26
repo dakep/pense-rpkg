@@ -58,7 +58,7 @@ test_that("PENSE Algorithm (multiple solutions)", {
                 bdp = 0.25,
                 sparse = sparse,
                 eps = 1e-8,
-                explore_solutions = 2,
+                explore_solutions = 10,
                 max_solutions = 10,
                 enpy_opts = enpy_options(retain_max = 5,
                                          en_algorithm_opts = en_lars_options()),

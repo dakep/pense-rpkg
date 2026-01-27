@@ -35,8 +35,7 @@ Imports:
     rlang (>= 0.4.0)
 LinkingTo:
     Rcpp,
-    RcppArmadillo (>= 0.9.600),
-    testthat
+    RcppArmadillo (>= 0.9.600)
 Suggests:
     testthat (>= 2.1.0),
     robustbase,

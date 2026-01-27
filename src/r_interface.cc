@@ -9,6 +9,7 @@
 #ifdef HAVE_RCPP
 #include <R_ext/Rdynload.h>
 
+#include "autoconfig.hpp"
 #include "rcpp_integration.hpp"
 #include "r_en_regression.hpp"
 #include "r_pense_regression.hpp"
@@ -17,9 +18,9 @@
 #include "r_enpy.hpp"
 #include "r_utilities.hpp"
 
-#ifndef TESTTHAT_DISABLED
-extern "C" SEXP run_testthat_tests() noexcept;
-#endif // TESTTHAT_DISABLED
+#ifdef PENSE_TESTTHAT_ENABLED
+extern "C" SEXP run_testthat_tests(SEXP) noexcept;
+#endif // PENSE_TESTTHAT_ENABLED
 
 //! R initialzing function (must be in the global namespace).
 extern "C" void R_init_pense(DllInfo *dll) noexcept;
@@ -47,9 +48,9 @@ const R_CallMethodDef kExportedCallMethods[] = {
   {"C_penpy", (DL_FUNC) &PenPyInitialEstimator, 6},
   {"C_pscs", (DL_FUNC) &PrincipalSensitivityComponents, 5},
   {"C_robustness_weights", (DL_FUNC) &RobustnessWeight, 3},
-#ifndef TESTTHAT_DISABLED
-  {"C_run_testthat_tests", (DL_FUNC) &run_testthat_tests, 0},
-#endif // TESTTHAT_DISABLED
+#ifdef PENSE_TESTTHAT_ENABLED
+  {"C_run_testthat_tests", (DL_FUNC) &run_testthat_tests, 1},
+#endif // PENSE_TESTTHAT_ENABLED
   {NULL, NULL, 0}
 };
 }  // namespace

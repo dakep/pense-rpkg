@@ -22,5 +22,6 @@
 #if __GNUC__ < 9
 #  undef PENSE_OPENMP_ADD_CONST_SHARED_LOCAL
 #endif
+/* #undef PENSE_TESTTHAT_ENABLED */
 
 #endif  // AUTOCONFIG_HPP_

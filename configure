@@ -583,6 +583,8 @@ PACKAGE_URL=''
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+TESTTHAT_INCLUDE
+PENSE_TESTTHAT_ENABLED
 R_HAVE_OPENMP
 OPENMP_CXXFLAGS
 STRICT_ALIASING_FLAG
@@ -645,7 +647,8 @@ CXXFLAGS
 LDFLAGS
 LIBS
 CPPFLAGS
-CCC'
+CCC
+PENSE_TESTTHAT_ENABLED'
 
 
 # Initialize some variables set by options.
@@ -1267,6 +1270,9 @@ Some influential environment variables:
   LIBS        libraries to pass to the linker, e.g. -l<library>
   CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
               you have headers in a nonstandard directory <include dir>
+  PENSE_TESTTHAT_ENABLED
+              Set to enable testthat tests for C++ code (requires the testthat
+              package!)
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -2806,6 +2812,34 @@ $as_echo "$as_me: Metrics disabled" >&6;}
 $as_echo "#define NSOPTIM_METRICS_DISABLED 1" >>confdefs.h
 
 fi
+
+##
+## Enable/disable testthat C++ tests
+##
+
+TESTTHAT_INCLUDE=''
+if test -n "$PENSE_TESTTHAT_ENABLED"; then :
+
+  TESTTHAT_INCLUDE_DIR=$("${RBIN}" -s --no-save -e 'suppressMessages(cat(system.file("include", package = "testthat"), file=stderr()))' 2>&1 >/dev/null)
+  if test -n "$TESTTHAT_INCLUDE_DIR" && test -d "$TESTTHAT_INCLUDE_DIR"; then :
+
+
+$as_echo "#define PENSE_TESTTHAT_ENABLED 1" >>confdefs.h
+
+    TESTTHAT_INCLUDE='-I"$TESTTHAT_INCLUDE_DIR"'
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling testthat C++ tests" >&5
+$as_echo "$as_me: Enabling testthat C++ tests" >&6;}
+
+else
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: testthat include files cannot be found. Skipping C++ tests." >&5
+$as_echo "$as_me: testthat include files cannot be found. Skipping C++ tests." >&6;}
+
+fi
+
+fi
+
+
 
 ##
 ## Write output

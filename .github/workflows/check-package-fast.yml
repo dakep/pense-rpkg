@@ -15,6 +15,7 @@ jobs:
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      PENSE_TESTTHAT_ENABLED: yes
 
     steps:
       - uses: actions/checkout@v4

@@ -66,6 +66,8 @@ jobs:
           job-config: ${{ matrix.config.job-config }}
         env:
           PENSE_VIGNETTES_MAX_CPUS: 1
+          PENSE_TEST_FULL: yes
+          PENSE_TESTTHAT_ENABLED: yes
 
   other-platforms:
     needs: setup

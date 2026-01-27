@@ -1,4 +1,6 @@
-#ifndef TESTTHAT_DISABLED
+#include "autoconfig.hpp"
+
+#ifdef PENSE_TESTTHAT_ENABLED
 
 #include <testthat.h>
 
@@ -45,7 +47,7 @@ context("OrderedTuples Container Tests") {
     using Container = pense::regpath::UniqueCoefficients<MockCoefficients>;
 
     double tol = 1e-5;
-    Container list(pense::regpath::DuplicateCoefficients<MockCoefficients>(tol));
+    Container list{pense::regpath::DuplicateCoefficients<MockCoefficients>(tol)};
 
     arma::vec beta1 = {1.0, 2.0};
     arma::vec beta2 = {1.0, 3.0}; // Different beta
@@ -146,47 +148,52 @@ context("OrderedTuples Container Tests") {
   test_that("OrderedTuples handles replacements for better solutions") {
     using Container = pense::regpath::UniqueOptima<MockOptimizer>;
 
-    double tol = 1e-5;
+    constexpr double tol = 1e-5;
+    constexpr double offset_eps = 1e-8;
     pense::regpath::OptimaOrder<MockOptimizer> ordering(tol);
     Container list(10, ordering);
 
+    constexpr double objf_a = 10;
+    constexpr double objf_b = 9;
     arma::vec beta_a = {1.0, 1.0};
     arma::vec beta_b = {2.0, 2.0};
 
     // Insert Solution A with Obj 10
-    list.Emplace(MockOptimum(MockCoefficients(0, beta_a), 10.0), MockOptimizer());
+    list.Emplace(MockOptimum(MockCoefficients(0, beta_a), objf_a), MockOptimizer());
 
     // Insert Solution B with Obj 8
-    list.Emplace(MockOptimum(MockCoefficients(0, beta_b), 8.0), MockOptimizer());
+    list.Emplace(MockOptimum(MockCoefficients(0, beta_b), objf_b), MockOptimizer());
 
     // Current: [10 (A), 8 (B)]
 
     // 1. Try insert A again with Obj 10 (Duplicate)
-    auto res1 = list.Emplace(MockOptimum(MockCoefficients(0, beta_a), 10.0), MockOptimizer());
+    auto res1 = list.Emplace(MockOptimum(MockCoefficients(0, beta_a), objf_a), MockOptimizer());
     expect_true(res1 == Container::InsertResult::kDuplicate);
     expect_true(list.Size() == 2);
 
-    // 2. Try insert A again with Obj 9 (Better than original A=10)
-    // Logic: Compare 10 vs 9.
-    // Objf comparison: 10 > 9 (SlightlyHigherObjf or HigherObjf).
+    // 2. Try insert A again with Obj 10-1e-8 (Better than original A=10)
+    // Logic: Compare 10 vs 10-1e-8.
+    // Objf comparison: 10 > 10-1e-8 (SlightlyHigherObjf).
     // The code checks: `equivalent(existing, new)` -> True (same coefs).
-    // Then `if (objf_comparison > kEqualObjf)` -> True (10 > 9).
+    // Then `if (objf_comparison > kEqualObjf)` -> True (10 > 10-1e-8).
     // It should replace.
-    auto res2 = list.Emplace(MockOptimum(MockCoefficients(0, beta_a), 9.0), MockOptimizer());
+    constexpr double slightly_better_objf = objf_a - offset_eps;
+    auto res2 = list.Emplace(MockOptimum(MockCoefficients(0, beta_a), slightly_better_objf),
+                             MockOptimizer());
 
     expect_true(res2 == Container::InsertResult::kGood);
     expect_true(list.Size() == 2);
     // Verify the value of A is now 9.0 (Front of list)
-    expect_true(std::get<0>(list.Elements().front()).objf_value == 9.0);
+    expect_true(std::get<0>(list.Elements().front()).objf_value == slightly_better_objf);
 
-    // 3. Try insert A again with Obj 9.5 (Worse than current A=9)
-    // Logic: Compare 9 vs 9.5.
-    // Objf comparison: 9 < 9.5 (SlightlyLower).
+    // 3. Try insert A again with Obj 9+1e-8 (Worse than current A=9)
+    // Logic: Compare 9 vs 9+1e-8.
+    // Objf comparison: 9 < 9+1e-8 (SlightlyLower).
     // Breaks loop (wants to insert before).
     // Wait, if it breaks loop, it inserts a duplicate?
     // The loop break condition is `objf_comparison < kSlightlyLowerObjf`.
     // If it is "SlightlyLower" or "Equal" or "SlightlyHigher", it enters the `else if`.
-    // 9 vs 9.5 is kSlightlyLowerObjf (-1).
+    // 9 vs 9+1e-8 is kSlightlyLowerObjf (-1).
     // It does NOT break. It enters `else if`.
     // Checks `equivalent` -> True.
     // Checks `objf_comparison > kEqualObjf` (-1 > 0)? False.
@@ -194,11 +201,8 @@ context("OrderedTuples Container Tests") {
     // Breaks.
     // Inserts at `insert_it`.
     // BUT this would result in two copies of A!
-    // However, looking at the header provided:
     // If equivalent is true, and new is worse (objf_comparison < kEqualObjf),
     // it executes `break`.
-    // This implies it inserts the worse version alongside the better version?
-    // Let's check the test expectation.
     // Usually, we don't want to insert a worse version of the same coefficients.
 
     // Testing specific logic in header:
@@ -217,10 +221,13 @@ context("OrderedTuples Container Tests") {
     //    Else (existing is better or equal), return kDuplicate.
 
     // So inserting 9.5 when 9.0 exists should return kDuplicate.
-    auto res3 = list.Emplace(MockOptimum(MockCoefficients(0, beta_a), 9.5), MockOptimizer());
+    constexpr double slightly_worse_objf = objf_b + offset_eps;
+    auto res3 = list.Emplace(MockOptimum(MockCoefficients(0, beta_b), slightly_worse_objf),
+                             MockOptimizer());
     expect_true(res3 == Container::InsertResult::kDuplicate);
-    expect_true(std::get<0>(list.Elements().front()).objf_value == 9.0);
+    expect_true(std::get<0>(list.Elements().front()).objf_value == slightly_better_objf);
+    expect_true(std::get<0>(*(std::next(list.Elements().begin(), 1))).objf_value == objf_b);
   }
 }
 
-#endif // TESTTHAT_DISABLED
+#endif // defined PENSE_TESTTHAT_ENABLED

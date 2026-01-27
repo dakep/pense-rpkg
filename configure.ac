@@ -330,6 +330,24 @@ else
 fi
 
 ##
+## Enable/disable testthat C++ tests
+##
+AC_ARG_VAR([PENSE_TESTTHAT_ENABLED], [Set to enable testthat tests for C++ code (requires the testthat package!)])
+TESTTHAT_INCLUDE=''
+AS_IF([test -n "$PENSE_TESTTHAT_ENABLED"], [
+  TESTTHAT_INCLUDE_DIR=$("${RBIN}" -s --no-save -e 'suppressMessages(cat(system.file("include", package = "testthat"), file=stderr()))' 2>&1 >/dev/null)
+  AS_IF([test -n "$TESTTHAT_INCLUDE_DIR" && test -d "$TESTTHAT_INCLUDE_DIR"], [
+    AC_DEFINE([PENSE_TESTTHAT_ENABLED], [1], [Define to 1 if the environment variable PENSE_TESTTHAT_ENABLED is set to 1])
+    TESTTHAT_INCLUDE='-I"$TESTTHAT_INCLUDE_DIR"'
+    AC_MSG_NOTICE([Enabling testthat C++ tests])
+  ], [
+    AC_MSG_NOTICE([testthat include files cannot be found. Skipping C++ tests.])
+  ])
+])
+AC_SUBST(TESTTHAT_INCLUDE)
+
+
+##
 ## Write output
 ##
 AC_CONFIG_HEADERS([src/autoconfig.hpp])

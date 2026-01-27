@@ -2826,9 +2826,9 @@ if test -n "$PENSE_TESTTHAT_ENABLED"; then :
 
 $as_echo "#define PENSE_TESTTHAT_ENABLED 1" >>confdefs.h
 
-    TESTTHAT_INCLUDE='-I"$TESTTHAT_INCLUDE_DIR"'
-    { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling testthat C++ tests" >&5
-$as_echo "$as_me: Enabling testthat C++ tests" >&6;}
+    TESTTHAT_INCLUDE="-I'$TESTTHAT_INCLUDE_DIR'"
+    { $as_echo "$as_me:${as_lineno-$LINENO}: Enabling testthat C++ tests with testthat compile flags $TESTTHAT_INCLUDE" >&5
+$as_echo "$as_me: Enabling testthat C++ tests with testthat compile flags $TESTTHAT_INCLUDE" >&6;}
 
 else
 

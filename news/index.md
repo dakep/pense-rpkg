@@ -2,6 +2,8 @@
 
 ## pense 2.5.2
 
+CRAN release: 2026-01-27
+
 - Fix division by a value close to 0 on certain LAPACK implementations,
   leading to residuals without variation and a failure in RIS-CV.
 

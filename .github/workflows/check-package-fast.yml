@@ -11,7 +11,7 @@ permissions: read-all
 
 jobs:
   R-CMD-check:
-    runs-on: ubuntu-latest
+    runs-on: macOS-latest
 
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
@@ -39,3 +39,9 @@ jobs:
         env:
           _R_CHECK_CRAN_INCOMING_REMOTE_: false
           _R_CHECK_CRAN_INCOMING_: false
+
+      - name: Upload check results
+        uses: actions/upload-artifact@main
+        with:
+          name: check-package-fast-results
+          path: check

@@ -60,11 +60,13 @@ PKG_CFLAGS="${OPENMP_CXXFLAGS}" PKG_LIBS="${OPENMP_LDFLAGS}" "$RBIN" CMD SHLIB c
   "$RBIN" --vanilla -q -e "dyn.load(paste('conftest',.Platform\$dynlib.ext,sep=''))" 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && ac_pkg_openmp_cxx=yes
 
 ac_pkg_openmp_cxx_msg=$ac_pkg_openmp_cxx
+AC_MSG_RESULT([${ac_pkg_openmp_cxx_msg}])
 
 # Check if any combination of "-lomp" and/or "-Xclang -fopenmp" works
 if test "${ac_pkg_openmp_cxx}" = no; then
   OPENMP_CXXFLAGS="-Xclang -fopenmp"
   OPENMP_LDFLAGS="-lomp"
+  AC_MSG_CHECKING([C++ support for OpenMP with -Xclang -fopenmp and -lomp])
   AC_LANG_CONFTEST([
     AC_LANG_PROGRAM([[#include <omp.h>]], [[ return omp_get_num_threads (); ]])
   ])

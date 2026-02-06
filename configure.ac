@@ -51,16 +51,37 @@ AC_OPENMP
 
 # Some systems have broken OMP libraries, so also check that the actual package will work
 ac_pkg_openmp_cxx=no
+OPENMP_LDFLAGS="${OPENMP_CXXFLAGS}"
 AC_MSG_CHECKING([C++ support for OpenMP])
 AC_LANG_CONFTEST([
   AC_LANG_PROGRAM([[#include <omp.h>]], [[ return omp_get_num_threads (); ]])
 ])
-PKG_CFLAGS="${OPENMP_CXXFLAGS}" PKG_LIBS="${OPENMP_CXXFLAGS}" "$RBIN" CMD SHLIB conftest.c 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && \
+PKG_CFLAGS="${OPENMP_CXXFLAGS}" PKG_LIBS="${OPENMP_LDFLAGS}" "$RBIN" CMD SHLIB conftest.c 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && \
   "$RBIN" --vanilla -q -e "dyn.load(paste('conftest',.Platform\$dynlib.ext,sep=''))" 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && ac_pkg_openmp_cxx=yes
-AC_MSG_RESULT([${ac_pkg_openmp_cxx}])
+
+ac_pkg_openmp_cxx_msg=$ac_pkg_openmp_cxx
+
+# Check if any combination of "-lomp" and/or "-Xclang -fopenmp" works
+if test "${ac_pkg_openmp_cxx}" = no; then
+  OPENMP_CXXFLAGS="-Xclang -fopenmp"
+  OPENMP_LDFLAGS="-lomp"
+  AC_LANG_CONFTEST([
+    AC_LANG_PROGRAM([[#include <omp.h>]], [[ return omp_get_num_threads (); ]])
+  ])
+  PKG_CFLAGS="${OPENMP_CXXFLAGS}" PKG_LIBS="${OPENMP_LDFLAGS}" "$RBIN" CMD SHLIB conftest.c 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && \
+    "$RBIN" --vanilla -q -e "dyn.load(paste('conftest',.Platform\$dynlib.ext,sep=''))" 1>&AS_MESSAGE_LOG_FD 2>&AS_MESSAGE_LOG_FD && ac_pkg_openmp_cxx=yes
+
+  if test "${ac_pkg_openmp_cxx}" = yes; then
+    ac_pkg_openmp_cxx_msg="yes (with ${OPENMP_CXXFLAGS} and ${OPENMP_LDFLAGS})"
+  fi
+fi
+
+AC_MSG_RESULT([${ac_pkg_openmp_cxx_msg}])
 
 # Check if OpenMP supports tasks, reductions, and if constant variables need to be shared
-LDFLAGS="$LDFLAGS $OPENMP_CXXFLAGS"
+CPPFLAGS="$CPPFLAGS $OPENMP_CXXFLAGS"
+CXXFLAGS="$CXXFLAGS $OPENMP_CXXFLAGS"
+LDFLAGS="$LDFLAGS $OPENMP_LDFLAGS"
 ax_check_save_flags="$LDFLAGS"
 if test "${ac_pkg_openmp_cxx}" = yes; then
   AC_MSG_CHECKING([OpenMP support for tasks])
@@ -310,6 +331,7 @@ else
 fi
 
 AC_SUBST(OPENMP_CXXFLAGS)
+AC_SUBST(OPENMP_LDFLAGS)
 AC_SUBST(R_HAVE_OPENMP)
 
 ## Enable/disable metrics

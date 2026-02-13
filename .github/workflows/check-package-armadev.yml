@@ -2,7 +2,6 @@
 on:
   push:
     branches:
-      - 'feature/**'
       - 'main'
 
 name: 'R CMD check (dev version of RcppArmadillo)'

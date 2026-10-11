@@ -19,7 +19,8 @@
 /* Test if an old version of GCC is used which requires */
 /* constant variables to be NOT shared (OpenMP v3.1),   */
 /* (https://gcc.gnu.org/gcc-9/porting_to.html)          */
-#if __GNUC__ < 9
+/* (clang also defines __GNUC__ = 4, but does need them shared) */
+#if !defined(__clang__) && __GNUC__ < 9
 #  undef PENSE_OPENMP_ADD_CONST_SHARED_LOCAL
 #endif
 /* #undef PENSE_TESTTHAT_ENABLED */

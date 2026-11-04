@@ -13,6 +13,7 @@ or not using cross-validation).
 For this guide we first need to load the pense package:
 
 ``` r
+
 library(pense)
 #> Loading required package: Matrix
 ```
@@ -23,6 +24,7 @@ For demonstration purposes, let’s simulate data with 50 observations and
 predicting the response *y*:
 
 ``` r
+
 set.seed(1234)
 x <- matrix(rweibull(50 * 40, 2, 3), ncol = 40)
 y <- 1 * x[, 1] - 1.1 * x[, 2] + 1.2 * x[, 3] + rt(nrow(x), df = 2)
@@ -33,6 +35,7 @@ to the response value of the first 3 observations and to some
 predictors:
 
 ``` r
+
 y[1:3] <- 5 * apply(x[1:3, ], 1, max)
 x[3:6, 4:6] <- 1.5 * max(x) + abs(rcauchy(4 * 3))
 ```
@@ -61,6 +64,7 @@ larger values of the penalization level, you can increase the ratio, for
 example, to 0.5:
 
 ``` r
+
 set.seed(1234)
 fit_grid_narrow <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 5e-1, cv_k = 5, cv_repl = 10)
 ```
@@ -70,6 +74,7 @@ the best model seems to be in this range, you may need to decrease the
 ratio, e.g., to 0.05:
 
 ``` r
+
 set.seed(1234)
 fit_grid_wide <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 5e-2, cv_k = 5, cv_repl = 10)
 ```
@@ -91,6 +96,7 @@ prediction accuracy. Therefore, we can compute adaptive PENSE estimates
 on a better focused grid with:
 
 ``` r
+
 set.seed(1234)
 fit_grid_focused <- adapense_cv(x, y, alpha = 0.75, lambda_min_ratio = 1e-1, cv_k = 5, cv_repl = 10)
 ```
@@ -123,6 +129,7 @@ grids for the preliminary and the adaptive PENSE estimates, you need to
 compute them manually via
 
 ``` r
+
 fit_preliminary <- pense_cv(x, y, alpha = 0, cv_k = 5, cv_repl = 10, 
                             lambda = exp(seq(log(0.5), log(20), length.out = 5)))
 exponent <- 1
@@ -132,6 +139,7 @@ fit_adaptive <- pense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10,
 ```
 
 ``` r
+
 summary(fit_adaptive)
 #> PENSE fit with prediction performance estimated by 10 replications of 5-fold 
 #> ris cross-validation.

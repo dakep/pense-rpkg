@@ -25,6 +25,7 @@ residual scale.
 First we need to load the pense package:
 
 ``` r
+
 library(pense)
 #> Loading required package: Matrix
 ```
@@ -35,6 +36,7 @@ done in parallel. If your computer has more than 1 CPU core, you can
 harness more computing power by creating a cluster of R processes:
 
 ``` r
+
 library(parallel)
 # If you don't know how many CPU cores are available, first run `detectCores(logical = FALSE)`
 cluster <- makeCluster(2)
@@ -46,6 +48,7 @@ available predictors. The error distribution is a heavy-tailed
 predicting the response *y*:
 
 ``` r
+
 set.seed(1234)
 x <- matrix(rweibull(50 * 40, 2, 3), ncol = 40)
 y <- 1 * x[, 1] - 1.1 * x[, 2] + 1.2 * x[, 3] + rt(nrow(x), df = 2)
@@ -55,6 +58,7 @@ To make the scenario more realistic, let’s add some contamination to the
 response value of the first 3 observations and to some predictors:
 
 ``` r
+
 y[1:3] <- 5 * apply(x[1:3, ], 1, max)
 x[3:6, 4:6] <- 1.5 * max(x) + abs(rcauchy(4 * 3))
 ```
@@ -78,6 +82,7 @@ their prediction accuracy is done with the code below. Here, prediction
 accuracy is estimated via 5-fold RIS-CV, replicated 3 times:
 
 ``` r
+
 set.seed(1234)
 fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 3, cl = cluster)
 ```
@@ -97,6 +102,7 @@ Section 5.8.1). To choose a different \rho function, alter the
 `mscale_opts` argument:
 
 ``` r
+
 set.seed(1234)
 fit_075_mopt <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 3, cl = cluster,
                             mscale_opts = mscale_algorithm_options(rho = "mopt"))
@@ -109,6 +115,7 @@ for the object `fit_075` shows the estimated prediction accuracy for all
 fitted models.
 
 ``` r
+
 plot(fit_075)
 ```
 
@@ -136,6 +143,7 @@ we repeat step \#1, but with 10 CV replications instead of 3, we get a
 more stable evaluation of prediction performance:
 
 ``` r
+
 set.seed(1234)
 fit_075 <- adapense_cv(x, y, alpha = 0.75, cv_k = 5, cv_repl = 10, cl = cluster)
 ```
@@ -152,6 +160,7 @@ performance, we can extract summary information from the predictive
 model with
 
 ``` r
+
 summary(fit_075)
 #> Adaptive PENSE fit with prediction performance estimated by 10 replications of 
 #> 5-fold ris cross-validation.
@@ -179,6 +188,7 @@ appropriate for your application, you can also apply the
 one-standard-error rule leads to the following predictive model:
 
 ``` r
+
 summary(fit_075, lambda = "se", se_mult = 1)
 #> Adaptive PENSE fit with prediction performance estimated by 10 replications of 
 #> 5-fold ris cross-validation.
@@ -227,6 +237,7 @@ for two values: `alpha=0.75` and `alpha=1` as well as `exponent=1` and
 `exponent=2`.
 
 ``` r
+
 set.seed(1234)
 fit_exp_1 <- adapense_cv(x, y, alpha = c(0.75, 1), exponent = 1, cv_k = 5, cv_repl = 10, cl = cluster)
 
@@ -249,6 +260,7 @@ which extracts and prints the prediction performance of all given
 objects:
 
 ``` r
+
 prediction_performance(fit_exp_1, fit_exp_2)
 #> Prediction performance estimated by cross-validation:
 #> 
@@ -265,6 +277,7 @@ accuracy. We can also compare sparser models with similar prediction
 performance:
 
 ``` r
+
 prediction_performance(fit_exp_1, fit_exp_2, lambda = 'se')
 #> Prediction performance estimated by cross-validation:
 #> 
@@ -279,6 +292,7 @@ If we are interested in even sparser models, we can increase the
 tolerance level to, for instance, 2 standard errors:
 
 ``` r
+
 prediction_performance(fit_exp_1, fit_exp_2, lambda = 'se', se_mult = 2)
 #> Prediction performance estimated by cross-validation:
 #> 
@@ -295,6 +309,7 @@ that the estimated coefficients and estimated relevant predictors are
 close to the truth:
 
 ``` r
+
 summary(fit_exp_2, alpha = 0.75, lambda = 'se')
 #> Adaptive PENSE fit with prediction performance estimated by 10 replications of 
 #> 5-fold ris cross-validation.
@@ -332,6 +347,7 @@ measuring the prediction performance. For example, to use the *mean*
 absolute prediction error, you would write
 
 ``` r
+
 mae <- function (prediction_errors) {
   mean(abs(prediction_errors))
 }

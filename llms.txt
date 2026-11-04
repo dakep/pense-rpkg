@@ -20,6 +20,7 @@ PENSE fit and estimates prediction performance for many values of the
 penalization level.
 
 ``` r
+
 library(pense)
 
 # Generate dummy data with n=50 observations and p=25 possible predictors
@@ -68,6 +69,7 @@ To install the latest release from CRAN, run the following R code in the
 R console:
 
 ``` r
+
 install.packages("pense")
 ```
 
@@ -76,6 +78,7 @@ github using the [devtools](https://cran.r-project.org/package=devtools)
 package:
 
 ``` r
+
 # Install the most recent development version:
 devtools::install_github("dakep/pense-rpkg")
 ```
